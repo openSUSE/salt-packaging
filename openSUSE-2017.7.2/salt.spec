@@ -36,7 +36,7 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        0.1
+Version:        2017.7.2
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
@@ -388,7 +388,7 @@ cp %{S:1} .
 cp %{S:5} ./.travis.yml
 
 %build
-%{__python3} setup.py --with-salt-version='2018.2.0' --salt-transport=both build
+%{__python3} setup.py --with-salt-version={version} --salt-transport=both build
 cp ./build/lib/salt/_version.py ./salt
 
 %if %{with docs} && %{without builddocs}
