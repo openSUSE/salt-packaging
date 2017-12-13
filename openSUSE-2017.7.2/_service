@@ -1,13 +1,18 @@
 <services>
-  <service name="tar_scm">
-    <param name="url">https://github.com/openSUSE/salt.git</param>
+  <service name="tar_scm" mode="localonly">
+    <param name="url">https://github.com/dincamihai/salt-packaging.git</param>
+    <param name="filename">package</param>
+    <param name="revision">master</param>
     <param name="scm">git</param>
-    <param name="filename">salt</param>
-    <param name="revision">develop</param>
+    <param name="exclude">.git</param>
   </service>
-  <service name="recompress">
-    <param name="file">*.tar</param>
-    <param name="compression">gz</param>
+  <service name="extract_file" mode="localonly">
+    <param name="archive">*package*.tar</param>
+    <param name="files">*/openSUSE-2017.7.2/*</param>
   </service>
-  <service name="set_version" />
+  <service name="verify_file" mode="localonly">
+    <param name="file">v2017.7.2.tar.gz</param>
+    <param name="verifier">sha256</param>
+    <param name="checksum">b9f9dd9ddd129ddadadf963178383b50c32283aeb1c338d9c23cc01b11722db2</param>
+  </service>
 </services>
