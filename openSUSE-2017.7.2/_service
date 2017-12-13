@@ -1,6 +1,7 @@
 <services>
   <service name="tar_scm" mode="localonly">
     <param name="url">https://github.com/dincamihai/salt-packaging.git</param>
+	<param name="subdir">openSUSE-2017.7.2</param>
     <param name="filename">package</param>
     <param name="revision">master</param>
     <param name="scm">git</param>
@@ -8,7 +9,7 @@
   </service>
   <service name="extract_file" mode="localonly">
     <param name="archive">*package*.tar</param>
-    <param name="files">*/openSUSE-2017.7.2/*</param>
+    <param name="files">*/*</param>
   </service>
   <service name="download_url" mode="localonly">
     <param name="host">codeload.github.com</param>
