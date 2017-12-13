@@ -5,6 +5,7 @@
     <param name="filename">package</param>
     <param name="revision">master</param>
     <param name="scm">git</param>
+    <param name="changesgenerate">enable</param>
   </service>
   <service name="extract_file" mode="localonly">
     <param name="archive">*package*.tar</param>
