@@ -417,7 +417,7 @@ cp %{S:5} ./.travis.yml
 %patch14 -p1
 
 %build
-%{__python3} setup.py --with-salt-version={version} --salt-transport=both build
+%{__python3} setup.py --with-salt-version=%{version} --salt-transport=both build
 cp ./build/lib/salt/_version.py ./salt
 
 %if %{with docs} && %{without builddocs}
