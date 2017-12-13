@@ -1,0 +1,26 @@
+From 2a88378d88c2f56b152ef048214728995476244a Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Tue, 17 Oct 2017 16:52:33 +0200
+Subject: [PATCH] Activate all beacons sources: config/pillar/grains
+
+---
+ salt/minion.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/minion.py b/salt/minion.py
+index 33cbb8fa0a..10b608cc7a 100644
+--- a/salt/minion.py
++++ b/salt/minion.py
+@@ -404,7 +404,7 @@ class MinionBase(object):
+         the pillar or grains changed
+         '''
+         if 'config.merge' in functions:
+-            b_conf = functions['config.merge']('beacons', self.opts['beacons'], omit_opts=True)
++            b_conf = functions['config.merge']('beacons', self.opts['beacons'])
+             if b_conf:
+                 return self.beacons.process(b_conf, self.opts['grains'])  # pylint: disable=no-member
+         return []
+-- 
+2.15.1
+
+

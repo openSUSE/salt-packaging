@@ -49,6 +49,21 @@ Source3:        html.tar.bz2
 Source4:        update-documentation.sh
 Source5:        travis.yml
 
+Patch1:        list_pkgs-add-parameter-for-returned-attribute-selec.patch
+Patch2:        use-home-to-get-the-user-home-directory-instead-usin.patch
+Patch3:        multiprocessing-minion-option-documentation-fixes.patch
+Patch4:        introduce-process_count_max-minion-configuration-par.patch
+Patch5:        bugfix-always-return-a-string-list-on-unknown-job-ta.patch
+Patch6:        enable-with-salt-version-parameter-for-setup.py-scri.patch
+Patch7:        run-salt-master-as-dedicated-salt-user.patch
+Patch8:        run-salt-api-as-user-salt-bsc-1064520.patch
+Patch9:        activate-all-beacons-sources-config-pillar-grains.patch
+Patch10:       fix-for-delete_deployment-in-kubernetes-module.patch
+Patch11:       catching-error-when-pidfile-cannot-be-deleted.patch
+Patch12:       avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
+Patch13:       fix-for-wrong-version-processing.patch
+Patch14:       older-logrotate-need-su-directive.patch
+
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
 BuildRequires:  python-rpm-macros
@@ -386,6 +401,20 @@ Zsh command line completion support for %{name}.
 %setup -q -n salt-%{version}
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
+%patch1 -p1
+%patch2 -p1
+%patch3 -p1
+%patch4 -p1
+%patch5 -p1
+%patch6 -p1
+%patch7 -p1
+%patch8 -p1
+%patch9 -p1
+%patch10 -p1
+%patch11 -p1
+%patch12 -p1
+%patch13 -p1
+%patch14 -p1
 
 %build
 %{__python3} setup.py --with-salt-version={version} --salt-transport=both build
