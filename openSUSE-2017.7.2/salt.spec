@@ -42,7 +42,7 @@ Summary:        A parallel remote execution system
 License:        Apache-2.0
 Group:          System/Management
 Url:            http://saltstack.org/
-Source:         %{name}-%{version}.tar.gz
+Source:         https://codeload.github.com/saltstack/salt/tar.gz/v%{version}
 Source1:        README.SUSE
 Source2:        salt-tmpfiles.d
 Source3:        html.tar.bz2
