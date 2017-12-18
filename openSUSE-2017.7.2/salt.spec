@@ -64,6 +64,9 @@ Patch12:       avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
 Patch13:       fix-for-wrong-version-processing.patch
 Patch14:       older-logrotate-need-su-directive.patch
 Patch15:       fix-salt-master-for-old-psutil.patch
+Patch16:       split-only-strings-if-they-are-such.patch
+Patch17:       cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
+Patch18:       fix-for-pidfile-removal-logging.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -417,6 +420,9 @@ cp %{S:5} ./.travis.yml
 %patch13 -p1
 %patch14 -p1
 %patch15 -p1
+%patch16 -p1
+%patch17 -p1
+%patch18 -p1
 
 %build
 %{__python3} setup.py --with-salt-version=%{version} --salt-transport=both build

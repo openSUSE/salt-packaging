@@ -1,0 +1,27 @@
+From d943984fe3801fc1ad3496d10c9d6a7beda940b5 Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Fri, 15 Dec 2017 11:54:23 +0100
+Subject: [PATCH] Fix for pidfile removal logging
+
+self.info does not exist. Switching to the 'normal' way of logging.
+---
+ salt/utils/parsers.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/utils/parsers.py b/salt/utils/parsers.py
+index a241e4aedb..7537ba65f7 100644
+--- a/salt/utils/parsers.py
++++ b/salt/utils/parsers.py
+@@ -969,7 +969,7 @@ class DaemonMixIn(six.with_metaclass(MixInMeta, object)):
+                 try:
+                     os.unlink(self.config['pidfile'])
+                 except OSError as err:
+-                    self.info(
++                    logging.getLogger(__name__).info(
+                         'PIDfile could not be deleted: {0}'.format(
+                             self.config['pidfile']
+                         )
+-- 
+2.15.1
+
+
