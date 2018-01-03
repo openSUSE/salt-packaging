@@ -68,6 +68,7 @@ Patch16:       split-only-strings-if-they-are-such.patch
 Patch17:       cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
 Patch18:       fix-for-pidfile-removal-logging.patch
 Patch19:       python3-compatibility-fix-got-bytes-instead-of-strin.patch
+Patch20:       add-fqdns-grains.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -425,6 +426,7 @@ cp %{S:5} ./.travis.yml
 %patch17 -p1
 %patch18 -p1
 %patch19 -p1
+%patch20 -p1
 
 %build
 %{__python3} setup.py --with-salt-version=%{version} --salt-transport=both build
