@@ -1,12 +1,13 @@
-From d943984fe3801fc1ad3496d10c9d6a7beda940b5 Mon Sep 17 00:00:00 2001
+From 80ca025c63dae268694b3ac83031174b9d617146 Mon Sep 17 00:00:00 2001
 From: Jochen Breuer <jbreuer@suse.de>
 Date: Fri, 15 Dec 2017 11:54:23 +0100
 Subject: [PATCH] Fix for pidfile removal logging
 
 self.info does not exist. Switching to the 'normal' way of logging.
 ---
- salt/utils/parsers.py | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ salt/utils/parsers.py            |  2 +-
+ tests/unit/utils/test_parsers.py | 46 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 47 insertions(+), 1 deletion(-)
 
 diff --git a/salt/utils/parsers.py b/salt/utils/parsers.py
 index a241e4aedb..7537ba65f7 100644
@@ -21,7 +22,71 @@ index a241e4aedb..7537ba65f7 100644
                          'PIDfile could not be deleted: {0}'.format(
                              self.config['pidfile']
                          )
+diff --git a/tests/unit/utils/test_parsers.py b/tests/unit/utils/test_parsers.py
+index 82c92dc282..2e1aa73fb7 100644
+--- a/tests/unit/utils/test_parsers.py
++++ b/tests/unit/utils/test_parsers.py
+@@ -5,6 +5,8 @@
+ 
+ # Import python libs
+ from __future__ import absolute_import
++import os
++import logging
+ 
+ # Import Salt Testing Libs
+ from tests.support.unit import skipIf, TestCase
+@@ -1015,6 +1017,50 @@ class SaltAPIParserTestCase(LogSettingsParserTests):
+         self.addCleanup(delattr, self, 'parser')
+ 
+ 
++@skipIf(NO_MOCK, NO_MOCK_REASON)
++class DaemonMixInTestCase(TestCase):
++    '''
++    Tests the PIDfile deletion in the DaemonMixIn.
++    '''
++
++    def setUp(self):
++        '''
++        Setting up
++        '''
++        # Set PID
++        self.pid = '/some/fake.pid'
++
++        # Setup mixin
++        self.mixin = salt.utils.parsers.DaemonMixIn()
++        self.mixin.config = {}
++        self.mixin.config['pidfile'] = self.pid
++
++        # logger
++        self.logger = logging.getLogger('salt.utils.parsers')
++
++    def test_pid_file_deletion(self):
++        '''
++        PIDfile deletion without exception.
++        '''
++        with patch('os.unlink', MagicMock()) as os_unlink:
++            with patch('os.path.isfile', MagicMock(return_value=True)):
++                with patch.object(self.logger, 'info') as mock_logger:
++                    self.mixin._mixin_before_exit()
++                    assert mock_logger.call_count == 0
++                    assert os_unlink.call_count == 1
++
++    def test_pid_file_deletion_with_oserror(self):
++        '''
++        PIDfile deletion with exception
++        '''
++        with patch('os.unlink', MagicMock(side_effect=OSError())) as os_unlink:
++            with patch('os.path.isfile', MagicMock(return_value=True)):
++                with patch.object(self.logger, 'info') as mock_logger:
++                    self.mixin._mixin_before_exit()
++                    assert os_unlink.call_count == 1
++                    mock_logger.assert_called_with(
++                        'PIDfile could not be deleted: {0}'.format(self.pid))
++
+ # Hide the class from unittest framework when it searches for TestCase classes in the module
+ del LogSettingsParserTests
+ 
 -- 
-2.15.1
+2.13.6
 
 
