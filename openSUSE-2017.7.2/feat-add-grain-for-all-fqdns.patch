@@ -1,4 +1,4 @@
-From 6cf1639823dbfa845e72e93b7a1115dac752c2ba Mon Sep 17 00:00:00 2001
+From ba9f26cf00b0a767b7b25f156553a9e783aa895d Mon Sep 17 00:00:00 2001
 From: Michele Bologna <michele.bologna@suse.com>
 Date: Thu, 14 Dec 2017 18:20:02 +0100
 Subject: [PATCH] Feat: add grain for all FQDNs
@@ -115,4 +115,5 @@ index 6ee4257863..4f1412de76 100644
 +    run_tests(CoreGrainsTestCase, needs_daemon=False)
 -- 
 2.13.6
+
 

@@ -66,9 +66,8 @@ Patch14:       older-logrotate-need-su-directive.patch
 Patch15:       fix-salt-master-for-old-psutil.patch
 Patch16:       split-only-strings-if-they-are-such.patch
 Patch17:       cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
-Patch18:       fix-for-pidfile-removal-logging.patch
 Patch19:       python3-compatibility-fix-got-bytes-instead-of-strin.patch
-Patch20:       add-fqdns-grains.patch
+Patch20:       feat-add-grain-for-all-fqdns.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -424,7 +423,6 @@ cp %{S:5} ./.travis.yml
 %patch15 -p1
 %patch16 -p1
 %patch17 -p1
-%patch18 -p1
 %patch19 -p1
 %patch20 -p1
 
