@@ -69,6 +69,7 @@ Patch17:       cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
 Patch19:       python3-compatibility-fix-got-bytes-instead-of-strin.patch
 Patch20:       feat-add-grain-for-all-fqdns.patch
 Patch21:       fix-bsc-1065792.patch
+Patch22:       set-shell-environment-variable-64.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -427,6 +428,7 @@ cp %{S:5} ./.travis.yml
 %patch19 -p1
 %patch20 -p1
 %patch21 -p1
+%patch22 -p1
 
 %build
 %{__python3} setup.py --with-salt-version=%{version} --salt-transport=both build
