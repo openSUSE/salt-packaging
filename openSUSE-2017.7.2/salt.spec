@@ -15,6 +15,25 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
+%if 0%{?suse_version} >= 1320
+# SLE15
+%global build_py3   1
+%global build_py2   1
+%global default_py3 1
+%else
+%if 0%{?suse_version} == 1315
+# SLE12
+%global build_py3   1
+%global build_py2   1
+%global default_py3 0
+%else
+# RES7
+%global build_py3   0
+%global build_py2   1
+%global default_py3 0
+%endif
+%endif
+%define pythonX %{?default_py3: python3}%{!?default_py3: python2}
 
 %if 0%{?suse_version} > 1210 || 0%{?rhel} >= 7 || 0%{?fedora}
 %bcond_without systemd
@@ -75,6 +94,159 @@ Patch24:       return-error-when-gid_from_name-and-group-does-not-e.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
+%if 0%{?suse_version} > 1020
+BuildRequires:  fdupes
+%endif
+
+Requires: %{pythonX}-%{name} = %{version}-%{release}
+
+Requires(pre):  %{_sbindir}/groupadd
+Requires(pre):  %{_sbindir}/useradd
+
+%if 0%{?suse_version}
+Requires(pre):  %fillup_prereq
+Requires(pre):  pwdutils
+%endif
+
+%if 0%{?suse_version}
+Requires(pre):  dbus-1
+%else
+Requires(pre):  dbus
+%endif
+
+Requires:       logrotate
+Requires:       procps
+
+%if %{with systemd}
+BuildRequires:  systemd
+%{?systemd_requires}
+%else
+%if 0%{?suse_version}
+Requires(pre): %insserv_prereq
+%endif
+%endif
+
+%if %{with fish_completion}
+%define fish_dir %{_datadir}/fish/
+%define fish_completions_dir %{_datadir}/fish/completions/
+%endif
+
+%if %{with bash_completion}
+%if 0%{?suse_version} >= 1140
+BuildRequires:  bash-completion
+%else
+BuildRequires:  bash
+%endif
+%endif
+
+%if %{with zsh_completion}
+BuildRequires:  zsh
+%endif
+
+%if 0%{?rhel}
+BuildRequires:  yum
+%endif
+
+%description
+Salt is a distributed remote execution system used to execute commands and
+query data. It was developed in order to bring the best solutions found in
+the world of remote execution together and make them better, faster and more
+malleable. Salt accomplishes this via its ability to handle larger loads of
+information, and not just dozens, but hundreds or even thousands of individual
+servers, handle them quickly and through a simple and manageable interface.
+
+%if 0%{?build_py2}
+%package -n python2-salt
+Summary:        python2 library for salt
+Group:          System/Management
+Requires:       %{name} = %{version}-%{release}
+BuildRequires:  python >= 2.7
+BuildRequires:  python-devel >= 2.7
+# requirements/base.txt
+%if 0%{?rhel}
+BuildRequires:  python-jinja2
+%else
+BuildRequires:  python-Jinja2
+%endif
+
+BuildRequires:  python-futures >= 2.0
+BuildRequires:  python-MarkupSafe
+BuildRequires:  python-PyYAML
+BuildRequires:  python-msgpack-python > 0.3
+BuildRequires:  python-psutil
+BuildRequires:  python-requests >= 1.0.0
+BuildRequires:  python-tornado >= 4.2.1
+
+# requirements/zeromq.txt
+BuildRequires:  python-pycrypto >= 2.6.1
+BuildRequires:  python-pyzmq >= 2.2.0
+%if %{with test}
+# requirements/dev_python27.txt
+BuildRequires:  python-boto >= 2.32.1
+BuildRequires:  python-mock
+BuildRequires:  python-moto >= 0.3.6
+BuildRequires:  python-pip
+BuildRequires:  python-salt-testing >= 2015.2.16
+BuildRequires:  python-unittest2
+BuildRequires:  python-xml
+%endif
+%if %{with builddocs}
+BuildRequires:  python-sphinx
+%endif
+Requires:       python >= 2.7
+#
+%if ! 0%{?suse_version} > 1110
+Requires:       python-certifi
+%endif
+# requirements/base.txt
+%if 0%{?rhel}
+Requires:       python-jinja2
+Requires:       yum
+%if 0%{?rhel} == 6
+Requires:       yum-plugin-security
+%endif
+%else
+Requires:       python-Jinja2
+%endif
+
+Requires:       python-futures >= 2.0
+Requires:       python-MarkupSafe
+Requires:       python-PyYAML
+Requires:       python-msgpack-python > 0.3
+Requires:       python-psutil
+Requires:       python-requests >= 1.0.0
+Requires:       python-tornado >= 4.2.1
+%if 0%{?suse_version}
+# required for zypper.py
+Requires:       python-rpm
+Requires(pre):  libzypp(plugin:system) >= 0
+Requires:       python-zypp-plugin
+# requirements/opt.txt (not all)
+# Suggests:     python-MySQL-python  ## Disabled for now, originally Recommended
+Suggests:       python-timelib
+Suggests:       python-gnupg
+# requirements/zeromq.txt
+%endif
+Requires:       python-pycrypto >= 2.6.1
+Requires:       python-pyzmq >= 2.2.0
+#
+%if 0%{?suse_version}
+# python-xml is part of python-base in all rhel versions
+Requires:       python-xml
+Suggests:       python-Mako
+Recommends:     python-netaddr
+%endif
+
+%description -n python2-salt
+Python2 specific files for salt
+
+%endif
+
+%if 0%{?build_py3}
+%package -n python3-salt
+Summary:        python3 library for salt
+Group:          System/Management
+Requires:       %{name} = %{version}-%{release}
 BuildRequires:  python-rpm-macros
 BuildRequires:  python3
 BuildRequires:  python3-devel
@@ -107,26 +279,6 @@ BuildRequires:  python3-xml
 %if %{with builddocs}
 BuildRequires:  python3-sphinx
 %endif
-%if 0%{?suse_version} > 1020
-BuildRequires:  fdupes
-%endif
-
-Requires(pre):  %{_sbindir}/groupadd
-Requires(pre):  %{_sbindir}/useradd
-
-%if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
-Requires(pre):  pwdutils
-%endif
-
-%if 0%{?suse_version}
-Requires(pre):  dbus-1
-%else
-Requires(pre):  dbus
-%endif
-
-Requires:       logrotate
-Requires:       procps
 Requires:       python3
 #
 %if ! 0%{?suse_version} > 1110
@@ -169,50 +321,21 @@ Suggests:       python3-Mako
 Recommends:     python3-netaddr
 %endif
 
-%if %{with systemd}
-BuildRequires:  systemd
-%{?systemd_requires}
-%else
-%if 0%{?suse_version}
-Requires(pre): %insserv_prereq
-%endif
-%endif
+%description -n python3-salt
+Python3 specific files for salt
 
-%if %{with fish_completion}
-%define fish_dir %{_datadir}/fish/
-%define fish_completions_dir %{_datadir}/fish/completions/
 %endif
-
-%if %{with bash_completion}
-%if 0%{?suse_version} >= 1140
-BuildRequires:  bash-completion
-%else
-BuildRequires:  bash
-%endif
-%endif
-
-%if %{with zsh_completion}
-BuildRequires:  zsh
-%endif
-
-%if 0%{?rhel}
-BuildRequires:  yum
-%endif
-
-%description
-Salt is a distributed remote execution system used to execute commands and
-query data. It was developed in order to bring the best solutions found in
-the world of remote execution together and make them better, faster and more
-malleable. Salt accomplishes this via its ability to handle larger loads of
-information, and not just dozens, but hundreds or even thousands of individual
-servers, handle them quickly and through a simple and manageable interface.
 
 %package api
 Summary:        The api for Salt a parallel remote execution system
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
+%if 0%{?default_py3}
 Requires:       python3-CherryPy >= 3.2.2
+%else
+Requires:       python-CherryPy >= 3.2.2
+%endif
 
 %description api
 salt-api is a modular interface on top of Salt that can provide a variety of entry points into a running Salt system.
@@ -435,8 +558,16 @@ cp %{S:5} ./.travis.yml
 %patch24 -p1
 
 %build
+%if 0%{?build_py2}
+%{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
+cp ./build/lib/salt/_version.py ./salt
+mv build _build.python2
+%endif
+%if 0%{?build_py3}
 %{__python3} setup.py --with-salt-version=%{version} --salt-transport=both build
 cp ./build/lib/salt/_version.py ./salt
+mv build _build.python3
+%endif
 
 %if %{with docs} && %{without builddocs}
 # extract docs from the tarball
@@ -452,7 +583,28 @@ cd doc && make html && rm _build/html/.buildinfo && rm _build/html/_images/proxy
 %endif
 
 %install
+%if 0%{?build_py2}
+mv _build.python2 build
+%{__python} setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot}
+mv build _build.python2
+%endif
+%if 0%{?build_py3}
+mv _build.python3 build
 %{__python3} setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot}
+mv build _build.python3
+%endif
+
+%if 0%{?default_py3}
+DEF_PYPATH=_build.python3/scripts-*/
+%else
+DEF_PYPATH=_build.python2/scripts-*/
+%endif
+
+rm -f %{buildroot}%{_bindir}/*
+for script in $DEF_PYPATH/*; do
+  install -m 0755 $script %{buildroot}%{_bindir}
+done
+
 ## create missing directories
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/master.d
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/minion.d
@@ -575,12 +727,21 @@ install -Dpm 0644 pkg/fish-completions/* %{buildroot}%{fish_completions_dir}
 
 %if 0%{?suse_version} > 1020
 %fdupes %{buildroot}%{_docdir}
+%if 0%{?build_py2}
+%fdupes %{buildroot}%{python_sitelib}
+%endif
+%if 0%{?build_py3}
 %fdupes %{buildroot}%{python3_sitelib}
+%endif
 %endif
 
 %check
 %if %{with test}
-python3 setup.py test --runtests-opts=-u
+%if 0%{?default_py3}
+%{__python3} setup.py test --runtests-opts=-u
+%else
+%{__python} setup.py test --runtests-opts=-u
+%endif
 %endif
 
 %pre
@@ -904,8 +1065,13 @@ fi
 %config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/cloud.profiles
 %config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/cloud.providers
 %dir               %attr(0750, root, salt) %{_localstatedir}/cache/salt/cloud
+%if 0%{?default_py3}
 %{python3_sitelib}/salt/cloud/deploy/bootstrap-salt.sh
 %attr(755,root,root)%{python3_sitelib}/salt/cloud/deploy/bootstrap-salt.sh
+%else
+%{python_sitelib}/salt/cloud/deploy/bootstrap-salt.sh
+%attr(755,root,root)%{python_sitelib}/salt/cloud/deploy/bootstrap-salt.sh
+%endif
 %{_mandir}/man1/salt-cloud.1.*
 
 %files ssh
@@ -1016,9 +1182,6 @@ fi
 %{_mandir}/man1/salt-call.1.gz
 %{_mandir}/man1/spm.1.gz
 %config(noreplace) %{_sysconfdir}/logrotate.d/salt
-%{python3_sitelib}/*
-%exclude %{python3_sitelib}/salt/cloud/deploy/*.sh
-%attr(755,root,root)%{python3_sitelib}/salt/cloud/deploy/*.sh
 %doc LICENSE AUTHORS README.rst HACKING.rst README.SUSE
 #
 %dir        %attr(0750, root, salt) %{_sysconfdir}/salt
@@ -1031,6 +1194,20 @@ fi
 /usr/lib/tmpfiles.d/salt.conf
 %endif
 %{_mandir}/man1/salt.1.*
+
+%if 0%{?build_py2}
+%files -n python2-salt
+%defattr(-,root,root,-)
+%{python_sitelib}/*
+%exclude %{python_sitelib}/salt/cloud/deploy/*.sh
+%endif
+
+%if 0%{?build_py3}
+%files -n python3-salt
+%defattr(-,root,root,-)
+%{python3_sitelib}/*
+%exclude %{python3_sitelib}/salt/cloud/deploy/*.sh
+%endif
 
 %if %{with docs}
 %files doc
