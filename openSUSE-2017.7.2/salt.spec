@@ -70,6 +70,8 @@ Patch19:       python3-compatibility-fix-got-bytes-instead-of-strin.patch
 Patch20:       feat-add-grain-for-all-fqdns.patch
 Patch21:       fix-bsc-1065792.patch
 Patch22:       set-shell-environment-variable-64.patch
+Patch23:       bugfix-the-logic-according-to-the-exact-described-pu.patch
+Patch24:       return-error-when-gid_from_name-and-group-does-not-e.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -429,6 +431,8 @@ cp %{S:5} ./.travis.yml
 %patch20 -p1
 %patch21 -p1
 %patch22 -p1
+%patch23 -p1
+%patch24 -p1
 
 %build
 %{__python3} setup.py --with-salt-version=%{version} --salt-transport=both build
