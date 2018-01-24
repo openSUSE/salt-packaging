@@ -165,13 +165,15 @@ BuildRequires:  python-devel >= 2.7
 # requirements/base.txt
 %if 0%{?rhel}
 BuildRequires:  python-jinja2
+BuildRequires:  python-yaml
+BuildRequires:  python-markupsafe
 %else
 BuildRequires:  python-Jinja2
+BuildRequires:  python-PyYAML
+BuildRequires:  python-MarkupSafe
 %endif
 
 BuildRequires:  python-futures >= 2.0
-BuildRequires:  python-MarkupSafe
-BuildRequires:  python-PyYAML
 BuildRequires:  python-msgpack-python > 0.3
 BuildRequires:  python-psutil
 BuildRequires:  python-requests >= 1.0.0
@@ -201,26 +203,28 @@ Requires:       python-certifi
 # requirements/base.txt
 %if 0%{?rhel}
 Requires:       python-jinja2
+Requires:       python-yaml
+Requires:       python-markupsafe
 Requires:       yum
 %if 0%{?rhel} == 6
 Requires:       yum-plugin-security
 %endif
 %else
 Requires:       python-Jinja2
+Requires:       python-PyYAML
+Requires:       python-MarkupSafe
 %endif
 
 Requires:       python-futures >= 2.0
-Requires:       python-MarkupSafe
-Requires:       python-PyYAML
 Requires:       python-msgpack-python > 0.3
 Requires:       python-psutil
 Requires:       python-requests >= 1.0.0
 Requires:       python-tornado >= 4.2.1
 %if 0%{?suse_version}
 # required for zypper.py
-Requires:       python-rpm
+Requires:       rpm-python
 Requires(pre):  libzypp(plugin:system) >= 0
-Requires:       python-zypp-plugin
+Requires:       zypp-plugin-python
 # requirements/opt.txt (not all)
 # Suggests:     python-MySQL-python  ## Disabled for now, originally Recommended
 Suggests:       python-timelib
