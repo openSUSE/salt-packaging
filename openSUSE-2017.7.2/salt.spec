@@ -25,12 +25,9 @@
 # SLE12
 %global build_py3   1
 %global build_py2   1
-%global default_py3 0
 %else
 # RES7
-%global build_py3   0
 %global build_py2   1
-%global default_py3 0
 %endif
 %endif
 %define pythonX %{?default_py3: python3}%{!?default_py3: python2}
