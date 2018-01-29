@@ -88,6 +88,7 @@ Patch21:       fix-bsc-1065792.patch
 Patch22:       set-shell-environment-variable-64.patch
 Patch23:       bugfix-the-logic-according-to-the-exact-described-pu.patch
 Patch24:       return-error-when-gid_from_name-and-group-does-not-e.patch
+Patch25:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -557,6 +558,7 @@ cp %{S:5} ./.travis.yml
 %patch22 -p1
 %patch23 -p1
 %patch24 -p1
+%patch25 -p1
 
 %build
 %if 0%{?build_py2}
