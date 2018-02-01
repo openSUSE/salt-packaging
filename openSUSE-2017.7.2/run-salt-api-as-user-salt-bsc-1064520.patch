@@ -20,6 +20,6 @@ index 7ca582dfb4..bf513e4dbd 100644
  ExecStart=/usr/bin/salt-api
  TimeoutStopSec=3
 -- 
-2.15.1
+2.13.6
 
 

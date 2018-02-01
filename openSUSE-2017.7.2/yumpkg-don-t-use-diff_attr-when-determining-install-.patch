@@ -1,4 +1,4 @@
-From f8e1175811e4aaab177b22c5c6893af6637b3d18 Mon Sep 17 00:00:00 2001
+From ea9c1f9a83b42b773579d5ef34dc29249bcd680a Mon Sep 17 00:00:00 2001
 From: Erik Johnson <palehose@gmail.com>
 Date: Thu, 4 Jan 2018 16:10:18 -0600
 Subject: [PATCH] yumpkg: don't use diff_attr when determining
@@ -17,10 +17,10 @@ returning and formatting the return data in one place in the function.
  2 files changed, 73 insertions(+), 55 deletions(-)
 
 diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
-index 027d680bff..c70a5dfff1 100644
+index 8b63bff4a3..89aceb21cb 100644
 --- a/salt/modules/yumpkg.py
 +++ b/salt/modules/yumpkg.py
-@@ -621,6 +621,7 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -622,6 +622,7 @@ def list_pkgs(versions_as_list=False, **kwargs):
      .. code-block:: bash
  
          salt '*' pkg.list_pkgs
@@ -28,7 +28,7 @@ index 027d680bff..c70a5dfff1 100644
          salt '*' pkg.list_pkgs attr='["version", "arch"]'
      '''
      versions_as_list = salt.utils.is_true(versions_as_list)
-@@ -629,42 +630,52 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -630,42 +631,52 @@ def list_pkgs(versions_as_list=False, **kwargs):
              for x in ('removed', 'purge_desired')]):
          return {}
  
@@ -38,7 +38,7 @@ index 027d680bff..c70a5dfff1 100644
 -        return __salt__['pkg_resource.format_pkg_list'](cached, versions_as_list, attr)
 +    attr = kwargs.get('attr')
 +    if attr is not None:
-+        attr = salt.utils.args.split_input(attr)
++        attr = salt.utils.split_input(attr)
  
 -    ret = {}
 -    cmd = ['rpm', '-qa', '--queryformat',
@@ -115,7 +115,7 @@ index 027d680bff..c70a5dfff1 100644
  
  
  def list_repo_pkgs(*args, **kwargs):
-@@ -1310,11 +1321,11 @@ def install(name=None,
+@@ -1311,11 +1322,11 @@ def install(name=None,
              log.warning('"version" parameter will be ignored for multiple '
                          'package targets')
  
@@ -130,7 +130,7 @@ index 027d680bff..c70a5dfff1 100644
      to_install = []
      to_downgrade = []
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index b440af08a4..de8e61c1a8 100644
+index b440af08a4..ffe38be17d 100644
 --- a/salt/modules/zypper.py
 +++ b/salt/modules/zypper.py
 @@ -685,6 +685,7 @@ def list_pkgs(versions_as_list=False, **kwargs):
@@ -151,7 +151,7 @@ index b440af08a4..de8e61c1a8 100644
 -        return __salt__['pkg_resource.format_pkg_list'](cached, versions_as_list, attr)
 +    attr = kwargs.get('attr')
 +    if attr is not None:
-+        attr = salt.utils.args.split_input(attr)
++        attr = salt.utils.split_input(attr)
  
 -    cmd = ['rpm', '-qa', '--queryformat', (
 -        "%{NAME}_|-%{VERSION}_|-%{RELEASE}_|-%{ARCH}_|-"

@@ -1,4 +1,4 @@
-From b31d8f3898149209097e01bbeefbfb70b5a0c395 Mon Sep 17 00:00:00 2001
+From c586654ed4c20a69f164b208458163611408c54a Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Fri, 15 Dec 2017 09:53:10 +0100
 Subject: [PATCH] cherrypy read() reads bytes from the wire and write
@@ -112,6 +112,6 @@ index ea2845f46d..75785b8eb1 100644
          if headers is not None:
              h.update(headers)
 -- 
-2.15.1
+2.13.6
 
 

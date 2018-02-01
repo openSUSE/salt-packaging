@@ -206,6 +206,6 @@ index 535dfeedfc..6c9dca13cd 100644
 +            finally:
 +                minion.destroy()
 -- 
-2.15.1
+2.13.6
 
 

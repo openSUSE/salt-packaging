@@ -77,18 +77,17 @@ Patch9:        activate-all-beacons-sources-config-pillar-grains.patch
 Patch10:       fix-for-delete_deployment-in-kubernetes-module.patch
 Patch11:       catching-error-when-pidfile-cannot-be-deleted.patch
 Patch12:       avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
-Patch13:       fix-for-wrong-version-processing.patch
-Patch14:       older-logrotate-need-su-directive.patch
-Patch15:       fix-salt-master-for-old-psutil.patch
-Patch16:       split-only-strings-if-they-are-such.patch
-Patch17:       cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
-Patch19:       python3-compatibility-fix-got-bytes-instead-of-strin.patch
-Patch20:       feat-add-grain-for-all-fqdns.patch
-Patch21:       fix-bsc-1065792.patch
-Patch22:       set-shell-environment-variable-64.patch
-Patch23:       bugfix-the-logic-according-to-the-exact-described-pu.patch
-Patch24:       return-error-when-gid_from_name-and-group-does-not-e.patch
-Patch25:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
+Patch13:       older-logrotate-need-su-directive.patch
+Patch14:       fix-salt-master-for-old-psutil.patch
+Patch15:       split-only-strings-if-they-are-such.patch
+Patch16:       cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
+Patch17:       python3-compatibility-fix-got-bytes-instead-of-strin.patch
+Patch19:       feat-add-grain-for-all-fqdns.patch
+Patch20:       fix-bsc-1065792.patch
+Patch21:       set-shell-environment-variable-64.patch
+Patch22:       bugfix-the-logic-according-to-the-exact-described-pu.patch
+Patch23:       return-error-when-gid_from_name-and-group-does-not-e.patch
+Patch24:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -558,7 +557,6 @@ cp %{S:5} ./.travis.yml
 %patch22 -p1
 %patch23 -p1
 %patch24 -p1
-%patch25 -p1
 
 %build
 %if 0%{?build_py2}

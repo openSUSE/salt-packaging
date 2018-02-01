@@ -1,4 +1,4 @@
-From d68365a35dd00cced7cdc6eff2ad8a3b823c26f6 Mon Sep 17 00:00:00 2001
+From c0a3f1a73c5ca49c94ba9eae94193baf2d08c7eb Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Thu, 7 Dec 2017 17:30:31 +0100
 Subject: [PATCH] older logrotate need su directive
@@ -20,6 +20,6 @@ index 0d99d1b801..625670942c 100644
  	missingok
  	rotate 7
 -- 
-2.15.1
+2.13.6
 
 

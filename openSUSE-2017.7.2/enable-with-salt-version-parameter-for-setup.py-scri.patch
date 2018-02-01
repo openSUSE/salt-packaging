@@ -71,6 +71,6 @@ index effdc2f230..519f753401 100755
          self.salt_version = __version__  # pylint: disable=undefined-variable
          self.description = 'Portable, distributed, remote execution and configuration management system'
 -- 
-2.15.1
+2.13.6
 
 

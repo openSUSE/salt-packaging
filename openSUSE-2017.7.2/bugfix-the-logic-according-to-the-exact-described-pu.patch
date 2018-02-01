@@ -1,4 +1,4 @@
-From 0e1cac43dd8211186d6794602f6da77f612850a7 Mon Sep 17 00:00:00 2001
+From 2388f136acc805f1ec605206d38db650a877be1c Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Tue, 21 Nov 2017 12:53:11 +0100
 Subject: [PATCH] Bugfix the logic according to the exact described
@@ -311,6 +311,6 @@ index 7f4f361c26..e5d10493da 100644
 +                                  ({}, errors)]:
 +                    assert res == state._get_pillar_errors(kwargs=opts, pillar=ext_pillar)
 -- 
-2.15.1
+2.13.6
 
 

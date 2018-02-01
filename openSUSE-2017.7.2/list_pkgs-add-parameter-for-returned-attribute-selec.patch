@@ -787,6 +787,6 @@ index f3403e6e1c..41f3845646 100644
      def test_list_patches(self):
          '''
 -- 
-2.15.1
+2.13.6
 
 

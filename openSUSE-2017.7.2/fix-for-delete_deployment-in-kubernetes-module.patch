@@ -248,6 +248,6 @@ index 0000000000..493822a93c
 +                    kubernetes.kubernetes.client.ExtensionsV1beta1Api().
 +                    create_namespaced_deployment().to_dict.called)
 -- 
-2.15.1
+2.13.6
 
 

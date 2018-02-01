@@ -1,4 +1,4 @@
-From e9635560f2b0a213518c5023e0b6fb4a11e5570d Mon Sep 17 00:00:00 2001
+From 1828df2c90f82db3b1c8a1cb968245f38e2380fe Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Fri, 8 Dec 2017 13:34:06 +0100
 Subject: [PATCH] Fix salt-master for old psutil
@@ -21,6 +21,6 @@ index a32712860a..dee563455b 100644
              _globals[attr] = getattr(_temp, attr)
          except AttributeError:
 -- 
-2.15.1
+2.13.6
 
 

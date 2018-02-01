@@ -1,4 +1,4 @@
-From d21ea1062f1cd8da0e604288b369c7ff38919c78 Mon Sep 17 00:00:00 2001
+From 01467c793bddad471ba425918064dffb0ee21bdf Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Tue, 19 Dec 2017 17:07:19 +0100
 Subject: [PATCH] python3 compatibility fix - got bytes instead of string

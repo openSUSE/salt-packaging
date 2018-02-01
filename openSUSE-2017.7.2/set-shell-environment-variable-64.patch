@@ -1,4 +1,4 @@
-From 7f207ed0aa45063e90db2452a311b91f34b1b7e2 Mon Sep 17 00:00:00 2001
+From 38f5221734b84d8d3188db82ff4873cd89a4a85c Mon Sep 17 00:00:00 2001
 From: Johannes Renner <jrenner@suse.com>
 Date: Thu, 11 Jan 2018 15:55:25 +0100
 Subject: [PATCH] Set SHELL environment variable (#64)

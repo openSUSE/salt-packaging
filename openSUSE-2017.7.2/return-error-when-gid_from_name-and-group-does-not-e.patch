@@ -1,4 +1,4 @@
-From 5384cb815764af43f287bcb6ed49a9a68d5cd5c0 Mon Sep 17 00:00:00 2001
+From 85ddadf0815071c0000fddca3f0b4a62da69bceb Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Wed, 10 Jan 2018 11:59:33 +0000
@@ -118,6 +118,6 @@ index 1317f12f97..ae9774a241 100644
      def test_user_present_gid_from_name(self):
          '''
 -- 
-2.15.1
+2.13.6
 
 

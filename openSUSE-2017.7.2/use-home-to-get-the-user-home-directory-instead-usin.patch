@@ -24,6 +24,6 @@ index 480361fe23..00174c072f 100644
  
      if [ ! -d "$(dirname ${_salt_cache_functions})" ]; then
 -- 
-2.15.1
+2.13.6
 
 

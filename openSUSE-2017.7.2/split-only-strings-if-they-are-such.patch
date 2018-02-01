@@ -1,4 +1,4 @@
-From 358d18a0cc635b04503d5392ce337227c1f191af Mon Sep 17 00:00:00 2001
+From 3fa025fc994d307e08ef271ca8463fe837891a63 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Thu, 14 Dec 2017 14:43:52 +0100
 Subject: [PATCH] Split only strings, if they are such
@@ -45,6 +45,6 @@ index e7abceb134..a59c45331f 100644
                  self.as_list = details['as_list']
                  if details['with_lists']:
 -- 
-2.15.1
+2.13.6
 
 
