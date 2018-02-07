@@ -1,4 +1,4 @@
-From a1aec4e0d740c179657765ab30475d11f9950174 Mon Sep 17 00:00:00 2001
+From d5f3817add92e43de5dc38fc53db908a9654b2b2 Mon Sep 17 00:00:00 2001
 From: Michele Bologna <michele.bologna@suse.com>
 Date: Thu, 14 Dec 2017 18:20:02 +0100
 Subject: [PATCH] Feat: add grain for all FQDNs
@@ -17,14 +17,14 @@ https://github.com/saltstack/salt/pull/45060
 ---
  salt/grains/core.py                      | 27 +++++++++++++++++++++++++++
  tests/integration/modules/test_grains.py |  1 +
- tests/unit/grains/test_core.py           | 28 ++++++++++++++++++++++++++++
- 3 files changed, 56 insertions(+)
+ tests/unit/grains/test_core.py           |  1 +
+ 3 files changed, 29 insertions(+)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index a7e1a22d2a..04b73f9120 100644
+index 9950dfac27..b9b167b9d7 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
-@@ -1756,6 +1756,33 @@ def append_domain():
+@@ -1890,6 +1890,33 @@ def append_domain():
      return grain
  
  
@@ -59,7 +59,7 @@ index a7e1a22d2a..04b73f9120 100644
      '''
      Return ip address and FQDN grains
 diff --git a/tests/integration/modules/test_grains.py b/tests/integration/modules/test_grains.py
-index 7d46315e42..1db90ab532 100644
+index 709f882b45..aa7bd44202 100644
 --- a/tests/integration/modules/test_grains.py
 +++ b/tests/integration/modules/test_grains.py
 @@ -51,6 +51,7 @@ class TestModulesGrains(ModuleCase):
@@ -71,49 +71,18 @@ index 7d46315e42..1db90ab532 100644
              'groupname',
              'host',
 diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
-index 6ee4257863..4f1412de76 100644
+index a9aac7b671..1bb3910243 100644
 --- a/tests/unit/grains/test_core.py
 +++ b/tests/unit/grains/test_core.py
-@@ -6,6 +6,7 @@
- # Import Python libs
- from __future__ import absolute_import
+@@ -7,6 +7,7 @@
+ from __future__ import absolute_import, print_function, unicode_literals
+ import logging
  import os
 +import socket
  
  # Import Salt Testing Libs
  from tests.support.mixins import LoaderModuleMockMixin
-@@ -462,3 +463,30 @@ PATCHLEVEL = 3
-         self.assertEqual(os_grains.get('osrelease'), os_release_map['osrelease'])
-         self.assertListEqual(list(os_grains.get('osrelease_info')), os_release_map['osrelease_info'])
-         self.assertEqual(os_grains.get('osmajorrelease'), os_release_map['osmajorrelease'])
-+
-+    @skipIf(not salt.utils.is_linux(), 'System is not Linux')
-+    def test_fqdns_return(self):
-+        '''
-+        test the return for a dns grain. test for issue:
-+        https://github.com/saltstack/salt/issues/41230
-+        '''
-+        reverse_resolv_mock = [('foo.bar.baz', [], ['1.2.3.4']),
-+        ('rinzler.evil-corp.com', [], ['5.6.7.8']),
-+        ('foo.bar.baz', [], ['fe80::a8b2:93ff:fe00:0']),
-+        ('bluesniff.foo.bar', [], ['fe80::a8b2:93ff:dead:beef'])]
-+        ret = {'fqdns': ['rinzler.evil-corp.com', 'foo.bar.baz', 'bluesniff.foo.bar']}
-+        self._run_fqdns_test(reverse_resolv_mock, ret)
-+
-+    def _run_fqdns_test(self, reverse_resolv_mock, ret):
-+        with patch.object(salt.utils, 'is_windows', MagicMock(return_value=False)):
-+            with patch('salt.utils.network.ip_addrs',
-+            MagicMock(return_value=['1.2.3.4', '5.6.7.8'])),\
-+            patch('salt.utils.network.ip_addrs6',
-+            MagicMock(return_value=['fe80::a8b2:93ff:fe00:0', 'fe80::a8b2:93ff:dead:beef'])):
-+                with patch.object(socket, 'gethostbyaddr', side_effect=reverse_resolv_mock):
-+                    fqdns = core.fqdns()
-+                    self.assertEqual(fqdns, ret)
-+
-+if __name__ == '__main__':
-+    from integration import run_tests
-+    run_tests(CoreGrainsTestCase, needs_daemon=False)
 -- 
-2.13.6
+2.16.1
 
 

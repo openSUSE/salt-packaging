@@ -52,13 +52,14 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        2017.7.2
+Version:        2018.2.0~rc1
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
 Group:          System/Management
 Url:            http://saltstack.org/
-Source:         https://github.com/saltstack/salt/archive/v%{version}.tar.gz
+# Source:         https://github.com/saltstack/salt/archive/v%{version}.tar.gz
+Source:         https://github.com/saltstack/salt/archive/oxygen.rc1.tar.gz
 Source1:        README.SUSE
 Source2:        salt-tmpfiles.d
 Source3:        html.tar.bz2
@@ -66,30 +67,19 @@ Source4:        update-documentation.sh
 Source5:        travis.yml
 
 Patch1:        list_pkgs-add-parameter-for-returned-attribute-selec.patch
-Patch2:        use-home-to-get-the-user-home-directory-instead-usin.patch
-Patch3:        multiprocessing-minion-option-documentation-fixes.patch
-Patch4:        introduce-process_count_max-minion-configuration-par.patch
-Patch5:        bugfix-always-return-a-string-list-on-unknown-job-ta.patch
-Patch6:        enable-with-salt-version-parameter-for-setup.py-scri.patch
-Patch7:        run-salt-master-as-dedicated-salt-user.patch
-Patch8:        run-salt-api-as-user-salt-bsc-1064520.patch
-Patch9:        activate-all-beacons-sources-config-pillar-grains.patch
-Patch10:       fix-for-delete_deployment-in-kubernetes-module.patch
-Patch11:       catching-error-when-pidfile-cannot-be-deleted.patch
-Patch12:       avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
-Patch13:       older-logrotate-need-su-directive.patch
-Patch14:       fix-salt-master-for-old-psutil.patch
-Patch15:       split-only-strings-if-they-are-such.patch
-Patch16:       cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
-Patch17:       python3-compatibility-fix-got-bytes-instead-of-strin.patch
-Patch19:       feat-add-grain-for-all-fqdns.patch
-Patch20:       fix-bsc-1065792.patch
-Patch21:       set-shell-environment-variable-64.patch
-Patch22:       bugfix-the-logic-according-to-the-exact-described-pu.patch
-Patch23:       return-error-when-gid_from_name-and-group-does-not-e.patch
-Patch24:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
+Patch2:        enable-with-salt-version-parameter-for-setup.py-scri.patch
+Patch3:        run-salt-master-as-dedicated-salt-user.patch
+Patch4:        run-salt-api-as-user-salt-bsc-1064520.patch
+Patch5:        activate-all-beacons-sources-config-pillar-grains.patch
+Patch6:        catching-error-when-pidfile-cannot-be-deleted.patch
+Patch7:        avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
+Patch8:        python3-compatibility-fix-got-bytes-instead-of-strin.patch
+Patch9:        feat-add-grain-for-all-fqdns.patch
+Patch10:       fix-bsc-1065792.patch
+Patch11:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+# BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+BuildRoot:      %{_tmppath}/%{name}-oxygen.rc1-build
 BuildRequires:  logrotate
 %if 0%{?suse_version} > 1020
 BuildRequires:  fdupes
@@ -531,7 +521,8 @@ Zsh command line completion support for %{name}.
 %endif
 
 %prep
-%setup -q -n salt-%{version}
+# %setup -q -n salt-%{version}
+%setup -q -n salt-oxygen.rc1
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
 %patch1 -p1
@@ -545,18 +536,6 @@ cp %{S:5} ./.travis.yml
 %patch9 -p1
 %patch10 -p1
 %patch11 -p1
-%patch12 -p1
-%patch13 -p1
-%patch14 -p1
-%patch15 -p1
-%patch16 -p1
-%patch17 -p1
-%patch19 -p1
-%patch20 -p1
-%patch21 -p1
-%patch22 -p1
-%patch23 -p1
-%patch24 -p1
 
 %build
 %if 0%{?build_py2}
