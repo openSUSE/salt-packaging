@@ -77,6 +77,8 @@ Patch8:        python3-compatibility-fix-got-bytes-instead-of-strin.patch
 Patch9:        feat-add-grain-for-all-fqdns.patch
 Patch10:       fix-bsc-1065792.patch
 Patch11:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46006
+Patch12:       remove-obsolete-unicode-handling-in-pkg.info_install.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-oxygen.rc1-build
@@ -536,6 +538,7 @@ cp %{S:5} ./.travis.yml
 %patch9 -p1
 %patch10 -p1
 %patch11 -p1
+%patch12 -p1
 
 %build
 %if 0%{?build_py2}
