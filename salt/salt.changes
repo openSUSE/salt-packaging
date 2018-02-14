@@ -14,7 +14,6 @@ Fri Feb 09 15:39:08 UTC 2018 - Mihai Dinca <mdinca@suse.de>
 - Modified:
   * activate-all-beacons-sources-config-pillar-grains.patch
   * avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
-  * catching-error-when-pidfile-cannot-be-deleted.patch
   * enable-with-salt-version-parameter-for-setup.py-scri.patch
   * feat-add-grain-for-all-fqdns.patch
   * fix-bsc-1065792.patch
@@ -25,6 +24,7 @@ Fri Feb 09 15:39:08 UTC 2018 - Mihai Dinca <mdinca@suse.de>
   * yumpkg-don-t-use-diff_attr-when-determining-install-.patch
 
 - Deleted:
+  * catching-error-when-pidfile-cannot-be-deleted.patch
   * bugfix-always-return-a-string-list-on-unknown-job-ta.patch
   * bugfix-the-logic-according-to-the-exact-described-pu.patch
   * cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
