@@ -1,4 +1,4 @@
-From 5588fcec40100eea513b58a433e802cd3f56900a Mon Sep 17 00:00:00 2001
+From 1c72da2b7606f100e30705ad7ad2922e82fc5ada Mon Sep 17 00:00:00 2001
 From: Silvio Moioli <smoioli@suse.de>
 Date: Thu, 13 Jul 2017 15:59:01 +0200
 Subject: [PATCH] list_pkgs: add parameter for returned attribute
@@ -14,10 +14,10 @@ yumpkg.list_pkgs:
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
-index 3ae4ea01a7..bd0fbeaa75 100644
+index 39abb77fbc..a8f470bd5a 100644
 --- a/salt/modules/yumpkg.py
 +++ b/salt/modules/yumpkg.py
-@@ -1367,7 +1367,7 @@ def install(name=None,
+@@ -1336,7 +1336,7 @@ def install(name=None,
      old = list_pkgs(versions_as_list=False, attr=diff_attr) if not downloadonly else list_downloaded()
      # Use of __context__ means no duplicate work here, just accessing
      # information already in __context__ from the previous call to list_pkgs()

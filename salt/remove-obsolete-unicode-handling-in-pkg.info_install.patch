@@ -1,4 +1,4 @@
-From c1239c4bad3ca1a6818568bf8667194b446569ce Mon Sep 17 00:00:00 2001
+From 8b58acb6f8672739947e5bbd1bcda860f9b02259 Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Tue, 13 Feb 2018 16:11:20 +0100
 Subject: [PATCH] Remove obsolete unicode handling in pkg.info_installed
@@ -8,7 +8,7 @@ Subject: [PATCH] Remove obsolete unicode handling in pkg.info_installed
  1 file changed, 1 insertion(+), 10 deletions(-)
 
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index 35580c6632..177964dd0d 100644
+index 51d01c3fc9..659d8858f0 100644
 --- a/salt/modules/zypper.py
 +++ b/salt/modules/zypper.py
 @@ -309,7 +309,7 @@ class _Zypper(object):

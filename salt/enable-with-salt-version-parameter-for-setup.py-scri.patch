@@ -1,4 +1,4 @@
-From c336149bcf145114f76cfc555b85c5aa30383f17 Mon Sep 17 00:00:00 2001
+From 79a8f7666658d2e85487ac40fdebf4e5521cfdec Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Fri, 6 Oct 2017 17:12:15 +0100
@@ -10,10 +10,10 @@ Subject: [PATCH] Enable '--with-salt-version' parameter for setup.py
  1 file changed, 3 insertions(+)
 
 diff --git a/setup.py b/setup.py
-index 56eb7a7410..51cf7ff87b 100755
+index 30e459797e..68b2b2c124 100755
 --- a/setup.py
 +++ b/setup.py
-@@ -889,6 +889,9 @@ class SaltDistribution(distutils.dist.Distribution):
+@@ -892,6 +892,9 @@ class SaltDistribution(distutils.dist.Distribution):
          # Salt version
          self.with_salt_version = None
  

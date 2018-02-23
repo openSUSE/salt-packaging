@@ -1,4 +1,4 @@
-From d5f3817add92e43de5dc38fc53db908a9654b2b2 Mon Sep 17 00:00:00 2001
+From 708234a11376dffc074536379297a95f8862f2dc Mon Sep 17 00:00:00 2001
 From: Michele Bologna <michele.bologna@suse.com>
 Date: Thu, 14 Dec 2017 18:20:02 +0100
 Subject: [PATCH] Feat: add grain for all FQDNs
@@ -21,7 +21,7 @@ https://github.com/saltstack/salt/pull/45060
  3 files changed, 29 insertions(+)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index 9950dfac27..b9b167b9d7 100644
+index 7d628bccb9..af25097117 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
 @@ -1890,6 +1890,33 @@ def append_domain():
@@ -71,7 +71,7 @@ index 709f882b45..aa7bd44202 100644
              'groupname',
              'host',
 diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
-index a9aac7b671..1bb3910243 100644
+index e781fadefe..dba8d082c5 100644
 --- a/tests/unit/grains/test_core.py
 +++ b/tests/unit/grains/test_core.py
 @@ -7,6 +7,7 @@
@@ -81,7 +81,7 @@ index a9aac7b671..1bb3910243 100644
 +import socket
  
  # Import Salt Testing Libs
- from tests.support.mixins import LoaderModuleMockMixin
+ try:
 -- 
 2.16.1
 
