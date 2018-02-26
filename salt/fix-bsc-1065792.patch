@@ -1,4 +1,4 @@
-From e48fb308c894ad15678bf3f118af3aa01a919420 Mon Sep 17 00:00:00 2001
+From 588ce2bcdbecba9d53031311dafdaff4bdb720fb Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Thu, 14 Dec 2017 16:21:40 +0100
 Subject: [PATCH] Fix bsc#1065792
@@ -8,7 +8,7 @@ Subject: [PATCH] Fix bsc#1065792
  1 file changed, 1 insertion(+)
 
 diff --git a/salt/states/service.py b/salt/states/service.py
-index c5bf3f2d54..a5ec426ec4 100644
+index 3b0b3318d5..2b46303b60 100644
 --- a/salt/states/service.py
 +++ b/salt/states/service.py
 @@ -80,6 +80,7 @@ def __virtual__():

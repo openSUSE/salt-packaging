@@ -1,4 +1,4 @@
-From b360499f371308474ca97904774bc5093e70591a Mon Sep 17 00:00:00 2001
+From 6c107568026f77898f73344678b12b34e8098d65 Mon Sep 17 00:00:00 2001
 From: Erik Johnson <palehose@gmail.com>
 Date: Thu, 4 Jan 2018 16:10:18 -0600
 Subject: [PATCH] yumpkg: don't use diff_attr when determining
@@ -16,10 +16,10 @@ returning and formatting the return data in one place in the function.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
-index a8f470bd5a..39abb77fbc 100644
+index bd7a5d32cf..938511a0e6 100644
 --- a/salt/modules/yumpkg.py
 +++ b/salt/modules/yumpkg.py
-@@ -1336,7 +1336,7 @@ def install(name=None,
+@@ -1355,7 +1355,7 @@ def install(name=None,
      old = list_pkgs(versions_as_list=False, attr=diff_attr) if not downloadonly else list_downloaded()
      # Use of __context__ means no duplicate work here, just accessing
      # information already in __context__ from the previous call to list_pkgs()

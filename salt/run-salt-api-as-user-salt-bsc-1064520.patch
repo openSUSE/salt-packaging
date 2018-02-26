@@ -1,4 +1,4 @@
-From 99744cf8bc9ead1bea8802254c21320cb33e4ce4 Mon Sep 17 00:00:00 2001
+From 17560103d8054b522c0d268bfa35b3b480d60c6d Mon Sep 17 00:00:00 2001
 From: Christian Lanig <clanig@suse.com>
 Date: Mon, 27 Nov 2017 13:10:26 +0100
 Subject: [PATCH] Run salt-api as user salt (bsc#1064520)
