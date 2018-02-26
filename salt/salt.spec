@@ -66,18 +66,17 @@ Source3:        html.tar.bz2
 Source4:        update-documentation.sh
 Source5:        travis.yml
 
-Patch1:        list_pkgs-add-parameter-for-returned-attribute-selec.patch
-Patch2:        enable-with-salt-version-parameter-for-setup.py-scri.patch
-Patch3:        run-salt-master-as-dedicated-salt-user.patch
-Patch4:        run-salt-api-as-user-salt-bsc-1064520.patch
-Patch5:        activate-all-beacons-sources-config-pillar-grains.patch
-Patch6:        avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
-Patch7:        python3-compatibility-fix-got-bytes-instead-of-strin.patch
-Patch8:        feat-add-grain-for-all-fqdns.patch
-Patch9:        fix-bsc-1065792.patch
-Patch10:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
+Patch1:        enable-with-salt-version-parameter-for-setup.py-scri.patch
+Patch2:        run-salt-master-as-dedicated-salt-user.patch
+Patch3:        run-salt-api-as-user-salt-bsc-1064520.patch
+Patch4:        activate-all-beacons-sources-config-pillar-grains.patch
+Patch5:        avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
+Patch6:        python3-compatibility-fix-got-bytes-instead-of-strin.patch
+Patch7:        feat-add-grain-for-all-fqdns.patch
+Patch8:        fix-bsc-1065792.patch
+Patch9:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46006
-Patch11:       remove-obsolete-unicode-handling-in-pkg.info_install.patch
+Patch10:       remove-obsolete-unicode-handling-in-pkg.info_install.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-2018.3-build
@@ -536,7 +535,6 @@ cp %{S:5} ./.travis.yml
 %patch8 -p1
 %patch9 -p1
 %patch10 -p1
-%patch11 -p1
 
 %build
 %if 0%{?build_py2}
