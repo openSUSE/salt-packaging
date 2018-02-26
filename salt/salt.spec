@@ -59,7 +59,7 @@ License:        Apache-2.0
 Group:          System/Management
 Url:            http://saltstack.org/
 # Source:         https://github.com/saltstack/salt/archive/v%{version}.tar.gz
-Source:         https://github.com/saltstack/salt/archive/oxygen.rc1.tar.gz
+Source:         https://github.com/saltstack/salt/archive/2018.3.0rc1.tar.gz
 Source1:        README.SUSE
 Source2:        salt-tmpfiles.d
 Source3:        html.tar.bz2
@@ -80,7 +80,7 @@ Patch10:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
 Patch11:       remove-obsolete-unicode-handling-in-pkg.info_install.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-BuildRoot:      %{_tmppath}/%{name}-oxygen.rc1-build
+BuildRoot:      %{_tmppath}/%{name}-2018.3.0rc1-build
 BuildRequires:  logrotate
 %if 0%{?suse_version} > 1020
 BuildRequires:  fdupes
@@ -523,7 +523,7 @@ Zsh command line completion support for %{name}.
 
 %prep
 # %setup -q -n salt-%{version}
-%setup -q -n salt-oxygen.rc1
+%setup -q -n salt-2018.3.0rc1
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
 %patch1 -p1
