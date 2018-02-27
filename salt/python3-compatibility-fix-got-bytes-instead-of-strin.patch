@@ -1,4 +1,4 @@
-From e515ec1ac0c0282158b5b73162c1d67ee6f2e150 Mon Sep 17 00:00:00 2001
+From a2825c0b42f3cd7c47d8686488e602f3f5ec7ef1 Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Tue, 19 Dec 2017 17:07:19 +0100
 Subject: [PATCH] python3 compatibility fix - got bytes instead of string
@@ -8,7 +8,7 @@ Subject: [PATCH] python3 compatibility fix - got bytes instead of string
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/salt/netapi/rest_cherrypy/tools/websockets.py b/salt/netapi/rest_cherrypy/tools/websockets.py
-index fe4f9def85..44c5e2fa05 100644
+index 706632842a..13af2fdc77 100644
 --- a/salt/netapi/rest_cherrypy/tools/websockets.py
 +++ b/salt/netapi/rest_cherrypy/tools/websockets.py
 @@ -54,6 +54,6 @@ class SynchronizingWebsocket(WebSocket):

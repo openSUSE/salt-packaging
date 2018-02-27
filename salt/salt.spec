@@ -59,7 +59,7 @@ License:        Apache-2.0
 Group:          System/Management
 Url:            http://saltstack.org/
 # Source:         https://github.com/saltstack/salt/archive/v%{version}.tar.gz
-Source:         https://github.com/saltstack/salt/archive/v2018.3.tar.gz
+Source:         https://github.com/saltstack/salt/archive/2018.3.0rc1.tar.gz
 Source1:        README.SUSE
 Source2:        salt-tmpfiles.d
 Source3:        html.tar.bz2
@@ -74,13 +74,11 @@ Patch5:        avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
 Patch6:        python3-compatibility-fix-got-bytes-instead-of-strin.patch
 Patch7:        feat-add-grain-for-all-fqdns.patch
 Patch8:        fix-bsc-1065792.patch
-Patch9:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46006
-Patch10:       remove-obsolete-unicode-handling-in-pkg.info_install.patch
-Patch11:       cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
+Patch9:       remove-obsolete-unicode-handling-in-pkg.info_install.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-BuildRoot:      %{_tmppath}/%{name}-2018.3-build
+BuildRoot:      %{_tmppath}/%{name}-2018.3.0rc1-build
 BuildRequires:  logrotate
 %if 0%{?suse_version} > 1020
 BuildRequires:  fdupes
@@ -523,7 +521,7 @@ Zsh command line completion support for %{name}.
 
 %prep
 # %setup -q -n salt-%{version}
-%setup -q -n salt-2018.3
+%setup -q -n salt-2018.3.0rc1
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
 %patch1 -p1
@@ -535,8 +533,6 @@ cp %{S:5} ./.travis.yml
 %patch7 -p1
 %patch8 -p1
 %patch9 -p1
-%patch10 -p1
-%patch11 -p1
 
 %build
 %if 0%{?build_py2}

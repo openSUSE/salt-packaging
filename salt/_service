@@ -12,8 +12,8 @@
   </service>
   <service name="download_url" mode="localonly">
     <param name="host">codeload.github.com</param>
-    <param name="path">saltstack/salt/tar.gz/v2018.3</param>
-    <param name="filename">v2018.3.tar.gz</param>
+    <param name="path">saltstack/salt/tar.gz/2018.3.0rc1</param>
+    <param name="filename">2018.3.0rc1.tar.gz</param>
   </service>
   <service name="verify_file" mode="disabled">
     <param name="file">v2017.7.2.tar.gz</param>

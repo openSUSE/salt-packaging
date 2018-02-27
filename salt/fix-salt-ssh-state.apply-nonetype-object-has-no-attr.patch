@@ -1,4 +1,4 @@
-From 8062441b3cd185ba10c2a31fbdee207c46e727a6 Mon Sep 17 00:00:00 2001
+From 31c8f2c23a1766d53e43df1aa5c56598b259b35f Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Thu, 22 Feb 2018 15:05:44 +0100
 Subject: [PATCH] Fix salt-ssh state.apply "'NoneType' object has no
@@ -6,34 +6,11 @@ Subject: [PATCH] Fix salt-ssh state.apply "'NoneType' object has no
 
 Co-authored-by: Jochen Breuer <jbreuer@suse.de>
 ---
- salt/client/ssh/__init__.py | 4 ++--
- salt/utils/vt.py            | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ salt/utils/vt.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/salt/client/ssh/__init__.py b/salt/client/ssh/__init__.py
-index 5f6a835334..8e024394ad 100644
---- a/salt/client/ssh/__init__.py
-+++ b/salt/client/ssh/__init__.py
-@@ -445,7 +445,7 @@ class SSH(object):
-             if target.get('passwd', False) or self.opts['ssh_passwd']:
-                 self._key_deploy_run(host, target, False)
-             return ret
--        if ret[host].get('stderr', '').count('Permission denied'):
-+        if (ret[host].get('stderr') or '').count('Permission denied'):
-             target = self.targets[host]
-             # permission denied, attempt to auto deploy ssh key
-             print(('Permission denied for host {0}, do you want to deploy '
-@@ -754,7 +754,7 @@ class SSH(object):
-             self.cache_job(jid, host, ret[host], fun)
-             ret = self.key_deploy(host, ret)
- 
--            if isinstance(ret[host], dict) and ret[host].get('stderr', '').startswith('ssh:'):
-+            if isinstance(ret[host], dict) and (ret[host].get('stderr') or '').startswith('ssh:'):
-                 ret[host] = ret[host]['stderr']
- 
-             if not isinstance(ret[host], dict):
 diff --git a/salt/utils/vt.py b/salt/utils/vt.py
-index bdb609f493..f00a1cdbe3 100644
+index fdc6fbeb40..51bf672dc3 100644
 --- a/salt/utils/vt.py
 +++ b/salt/utils/vt.py
 @@ -340,7 +340,7 @@ class Terminal(object):

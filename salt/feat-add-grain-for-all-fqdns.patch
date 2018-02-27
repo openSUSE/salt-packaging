@@ -1,4 +1,4 @@
-From bbcceb7da1dd31f3b57b0b31035659e44459e465 Mon Sep 17 00:00:00 2001
+From 8179c142605d18cea49a8bbec548cafca4c06215 Mon Sep 17 00:00:00 2001
 From: Michele Bologna <michele.bologna@suse.com>
 Date: Thu, 14 Dec 2017 18:20:02 +0100
 Subject: [PATCH] Feat: add grain for all FQDNs
@@ -21,10 +21,10 @@ https://github.com/saltstack/salt/pull/45060
  3 files changed, 29 insertions(+)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index 5d9d38d497..f45c43e6d1 100644
+index 7d628bccb9..af25097117 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
-@@ -1888,6 +1888,33 @@ def append_domain():
+@@ -1890,6 +1890,33 @@ def append_domain():
      return grain
  
  
@@ -59,7 +59,7 @@ index 5d9d38d497..f45c43e6d1 100644
      '''
      Return ip address and FQDN grains
 diff --git a/tests/integration/modules/test_grains.py b/tests/integration/modules/test_grains.py
-index 8908026e07..2fd1d11cb4 100644
+index 709f882b45..aa7bd44202 100644
 --- a/tests/integration/modules/test_grains.py
 +++ b/tests/integration/modules/test_grains.py
 @@ -51,6 +51,7 @@ class TestModulesGrains(ModuleCase):
@@ -71,17 +71,17 @@ index 8908026e07..2fd1d11cb4 100644
              'groupname',
              'host',
 diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
-index 0c3f3ecc8b..bdcd5f2a30 100644
+index e781fadefe..dba8d082c5 100644
 --- a/tests/unit/grains/test_core.py
 +++ b/tests/unit/grains/test_core.py
-@@ -6,6 +6,7 @@
- # Import Python libs
- from __future__ import absolute_import
+@@ -7,6 +7,7 @@
+ from __future__ import absolute_import, print_function, unicode_literals
+ import logging
  import os
 +import socket
  
  # Import Salt Testing Libs
- from tests.support.mixins import LoaderModuleMockMixin
+ try:
 -- 
 2.16.1
 
