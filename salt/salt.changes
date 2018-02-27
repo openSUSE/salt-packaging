@@ -1,12 +1,4 @@
 -------------------------------------------------------------------
-Tue Feb 27 10:24:27 UTC 2018 - mihai.dinca@suse.com
-
-- Fix cherrypy byte string problem
-
-- Added:
-  * cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
-
--------------------------------------------------------------------
 Tue Feb 20 10:47:34 UTC 2018 - mihai.dinca@suse.com
 
 - Remove salt-minion python2 requirement when python3 is default (bsc#1081592)
@@ -34,7 +26,6 @@ Fri Feb 09 15:39:08 UTC 2018 - Mihai Dinca <mdinca@suse.de>
   * python3-compatibility-fix-got-bytes-instead-of-strin.patch
   * run-salt-api-as-user-salt-bsc-1064520.patch
   * run-salt-master-as-dedicated-salt-user.patch
-  * yumpkg-don-t-use-diff_attr-when-determining-install-.patch
 
 - Deleted:
   * catching-error-when-pidfile-cannot-be-deleted.patch
@@ -50,6 +41,7 @@ Fri Feb 09 15:39:08 UTC 2018 - Mihai Dinca <mdinca@suse.de>
   * set-shell-environment-variable-64.patch
   * split-only-strings-if-they-are-such.patch
   * use-home-to-get-the-user-home-directory-instead-usin.patch
+  * yumpkg-don-t-use-diff_attr-when-determining-install-.patch
 
 -------------------------------------------------------------------
 Fri Feb 09 15:39:08 UTC 2018 - Jochen Breuer <jbreuer@suse.de>
