@@ -70,10 +70,10 @@ Patch1:        run-salt-master-as-dedicated-salt-user.patch
 Patch2:        run-salt-api-as-user-salt-bsc-1064520.patch
 Patch3:        activate-all-beacons-sources-config-pillar-grains.patch
 Patch4:        avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
-Patch6:        feat-add-grain-for-all-fqdns.patch
-Patch7:        fix-bsc-1065792.patch
+Patch5:        feat-add-grain-for-all-fqdns.patch
+Patch6:        fix-bsc-1065792.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46006
-Patch8:        remove-obsolete-unicode-handling-in-pkg.info_install.patch
+Patch7:        remove-obsolete-unicode-handling-in-pkg.info_install.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-2018.3.0rc1-build
@@ -529,7 +529,6 @@ cp %{S:5} ./.travis.yml
 %patch5 -p1
 %patch6 -p1
 %patch7 -p1
-%patch8 -p1
 
 %build
 %if 0%{?build_py2}
