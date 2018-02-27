@@ -77,6 +77,7 @@ Patch8:        fix-bsc-1065792.patch
 Patch9:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46006
 Patch10:       remove-obsolete-unicode-handling-in-pkg.info_install.patch
+Patch11:       cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-2018.3-build
@@ -535,6 +536,7 @@ cp %{S:5} ./.travis.yml
 %patch8 -p1
 %patch9 -p1
 %patch10 -p1
+%patch11 -p1
 
 %build
 %if 0%{?build_py2}

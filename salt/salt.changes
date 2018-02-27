@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Feb 27 10:24:27 UTC 2018 - mihai.dinca@suse.com
+
+- Fix cherrypy byte string problem
+
+- Added:
+  * cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
+
+-------------------------------------------------------------------
 Tue Feb 20 10:47:34 UTC 2018 - mihai.dinca@suse.com
 
 - Remove salt-minion python2 requirement when python3 is default (bsc#1081592)
