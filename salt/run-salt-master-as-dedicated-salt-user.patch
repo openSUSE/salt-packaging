@@ -1,4 +1,4 @@
-From 0a87282c64767e3415b288efb004ab4b8ec2f0b1 Mon Sep 17 00:00:00 2001
+From 9ac722d7128b4159d1b277d1b5086cbe2663b215 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Klaus=20K=C3=A4mpf?= <kkaempf@suse.de>
 Date: Wed, 20 Jan 2016 11:01:06 +0100
 Subject: [PATCH] Run salt master as dedicated salt user

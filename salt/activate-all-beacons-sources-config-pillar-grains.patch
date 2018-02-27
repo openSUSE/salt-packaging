@@ -1,4 +1,4 @@
-From f8a85e744e9f621859a1c75b0f890b63a70637f3 Mon Sep 17 00:00:00 2001
+From acece9ddbe2f15c9aaab41c68825872a0fd2ed35 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Tue, 17 Oct 2017 16:52:33 +0200
 Subject: [PATCH] Activate all beacons sources: config/pillar/grains
