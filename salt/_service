@@ -15,9 +15,4 @@
     <param name="path">saltstack/salt/tar.gz/2018.3.0rc1</param>
     <param name="filename">2018.3.0rc1.tar.gz</param>
   </service>
-  <service name="verify_file" mode="disabled">
-    <param name="file">v2017.7.2.tar.gz</param>
-    <param name="verifier">sha256</param>
-    <param name="checksum">b9f9dd9ddd129ddadadf963178383b50c32283aeb1c338d9c23cc01b11722db2</param>
-  </service>
 </services>
