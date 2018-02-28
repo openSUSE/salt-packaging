@@ -14,7 +14,7 @@ Tue Feb 13 15:17:11 UTC 2018 - Mihai Dinca <mdinca@suse.de>
 -------------------------------------------------------------------
 Fri Feb 09 15:39:08 UTC 2018 - Mihai Dinca <mdinca@suse.de>
 
-- Update to salt-2018.2.0~rc1
+- Update to salt-2018.1.99
 
 - Modified:
   * activate-all-beacons-sources-config-pillar-grains.patch
