@@ -1,4 +1,4 @@
-From 2e7bea418d9fa317c82af716c678b734664ee21c Mon Sep 17 00:00:00 2001
+From 8507ed69aceb38020ed41b3e0c738c4ca516f431 Mon Sep 17 00:00:00 2001
 From: Hubert Mantel <mantel@suse.de>
 Date: Mon, 27 Nov 2017 13:55:13 +0100
 Subject: [PATCH] avoid excessive syslogging by watchdog cronjob (#58)
