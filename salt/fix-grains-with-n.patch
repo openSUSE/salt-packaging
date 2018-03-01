@@ -1,0 +1,26 @@
+From 53a6d53b50695baa8004bce5f31a64f7455351f2 Mon Sep 17 00:00:00 2001
+From: Mihai Dinca <mdinca@suse.de>
+Date: Thu, 1 Mar 2018 11:06:15 +0100
+Subject: [PATCH] Fix grains with '\n'
+
+---
+ salt/grains/core.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index af25097117..f8e36a895e 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -2196,7 +2196,7 @@ def _hw_data(osdata):
+             if os.path.exists(contents_file):
+                 try:
+                     with salt.utils.files.fopen(contents_file, 'r') as ifile:
+-                        grains[key] = ifile.read()
++                        grains[key] = ifile.read().strip()
+                         if key == 'uuid':
+                             grains['uuid'] = grains['uuid'].lower()
+                 except (IOError, OSError) as err:
+-- 
+2.16.1
+
+

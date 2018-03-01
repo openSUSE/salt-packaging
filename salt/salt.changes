@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Mar  1 10:35:18 UTC 2018 - Mihai Dinca <mdinca@suse.de>
+
+- Fix grains containing trailing "\n"
+
+- Added:
+  * fix-grains-with-n.patch
+
+-------------------------------------------------------------------
 Tue Feb 20 10:47:34 UTC 2018 - Mihai Dinca <mdinca@suse.de>
 
 - Remove salt-minion python2 requirement when python3 is default (bsc#1081592)
