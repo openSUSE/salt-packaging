@@ -74,6 +74,7 @@ Patch5:        feat-add-grain-for-all-fqdns.patch
 Patch6:        fix-bsc-1065792.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46006
 Patch7:        remove-obsolete-unicode-handling-in-pkg.info_install.patch
+Patch8:        fix-openscap-push.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-2018.3.0rc1-build
@@ -529,6 +530,7 @@ cp %{S:5} ./.travis.yml
 %patch5 -p1
 %patch6 -p1
 %patch7 -p1
+%patch8 -p1
 
 %build
 %if 0%{?build_py2}
