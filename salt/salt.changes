@@ -1,5 +1,13 @@
 -------------------------------------------------------------------
-Thu Mar  1 10:35:18 UTC 2018 - Mihai Dinca <mdinca@suse.de>
+Fri Mar  2 13:15:46 UTC 2018 - Mihai Dinca <mdinca@suse.de>
+
+- Daily update
+
+- Removed:
+  * fix-grains-with-n.patch
+
+-------------------------------------------------------------------
+Fri Mar  2 13:15:46 UTC 2018 - Mihai Dinca <mdinca@suse.de>
 
 - Fix grains containing trailing "\n"
 

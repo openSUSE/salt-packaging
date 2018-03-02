@@ -1,4 +1,4 @@
-From 73727acbfc0bd6a263b0a1464c58f692950b43f7 Mon Sep 17 00:00:00 2001
+From 9f95a54c46c81b9a68add87d735245a0e3e8f880 Mon Sep 17 00:00:00 2001
 From: Michele Bologna <michele.bologna@suse.com>
 Date: Thu, 14 Dec 2017 18:20:02 +0100
 Subject: [PATCH] Feat: add grain for all FQDNs
@@ -21,7 +21,7 @@ https://github.com/saltstack/salt/pull/45060
  3 files changed, 29 insertions(+)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index 7d628bccb9..af25097117 100644
+index 9352987abd..f8e36a895e 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
 @@ -1890,6 +1890,33 @@ def append_domain():
