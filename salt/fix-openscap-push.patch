@@ -1,4 +1,4 @@
-From a627f92fa993034d055e6b7b8fdf293d8b73e80a Mon Sep 17 00:00:00 2001
+From 675276bcce33dc710c9c3be148fc6ef814a9bd78 Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Fri, 2 Mar 2018 17:17:58 +0100
 Subject: [PATCH] Fix openscap push
@@ -30,6 +30,6 @@ index c5b51a1846..e3190e1e11 100644
              upload_dir = tempdir
  
 -- 
-2.16.1
+2.16.2
 
 

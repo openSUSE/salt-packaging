@@ -1,4 +1,4 @@
-From 5c87aeae15d774bd75a1d13f8508e7b79b8a2202 Mon Sep 17 00:00:00 2001
+From 5f979366443b7abf7a934d688f2e9ede00f15043 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Klaus=20K=C3=A4mpf?= <kkaempf@suse.de>
 Date: Wed, 20 Jan 2016 11:01:06 +0100
 Subject: [PATCH] Run salt master as dedicated salt user
@@ -42,6 +42,6 @@ index 3cd002308e..0d99d1b801 100644
  	missingok
  	rotate 7
 -- 
-2.16.1
+2.16.2
 
 
