@@ -77,6 +77,8 @@ Patch7:        remove-obsolete-unicode-handling-in-pkg.info_install.patch
 Patch8:        fix-openscap-push.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/45972
 Patch9:        move-log_file-option-to-changeable-defaults.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46416
+Patch10:       fix-cp.push-empty-file.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-2018.3.0rc1-build
@@ -534,6 +536,7 @@ cp %{S:5} ./.travis.yml
 %patch7 -p1
 %patch8 -p1
 %patch9 -p1
+%patch10 -p1
 
 %build
 %if 0%{?build_py2}
