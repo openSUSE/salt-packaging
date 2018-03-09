@@ -1,4 +1,4 @@
-From 755d6ca811312c01f671286647caa644a493038b Mon Sep 17 00:00:00 2001
+From ffb5db0f4e373211389bc09d99c56886e837e04b Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Thu, 14 Dec 2017 16:21:40 +0100
 Subject: [PATCH] Fix bsc#1065792

@@ -1,0 +1,30 @@
+From 37e2c3718f163b9647f781c54b3ab8136c5aa752 Mon Sep 17 00:00:00 2001
+From: Michael Calmer <mc@suse.de>
+Date: Thu, 8 Mar 2018 13:58:55 +0100
+Subject: [PATCH] dumps should return unicode also with py2 to prevent
+ decode errors in find_json
+
+with salt-ssh dumps() is called and the output went in find_json() where
+it can produce a decode error. As we encode first to str we should decode
+the output back.
+---
+ salt/utils/json.py | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/salt/utils/json.py b/salt/utils/json.py
+index 788505cb25..caa24f185e 100644
+--- a/salt/utils/json.py
++++ b/salt/utils/json.py
+@@ -128,4 +128,7 @@ def dumps(obj, **kwargs):
+         kwargs['ensure_ascii'] = False
+     if six.PY2:
+         obj = salt.utils.data.encode(obj)
+-    return json_module.dumps(obj, **kwargs)  # future lint: blacklisted-function
++    ret = json_module.dumps(obj, **kwargs)  # future lint: blacklisted-function
++    if six.PY2:
++        return ret.decode(__salt_system_encoding__)
++    return ret
+-- 
+2.16.2
+
+
