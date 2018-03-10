@@ -1,0 +1,42 @@
+From ec20b576f3a3a78e20cc71eb76464ab82fc7fb91 Mon Sep 17 00:00:00 2001
+From: Erik Johnson <palehose@gmail.com>
+Date: Fri, 9 Mar 2018 15:48:58 -0600
+Subject: [PATCH] salt-ssh: fix JSON load of return data when it contains
+ non-ascii
+
+For reasons I can't explain, in `salt.utils.json.find_json()` using
+`.splitlines()` will sometimes convert a unicode string into a list of
+str types on Python 2. So, that's weird. This can be triggered in
+salt-ssh whenever there are non-ascii chars in the return data.
+
+[DEBUG] raw = u'{"local": {"return": {"foo": "\xf6\xe4\xfc"}}}'
+[DEBUG] raw.splitlines() = ['{"local": {"return": {"foo": "\xc3\xb6\xc3\xa4\xc3\xbc"}}}']
+
+To resolve this, the UnicodeDecodeError is caught and reattempted with a
+decoded list.
+---
+ salt/utils/json.py | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/salt/utils/json.py b/salt/utils/json.py
+index 788505cb25..0fc449851c 100644
+--- a/salt/utils/json.py
++++ b/salt/utils/json.py
+@@ -26,7 +26,12 @@ def find_json(raw):
+     '''
+     ret = {}
+     for ind, _ in enumerate(raw):
+-        working = '\n'.join(raw.splitlines()[ind:])
++        working = raw.splitlines()[ind:]
++        try:
++            working = '\n'.join(working)
++        except UnicodeDecodeError:
++            working = '\n'.join(salt.utils.data.decode(working))
++
+         try:
+             ret = json.loads(working)  # future lint: blacklisted-function
+         except ValueError:
+-- 
+2.13.6
+
+
