@@ -1031,6 +1031,16 @@ fi
 %endif
 %endif
 
+%posttrans -n python2-salt
+# force re-generate a new thin.tgz
+rm -f %{_localstatedir}/cache/salt/master/thin/version
+
+%if 0%{?build_py3}
+%posttrans -n python3-salt
+# force re-generate a new thin.tgz
+rm -f %{_localstatedir}/cache/salt/master/thin/version
+%endif
+
 %files api
 %defattr(-,root,root)
 %{_bindir}/salt-api
