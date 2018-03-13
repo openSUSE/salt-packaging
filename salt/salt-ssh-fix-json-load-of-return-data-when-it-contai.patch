@@ -1,4 +1,4 @@
-From ec20b576f3a3a78e20cc71eb76464ab82fc7fb91 Mon Sep 17 00:00:00 2001
+From f8707774a41e252899fc16734df02fcae7d85353 Mon Sep 17 00:00:00 2001
 From: Erik Johnson <palehose@gmail.com>
 Date: Fri, 9 Mar 2018 15:48:58 -0600
 Subject: [PATCH] salt-ssh: fix JSON load of return data when it contains
@@ -37,6 +37,6 @@ index 788505cb25..0fc449851c 100644
              ret = json.loads(working)  # future lint: blacklisted-function
          except ValueError:
 -- 
-2.13.6
+2.16.2
 
 
