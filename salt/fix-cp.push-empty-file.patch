@@ -1,26 +1,23 @@
-From 8e13695d0c0371fca8e6711122fcaf403f1b97b5 Mon Sep 17 00:00:00 2001
+From e91e2db15b99ef677cb112bb817275ed60a1f0e1 Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Wed, 7 Mar 2018 13:11:16 +0100
 Subject: [PATCH] Fix cp.push empty file
 
 Co-authored-by: Jochen Breuer <jbreuer@suse.de>
 ---
- salt/master.py | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ salt/master.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/salt/master.py b/salt/master.py
-index fb704909c8..28148d8a93 100644
+index fb704909c8..6fb37ece1a 100644
 --- a/salt/master.py
 +++ b/salt/master.py
-@@ -1451,7 +1451,10 @@ class AESFuncs(object):
+@@ -1451,7 +1451,7 @@ class AESFuncs(object):
              if load['loc']:
                  fp_.seek(load['loc'])
  
 -            fp_.write(load['data'])
-+            if six.PY3:
-+                fp_.write(load['data'].encode('utf8'))
-+            else:
-+                fp_.write(load['data'])
++            fp_.write(salt.utils.stringutils.to_bytes(load['data']))
          return True
  
      def _pillar(self, load):
