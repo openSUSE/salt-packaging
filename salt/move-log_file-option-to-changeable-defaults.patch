@@ -1,4 +1,4 @@
-From 76706e2b241c932e4067487139325dc16ca08477 Mon Sep 17 00:00:00 2001
+From 88a2ca488d2f8b488171ad772efc31e88acb6e9f Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Sun, 11 Feb 2018 19:15:27 +0100
 Subject: [PATCH] move log_file option to changeable defaults

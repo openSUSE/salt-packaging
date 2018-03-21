@@ -79,6 +79,8 @@ Patch8:        fix-openscap-push.patch
 Patch9:        move-log_file-option-to-changeable-defaults.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46416
 Patch10:       fix-cp.push-empty-file.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46575
+Patch11:       fix-decrease-loglevel-when-unable-to-resolve-addr.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-2018.3.0rc1-build
@@ -537,6 +539,7 @@ cp %{S:5} ./.travis.yml
 %patch8 -p1
 %patch9 -p1
 %patch10 -p1
+%patch11 -p1
 
 %build
 %if 0%{?build_py2}
