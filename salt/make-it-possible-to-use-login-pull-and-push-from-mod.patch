@@ -1,0 +1,119 @@
+From e7988f1e06678f0c212133eeb4728d8cccaa997d Mon Sep 17 00:00:00 2001
+From: Michael Calmer <mc@suse.de>
+Date: Thu, 22 Mar 2018 08:56:58 +0100
+Subject: [PATCH] make it possible to use login, pull and push from
+ module.run and detect errors
+
+when using state.apply module.run doing docker operations retcode
+is tracked to find out if the call was successful or not.
+
+add unit test for failed login
+---
+ salt/modules/dockermod.py            | 14 ++++++++++----
+ tests/unit/modules/test_dockermod.py | 20 ++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 4 deletions(-)
+
+diff --git a/salt/modules/dockermod.py b/salt/modules/dockermod.py
+index 23cff8806b..c20b73452b 100644
+--- a/salt/modules/dockermod.py
++++ b/salt/modules/dockermod.py
+@@ -1354,7 +1354,7 @@ def login(*registries):
+     # information is added to the config.json, since docker-py isn't designed
+     # to do so.
+     registry_auth = __pillar__.get('docker-registries', {})
+-    ret = {}
++    ret = {'retcode': 0}
+     errors = ret.setdefault('Errors', [])
+     if not isinstance(registry_auth, dict):
+         errors.append('\'docker-registries\' Pillar value must be a dictionary')
+@@ -1412,6 +1412,8 @@ def login(*registries):
+                     errors.append(login_cmd['stderr'])
+                 elif login_cmd['stdout']:
+                     errors.append(login_cmd['stdout'])
++    if errors:
++        ret['retcode'] = 1
+     return ret
+ 
+ 
+@@ -4490,7 +4492,7 @@ def pull(image,
+ 
+     time_started = time.time()
+     response = _client_wrapper('pull', image, **kwargs)
+-    ret = {'Time_Elapsed': time.time() - time_started}
++    ret = {'Time_Elapsed': time.time() - time_started, 'retcode': 0}
+     _clear_context()
+ 
+     if not response:
+@@ -4523,6 +4525,7 @@ def pull(image,
+ 
+     if errors:
+         ret['Errors'] = errors
++        ret['retcode'] = 1
+     return ret
+ 
+ 
+@@ -4585,7 +4588,7 @@ def push(image,
+ 
+     time_started = time.time()
+     response = _client_wrapper('push', image, **kwargs)
+-    ret = {'Time_Elapsed': time.time() - time_started}
++    ret = {'Time_Elapsed': time.time() - time_started, 'retcode': 0}
+     _clear_context()
+ 
+     if not response:
+@@ -4617,6 +4620,7 @@ def push(image,
+ 
+     if errors:
+         ret['Errors'] = errors
++        ret['retcode'] = 1
+     return ret
+ 
+ 
+@@ -4688,9 +4692,11 @@ def rmi(*names, **kwargs):
+ 
+     _clear_context()
+     ret = {'Layers': [x for x in pre_images if x not in images(all=True)],
+-           'Tags': [x for x in pre_tags if x not in list_tags()]}
++           'Tags': [x for x in pre_tags if x not in list_tags()],
++           'retcode': 0}
+     if errors:
+         ret['Errors'] = errors
++        ret['retcode'] = 1
+     return ret
+ 
+ 
+diff --git a/tests/unit/modules/test_dockermod.py b/tests/unit/modules/test_dockermod.py
+index 4e061ce369..77c4bcfb85 100644
+--- a/tests/unit/modules/test_dockermod.py
++++ b/tests/unit/modules/test_dockermod.py
+@@ -64,6 +64,26 @@ class DockerTestCase(TestCase, LoaderModuleMockMixin):
+         '''
+         docker_mod.__context__.pop('docker.client', None)
+ 
++    def test_failed_login(self):
++        '''
++        Check that when docker.login failed a retcode other then 0
++        is part of the return.
++        '''
++        client = Mock()
++        get_client_mock = MagicMock(return_value=client)
++        ref_out = {
++            'stdout': '',
++            'stderr': 'login failed',
++            'retcode': 1
++        }
++        with patch.dict(docker_mod.__pillar__, {'docker-registries': {'portus.example.com:5000':
++                {'username': 'admin', 'password': 'linux12345', 'email': 'tux@example.com'}}}):
++            with patch.object(docker_mod, '_get_client', get_client_mock):
++                with patch.dict(docker_mod.__salt__, {'cmd.run_all': MagicMock(return_value=ref_out)}):
++                    ret = docker_mod.login('portus.example.com:5000')
++                    self.assertTrue('retcode' in ret)
++                    self.assertTrue(ret['retcode'] > 0)
++
+     def test_ps_with_host_true(self):
+         '''
+         Check that docker.ps called with host is ``True``,
+-- 
+2.13.6
+
+
