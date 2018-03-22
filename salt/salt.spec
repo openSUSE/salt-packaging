@@ -83,6 +83,8 @@ Patch10:       fix-cp.push-empty-file.patch
 Patch11:       fix-decrease-loglevel-when-unable-to-resolve-addr.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46643
 Patch12:       make-it-possible-to-use-login-pull-and-push-from-mod.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46413
+Patch13:       explore-module.run-response-to-catch-the-result-in-d.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-2018.3.0rc1-build
@@ -543,6 +545,7 @@ cp %{S:5} ./.travis.yml
 %patch10 -p1
 %patch11 -p1
 %patch12 -p1
+%patch13 -p1
 
 %build
 %if 0%{?build_py2}
