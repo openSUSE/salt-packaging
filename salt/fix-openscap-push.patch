@@ -1,11 +1,12 @@
-From d0ccd1041840773fd745e35b1213e5de37177a4c Mon Sep 17 00:00:00 2001
+From 169dbddbfe02a2bef19a6b96b9e92a26c96669e3 Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Fri, 2 Mar 2018 17:17:58 +0100
 Subject: [PATCH] Fix openscap push
 
 ---
- salt/modules/openscap.py | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ salt/modules/openscap.py            |  4 +---
+ tests/unit/modules/test_openscap.py | 10 +++++-----
+ 2 files changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/salt/modules/openscap.py b/salt/modules/openscap.py
 index c5b51a1846..e3190e1e11 100644
@@ -29,6 +30,42 @@ index c5b51a1846..e3190e1e11 100644
              shutil.rmtree(tempdir, ignore_errors=True)
              upload_dir = tempdir
  
+diff --git a/tests/unit/modules/test_openscap.py b/tests/unit/modules/test_openscap.py
+index eb8ad1225b..6e17148de1 100644
+--- a/tests/unit/modules/test_openscap.py
++++ b/tests/unit/modules/test_openscap.py
+@@ -28,8 +28,10 @@ class OpenscapTestCase(TestCase):
+     policy_file = '/usr/share/openscap/policy-file-xccdf.xml'
+ 
+     def setUp(self):
++        import salt.modules.openscap
++        salt.modules.openscap.__salt__ = MagicMock()
+         patchers = [
+-            patch('salt.modules.openscap.Caller', MagicMock()),
++            patch('salt.modules.openscap.__salt__', MagicMock()),
+             patch('salt.modules.openscap.shutil.rmtree', Mock()),
+             patch(
+                 'salt.modules.openscap.tempfile.mkdtemp',
+@@ -68,8 +70,7 @@ class OpenscapTestCase(TestCase):
+                 cwd=openscap.tempfile.mkdtemp.return_value,
+                 stderr=PIPE,
+                 stdout=PIPE)
+-            openscap.Caller().cmd.assert_called_once_with(
+-                'cp.push_dir', self.random_temp_dir)
++            openscap.__salt__['cp.push_dir'].assert_called_once_with(self.random_temp_dir)
+             self.assertEqual(openscap.shutil.rmtree.call_count, 1)
+             self.assertEqual(
+                 response,
+@@ -106,8 +107,7 @@ class OpenscapTestCase(TestCase):
+                 cwd=openscap.tempfile.mkdtemp.return_value,
+                 stderr=PIPE,
+                 stdout=PIPE)
+-            openscap.Caller().cmd.assert_called_once_with(
+-                'cp.push_dir', self.random_temp_dir)
++            openscap.__salt__['cp.push_dir'].assert_called_once_with(self.random_temp_dir)
+             self.assertEqual(openscap.shutil.rmtree.call_count, 1)
+             self.assertEqual(
+                 response,
 -- 
 2.16.2
 

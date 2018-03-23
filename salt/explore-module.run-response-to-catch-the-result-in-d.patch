@@ -1,8 +1,9 @@
-From 1a9d54f597f46a068ff05efaec579977283642d2 Mon Sep 17 00:00:00 2001
+From 73a00677ced353f0b6459f37b03d72d1822eaa14 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Wed, 7 Mar 2018 09:42:46 +0000
-Subject: [PATCH] Explore 'module.run' response to catch the 'result' in depth
+Subject: [PATCH] Explore 'module.run' response to catch the 'result' in
+ depth
 
 Fix Python3 and pylint issue
 
@@ -125,6 +126,6 @@ index 12ad54f979..bf4ddcc5b4 100644
          with patch.dict(module.__salt__, {CMD: _mocked_func_args}):
              with patch.dict(module.__opts__, {'use_superseded': ['module.run']}):
 -- 
-2.15.1
+2.16.2
 
 
