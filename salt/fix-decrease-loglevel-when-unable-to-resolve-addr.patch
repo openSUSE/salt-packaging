@@ -1,4 +1,4 @@
-From 3ecf2a6f12c8a14cc28dac748e1cac7dcbea4e49 Mon Sep 17 00:00:00 2001
+From 2d1dd345dc64bd3a8f40b54092c72afdf80a5a62 Mon Sep 17 00:00:00 2001
 From: Michele Bologna <michele.bologna@suse.com>
 Date: Tue, 20 Mar 2018 19:27:36 +0100
 Subject: [PATCH] Fix: decrease loglevel when unable to resolve addr

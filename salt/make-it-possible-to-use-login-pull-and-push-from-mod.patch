@@ -1,4 +1,4 @@
-From 90cdd8cfed52cd4985495855d9503dd27e006379 Mon Sep 17 00:00:00 2001
+From ff506150849916ceee844801c07b9ae37421c0e9 Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Thu, 22 Mar 2018 08:56:58 +0100
 Subject: [PATCH] make it possible to use login, pull and push from

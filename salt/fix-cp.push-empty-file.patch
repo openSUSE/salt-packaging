@@ -1,4 +1,4 @@
-From 364640174d3799cfad5de4c623bf769cc7e29a0a Mon Sep 17 00:00:00 2001
+From 6b8e93914480663f0e7430ee9ccd09d30831ad28 Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Wed, 7 Mar 2018 13:11:16 +0100
 Subject: [PATCH] Fix cp.push empty file

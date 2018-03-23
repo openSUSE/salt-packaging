@@ -1,26 +1,30 @@
-From 3cb0952df73b20ffbaceac10e03bdf73f9d23c19 Mon Sep 17 00:00:00 2001
+From 39267e710964baee029f78cf939e6ffeeb4de0e7 Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Tue, 13 Feb 2018 16:11:20 +0100
 Subject: [PATCH] Remove obsolete unicode handling in pkg.info_installed
 
 ---
- salt/modules/zypper.py | 11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ salt/modules/zypper.py | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index 51d01c3fc9..659d8858f0 100644
+index 51d01c3fc9..16fc877684 100644
 --- a/salt/modules/zypper.py
 +++ b/salt/modules/zypper.py
-@@ -309,7 +309,7 @@ class _Zypper(object):
+@@ -309,7 +309,11 @@ class _Zypper(object):
          if self.error_msg and not self.__no_raise and not self.__ignore_repo_failure:
              raise CommandExecutionError('Zypper command failure: {0}'.format(self.error_msg))
  
 -        return self._is_xml_mode() and dom.parseString(self.__call_result['stdout']) or self.__call_result['stdout']
-+        return self._is_xml_mode() and dom.parseString(self.__call_result['stdout'].encode('utf-8')) or self.__call_result['stdout']
++        return (
++            self._is_xml_mode() and
++            dom.parseString(salt.utils.stringutils.to_str(self.__call_result['stdout'])) or
++            self.__call_result['stdout']
++        )
  
  
  __zypper__ = _Zypper()
-@@ -482,15 +482,6 @@ def info_installed(*names, **kwargs):
+@@ -482,15 +486,6 @@ def info_installed(*names, **kwargs):
          t_nfo = dict()
          # Translate dpkg-specific keys to a common structure
          for key, value in six.iteritems(pkg_nfo):
