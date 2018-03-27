@@ -85,6 +85,8 @@ Patch11:       fix-decrease-loglevel-when-unable-to-resolve-addr.patch
 Patch12:       make-it-possible-to-use-login-pull-and-push-from-mod.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46413
 Patch13:       explore-module.run-response-to-catch-the-result-in-d.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46684
+Patch14:       add-saltssh-multi-version-support-across-python-inte.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-2018.3.0rc1-build
@@ -546,6 +548,7 @@ cp %{S:5} ./.travis.yml
 %patch11 -p1
 %patch12 -p1
 %patch13 -p1
+%patch14 -p1
 
 %build
 %if 0%{?build_py2}
