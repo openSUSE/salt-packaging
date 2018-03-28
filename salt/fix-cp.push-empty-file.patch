@@ -1,4 +1,4 @@
-From 6b8e93914480663f0e7430ee9ccd09d30831ad28 Mon Sep 17 00:00:00 2001
+From 5edd5cef2e1787ff446e582b3315f41a4b4605fa Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Wed, 7 Mar 2018 13:11:16 +0100
 Subject: [PATCH] Fix cp.push empty file
@@ -22,6 +22,6 @@ index fb704909c8..6fb37ece1a 100644
  
      def _pillar(self, load):
 -- 
-2.16.2
+2.13.6
 
 

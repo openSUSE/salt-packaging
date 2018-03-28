@@ -1,4 +1,4 @@
-From af267d68b1a3068d698947a5c7920b9c5f964461 Mon Sep 17 00:00:00 2001
+From 3ba0c895a95eeba97d17a720d0874ec14368ecac Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Fri, 2 Mar 2018 17:17:58 +0100
 Subject: [PATCH] Fix openscap push
@@ -67,6 +67,6 @@ index eb8ad1225b..6e17148de1 100644
              self.assertEqual(
                  response,
 -- 
-2.16.2
+2.13.6
 
 

@@ -1,4 +1,4 @@
-From 624d95e02b6ca2935d2dd0465af4ab47a172d6d3 Mon Sep 17 00:00:00 2001
+From 515b77ad27005497bc088a912aa83d7378f8273e Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Thu, 14 Dec 2017 16:21:40 +0100
 Subject: [PATCH] Fix bsc#1065792
@@ -20,6 +20,6 @@ index c5bf3f2d54..a5ec426ec4 100644
          return __virtualname__
      else:
 -- 
-2.16.2
+2.13.6
 
 
