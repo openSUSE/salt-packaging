@@ -115,6 +115,16 @@ Requires(pre):  dbus
 Requires:       logrotate
 Requires:       procps
 
+%if 0%{?suse_version} >= 1500
+Requires:  	iproute2
+%else
+Requires:  	net-tools
+%endif
+
+%if 0%{?rhel}
+Requires:  	iproute
+%endif
+
 %if %{with systemd}
 BuildRequires:  systemd
 %{?systemd_requires}
