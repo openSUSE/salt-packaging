@@ -87,7 +87,6 @@ Patch12:       make-it-possible-to-use-login-pull-and-push-from-mod.patch
 Patch13:       explore-module.run-response-to-catch-the-result-in-d.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46684
 Patch14:       add-saltssh-multi-version-support-across-python-inte.patch
-Patch15:       require-same-major-version-while-minor-is-allowed-to.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-2018.3.0rc1-build
@@ -560,7 +559,6 @@ cp %{S:5} ./.travis.yml
 %patch12 -p1
 %patch13 -p1
 %patch14 -p1
-%patch15 -p1
 
 %build
 %if 0%{?build_py2}

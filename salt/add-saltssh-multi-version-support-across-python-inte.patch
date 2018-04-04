@@ -1,4 +1,4 @@
-From be337f2b644c540d15fd0e7802b48f1f40378f08 Mon Sep 17 00:00:00 2001
+From 88f1c51eab90415e2a990e1149cbe7d9f489804a Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Mon, 12 Mar 2018 12:01:39 +0100
 Subject: [PATCH] Add SaltSSH multi-version support across Python
@@ -213,15 +213,28 @@ Fix unit test for catching "supported-versions" was written down
 Rephrase Salt SSH doc description
 
 Re-phrase docstring for alternative Salt installation
+
+require same major version while minor is allowed to be higher
+
+Bugfix: remove minor version from the namespaced, version-specific directory
+
+Fix unit tests for minor version removal of namespaced version-specific directory
+
+Initialise the options directly to be structure-ready object.
+
+Disable wiping if state is executed
+
+Properly mock a tempfile object
 ---
- doc/topics/releases/fluorine.rst | 178 ++++++++++++
- salt/client/ssh/__init__.py      |  18 +-
- salt/client/ssh/ssh_py_shim.py   |  76 ++++-
- salt/modules/zfs.py              |   4 +-
- salt/modules/zpool.py            |   4 +-
- salt/utils/thin.py               | 434 ++++++++++++++++++++--------
- tests/unit/utils/test_thin.py    | 607 +++++++++++++++++++++++++++++++++++++++
- 7 files changed, 1171 insertions(+), 150 deletions(-)
+ doc/topics/releases/fluorine.rst    | 178 +++++++++++
+ salt/client/ssh/__init__.py         |  20 +-
+ salt/client/ssh/ssh_py_shim.py      |  81 +++--
+ salt/client/ssh/wrapper/__init__.py |   2 +-
+ salt/modules/zfs.py                 |   4 +-
+ salt/modules/zpool.py               |   4 +-
+ salt/utils/thin.py                  | 434 +++++++++++++++++++-------
+ tests/unit/utils/test_thin.py       | 607 ++++++++++++++++++++++++++++++++++++
+ 8 files changed, 1176 insertions(+), 154 deletions(-)
  create mode 100644 doc/topics/releases/fluorine.rst
  create mode 100644 tests/unit/utils/test_thin.py
 
@@ -410,7 +423,7 @@ index 0000000000..40c69e25cc
 +Salt version is also available on the Master machine, although does not need to be directly
 +installed together with the older Python interpreter.
 diff --git a/salt/client/ssh/__init__.py b/salt/client/ssh/__init__.py
-index f1c1ad9a22..404d669106 100644
+index f1c1ad9a22..ea5c700830 100644
 --- a/salt/client/ssh/__init__.py
 +++ b/salt/client/ssh/__init__.py
 @@ -150,14 +150,10 @@ EX_PYTHON_INVALID={EX_THIN_PYTHON_INVALID}
@@ -441,20 +454,30 @@ index f1c1ad9a22..404d669106 100644
          self.mods = mod_data(self.fsclient)
  
      def _get_roster(self):
-@@ -834,10 +831,7 @@ class Single(object):
+@@ -834,10 +831,10 @@ class Single(object):
  
          self.opts = opts
          self.tty = tty
 -        if kwargs.get('wipe'):
 -            self.wipe = 'False'
--        else:
++        if kwargs.get('disable_wipe'):
++            self.wipe = False
+         else:
 -            self.wipe = 'True' if self.opts.get('ssh_wipe') else 'False'
-+        self.wipe = self.opts.get('ssh_wipe')
++            self.wipe = bool(self.opts.get('ssh_wipe'))
          if kwargs.get('thin_dir'):
              self.thin_dir = kwargs['thin_dir']
          elif self.winrm:
+@@ -1168,7 +1165,6 @@ class Single(object):
+         if salt.log.LOG_LEVELS['debug'] >= salt.log.LOG_LEVELS[self.opts.get('log_level', 'info')]:
+             debug = '1'
+         arg_str = '''
+-OPTIONS = OBJ()
+ OPTIONS.config = \
+ """
+ {0}
 diff --git a/salt/client/ssh/ssh_py_shim.py b/salt/client/ssh/ssh_py_shim.py
-index e46220fc80..e61a711b72 100644
+index e46220fc80..8e17ef96b1 100644
 --- a/salt/client/ssh/ssh_py_shim.py
 +++ b/salt/client/ssh/ssh_py_shim.py
 @@ -16,11 +16,13 @@ import sys
@@ -471,7 +494,24 @@ index e46220fc80..e61a711b72 100644
  EX_THIN_DEPLOY = 11
  EX_THIN_CHECKSUM = 12
  EX_MOD_DEPLOY = 13
-@@ -128,7 +130,7 @@ def need_deployment():
+@@ -28,14 +30,13 @@ EX_SCP_NOT_FOUND = 14
+ EX_CANTCREAT = 73
+ 
+ 
+-class OBJ(object):
++class OptionsContainer(object):
+     '''
+     An empty class for holding instance attribute values.
+     '''
+-    pass
+ 
+ 
+-OPTIONS = None
++OPTIONS = OptionsContainer()
+ ARGS = None
+ # The below line is where OPTIONS can be redefined with internal options
+ # (rather than cli arguments) when the shim is bundled by
+@@ -128,7 +129,7 @@ def need_deployment():
                  os.chmod(OPTIONS.saltdir, stt.st_mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IXGRP)
              except OSError:
                  sys.stdout.write('\n\nUnable to set permissions on thin directory.\nIf sudo_user is set '
@@ -480,7 +520,7 @@ index e46220fc80..e61a711b72 100644
                  sys.exit(1)
  
      # Delimiter emitted on stdout *only* to indicate shim message to master.
-@@ -161,11 +163,15 @@ def unpack_thin(thin_path):
+@@ -161,11 +162,15 @@ def unpack_thin(thin_path):
      old_umask = os.umask(0o077)
      tfile.extractall(path=OPTIONS.saltdir)
      tfile.close()
@@ -497,7 +537,7 @@ index e46220fc80..e61a711b72 100644
  
  
  def need_ext():
-@@ -199,6 +205,45 @@ def unpack_ext(ext_path):
+@@ -199,6 +204,45 @@ def unpack_ext(ext_path):
      shutil.move(ver_path, ver_dst)
  
  
@@ -534,7 +574,7 @@ index e46220fc80..e61a711b72 100644
 +            continue
 +        c_vn = tuple([int(x) for x in stdout.split(':')])
 +        for ns in pymap:
-+            if c_vn >= pymap[ns] and os.path.exists(os.path.join(OPTIONS.saltdir, ns)):
++            if c_vn[0] == pymap[ns][0] and c_vn >= pymap[ns] and os.path.exists(os.path.join(OPTIONS.saltdir, ns)):
 +                return py_cmd
 +
 +    sys.exit(EX_THIN_PYTHON_INVALID)
@@ -543,7 +583,7 @@ index e46220fc80..e61a711b72 100644
  def main(argv):  # pylint: disable=W0613
      '''
      Main program body
-@@ -215,30 +260,30 @@ def main(argv):  # pylint: disable=W0613
+@@ -215,30 +259,30 @@ def main(argv):  # pylint: disable=W0613
              if scpstat != 0:
                  sys.exit(EX_SCP_NOT_FOUND)
  
@@ -586,7 +626,7 @@ index e46220fc80..e61a711b72 100644
                  )
              )
              need_deployment()
-@@ -270,7 +315,7 @@ def main(argv):  # pylint: disable=W0613
+@@ -270,7 +314,7 @@ def main(argv):  # pylint: disable=W0613
          argv_prepared = ARGS
  
      salt_argv = [
@@ -595,13 +635,26 @@ index e46220fc80..e61a711b72 100644
          salt_call_path,
          '--retcode-passthrough',
          '--local',
-@@ -315,5 +360,6 @@ def main(argv):  # pylint: disable=W0613
+@@ -315,5 +359,6 @@ def main(argv):  # pylint: disable=W0613
      if OPTIONS.cmd_umask is not None:
          os.umask(old_umask)
  
 +
  if __name__ == '__main__':
      sys.exit(main(sys.argv))
+diff --git a/salt/client/ssh/wrapper/__init__.py b/salt/client/ssh/wrapper/__init__.py
+index 04d751b51a..09f9344642 100644
+--- a/salt/client/ssh/wrapper/__init__.py
++++ b/salt/client/ssh/wrapper/__init__.py
+@@ -113,7 +113,7 @@ class FunctionWrapper(object):
+                     self.opts,
+                     argv,
+                     mods=self.mods,
+-                    wipe=True,
++                    disable_wipe=True,
+                     fsclient=self.fsclient,
+                     minion_opts=self.minion_opts,
+                     **self.kwargs
 diff --git a/salt/modules/zfs.py b/salt/modules/zfs.py
 index bc54044b5c..d8fbfc76be 100644
 --- a/salt/modules/zfs.py
@@ -637,7 +690,7 @@ index f955175664..5e03418919 100644
  
  @salt.utils.decorators.memoize
 diff --git a/salt/utils/thin.py b/salt/utils/thin.py
-index 4c0969ea96..bf1d40649c 100644
+index 4c0969ea96..4912dbbe62 100644
 --- a/salt/utils/thin.py
 +++ b/salt/utils/thin.py
 @@ -8,11 +8,14 @@ from __future__ import absolute_import, print_function, unicode_literals
@@ -1206,7 +1259,7 @@ index 4c0969ea96..bf1d40649c 100644
 +        for top in tops:
 +            base, top_dirname = os.path.basename(top), os.path.dirname(top)
 +            os.chdir(top_dirname)
-+            site_pkg_dir = _is_shareable(base) and 'pyall' or 'py{0}{1}'.format(py_ver_major, py_ver_minor)
++            site_pkg_dir = _is_shareable(base) and 'pyall' or 'py{0}'.format(py_ver_major)
 +            log.debug('Packing alternative "%s" to "%s/%s" destination', base, ns, site_pkg_dir)
 +            if not os.path.isdir(top):
 +                # top is a single file module
@@ -1265,7 +1318,7 @@ index 4c0969ea96..bf1d40649c 100644
              if os.path.isfile(minver):
 diff --git a/tests/unit/utils/test_thin.py b/tests/unit/utils/test_thin.py
 new file mode 100644
-index 0000000000..881bcfc42a
+index 0000000000..8157eefed8
 --- /dev/null
 +++ b/tests/unit/utils/test_thin.py
 @@ -0,0 +1,607 @@
@@ -1687,7 +1740,7 @@ index 0000000000..881bcfc42a
 +    @patch('salt.utils.thin.zipfile', MagicMock())
 +    @patch('salt.utils.thin.os.getcwd', MagicMock())
 +    @patch('salt.utils.thin.os.chdir', MagicMock())
-+    @patch('salt.utils.thin.tempfile', MagicMock())
++    @patch('salt.utils.thin.tempfile', MagicMock(mkdtemp=MagicMock(return_value='')))
 +    @patch('salt.utils.thin.shutil', MagicMock())
 +    @patch('salt.utils.thin._six.PY3', True)
 +    @patch('salt.utils.thin._six.PY2', False)
@@ -1816,7 +1869,7 @@ index 0000000000..881bcfc42a
 +    @patch('salt.utils.thin.zipfile', MagicMock())
 +    @patch('salt.utils.thin.os.getcwd', MagicMock())
 +    @patch('salt.utils.thin.os.chdir', MagicMock())
-+    @patch('salt.utils.thin.tempfile', MagicMock())
++    @patch('salt.utils.thin.tempfile', MagicMock(mkdtemp=MagicMock(return_value='')))
 +    @patch('salt.utils.thin.shutil', MagicMock())
 +    @patch('salt.utils.thin._six.PY3', True)
 +    @patch('salt.utils.thin._six.PY2', False)
@@ -1833,8 +1886,8 @@ index 0000000000..881bcfc42a
 +                 'namespace/pyall/root2/r4', 'namespace/pyall/root2/r5', 'namespace/pyall/root2/r6',
 +                 'namespace/pyall/root/r1', 'namespace/pyall/root/r2', 'namespace/pyall/root/r3',
 +                 'namespace/pyall/root2/r4', 'namespace/pyall/root2/r5', 'namespace/pyall/root2/r6',
-+                 'namespace/py27/root/r1', 'namespace/py27/root/r2', 'namespace/py27/root/r3',
-+                 'namespace/py27/root2/r4', 'namespace/py27/root2/r5', 'namespace/py27/root2/r6'
++                 'namespace/py2/root/r1', 'namespace/py2/root/r2', 'namespace/py2/root/r3',
++                 'namespace/py2/root2/r4', 'namespace/py2/root2/r5', 'namespace/py2/root2/r6'
 +        ]
 +        for idx, cl in enumerate(thin.tarfile.open().method_calls[12:-5]):
 +            arcname = cl[2].get('arcname')
