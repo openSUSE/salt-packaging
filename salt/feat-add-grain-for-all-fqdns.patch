@@ -1,4 +1,4 @@
-From 2e60ccfa19e6afc06f2c455f0b51dd92493c222d Mon Sep 17 00:00:00 2001
+From df389c367af5693109ceb432fe62c29dcefa4ef3 Mon Sep 17 00:00:00 2001
 From: Michele Bologna <michele.bologna@suse.com>
 Date: Thu, 14 Dec 2017 18:20:02 +0100
 Subject: [PATCH] Feat: add grain for all FQDNs
@@ -83,6 +83,6 @@ index 50babe3ed3..47c9cdd35b 100644
  # Import Salt Testing Libs
  try:
 -- 
-2.13.6
+2.16.2
 
 

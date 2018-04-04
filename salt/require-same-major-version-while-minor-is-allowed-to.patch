@@ -1,4 +1,4 @@
-From 66a039ffd8a0e426c68c0a8b253aaf1d2b31de6b Mon Sep 17 00:00:00 2001
+From b2cb48a2e339e07c075cdbbd108de8101695202d Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Wed, 28 Mar 2018 11:43:23 +0200
 Subject: [PATCH] require same major version while minor is allowed to be
@@ -22,6 +22,6 @@ index e61a711b72..a9d4ff5c29 100644
  
      sys.exit(EX_THIN_PYTHON_INVALID)
 -- 
-2.13.6
+2.16.2
 
 

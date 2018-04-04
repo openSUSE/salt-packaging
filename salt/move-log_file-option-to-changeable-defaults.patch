@@ -1,4 +1,4 @@
-From 67d88b76001fe2658700fe64f01513843fcf01f3 Mon Sep 17 00:00:00 2001
+From 2222119237823e15864f68440a90c1df2236bfec Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Sun, 11 Feb 2018 19:15:27 +0100
 Subject: [PATCH] move log_file option to changeable defaults
@@ -28,6 +28,6 @@ index 3dd46899e3..f1c1ad9a22 100644
                  })
          self.minion_config = salt.serializers.yaml.serialize(self.minion_opts)
 -- 
-2.13.6
+2.16.2
 
 

@@ -1,4 +1,4 @@
-From 5706e14bda3b2b802756c2dfcffdfda086c68314 Mon Sep 17 00:00:00 2001
+From 7f58420839b98baaf4a9160fb5973d1dcb6e3531 Mon Sep 17 00:00:00 2001
 From: Hubert Mantel <mantel@suse.de>
 Date: Mon, 27 Nov 2017 13:55:13 +0100
 Subject: [PATCH] avoid excessive syslogging by watchdog cronjob (#58)
@@ -21,6 +21,6 @@ index 2e418094ed..73a91ebd62 100755
          /usr/bin/salt-daemon-watcher --with-init & disown
      fi
 -- 
-2.13.6
+2.16.2
 
 

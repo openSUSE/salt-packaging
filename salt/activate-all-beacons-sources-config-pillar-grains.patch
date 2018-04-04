@@ -1,4 +1,4 @@
-From addedc5f66f5d0b645c6c0fc1d8b6f0192bd3b0f Mon Sep 17 00:00:00 2001
+From f94aae52b0afb0e2c47a070fd4b7f7444a083f83 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Tue, 17 Oct 2017 16:52:33 +0200
 Subject: [PATCH] Activate all beacons sources: config/pillar/grains
@@ -21,6 +21,6 @@ index df69d3c7bd..4a30e70be5 100644
                  return self.beacons.process(b_conf, self.opts['grains'])  # pylint: disable=no-member
          return []
 -- 
-2.13.6
+2.16.2
 
 

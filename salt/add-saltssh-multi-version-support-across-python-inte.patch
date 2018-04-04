@@ -1,4 +1,4 @@
-From d98c006fc22efb70c064ec9e7ccde68de6909bc1 Mon Sep 17 00:00:00 2001
+From be337f2b644c540d15fd0e7802b48f1f40378f08 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Mon, 12 Mar 2018 12:01:39 +0100
 Subject: [PATCH] Add SaltSSH multi-version support across Python
@@ -1265,7 +1265,7 @@ index 4c0969ea96..bf1d40649c 100644
              if os.path.isfile(minver):
 diff --git a/tests/unit/utils/test_thin.py b/tests/unit/utils/test_thin.py
 new file mode 100644
-index 0000000000..fbdc509380
+index 0000000000..881bcfc42a
 --- /dev/null
 +++ b/tests/unit/utils/test_thin.py
 @@ -0,0 +1,607 @@
@@ -1726,7 +1726,7 @@ index 0000000000..fbdc509380
 +    @patch('salt.utils.thin.zipfile', MagicMock())
 +    @patch('salt.utils.thin.os.getcwd', MagicMock())
 +    @patch('salt.utils.thin.os.chdir', MagicMock())
-+    @patch('salt.utils.thin.tempfile', MagicMock())
++    @patch('salt.utils.thin.tempfile', MagicMock(mkdtemp=MagicMock(return_value='')))
 +    @patch('salt.utils.thin.shutil', MagicMock())
 +    @patch('salt.utils.thin._six.PY3', True)
 +    @patch('salt.utils.thin._six.PY2', False)
@@ -1877,6 +1877,6 @@ index 0000000000..fbdc509380
 +        for t_line in ['second-system-effect:2:7', 'solar-interference:2:6']:
 +            assert t_line in out
 -- 
-2.13.6
+2.16.2
 
 

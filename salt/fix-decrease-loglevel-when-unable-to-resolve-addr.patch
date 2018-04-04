@@ -1,4 +1,4 @@
-From e9a27417924dc14c337413e507f74e31eec076dd Mon Sep 17 00:00:00 2001
+From a70548d139cb6c12cb8166a4e1ec55c828ec7e71 Mon Sep 17 00:00:00 2001
 From: Michele Bologna <michele.bologna@suse.com>
 Date: Tue, 20 Mar 2018 19:27:36 +0100
 Subject: [PATCH] Fix: decrease loglevel when unable to resolve addr
@@ -67,6 +67,6 @@ index 96b7ce2cf2..17a7d9819a 100644
      grains['fqdns'] = list(fqdns)
      return grains
 -- 
-2.13.6
+2.16.2
 
 

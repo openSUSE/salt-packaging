@@ -1,4 +1,4 @@
-From e89ea420bdcd9f0bb75b3807a4910ebfc3f3be39 Mon Sep 17 00:00:00 2001
+From bb1bba2717a03fd8fea6171556823b328c121577 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Wed, 7 Mar 2018 09:42:46 +0000
@@ -126,6 +126,6 @@ index 12ad54f979..bf4ddcc5b4 100644
          with patch.dict(module.__salt__, {CMD: _mocked_func_args}):
              with patch.dict(module.__opts__, {'use_superseded': ['module.run']}):
 -- 
-2.13.6
+2.16.2
 
 

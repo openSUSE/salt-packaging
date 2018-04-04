@@ -1,4 +1,4 @@
-From a4e1d1cff93e1ebd631317bb67bdbad1b9146bb6 Mon Sep 17 00:00:00 2001
+From 57ce7b086c9c733ef30701d20a0a78da8e4d8ba4 Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Thu, 22 Mar 2018 08:56:58 +0100
 Subject: [PATCH] make it possible to use login, pull and push from
@@ -114,6 +114,6 @@ index 4e061ce369..77c4bcfb85 100644
          '''
          Check that docker.ps called with host is ``True``,
 -- 
-2.13.6
+2.16.2
 
 

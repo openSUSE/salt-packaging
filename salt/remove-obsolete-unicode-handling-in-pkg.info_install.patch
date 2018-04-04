@@ -1,4 +1,4 @@
-From 7b4323a7f49f1df09f8e7a4bf4214f02de0b8b74 Mon Sep 17 00:00:00 2001
+From 1ca2c9bf25f6b3a4ecc08a2b21a6bed25b4ffc8b Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Tue, 13 Feb 2018 16:11:20 +0100
 Subject: [PATCH] Remove obsolete unicode handling in pkg.info_installed
@@ -41,6 +41,6 @@ index 51d01c3fc9..16fc877684 100644
                  t_nfo['source'] = value
              else:
 -- 
-2.13.6
+2.16.2
 
 
