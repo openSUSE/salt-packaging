@@ -1,8 +1,7 @@
-From 88f1c51eab90415e2a990e1149cbe7d9f489804a Mon Sep 17 00:00:00 2001
+From 214cb13e1f8869b378459f5af62b7124e26a079c Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Mon, 12 Mar 2018 12:01:39 +0100
-Subject: [PATCH] Add SaltSSH multi-version support across Python
- interpeters.
+Subject: [PATCH] Add SaltSSH multi-version support across Python interpeters.
 
 Bugfix: crashes when OPTIONS.saltdir is a file
 
@@ -225,16 +224,18 @@ Initialise the options directly to be structure-ready object.
 Disable wiping if state is executed
 
 Properly mock a tempfile object
+
+Support Python 2.6 versions
 ---
  doc/topics/releases/fluorine.rst    | 178 +++++++++++
  salt/client/ssh/__init__.py         |  20 +-
- salt/client/ssh/ssh_py_shim.py      |  81 +++--
+ salt/client/ssh/ssh_py_shim.py      |  88 ++++--
  salt/client/ssh/wrapper/__init__.py |   2 +-
  salt/modules/zfs.py                 |   4 +-
  salt/modules/zpool.py               |   4 +-
  salt/utils/thin.py                  | 434 +++++++++++++++++++-------
  tests/unit/utils/test_thin.py       | 607 ++++++++++++++++++++++++++++++++++++
- 8 files changed, 1176 insertions(+), 154 deletions(-)
+ 8 files changed, 1182 insertions(+), 155 deletions(-)
  create mode 100644 doc/topics/releases/fluorine.rst
  create mode 100644 tests/unit/utils/test_thin.py
 
@@ -477,7 +478,7 @@ index f1c1ad9a22..ea5c700830 100644
  """
  {0}
 diff --git a/salt/client/ssh/ssh_py_shim.py b/salt/client/ssh/ssh_py_shim.py
-index e46220fc80..8e17ef96b1 100644
+index e46220fc80..661a671b81 100644
 --- a/salt/client/ssh/ssh_py_shim.py
 +++ b/salt/client/ssh/ssh_py_shim.py
 @@ -16,11 +16,13 @@ import sys
@@ -537,7 +538,7 @@ index e46220fc80..8e17ef96b1 100644
  
  
  def need_ext():
-@@ -199,6 +204,45 @@ def unpack_ext(ext_path):
+@@ -199,6 +204,47 @@ def unpack_ext(ext_path):
      shutil.move(ver_path, ver_dst)
  
  
@@ -566,10 +567,12 @@ index e46220fc80..8e17ef96b1 100644
 +
 +    pycmds = (sys.executable, 'python3', 'python27', 'python2.7', 'python26', 'python2.6', 'python2', 'python')
 +    for py_cmd in pycmds:
-+        cmd = py_cmd + (' -c  "import sys; sys.stdout.write(\'{}:{}\''
-+                        '.format(sys.version_info.major, sys.version_info.minor))"')
++        cmd = py_cmd + ' -c  "import sys; sys.stdout.write(\'%s:%s\' % (sys.version_info[0], sys.version_info[1]))"'
 +        stdout, _ = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).communicate()
-+        stdout = stdout.decode(encoding=get_system_encoding(), errors="replace").strip()
++        if sys.version_info[0] == 2 and sys.version_info[1] < 7:
++            stdout = stdout.decode(get_system_encoding(), "replace").strip()
++        else:
++            stdout = stdout.decode(encoding=get_system_encoding(), errors="replace").strip()
 +        if not stdout:
 +            continue
 +        c_vn = tuple([int(x) for x in stdout.split(':')])
@@ -583,7 +586,7 @@ index e46220fc80..8e17ef96b1 100644
  def main(argv):  # pylint: disable=W0613
      '''
      Main program body
-@@ -215,30 +259,30 @@ def main(argv):  # pylint: disable=W0613
+@@ -215,30 +261,30 @@ def main(argv):  # pylint: disable=W0613
              if scpstat != 0:
                  sys.exit(EX_SCP_NOT_FOUND)
  
@@ -626,7 +629,7 @@ index e46220fc80..8e17ef96b1 100644
                  )
              )
              need_deployment()
-@@ -270,7 +314,7 @@ def main(argv):  # pylint: disable=W0613
+@@ -270,7 +316,7 @@ def main(argv):  # pylint: disable=W0613
          argv_prepared = ARGS
  
      salt_argv = [
@@ -635,7 +638,19 @@ index e46220fc80..8e17ef96b1 100644
          salt_call_path,
          '--retcode-passthrough',
          '--local',
-@@ -315,5 +359,6 @@ def main(argv):  # pylint: disable=W0613
+@@ -303,7 +349,10 @@ def main(argv):  # pylint: disable=W0613
+     if OPTIONS.tty:
+         # Returns bytes instead of string on python 3
+         stdout, _ = subprocess.Popen(salt_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+-        sys.stdout.write(stdout.decode(encoding=get_system_encoding(), errors="replace"))
++        if sys.version_info[0] == 2 and sys.version_info[1] < 7:
++            sys.stdout.write(stdout.decode(get_system_encoding(), "replace"))
++        else:
++            sys.stdout.write(stdout.decode(encoding=get_system_encoding(), errors="replace"))
+         sys.stdout.flush()
+         if OPTIONS.wipe:
+             shutil.rmtree(OPTIONS.saltdir)
+@@ -315,5 +364,6 @@ def main(argv):  # pylint: disable=W0613
      if OPTIONS.cmd_umask is not None:
          os.umask(old_umask)
  
@@ -690,7 +705,7 @@ index f955175664..5e03418919 100644
  
  @salt.utils.decorators.memoize
 diff --git a/salt/utils/thin.py b/salt/utils/thin.py
-index 4c0969ea96..4912dbbe62 100644
+index 4c0969ea96..a6990d00b1 100644
 --- a/salt/utils/thin.py
 +++ b/salt/utils/thin.py
 @@ -8,11 +8,14 @@ from __future__ import absolute_import, print_function, unicode_literals
@@ -805,9 +820,9 @@ index 4c0969ea96..4912dbbe62 100644
 +
 +# Default system paths alongside the namespaces
 +syspaths = %dirs%
-+syspaths.append('py{0}'.format(sys.version_info.major))
++syspaths.append('py{0}'.format(sys.version_info[0]))
 +
-+curr_ver = (sys.version_info.major, sys.version_info.minor,)
++curr_ver = (sys.version_info[0], sys.version_info[1],)
 +
 +namespace = ''
 +for ns in namespaces:
