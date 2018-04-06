@@ -1,4 +1,4 @@
-From 1ca2c9bf25f6b3a4ecc08a2b21a6bed25b4ffc8b Mon Sep 17 00:00:00 2001
+From dc262b912c63ed0d3152a01c9eaaa3ec3f8e0f7e Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Tue, 13 Feb 2018 16:11:20 +0100
 Subject: [PATCH] Remove obsolete unicode handling in pkg.info_installed

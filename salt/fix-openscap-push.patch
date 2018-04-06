@@ -1,4 +1,4 @@
-From 6fb7c8885dbd493c79c8782bfe240ac235dee3ad Mon Sep 17 00:00:00 2001
+From 589d90117783a126dce695cf76a3b8fc2953f8b6 Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Fri, 2 Mar 2018 17:17:58 +0100
 Subject: [PATCH] Fix openscap push

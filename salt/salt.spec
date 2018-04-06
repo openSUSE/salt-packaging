@@ -52,14 +52,13 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        2018.1.99
+Version:        2018.3.0
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
 Group:          System/Management
 Url:            http://saltstack.org/
-# Source:         https://github.com/saltstack/salt/archive/v%{version}.tar.gz
-Source:         https://github.com/saltstack/salt/archive/2018.3.0rc1.tar.gz
+Source:         https://github.com/saltstack/salt/archive/v%{version}.tar.gz
 Source1:        README.SUSE
 Source2:        salt-tmpfiles.d
 Source3:        html.tar.bz2
@@ -89,7 +88,7 @@ Patch13:       explore-module.run-response-to-catch-the-result-in-d.patch
 Patch14:       add-saltssh-multi-version-support-across-python-inte.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-BuildRoot:      %{_tmppath}/%{name}-2018.3.0rc1-build
+BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
 %if 0%{?suse_version} > 1020
 BuildRequires:  fdupes
@@ -542,7 +541,7 @@ Zsh command line completion support for %{name}.
 
 %prep
 # %setup -q -n salt-%{version}
-%setup -q -n salt-2018.3.0rc1
+%setup -q -n salt-%{version}
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
 %patch1 -p1

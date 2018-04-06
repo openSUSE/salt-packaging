@@ -1,4 +1,4 @@
-From df389c367af5693109ceb432fe62c29dcefa4ef3 Mon Sep 17 00:00:00 2001
+From 0449bead92ff763d186f5e524556f82c618d652c Mon Sep 17 00:00:00 2001
 From: Michele Bologna <michele.bologna@suse.com>
 Date: Thu, 14 Dec 2017 18:20:02 +0100
 Subject: [PATCH] Feat: add grain for all FQDNs
