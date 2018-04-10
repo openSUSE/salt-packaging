@@ -1,4 +1,4 @@
-From 7d3c1fee891a34f1e521228458ab113c3f6dabe1 Mon Sep 17 00:00:00 2001
+From ba72f52da3522623f0e7d1fd1034bebbaa2e5782 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Mon, 12 Mar 2018 12:01:39 +0100
 Subject: [PATCH] Add SaltSSH multi-version support across Python
@@ -227,16 +227,42 @@ Disable wiping if state is executed
 Properly mock a tempfile object
 
 Support Python 2.6 versions
+
+Add digest collector for file trees etc
+
+Bufix: recurse calls damages the configuration (reference problem)
+
+Collect digest of the code
+
+Get code checksum into the shim options
+
+Get all the code content, not just Python sources
+
+Bugfix: Python3 compat - string required instead of bytes
+
+Lintfix: too many empty lines
+
+Lintfix: blocked function used
+
+Bugfix: key error master_tops_first
+
+Fix unit tests for the checksum generator
+
+Use code checksum to update thin archive on client's cache
+
+Lintfix
 ---
- doc/topics/releases/fluorine.rst    | 178 +++++++++++
- salt/client/ssh/__init__.py         |  20 +-
- salt/client/ssh/ssh_py_shim.py      |  88 ++++--
+ doc/topics/releases/fluorine.rst    | 178 ++++++++
+ salt/client/ssh/__init__.py         |  66 ++-
+ salt/client/ssh/ssh_py_shim.py      |  95 +++--
  salt/client/ssh/wrapper/__init__.py |   2 +-
  salt/modules/zfs.py                 |   4 +-
  salt/modules/zpool.py               |   4 +-
- salt/utils/thin.py                  | 434 +++++++++++++++++++-------
- tests/unit/utils/test_thin.py       | 607 ++++++++++++++++++++++++++++++++++++
- 8 files changed, 1182 insertions(+), 155 deletions(-)
+ salt/state.py                       |   2 +-
+ salt/utils/hashutils.py             |  37 ++
+ salt/utils/thin.py                  | 450 ++++++++++++++------
+ tests/unit/utils/test_thin.py       | 612 ++++++++++++++++++++++++++++
+ 10 files changed, 1264 insertions(+), 186 deletions(-)
  create mode 100644 doc/topics/releases/fluorine.rst
  create mode 100644 tests/unit/utils/test_thin.py
 
@@ -425,7 +451,7 @@ index 0000000000..40c69e25cc
 +Salt version is also available on the Master machine, although does not need to be directly
 +installed together with the older Python interpreter.
 diff --git a/salt/client/ssh/__init__.py b/salt/client/ssh/__init__.py
-index f1c1ad9a22..ea5c700830 100644
+index f1c1ad9a22..399facf5c8 100644
 --- a/salt/client/ssh/__init__.py
 +++ b/salt/client/ssh/__init__.py
 @@ -150,14 +150,10 @@ EX_PYTHON_INVALID={EX_THIN_PYTHON_INVALID}
@@ -470,16 +496,71 @@ index f1c1ad9a22..ea5c700830 100644
          if kwargs.get('thin_dir'):
              self.thin_dir = kwargs['thin_dir']
          elif self.winrm:
-@@ -1168,7 +1165,6 @@ class Single(object):
+@@ -1161,38 +1158,39 @@ class Single(object):
+             cachedir = self.opts['_caller_cachedir']
+         else:
+             cachedir = self.opts['cachedir']
+-        thin_sum = salt.utils.thin.thin_sum(cachedir, 'sha1')
++        thin_code_digest, thin_sum = salt.utils.thin.thin_sum(cachedir, 'sha1')
+         debug = ''
+         if not self.opts.get('log_level'):
+             self.opts['log_level'] = 'info'
          if salt.log.LOG_LEVELS['debug'] >= salt.log.LOG_LEVELS[self.opts.get('log_level', 'info')]:
              debug = '1'
          arg_str = '''
 -OPTIONS = OBJ()
  OPTIONS.config = \
  """
- {0}
+-{0}
++{config}
+ """
+-OPTIONS.delimiter = '{1}'
+-OPTIONS.saltdir = '{2}'
+-OPTIONS.checksum = '{3}'
+-OPTIONS.hashfunc = '{4}'
+-OPTIONS.version = '{5}'
+-OPTIONS.ext_mods = '{6}'
+-OPTIONS.wipe = {7}
+-OPTIONS.tty = {8}
+-OPTIONS.cmd_umask = {9}
+-ARGS = {10}\n'''.format(self.minion_config,
+-                        RSTR,
+-                        self.thin_dir,
+-                        thin_sum,
+-                        'sha1',
+-                        salt.version.__version__,
+-                        self.mods.get('version', ''),
+-                        self.wipe,
+-                        self.tty,
+-                        self.cmd_umask,
+-                        self.argv)
++OPTIONS.delimiter = '{delimeter}'
++OPTIONS.saltdir = '{saltdir}'
++OPTIONS.checksum = '{checksum}'
++OPTIONS.hashfunc = '{hashfunc}'
++OPTIONS.version = '{version}'
++OPTIONS.ext_mods = '{ext_mods}'
++OPTIONS.wipe = {wipe}
++OPTIONS.tty = {tty}
++OPTIONS.cmd_umask = {cmd_umask}
++OPTIONS.code_checksum = {code_checksum}
++ARGS = {arguments}\n'''.format(config=self.minion_config,
++                               delimeter=RSTR,
++                               saltdir=self.thin_dir,
++                               checksum=thin_sum,
++                               hashfunc='sha1',
++                               version=salt.version.__version__,
++                               ext_mods=self.mods.get('version', ''),
++                               wipe=self.wipe,
++                               tty=self.tty,
++                               cmd_umask=self.cmd_umask,
++                               code_checksum=thin_code_digest,
++                               arguments=self.argv)
+         py_code = SSH_PY_SHIM.replace('#%%OPTS', arg_str)
+         if six.PY2:
+             py_code_enc = py_code.encode('base64')
 diff --git a/salt/client/ssh/ssh_py_shim.py b/salt/client/ssh/ssh_py_shim.py
-index e46220fc80..661a671b81 100644
+index e46220fc80..21d03343b9 100644
 --- a/salt/client/ssh/ssh_py_shim.py
 +++ b/salt/client/ssh/ssh_py_shim.py
 @@ -16,11 +16,13 @@ import sys
@@ -587,7 +668,7 @@ index e46220fc80..661a671b81 100644
  def main(argv):  # pylint: disable=W0613
      '''
      Main program body
-@@ -215,30 +261,30 @@ def main(argv):  # pylint: disable=W0613
+@@ -215,32 +261,25 @@ def main(argv):  # pylint: disable=W0613
              if scpstat != 0:
                  sys.exit(EX_SCP_NOT_FOUND)
  
@@ -604,33 +685,35 @@ index e46220fc80..661a671b81 100644
  
 -        version_path = os.path.normpath(os.path.join(OPTIONS.saltdir, 'version'))
 -        if not os.path.exists(version_path) or not os.path.isfile(version_path):
-+        if not os.path.exists(OPTIONS.saltdir):
-+            need_deployment()
-+
-+        checksum_path = os.path.normpath(os.path.join(OPTIONS.saltdir, 'thin_checksum'))
-+        if not os.path.exists(checksum_path) or not os.path.isfile(checksum_path):
-             sys.stderr.write(
-                 'WARNING: Unable to locate current thin '
+-            sys.stderr.write(
+-                'WARNING: Unable to locate current thin '
 -                ' version: {0}.\n'.format(version_path)
-+                ' checksum: {0}.\n'.format(checksum_path)
-             )
+-            )
++        if not os.path.exists(OPTIONS.saltdir):
              need_deployment()
 -        with open(version_path, 'r') as vpo:
 -            cur_version = vpo.readline().strip()
 -        if cur_version != OPTIONS.version:
-+        with open(checksum_path, 'r') as vpo:
-+            cur_checksum = vpo.readline().strip()
-+        if cur_checksum != OPTIONS.checksum:
-             sys.stderr.write(
+-            sys.stderr.write(
 -                'WARNING: current thin version {0}'
-+                'WARNING: current thin checksum {0}'
-                 ' is not up-to-date with {1}.\n'.format(
+-                ' is not up-to-date with {1}.\n'.format(
 -                    cur_version, OPTIONS.version
-+                    cur_checksum, OPTIONS.checksum
-                 )
-             )
+-                )
+-            )
++
++        code_checksum_path = os.path.normpath(os.path.join(OPTIONS.saltdir, 'code-checksum'))
++        if not os.path.exists(code_checksum_path) or not os.path.isfile(code_checksum_path):
++            sys.stderr.write('WARNING: Unable to locate current code checksum: {0}.\n'.format(code_checksum_path))
++            need_deployment()
++        with open(code_checksum_path, 'r') as vpo:
++            cur_code_cs = vpo.readline().strip()
++        if cur_code_cs != OPTIONS.code_checksum:
++            sys.stderr.write('WARNING: current code checksum {0} is different to {1}.\n'.format(cur_code_cs,
++                                                                                                OPTIONS.code_checksum))
              need_deployment()
-@@ -270,7 +316,7 @@ def main(argv):  # pylint: disable=W0613
+         # Salt thin exists and is up-to-date - fall through and use it
+ 
+@@ -270,7 +309,7 @@ def main(argv):  # pylint: disable=W0613
          argv_prepared = ARGS
  
      salt_argv = [
@@ -639,7 +722,7 @@ index e46220fc80..661a671b81 100644
          salt_call_path,
          '--retcode-passthrough',
          '--local',
-@@ -303,7 +349,10 @@ def main(argv):  # pylint: disable=W0613
+@@ -303,7 +342,10 @@ def main(argv):  # pylint: disable=W0613
      if OPTIONS.tty:
          # Returns bytes instead of string on python 3
          stdout, _ = subprocess.Popen(salt_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
@@ -651,7 +734,7 @@ index e46220fc80..661a671b81 100644
          sys.stdout.flush()
          if OPTIONS.wipe:
              shutil.rmtree(OPTIONS.saltdir)
-@@ -315,5 +364,6 @@ def main(argv):  # pylint: disable=W0613
+@@ -315,5 +357,6 @@ def main(argv):  # pylint: disable=W0613
      if OPTIONS.cmd_umask is not None:
          os.umask(old_umask)
  
@@ -705,8 +788,73 @@ index f955175664..5e03418919 100644
  
  
  @salt.utils.decorators.memoize
+diff --git a/salt/state.py b/salt/state.py
+index 49d68d2edf..8c0b90545c 100644
+--- a/salt/state.py
++++ b/salt/state.py
+@@ -3332,7 +3332,7 @@ class BaseHighState(object):
+         ext_matches = self._master_tops()
+         for saltenv in ext_matches:
+             top_file_matches = matches.get(saltenv, [])
+-            if self.opts['master_tops_first']:
++            if self.opts.get('master_tops_first'):
+                 first = ext_matches[saltenv]
+                 second = top_file_matches
+             else:
+diff --git a/salt/utils/hashutils.py b/salt/utils/hashutils.py
+index 4c9cb4a50c..18f7459d3c 100644
+--- a/salt/utils/hashutils.py
++++ b/salt/utils/hashutils.py
+@@ -9,6 +9,7 @@ import base64
+ import hashlib
+ import hmac
+ import random
++import os
+ 
+ # Import Salt libs
+ from salt.ext import six
+@@ -163,3 +164,39 @@ def get_hash(path, form='sha256', chunk_size=65536):
+         for chunk in iter(lambda: ifile.read(chunk_size), b''):
+             hash_obj.update(chunk)
+         return hash_obj.hexdigest()
++
++
++class DigestCollector(object):
++    '''
++    Class to collect digest of the file tree.
++    '''
++
++    def __init__(self, form='sha256', buff=0x10000):
++        '''
++        Constructor of the class.
++        :param form:
++        '''
++        self.__digest = hasattr(hashlib, form) and getattr(hashlib, form)() or None
++        if self.__digest is None:
++            raise ValueError('Invalid hash type: {0}'.format(form))
++        self.__buff = buff
++
++    def add(self, path):
++        '''
++        Update digest with the file content by path.
++
++        :param path:
++        :return:
++        '''
++        with salt.utils.files.fopen(path, 'rb') as ifile:
++            for chunk in iter(lambda: ifile.read(self.__buff), b''):
++                self.__digest.update(chunk)
++
++    def digest(self):
++        '''
++        Get digest.
++
++        :return:
++        '''
++
++        return salt.utils.stringutils.to_str(self.__digest.hexdigest() + os.linesep)
 diff --git a/salt/utils/thin.py b/salt/utils/thin.py
-index 4c0969ea96..a6990d00b1 100644
+index 4c0969ea96..e4b878eb19 100644
 --- a/salt/utils/thin.py
 +++ b/salt/utils/thin.py
 @@ -8,11 +8,14 @@ from __future__ import absolute_import, print_function, unicode_literals
@@ -849,7 +997,7 @@ index 4c0969ea96..a6990d00b1 100644
  
  
  def thin_path(cachedir):
-@@ -101,29 +133,136 @@ def thin_path(cachedir):
+@@ -101,29 +133,137 @@ def thin_path(cachedir):
      return os.path.join(cachedir, 'thin', 'thin.tgz')
  
  
@@ -878,7 +1026,9 @@ index 4c0969ea96..a6990d00b1 100644
 +def _add_dependency(container, obj):
 +    '''
 +    Add a dependency to the top list.
-+
+ 
+-    tops.append(_six.__file__.replace('.pyc', '.py'))
+-    tops.append(backports_abc.__file__.replace('.pyc', '.py'))
 +    :param obj:
 +    :param is_file:
 +    :return:
@@ -893,23 +1043,32 @@ index 4c0969ea96..a6990d00b1 100644
 +    '''
 +    This function is called externally from the alternative
 +    Python interpreter from within _get_tops function.
-+
+ 
+-    if HAS_CERTIFI:
+-        tops.append(os.path.dirname(certifi.__file__))
 +    :param extra_mods:
 +    :param so_mods:
 +    :return:
 +    '''
 +    extra = salt.utils.json.loads(sys.argv[1])
 +    tops = get_tops(**extra)
-+
+ 
+-    if HAS_SINGLEDISPATCH:
+-        tops.append(singledispatch.__file__.replace('.pyc', '.py'))
 +    return salt.utils.json.dumps(tops, ensure_ascii=False)
-+
-+
+ 
+-    if HAS_SINGLEDISPATCH_HELPERS:
+-        tops.append(singledispatch_helpers.__file__.replace('.pyc', '.py'))
+ 
+-    if HAS_SSL_MATCH_HOSTNAME:
+-        tops.append(os.path.dirname(os.path.dirname(ssl_match_hostname.__file__)))
 +def get_ext_tops(config):
 +    '''
 +    Get top directories for the dependencies, based on external configuration.
 +
 +    :return:
 +    '''
++    config = copy.deepcopy(config)
 +    alternatives = {}
 +    required = ['jinja2', 'yaml', 'tornado', 'msgpack']
 +    tops = []
@@ -958,9 +1117,7 @@ index 4c0969ea96..a6990d00b1 100644
 +def _get_ext_namespaces(config):
 +    '''
 +    Get namespaces from the existing configuration.
- 
--    tops.append(_six.__file__.replace('.pyc', '.py'))
--    tops.append(backports_abc.__file__.replace('.pyc', '.py'))
++
 +    :param config:
 +    :return:
 +    '''
@@ -975,22 +1132,14 @@ index 4c0969ea96..a6990d00b1 100644
 +                                                 "to what Python's major/minor version it should be constrained.")
 +        else:
 +            namespaces[ns] = constraint_version
- 
--    if HAS_CERTIFI:
--        tops.append(os.path.dirname(certifi.__file__))
++
 +    return namespaces
- 
--    if HAS_SINGLEDISPATCH:
--        tops.append(singledispatch.__file__.replace('.pyc', '.py'))
- 
--    if HAS_SINGLEDISPATCH_HELPERS:
--        tops.append(singledispatch_helpers.__file__.replace('.pyc', '.py'))
++
++
 +def get_tops(extra_mods='', so_mods=''):
 +    '''
 +    Get top directories for the dependencies, based on Python interpreter.
- 
--    if HAS_SSL_MATCH_HOSTNAME:
--        tops.append(os.path.dirname(os.path.dirname(ssl_match_hostname.__file__)))
++
 +    :param extra_mods:
 +    :param so_mods:
 +    :return:
@@ -1004,7 +1153,7 @@ index 4c0969ea96..a6990d00b1 100644
  
      for mod in [m for m in extra_mods.split(',') if m]:
          if mod not in locals() and mod not in globals():
-@@ -135,28 +274,49 @@ def get_tops(extra_mods='', so_mods=''):
+@@ -135,28 +275,49 @@ def get_tops(extra_mods='', so_mods=''):
                      tops.append(moddir)
                  else:
                      tops.append(os.path.join(moddir, base + '.py'))
@@ -1066,7 +1215,7 @@ index 4c0969ea96..a6990d00b1 100644
      '''
      Generate the salt-thin tarball and print the location of the tarball
      Optional additional mods to include (e.g. mako) can be supplied as a comma
-@@ -171,19 +331,24 @@ def gen_thin(cachedir, extra_mods='', overwrite=False, so_mods='',
+@@ -171,19 +332,26 @@ def gen_thin(cachedir, extra_mods='', overwrite=False, so_mods='',
          salt-run thin.generate mako,wempy 1
          salt-run thin.generate overwrite=1
      '''
@@ -1089,6 +1238,8 @@ index 4c0969ea96..a6990d00b1 100644
      pythinver = os.path.join(thindir, '.thin-gen-py-version')
      salt_call = os.path.join(thindir, 'salt-call')
 +    pymap_cfg = os.path.join(thindir, 'supported-versions')
++    code_checksum = os.path.join(thindir, 'code-checksum')
++    digest_collector = salt.utils.hashutils.DigestCollector()
 +
      with salt.utils.files.fopen(salt_call, 'wb') as fp_:
 -        fp_.write(SALTCALL)
@@ -1097,7 +1248,7 @@ index 4c0969ea96..a6990d00b1 100644
      if os.path.isfile(thintar):
          if not overwrite:
              if os.path.isfile(thinver):
-@@ -197,85 +362,88 @@ def gen_thin(cachedir, extra_mods='', overwrite=False, so_mods='',
+@@ -197,85 +365,88 @@ def gen_thin(cachedir, extra_mods='', overwrite=False, so_mods='',
  
          if overwrite:
              try:
@@ -1225,7 +1376,7 @@ index 4c0969ea96..a6990d00b1 100644
      for py_ver, tops in _six.iteritems(tops_py_version_mapping):
          for top in tops:
              if absonly and not os.path.isabs(top):
-@@ -291,48 +459,76 @@ def gen_thin(cachedir, extra_mods='', overwrite=False, so_mods='',
+@@ -291,48 +462,80 @@ def gen_thin(cachedir, extra_mods='', overwrite=False, so_mods='',
                  egg.extractall(tempdir)
                  top = os.path.join(tempdir, base)
                  os.chdir(tempdir)
@@ -1249,6 +1400,7 @@ index 4c0969ea96..a6990d00b1 100644
 -                            tfp.add(os.path.join(root, name),
 -                                    arcname=os.path.join('py{0}'.format(py_ver), root, name))
 -                        elif compress == 'zip':
++                        digest_collector.add(os.path.join(root, name))
 +                        arcname = os.path.join(site_pkg_dir, root, name)
 +                        if hasattr(tfp, 'getinfo'):
                              try:
@@ -1285,6 +1437,7 @@ index 4c0969ea96..a6990d00b1 100644
 +            for root, dirs, files in salt.utils.path.os_walk(base, followlinks=True):
 +                for name in files:
 +                    if not name.endswith(('.pyc', '.pyo')):
++                        digest_collector.add(os.path.join(root, name))
 +                        arcname = os.path.join(ns, site_pkg_dir, root, name)
 +                        if hasattr(tfp, 'getinfo'):
 +                            try:
@@ -1305,6 +1458,8 @@ index 4c0969ea96..a6990d00b1 100644
      with salt.utils.files.fopen(pythinver, 'w+') as fp_:
 -        fp_.write(str(sys.version_info[0]))  # future lint: disable=blacklisted-function
 +        fp_.write(str(sys.version_info.major))  # future lint: disable=blacklisted-function
++    with salt.utils.files.fopen(code_checksum, 'w+') as fp_:
++        fp_.write(digest_collector.digest())
      os.chdir(os.path.dirname(thinver))
 -    if compress == 'gzip':
 -        tfp.add('version')
@@ -1313,7 +1468,7 @@ index 4c0969ea96..a6990d00b1 100644
 -        tfp.write('version')
 -        tfp.write('.thin-gen-py-version')
 +
-+    for fname in ['version', '.thin-gen-py-version', 'salt-call', 'supported-versions']:
++    for fname in ['version', '.thin-gen-py-version', 'salt-call', 'supported-versions', 'code-checksum']:
 +        tfp.add(fname)
 +
      if start_dir:
@@ -1323,7 +1478,23 @@ index 4c0969ea96..a6990d00b1 100644
      return thintar
  
  
-@@ -368,7 +564,7 @@ def gen_min(cachedir, extra_mods='', overwrite=False, so_mods='',
+@@ -341,7 +544,14 @@ def thin_sum(cachedir, form='sha1'):
+     Return the checksum of the current thin tarball
+     '''
+     thintar = gen_thin(cachedir)
+-    return salt.utils.hashutils.get_hash(thintar, form)
++    code_checksum_path = os.path.join(cachedir, 'thin', 'code-checksum')
++    if os.path.isfile(code_checksum_path):
++        with salt.utils.fopen(code_checksum_path, 'r') as fh:
++            code_checksum = "'{0}'".format(fh.read().strip())
++    else:
++        code_checksum = "'0'"
++
++    return code_checksum, salt.utils.hashutils.get_hash(thintar, form)
+ 
+ 
+ def gen_min(cachedir, extra_mods='', overwrite=False, so_mods='',
+@@ -368,7 +578,7 @@ def gen_min(cachedir, extra_mods='', overwrite=False, so_mods='',
      pyminver = os.path.join(mindir, '.min-gen-py-version')
      salt_call = os.path.join(mindir, 'salt-call')
      with salt.utils.files.fopen(salt_call, 'wb') as fp_:
@@ -1334,10 +1505,10 @@ index 4c0969ea96..a6990d00b1 100644
              if os.path.isfile(minver):
 diff --git a/tests/unit/utils/test_thin.py b/tests/unit/utils/test_thin.py
 new file mode 100644
-index 0000000000..8157eefed8
+index 0000000000..549d48a703
 --- /dev/null
 +++ b/tests/unit/utils/test_thin.py
-@@ -0,0 +1,607 @@
+@@ -0,0 +1,612 @@
 +# -*- coding: utf-8 -*-
 +'''
 +    :codeauthor: :email:`Bo Maryniuk <bo@suse.de>`
@@ -1416,7 +1587,6 @@ index 0000000000..8157eefed8
 +        tf.open = MagicMock(return_value=MagicMock(spec=spec))
 +
 +        return tf
-+
 +
 +    @patch('salt.exceptions.SaltSystemExit', Exception)
 +    @patch('salt.utils.thin.log', MagicMock())
@@ -1532,7 +1702,11 @@ index 0000000000..8157eefed8
 +                                              'yaml': '/yaml/',
 +                                              'tornado': '/tornado/tornado.py',
 +                                              'msgpack': 'msgpack.py'}}}
-+        assert cfg == thin.get_ext_tops(cfg)
++        out = thin.get_ext_tops(cfg)
++        assert out['namespace']['py-version'] == cfg['namespace']['py-version']
++        assert out['namespace']['path'] == cfg['namespace']['path']
++        assert sorted(out['namespace']['dependencies']) == sorted(['/tornado/tornado.py',
++                                                                   '/jinja/foo.py', '/yaml/', 'msgpack.py'])
 +
 +    @patch('salt.utils.thin.sys.argv', [None, '{"foo": "bar"}'])
 +    @patch('salt.utils.thin.get_tops', lambda **kw: kw)
@@ -1698,7 +1872,7 @@ index 0000000000..8157eefed8
 +
 +        :return:
 +        '''
-+        assert thin.thin_sum('/cachedir', form='sha256') == 12345
++        assert thin.thin_sum('/cachedir', form='sha256')[1] == 12345
 +        thin.salt.utils.hashutils.get_hash.assert_called()
 +        assert thin.salt.utils.hashutils.get_hash.call_count == 1
 +
@@ -1841,6 +2015,7 @@ index 0000000000..8157eefed8
 +    @patch('salt.utils.thin._six.PY3', True)
 +    @patch('salt.utils.thin._six.PY2', False)
 +    @patch('salt.utils.thin.sys.version_info', _version_info(None, 3, 6))
++    @patch('salt.utils.hashutils.DigestCollector', MagicMock())
 +    def test_gen_thin_main_content_files_written_py3(self):
 +        '''
 +        Test thin.gen_thin function if main content files are written.
@@ -1855,7 +2030,7 @@ index 0000000000..8157eefed8
 +            'py3/root/r1', 'py3/root/r2', 'py3/root/r3', 'py3/root2/r4', 'py3/root2/r5', 'py3/root2/r6',
 +            'pyall/root/r1', 'pyall/root/r2', 'pyall/root/r3', 'pyall/root2/r4', 'pyall/root2/r5', 'pyall/root2/r6'
 +        ]
-+        for cl in thin.tarfile.open().method_calls[:-5]:
++        for cl in thin.tarfile.open().method_calls[:-6]:
 +            arcname = cl[2].get('arcname')
 +            assert arcname in files
 +            files.pop(files.index(arcname))
@@ -1890,6 +2065,7 @@ index 0000000000..8157eefed8
 +    @patch('salt.utils.thin._six.PY3', True)
 +    @patch('salt.utils.thin._six.PY2', False)
 +    @patch('salt.utils.thin.sys.version_info', _version_info(None, 3, 6))
++    @patch('salt.utils.hashutils.DigestCollector', MagicMock())
 +    def test_gen_thin_ext_alternative_content_files_written_py3(self):
 +        '''
 +        Test thin.gen_thin function if external alternative content files are written.
@@ -1905,7 +2081,7 @@ index 0000000000..8157eefed8
 +                 'namespace/py2/root/r1', 'namespace/py2/root/r2', 'namespace/py2/root/r3',
 +                 'namespace/py2/root2/r4', 'namespace/py2/root2/r5', 'namespace/py2/root2/r6'
 +        ]
-+        for idx, cl in enumerate(thin.tarfile.open().method_calls[12:-5]):
++        for idx, cl in enumerate(thin.tarfile.open().method_calls[12:-6]):
 +            arcname = cl[2].get('arcname')
 +            assert arcname in files
 +            files.pop(files.index(arcname))
@@ -1946,6 +2122,6 @@ index 0000000000..8157eefed8
 +        for t_line in ['second-system-effect:2:7', 'solar-interference:2:6']:
 +            assert t_line in out
 -- 
-2.16.2
+2.17.0
 
 
