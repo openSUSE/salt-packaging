@@ -550,7 +550,9 @@ cp %{S:5} ./.travis.yml
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
+%if 0%{?suse_version}
 %patch4 -p1
+%endif
 %patch5 -p1
 %patch6 -p1
 %patch7 -p1
