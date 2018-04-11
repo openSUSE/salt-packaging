@@ -1,0 +1,89 @@
+From 6c3499aac53b46b0e3df8e45214ac52ff6f787f6 Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Wed, 21 Mar 2018 11:10:23 +0100
+Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
+ (bsc#1087581)
+
+  * Lintfix: PEP8 ident
+  * Use proper levels of the error handling, use proper log formatting.
+  * Fix unit test for reversed fqdns return data
+---
+ salt/grains/core.py            | 19 ++++++++++++-------
+ tests/unit/grains/test_core.py | 30 ++++++++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+), 7 deletions(-)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index 17a7d9819a..55100b38fc 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -1900,16 +1900,21 @@ def fqdns():
+     fqdns = set()
+ 
+     addresses = salt.utils.network.ip_addrs(include_loopback=False,
+-        interface_data=_INTERFACES)
++                                            interface_data=_INTERFACES)
+     addresses.extend(salt.utils.network.ip_addrs6(include_loopback=False,
+-        interface_data=_INTERFACES))
+-
++                                                  interface_data=_INTERFACES))
++    err_message = 'Exception during resolving address: %s'
+     for ip in addresses:
+         try:
+-            fqdns.add(socket.gethostbyaddr(ip)[0])
+-        except (socket.error, socket.herror,
+-            socket.gaierror, socket.timeout) as e:
+-            log.info("Exception during resolving address: " + str(e))
++            fqdns.add(socket.getfqdn(socket.gethostbyaddr(ip)[0]))
++        except socket.herror as err:
++            if err.errno == 1:
++                # No FQDN for this IP address, so we don't need to know this all the time.
++                log.debug("Unable to resolve address %s: %s", ip, err)
++            else:
++                log.error(err_message, err)
++        except (socket.error, socket.gaierror, socket.timeout) as err:
++            log.error(err_message, err)
+ 
+     grains['fqdns'] = list(fqdns)
+     return grains
+diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
+index 47c9cdd35b..f025883281 100644
+--- a/tests/unit/grains/test_core.py
++++ b/tests/unit/grains/test_core.py
+@@ -784,3 +784,33 @@ SwapTotal:       4789244 kB'''
+                        []}}
+         with patch.object(salt.utils.dns, 'parse_resolv', MagicMock(return_value=resolv_mock)):
+             assert core.dns() == ret
++
++    def _run_dns_test(self, resolv_mock, ret):
++        with patch.object(salt.utils, 'is_windows',
++                          MagicMock(return_value=False)):
++            with patch.dict(core.__opts__, {'ipv6': False}):
++                with patch.object(salt.utils.dns, 'parse_resolv',
++                                  MagicMock(return_value=resolv_mock)):
++                    get_dns = core.dns()
++                    self.assertEqual(get_dns, ret)
++
++    @skipIf(not salt.utils.platform.is_linux(), 'System is not Linux')
++    @patch.object(salt.utils, 'is_windows', MagicMock(return_value=False))
++    @patch('salt.utils.network.ip_addrs', MagicMock(return_value=['1.2.3.4', '5.6.7.8']))
++    @patch('salt.utils.network.ip_addrs6',
++           MagicMock(return_value=['fe80::a8b2:93ff:fe00:0', 'fe80::a8b2:93ff:dead:beef']))
++    @patch('salt.utils.network.socket.getfqdn', MagicMock(side_effect=lambda v: v))  # Just pass-through
++    def test_fqdns_return(self):
++        '''
++        test the return for a dns grain. test for issue:
++        https://github.com/saltstack/salt/issues/41230
++        '''
++        reverse_resolv_mock = [('foo.bar.baz', [], ['1.2.3.4']),
++                               ('rinzler.evil-corp.com', [], ['5.6.7.8']),
++                               ('foo.bar.baz', [], ['fe80::a8b2:93ff:fe00:0']),
++                               ('bluesniff.foo.bar', [], ['fe80::a8b2:93ff:dead:beef'])]
++        ret = {'fqdns': ['bluesniff.foo.bar', 'foo.bar.baz', 'rinzler.evil-corp.com']}
++        with patch.object(socket, 'gethostbyaddr', side_effect=reverse_resolv_mock):
++            fqdns = core.fqdns()
++            self.assertCountEqual(fqdns['fqdns'], ret['fqdns'])
++
+-- 
+2.13.6
+
+

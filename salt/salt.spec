@@ -52,7 +52,7 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        2017.7.2
+Version:        2018.3.0
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
@@ -65,30 +65,32 @@ Source3:        html.tar.bz2
 Source4:        update-documentation.sh
 Source5:        travis.yml
 
-Patch1:        list_pkgs-add-parameter-for-returned-attribute-selec.patch
-Patch2:        use-home-to-get-the-user-home-directory-instead-usin.patch
-Patch3:        multiprocessing-minion-option-documentation-fixes.patch
-Patch4:        introduce-process_count_max-minion-configuration-par.patch
-Patch5:        bugfix-always-return-a-string-list-on-unknown-job-ta.patch
-Patch6:        enable-with-salt-version-parameter-for-setup.py-scri.patch
-Patch7:        run-salt-master-as-dedicated-salt-user.patch
-Patch8:        run-salt-api-as-user-salt-bsc-1064520.patch
-Patch9:        activate-all-beacons-sources-config-pillar-grains.patch
-Patch10:       fix-for-delete_deployment-in-kubernetes-module.patch
-Patch11:       catching-error-when-pidfile-cannot-be-deleted.patch
-Patch12:       avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
-Patch13:       older-logrotate-need-su-directive.patch
-Patch14:       fix-salt-master-for-old-psutil.patch
-Patch15:       split-only-strings-if-they-are-such.patch
-Patch16:       cherrypy-read-reads-bytes-from-the-wire-and-write-th.patch
-Patch17:       python3-compatibility-fix-got-bytes-instead-of-strin.patch
-Patch19:       feat-add-grain-for-all-fqdns.patch
-Patch20:       fix-bsc-1065792.patch
-Patch21:       set-shell-environment-variable-64.patch
-Patch22:       bugfix-the-logic-according-to-the-exact-described-pu.patch
-Patch23:       return-error-when-gid_from_name-and-group-does-not-e.patch
-Patch24:       yumpkg-don-t-use-diff_attr-when-determining-install-.patch
+Patch1:        run-salt-master-as-dedicated-salt-user.patch
+Patch2:        run-salt-api-as-user-salt-bsc-1064520.patch
+Patch3:        activate-all-beacons-sources-config-pillar-grains.patch
+Patch4:        avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
+Patch5:        feat-add-grain-for-all-fqdns.patch
+Patch6:        fix-bsc-1065792.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46006
+Patch7:        remove-obsolete-unicode-handling-in-pkg.info_install.patch
+Patch8:        fix-openscap-push.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/45972
+Patch9:        move-log_file-option-to-changeable-defaults.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46416
+Patch10:       fix-cp.push-empty-file.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46575
+Patch11:       fix-decrease-loglevel-when-unable-to-resolve-addr.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46643
+Patch12:       make-it-possible-to-use-login-pull-and-push-from-mod.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46413
+Patch13:       explore-module.run-response-to-catch-the-result-in-d.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46684
+Patch14:       add-saltssh-multi-version-support-across-python-inte.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46635
+Patch15:       fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
 
+
+# BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
 %if 0%{?suse_version} > 1020
@@ -113,6 +115,16 @@ Requires(pre):  dbus
 
 Requires:       logrotate
 Requires:       procps
+
+%if 0%{?suse_version} >= 1500
+Requires:  	iproute2
+%else
+Requires:  	net-tools
+%endif
+
+%if 0%{?rhel}
+Requires:  	iproute
+%endif
 
 %if %{with systemd}
 BuildRequires:  systemd
@@ -531,6 +543,7 @@ Zsh command line completion support for %{name}.
 %endif
 
 %prep
+# %setup -q -n salt-%{version}
 %setup -q -n salt-%{version}
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
@@ -549,14 +562,6 @@ cp %{S:5} ./.travis.yml
 %patch13 -p1
 %patch14 -p1
 %patch15 -p1
-%patch16 -p1
-%patch17 -p1
-%patch19 -p1
-%patch20 -p1
-%patch21 -p1
-%patch22 -p1
-%patch23 -p1
-%patch24 -p1
 
 %build
 %if 0%{?build_py2}
@@ -1046,6 +1051,16 @@ fi
 %insserv_cleanup
 %restart_on_update
 %endif
+%endif
+
+%posttrans -n python2-salt
+# force re-generate a new thin.tgz
+rm -f %{_localstatedir}/cache/salt/master/thin/version
+
+%if 0%{?build_py3}
+%posttrans -n python3-salt
+# force re-generate a new thin.tgz
+rm -f %{_localstatedir}/cache/salt/master/thin/version
 %endif
 
 %files api
