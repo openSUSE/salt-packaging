@@ -1,4 +1,4 @@
-From 6c3499aac53b46b0e3df8e45214ac52ff6f787f6 Mon Sep 17 00:00:00 2001
+From 06793f4794d3681d536058b02c74eb6cb55a0393 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Wed, 21 Mar 2018 11:10:23 +0100
 Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
@@ -9,8 +9,8 @@ Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
   * Fix unit test for reversed fqdns return data
 ---
  salt/grains/core.py            | 19 ++++++++++++-------
- tests/unit/grains/test_core.py | 30 ++++++++++++++++++++++++++++++
- 2 files changed, 42 insertions(+), 7 deletions(-)
+ tests/unit/grains/test_core.py | 32 ++++++++++++++++++++++++++++++++
+ 2 files changed, 44 insertions(+), 7 deletions(-)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
 index 17a7d9819a..55100b38fc 100644
@@ -46,10 +46,10 @@ index 17a7d9819a..55100b38fc 100644
      grains['fqdns'] = list(fqdns)
      return grains
 diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
-index 47c9cdd35b..f025883281 100644
+index 47c9cdd35b..c604df6c57 100644
 --- a/tests/unit/grains/test_core.py
 +++ b/tests/unit/grains/test_core.py
-@@ -784,3 +784,33 @@ SwapTotal:       4789244 kB'''
+@@ -784,3 +784,35 @@ SwapTotal:       4789244 kB'''
                         []}}
          with patch.object(salt.utils.dns, 'parse_resolv', MagicMock(return_value=resolv_mock)):
              assert core.dns() == ret
@@ -81,7 +81,9 @@ index 47c9cdd35b..f025883281 100644
 +        ret = {'fqdns': ['bluesniff.foo.bar', 'foo.bar.baz', 'rinzler.evil-corp.com']}
 +        with patch.object(socket, 'gethostbyaddr', side_effect=reverse_resolv_mock):
 +            fqdns = core.fqdns()
-+            self.assertCountEqual(fqdns['fqdns'], ret['fqdns'])
++            self.assertIn('fqdns', fqdns)
++            self.assertEqual(len(fqdns['fqdns']), len(ret['fqdns']))
++            self.assertEqual(set(fqdns['fqdns']), set(ret['fqdns']))
 +
 -- 
 2.13.6
