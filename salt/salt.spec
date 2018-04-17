@@ -88,6 +88,8 @@ Patch13:       explore-module.run-response-to-catch-the-result-in-d.patch
 Patch14:       add-saltssh-multi-version-support-across-python-inte.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46635
 Patch15:       fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46890
+Patch16:       fall-back-to-pymysql.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -562,6 +564,7 @@ cp %{S:5} ./.travis.yml
 %patch13 -p1
 %patch14 -p1
 %patch15 -p1
+%patch16 -p1
 
 %build
 %if 0%{?build_py2}
