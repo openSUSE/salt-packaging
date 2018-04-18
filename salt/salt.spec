@@ -92,6 +92,8 @@ Patch15:       fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
 Patch16:       fall-back-to-pymysql.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
 Patch17:       strip-trailing-commas-on-linux-user-gecos-fields.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47155
+Patch18:       provide-kwargs-to-pkg_resource.parse_targets-require.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -568,6 +570,7 @@ cp %{S:5} ./.travis.yml
 %patch15 -p1
 %patch16 -p1
 %patch17 -p1
+%patch18 -p1
 
 %build
 %if 0%{?build_py2}

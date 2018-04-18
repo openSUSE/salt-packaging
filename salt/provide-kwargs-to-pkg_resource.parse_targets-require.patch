@@ -1,0 +1,37 @@
+From f7af1739a5795de6f98cfe2856372c755711e6dc Mon Sep 17 00:00:00 2001
+From: Michael Calmer <mc@suse.de>
+Date: Wed, 18 Apr 2018 17:19:18 +0200
+Subject: [PATCH] provide kwargs to pkg_resource.parse_targets required
+ to detect advisory type
+
+fix invalid string compare
+---
+ salt/modules/yumpkg.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
+index 39abb77fbc..9eb27e7701 100644
+--- a/salt/modules/yumpkg.py
++++ b/salt/modules/yumpkg.py
+@@ -1322,7 +1322,7 @@ def install(name=None,
+ 
+     try:
+         pkg_params, pkg_type = __salt__['pkg_resource.parse_targets'](
+-            name, pkgs, sources, saltenv=saltenv, normalize=normalize
++            name, pkgs, sources, saltenv=saltenv, normalize=normalize, **kwargs
+         )
+     except MinionError as exc:
+         raise CommandExecutionError(exc)
+@@ -1620,7 +1620,7 @@ def install(name=None,
+             if _yum() == 'dnf':
+                 cmd.extend(['--best', '--allowerasing'])
+             _add_common_args(cmd)
+-            cmd.append('install' if pkg_type is not 'advisory' else 'update')
++            cmd.append('install' if pkg_type != 'advisory' else 'update')
+             cmd.extend(targets)
+             out = __salt__['cmd.run_all'](
+                 cmd,
+-- 
+2.15.1
+
+
