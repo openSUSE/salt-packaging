@@ -1,0 +1,55 @@
+From f9fb3639bb3c44babd92d9499bdde83a0a81d6ab Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Wed, 18 Apr 2018 12:05:35 +0100
+Subject: [PATCH] Strip trailing commas on Linux user GECOS fields
+
+Add unit tests for GECOS fields
+---
+ salt/modules/useradd.py            |  2 +-
+ tests/unit/modules/test_useradd.py | 18 ++++++++++++++++++
+ 2 files changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/salt/modules/useradd.py b/salt/modules/useradd.py
+index 545fe2a6f1..a61ba0e960 100644
+--- a/salt/modules/useradd.py
++++ b/salt/modules/useradd.py
+@@ -81,7 +81,7 @@ def _build_gecos(gecos_dict):
+     return '{0},{1},{2},{3}'.format(gecos_dict.get('fullname', ''),
+                                     gecos_dict.get('roomnumber', ''),
+                                     gecos_dict.get('workphone', ''),
+-                                    gecos_dict.get('homephone', ''))
++                                    gecos_dict.get('homephone', '')).rstrip(',')
+ 
+ 
+ def _update_gecos(name, key, value, root=None):
+diff --git a/tests/unit/modules/test_useradd.py b/tests/unit/modules/test_useradd.py
+index eb983685bb..fa30a0df71 100644
+--- a/tests/unit/modules/test_useradd.py
++++ b/tests/unit/modules/test_useradd.py
+@@ -393,3 +393,21 @@ class UserAddTestCase(TestCase, LoaderModuleMockMixin):
+             mock = MagicMock(side_effect=[{'name': ''}, False, {'name': ''}])
+             with patch.object(useradd, 'info', mock):
+                 self.assertFalse(useradd.rename('salt', 'salt'))
++
++    def test_build_gecos_field(self):
++        '''
++        Test if gecos fields are built correctly (removing trailing commas)
++        '''
++        test_gecos = {'fullname': 'Testing',
++                      'roomnumber': 1234,
++                      'workphone': 22222,
++                      'homephone': 99999}
++        expected_gecos_fields = 'Testing,1234,22222,99999'
++        self.assertEqual(useradd._build_gecos(test_gecos), expected_gecos_fields)
++        test_gecos.pop('roomnumber')
++        test_gecos.pop('workphone')
++        expected_gecos_fields = 'Testing,,,99999'
++        self.assertEqual(useradd._build_gecos(test_gecos), expected_gecos_fields)
++        test_gecos.pop('homephone')
++        expected_gecos_fields = 'Testing'
++        self.assertEqual(useradd._build_gecos(test_gecos), expected_gecos_fields)
+-- 
+2.15.1
+
+

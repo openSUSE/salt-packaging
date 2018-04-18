@@ -1,4 +1,4 @@
-From ba72f52da3522623f0e7d1fd1034bebbaa2e5782 Mon Sep 17 00:00:00 2001
+From 36bc22560e050b7afe3d872aed99c0cdb9fde282 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Mon, 12 Mar 2018 12:01:39 +0100
 Subject: [PATCH] Add SaltSSH multi-version support across Python
@@ -251,18 +251,21 @@ Fix unit tests for the checksum generator
 Use code checksum to update thin archive on client's cache
 
 Lintfix
+
+Set master_top_first to False by default
 ---
- doc/topics/releases/fluorine.rst    | 178 ++++++++
- salt/client/ssh/__init__.py         |  66 ++-
- salt/client/ssh/ssh_py_shim.py      |  95 +++--
+ doc/topics/releases/fluorine.rst    | 178 +++++++++++
+ salt/client/ssh/__init__.py         |  66 ++--
+ salt/client/ssh/ssh_py_shim.py      |  95 ++++--
  salt/client/ssh/wrapper/__init__.py |   2 +-
+ salt/config/__init__.py             |   1 +
  salt/modules/zfs.py                 |   4 +-
  salt/modules/zpool.py               |   4 +-
  salt/state.py                       |   2 +-
- salt/utils/hashutils.py             |  37 ++
- salt/utils/thin.py                  | 450 ++++++++++++++------
- tests/unit/utils/test_thin.py       | 612 ++++++++++++++++++++++++++++
- 10 files changed, 1264 insertions(+), 186 deletions(-)
+ salt/utils/hashutils.py             |  37 +++
+ salt/utils/thin.py                  | 450 +++++++++++++++++++-------
+ tests/unit/utils/test_thin.py       | 612 ++++++++++++++++++++++++++++++++++++
+ 11 files changed, 1265 insertions(+), 186 deletions(-)
  create mode 100644 doc/topics/releases/fluorine.rst
  create mode 100644 tests/unit/utils/test_thin.py
 
@@ -754,6 +757,18 @@ index 04d751b51a..09f9344642 100644
                      fsclient=self.fsclient,
                      minion_opts=self.minion_opts,
                      **self.kwargs
+diff --git a/salt/config/__init__.py b/salt/config/__init__.py
+index df0e1388b7..b3de3820b0 100644
+--- a/salt/config/__init__.py
++++ b/salt/config/__init__.py
+@@ -1652,6 +1652,7 @@ DEFAULT_MASTER_OPTS = {
+     'state_top': 'top.sls',
+     'state_top_saltenv': None,
+     'master_tops': {},
++    'master_tops_first': False,
+     'order_masters': False,
+     'job_cache': True,
+     'ext_job_cache': '',
 diff --git a/salt/modules/zfs.py b/salt/modules/zfs.py
 index bc54044b5c..d8fbfc76be 100644
 --- a/salt/modules/zfs.py
@@ -2122,6 +2137,6 @@ index 0000000000..549d48a703
 +        for t_line in ['second-system-effect:2:7', 'solar-interference:2:6']:
 +            assert t_line in out
 -- 
-2.17.0
+2.15.1
 
 
