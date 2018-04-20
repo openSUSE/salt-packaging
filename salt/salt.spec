@@ -90,6 +90,8 @@ Patch14:       add-saltssh-multi-version-support-across-python-inte.patch
 Patch15:       fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46890
 Patch16:       fall-back-to-pymysql.patch
+# Description N/A
+Patch17:       please-leave-me-alone.-i-m-just-a-test.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
 Patch17:       strip-trailing-commas-on-linux-user-gecos-fields.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47155
@@ -569,6 +571,7 @@ cp %{S:5} ./.travis.yml
 %patch14 -p1
 %patch15 -p1
 %patch16 -p1
+%patch17 -p1
 %patch17 -p1
 %patch18 -p1
 

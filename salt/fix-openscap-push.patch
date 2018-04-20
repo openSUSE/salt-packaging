@@ -9,7 +9,7 @@ Subject: [PATCH] Fix openscap push
  2 files changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/salt/modules/openscap.py b/salt/modules/openscap.py
-index c5b51a1846..e3190e1e11 100644
+index c5b51a184..e3190e1e1 100644
 --- a/salt/modules/openscap.py
 +++ b/salt/modules/openscap.py
 @@ -13,7 +13,6 @@ from subprocess import Popen, PIPE
@@ -31,7 +31,7 @@ index c5b51a1846..e3190e1e11 100644
              upload_dir = tempdir
  
 diff --git a/tests/unit/modules/test_openscap.py b/tests/unit/modules/test_openscap.py
-index eb8ad1225b..6e17148de1 100644
+index eb8ad1225..6e17148de 100644
 --- a/tests/unit/modules/test_openscap.py
 +++ b/tests/unit/modules/test_openscap.py
 @@ -28,8 +28,10 @@ class OpenscapTestCase(TestCase):
@@ -67,6 +67,6 @@ index eb8ad1225b..6e17148de1 100644
              self.assertEqual(
                  response,
 -- 
-2.16.2
+2.12.3
 
 

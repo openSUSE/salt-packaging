@@ -8,7 +8,7 @@ Subject: [PATCH] avoid excessive syslogging by watchdog cronjob (#58)
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/pkg/suse/salt-minion b/pkg/suse/salt-minion
-index 2e418094ed..73a91ebd62 100755
+index 2e418094e..73a91ebd6 100755
 --- a/pkg/suse/salt-minion
 +++ b/pkg/suse/salt-minion
 @@ -55,7 +55,7 @@ WATCHDOG_CRON="/etc/cron.d/salt-minion"
@@ -21,6 +21,6 @@ index 2e418094ed..73a91ebd62 100755
          /usr/bin/salt-daemon-watcher --with-init & disown
      fi
 -- 
-2.16.2
+2.12.3
 
 
