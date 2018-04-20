@@ -1,0 +1,317 @@
+From f7ba683153e11be401a5971ba029d0a3964b1ecb Mon Sep 17 00:00:00 2001
+From: Maximilian Meister <mmeister@suse.de>
+Date: Thu, 5 Apr 2018 13:23:23 +0200
+Subject: [PATCH] fall back to PyMySQL
+
+same is already done in modules (see #26803)
+
+Signed-off-by: Maximilian Meister <mmeister@suse.de>
+---
+ salt/auth/mysql.py              | 25 ++++++++++++++++++++++---
+ salt/cache/mysql_cache.py       | 28 +++++++++++++++++++---------
+ salt/modules/mysql.py           | 22 ++++++++++------------
+ salt/pillar/mysql.py            | 21 ++++++++++++++++-----
+ salt/returners/mysql.py         | 29 +++++++++++++++++++++--------
+ tests/unit/pillar/test_mysql.py |  2 +-
+ 6 files changed, 89 insertions(+), 38 deletions(-)
+
+diff --git a/salt/auth/mysql.py b/salt/auth/mysql.py
+index 8bc18a4101..86d00a4373 100644
+--- a/salt/auth/mysql.py
++++ b/salt/auth/mysql.py
+@@ -55,10 +55,29 @@ import logging
+ log = logging.getLogger(__name__)
+ 
+ try:
++    # Trying to import MySQLdb
+     import MySQLdb
+-    HAS_MYSQL = True
++    import MySQLdb.cursors
++    import MySQLdb.converters
++    from MySQLdb.connections import OperationalError
+ except ImportError:
+-    HAS_MYSQL = False
++    try:
++        # MySQLdb import failed, try to import PyMySQL
++        import pymysql
++        pymysql.install_as_MySQLdb()
++        import MySQLdb
++        import MySQLdb.cursors
++        import MySQLdb.converters
++        from MySQLdb.err import OperationalError
++    except ImportError:
++        MySQLdb = None
++
++
++def __virtual__():
++    '''
++    Confirm that a python mysql client is installed.
++    '''
++    return bool(MySQLdb), 'No python mysql client installed.' if MySQLdb is None else ''
+ 
+ 
+ def __get_connection_info():
+@@ -95,7 +114,7 @@ def auth(username, password):
+                                _info['username'],
+                                _info['password'],
+                                _info['database'])
+-    except MySQLdb.OperationalError as e:
++    except OperationalError as e:
+         log.error(e)
+         return False
+ 
+diff --git a/salt/cache/mysql_cache.py b/salt/cache/mysql_cache.py
+index 9d6aa17987..8b0a942310 100644
+--- a/salt/cache/mysql_cache.py
++++ b/salt/cache/mysql_cache.py
+@@ -46,11 +46,24 @@ value to ``mysql``:
+ from __future__ import absolute_import, print_function, unicode_literals
+ from time import sleep
+ import logging
++
+ try:
++    # Trying to import MySQLdb
+     import MySQLdb
+-    HAS_MYSQL = True
++    import MySQLdb.cursors
++    import MySQLdb.converters
++    from MySQLdb.connections import OperationalError
+ except ImportError:
+-    HAS_MYSQL = False
++    try:
++        # MySQLdb import failed, try to import PyMySQL
++        import pymysql
++        pymysql.install_as_MySQLdb()
++        import MySQLdb
++        import MySQLdb.cursors
++        import MySQLdb.converters
++        from MySQLdb.err import OperationalError
++    except ImportError:
++        MySQLdb = None
+ 
+ from salt.exceptions import SaltCacheError
+ 
+@@ -71,12 +84,9 @@ __func_alias__ = {'ls': 'list'}
+ 
+ def __virtual__():
+     '''
+-    Confirm that python-mysql package is installed.
++    Confirm that a python mysql client is installed.
+     '''
+-    if not HAS_MYSQL:
+-        return (False, "Please install python-mysql package to use mysql data "
+-                "cache driver")
+-    return __virtualname__
++    return bool(MySQLdb), 'No python mysql client installed.' if MySQLdb is None else ''
+ 
+ 
+ def run_query(conn, query, retries=3):
+@@ -84,13 +94,13 @@ def run_query(conn, query, retries=3):
+     Get a cursor and run a query. Reconnect up to `retries` times if
+     needed.
+     Returns: cursor, affected rows counter
+-    Raises: SaltCacheError, AttributeError, MySQLdb.OperationalError
++    Raises: SaltCacheError, AttributeError, OperationalError
+     '''
+     try:
+         cur = conn.cursor()
+         out = cur.execute(query)
+         return cur, out
+-    except (AttributeError, MySQLdb.OperationalError) as e:
++    except (AttributeError, OperationalError) as e:
+         if retries == 0:
+             raise
+         # reconnect creating new client
+diff --git a/salt/modules/mysql.py b/salt/modules/mysql.py
+index 0625b02a96..8b17e461ea 100644
+--- a/salt/modules/mysql.py
++++ b/salt/modules/mysql.py
+@@ -51,13 +51,14 @@ import salt.utils.stringutils
+ from salt.ext import six
+ # pylint: disable=import-error
+ from salt.ext.six.moves import range, zip  # pylint: disable=no-name-in-module,redefined-builtin
++
+ try:
+-    # Try to import MySQLdb
++    # Trying to import MySQLdb
+     import MySQLdb
+     import MySQLdb.cursors
+     import MySQLdb.converters
+     from MySQLdb.constants import FIELD_TYPE, FLAG
+-    HAS_MYSQLDB = True
++    from MySQLdb.connections import OperationalError
+ except ImportError:
+     try:
+         # MySQLdb import failed, try to import PyMySQL
+@@ -67,10 +68,9 @@ except ImportError:
+         import MySQLdb.cursors
+         import MySQLdb.converters
+         from MySQLdb.constants import FIELD_TYPE, FLAG
+-        HAS_MYSQLDB = True
++        from MySQLdb.err import OperationalError
+     except ImportError:
+-        # No MySQL Connector installed, return False
+-        HAS_MYSQLDB = False
++        MySQLdb = None
+ 
+ log = logging.getLogger(__name__)
+ 
+@@ -195,11 +195,9 @@ And theses could be mixed, in a like query value with args: 'f\_o\%%o`b\'a"r'
+ 
+ def __virtual__():
+     '''
+-    Only load this module if the mysql libraries exist
++    Confirm that a python mysql client is installed.
+     '''
+-    if HAS_MYSQLDB:
+-        return True
+-    return (False, 'The mysql execution module cannot be loaded: neither MySQLdb nor PyMySQL is available.')
++    return bool(MySQLdb), 'No python mysql client installed.' if MySQLdb is None else ''
+ 
+ 
+ def __check_table(name, table, **connection_args):
+@@ -331,7 +329,7 @@ def _connect(**kwargs):
+         connargs.pop('passwd')
+     try:
+         dbc = MySQLdb.connect(**connargs)
+-    except MySQLdb.OperationalError as exc:
++    except OperationalError as exc:
+         err = 'MySQL Error {0}: {1}'.format(*exc)
+         __context__['mysql.error'] = err
+         log.error(err)
+@@ -647,7 +645,7 @@ def query(database, query, **connection_args):
+     log.debug('Using db: %s to run query %s', database, query)
+     try:
+         affected = _execute(cur, query)
+-    except MySQLdb.OperationalError as exc:
++    except OperationalError as exc:
+         err = 'MySQL Error {0}: {1}'.format(*exc)
+         __context__['mysql.error'] = err
+         log.error(err)
+@@ -772,7 +770,7 @@ def status(**connection_args):
+     qry = 'SHOW STATUS'
+     try:
+         _execute(cur, qry)
+-    except MySQLdb.OperationalError as exc:
++    except OperationalError as exc:
+         err = 'MySQL Error {0}: {1}'.format(*exc)
+         __context__['mysql.error'] = err
+         log.error(err)
+diff --git a/salt/pillar/mysql.py b/salt/pillar/mysql.py
+index 8029e5c197..d3f9619ad5 100644
+--- a/salt/pillar/mysql.py
++++ b/salt/pillar/mysql.py
+@@ -59,16 +59,27 @@ log = logging.getLogger(__name__)
+ 
+ # Import third party libs
+ try:
++    # Trying to import MySQLdb
+     import MySQLdb
+-    HAS_MYSQL = True
++    import MySQLdb.cursors
++    import MySQLdb.converters
+ except ImportError:
+-    HAS_MYSQL = False
++    try:
++        # MySQLdb import failed, try to import PyMySQL
++        import pymysql
++        pymysql.install_as_MySQLdb()
++        import MySQLdb
++        import MySQLdb.cursors
++        import MySQLdb.converters
++    except ImportError:
++        MySQLdb = None
+ 
+ 
+ def __virtual__():
+-    if not HAS_MYSQL:
+-        return False
+-    return True
++    '''
++    Confirm that a python mysql client is installed.
++    '''
++    return bool(MySQLdb), 'No python mysql client installed.' if MySQLdb is None else ''
+ 
+ 
+ class MySQLExtPillar(SqlBaseExtPillar):
+diff --git a/salt/returners/mysql.py b/salt/returners/mysql.py
+index af6698142b..85892cb06c 100644
+--- a/salt/returners/mysql.py
++++ b/salt/returners/mysql.py
+@@ -155,11 +155,24 @@ import salt.exceptions
+ 
+ # Import 3rd-party libs
+ from salt.ext import six
++
+ try:
++    # Trying to import MySQLdb
+     import MySQLdb
+-    HAS_MYSQL = True
++    import MySQLdb.cursors
++    import MySQLdb.converters
++    from MySQLdb.connections import OperationalError
+ except ImportError:
+-    HAS_MYSQL = False
++    try:
++        # MySQLdb import failed, try to import PyMySQL
++        import pymysql
++        pymysql.install_as_MySQLdb()
++        import MySQLdb
++        import MySQLdb.cursors
++        import MySQLdb.converters
++        from MySQLdb.err import OperationalError
++    except ImportError:
++        MySQLdb = None
+ 
+ log = logging.getLogger(__name__)
+ 
+@@ -168,10 +181,10 @@ __virtualname__ = 'mysql'
+ 
+ 
+ def __virtual__():
+-    if not HAS_MYSQL:
+-        return False, 'Could not import mysql returner; ' \
+-                      'mysql python client is not installed.'
+-    return True
++    '''
++    Confirm that a python mysql client is installed.
++    '''
++    return bool(MySQLdb), 'No python mysql client installed.' if MySQLdb is None else ''
+ 
+ 
+ def _get_options(ret=None):
+@@ -228,7 +241,7 @@ def _get_serv(ret=None, commit=False):
+             conn = __context__['mysql_returner_conn']
+             conn.ping()
+             connect = False
+-        except MySQLdb.connections.OperationalError as exc:
++        except OperationalError as exc:
+             log.debug('OperationalError on ping: %s', exc)
+ 
+     if connect:
+@@ -254,7 +267,7 @@ def _get_serv(ret=None, commit=False):
+                 __context__['mysql_returner_conn'] = conn
+             except TypeError:
+                 pass
+-        except MySQLdb.connections.OperationalError as exc:
++        except OperationalError as exc:
+             raise salt.exceptions.SaltMasterError('MySQL returner could not connect to database: {exc}'.format(exc=exc))
+ 
+     cursor = conn.cursor()
+diff --git a/tests/unit/pillar/test_mysql.py b/tests/unit/pillar/test_mysql.py
+index 8d49ac24e2..b72988673d 100644
+--- a/tests/unit/pillar/test_mysql.py
++++ b/tests/unit/pillar/test_mysql.py
+@@ -12,7 +12,7 @@ import salt.pillar.mysql as mysql
+ 
+ 
+ @skipIf(NO_MOCK, NO_MOCK_REASON)
+-@skipIf(not mysql.HAS_MYSQL, 'MySQL-python module not installed')
++@skipIf(mysql.MySQLdb is None, 'MySQL-python module not installed')
+ class MysqlPillarTestCase(TestCase):
+     maxDiff = None
+ 
+-- 
+2.13.6
+
+

@@ -88,6 +88,12 @@ Patch13:       explore-module.run-response-to-catch-the-result-in-d.patch
 Patch14:       add-saltssh-multi-version-support-across-python-inte.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46635
 Patch15:       fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46890
+Patch16:       fall-back-to-pymysql.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
+Patch17:       strip-trailing-commas-on-linux-user-gecos-fields.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47155
+Patch18:       provide-kwargs-to-pkg_resource.parse_targets-require.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -119,11 +125,11 @@ Requires:       procps
 %if 0%{?suse_version} >= 1500
 Requires:  	iproute2
 %else
+%if 0%{?suse_version}
 Requires:  	net-tools
-%endif
-
-%if 0%{?rhel}
+%else
 Requires:  	iproute
+%endif
 %endif
 
 %if %{with systemd}
@@ -564,6 +570,9 @@ cp %{S:5} ./.travis.yml
 %patch13 -p1
 %patch14 -p1
 %patch15 -p1
+%patch16 -p1
+%patch17 -p1
+%patch18 -p1
 
 %build
 %if 0%{?build_py2}
