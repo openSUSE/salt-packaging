@@ -125,11 +125,11 @@ Requires:       procps
 %if 0%{?suse_version} >= 1500
 Requires:  	iproute2
 %else
+%if 0%{?suse_version}
 Requires:  	net-tools
-%endif
-
-%if 0%{?rhel}
+%else
 Requires:  	iproute
+%endif
 %endif
 
 %if %{with systemd}
