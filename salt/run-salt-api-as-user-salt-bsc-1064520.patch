@@ -8,7 +8,7 @@ Subject: [PATCH] Run salt-api as user salt (bsc#1064520)
  1 file changed, 1 insertion(+)
 
 diff --git a/pkg/salt-api.service b/pkg/salt-api.service
-index 7ca582dfb4..bf513e4dbd 100644
+index 7ca582dfb..bf513e4db 100644
 --- a/pkg/salt-api.service
 +++ b/pkg/salt-api.service
 @@ -6,6 +6,7 @@ After=network.target
@@ -20,6 +20,6 @@ index 7ca582dfb4..bf513e4dbd 100644
  ExecStart=/usr/bin/salt-api
  TimeoutStopSec=3
 -- 
-2.16.2
+2.12.3
 
 

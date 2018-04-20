@@ -16,7 +16,7 @@ Signed-off-by: Maximilian Meister <mmeister@suse.de>
  6 files changed, 89 insertions(+), 38 deletions(-)
 
 diff --git a/salt/auth/mysql.py b/salt/auth/mysql.py
-index 8bc18a4101..86d00a4373 100644
+index 8bc18a410..86d00a437 100644
 --- a/salt/auth/mysql.py
 +++ b/salt/auth/mysql.py
 @@ -55,10 +55,29 @@ import logging
@@ -61,7 +61,7 @@ index 8bc18a4101..86d00a4373 100644
          return False
  
 diff --git a/salt/cache/mysql_cache.py b/salt/cache/mysql_cache.py
-index 9d6aa17987..8b0a942310 100644
+index 9d6aa1798..8b0a94231 100644
 --- a/salt/cache/mysql_cache.py
 +++ b/salt/cache/mysql_cache.py
 @@ -46,11 +46,24 @@ value to ``mysql``:
@@ -123,7 +123,7 @@ index 9d6aa17987..8b0a942310 100644
              raise
          # reconnect creating new client
 diff --git a/salt/modules/mysql.py b/salt/modules/mysql.py
-index 0625b02a96..8b17e461ea 100644
+index 0625b02a9..8b17e461e 100644
 --- a/salt/modules/mysql.py
 +++ b/salt/modules/mysql.py
 @@ -51,13 +51,14 @@ import salt.utils.stringutils
@@ -198,7 +198,7 @@ index 0625b02a96..8b17e461ea 100644
          __context__['mysql.error'] = err
          log.error(err)
 diff --git a/salt/pillar/mysql.py b/salt/pillar/mysql.py
-index 8029e5c197..d3f9619ad5 100644
+index 8029e5c19..d3f9619ad 100644
 --- a/salt/pillar/mysql.py
 +++ b/salt/pillar/mysql.py
 @@ -59,16 +59,27 @@ log = logging.getLogger(__name__)
@@ -235,7 +235,7 @@ index 8029e5c197..d3f9619ad5 100644
  
  class MySQLExtPillar(SqlBaseExtPillar):
 diff --git a/salt/returners/mysql.py b/salt/returners/mysql.py
-index af6698142b..85892cb06c 100644
+index af6698142..85892cb06 100644
 --- a/salt/returners/mysql.py
 +++ b/salt/returners/mysql.py
 @@ -155,11 +155,24 @@ import salt.exceptions
@@ -299,7 +299,7 @@ index af6698142b..85892cb06c 100644
  
      cursor = conn.cursor()
 diff --git a/tests/unit/pillar/test_mysql.py b/tests/unit/pillar/test_mysql.py
-index 8d49ac24e2..b72988673d 100644
+index 8d49ac24e..b72988673 100644
 --- a/tests/unit/pillar/test_mysql.py
 +++ b/tests/unit/pillar/test_mysql.py
 @@ -12,7 +12,7 @@ import salt.pillar.mysql as mysql
@@ -312,6 +312,6 @@ index 8d49ac24e2..b72988673d 100644
      maxDiff = None
  
 -- 
-2.13.6
+2.12.3
 
 
