@@ -21,7 +21,7 @@ https://github.com/saltstack/salt/pull/45060
  3 files changed, 29 insertions(+)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index b7d446676e..96b7ce2cf2 100644
+index b7d446676..96b7ce2cf 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
 @@ -1888,6 +1888,33 @@ def append_domain():
@@ -59,7 +59,7 @@ index b7d446676e..96b7ce2cf2 100644
      '''
      Return ip address and FQDN grains
 diff --git a/tests/integration/modules/test_grains.py b/tests/integration/modules/test_grains.py
-index 709f882b45..aa7bd44202 100644
+index 709f882b4..aa7bd4420 100644
 --- a/tests/integration/modules/test_grains.py
 +++ b/tests/integration/modules/test_grains.py
 @@ -51,6 +51,7 @@ class TestModulesGrains(ModuleCase):
@@ -71,7 +71,7 @@ index 709f882b45..aa7bd44202 100644
              'groupname',
              'host',
 diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
-index 50babe3ed3..47c9cdd35b 100644
+index 50babe3ed..47c9cdd35 100644
 --- a/tests/unit/grains/test_core.py
 +++ b/tests/unit/grains/test_core.py
 @@ -7,6 +7,7 @@
@@ -83,6 +83,6 @@ index 50babe3ed3..47c9cdd35b 100644
  # Import Salt Testing Libs
  try:
 -- 
-2.16.2
+2.12.3
 
 

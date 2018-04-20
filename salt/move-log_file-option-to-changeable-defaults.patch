@@ -8,7 +8,7 @@ Subject: [PATCH] move log_file option to changeable defaults
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/salt/client/ssh/__init__.py b/salt/client/ssh/__init__.py
-index 3dd46899e3..f1c1ad9a22 100644
+index 3dd46899e..f1c1ad9a2 100644
 --- a/salt/client/ssh/__init__.py
 +++ b/salt/client/ssh/__init__.py
 @@ -884,6 +884,7 @@ class Single(object):
@@ -28,6 +28,6 @@ index 3dd46899e3..f1c1ad9a22 100644
                  })
          self.minion_config = salt.serializers.yaml.serialize(self.minion_opts)
 -- 
-2.16.2
+2.12.3
 
 

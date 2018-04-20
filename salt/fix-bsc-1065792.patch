@@ -8,7 +8,7 @@ Subject: [PATCH] Fix bsc#1065792
  1 file changed, 1 insertion(+)
 
 diff --git a/salt/states/service.py b/salt/states/service.py
-index c5bf3f2d54..a5ec426ec4 100644
+index c5bf3f2d5..a5ec426ec 100644
 --- a/salt/states/service.py
 +++ b/salt/states/service.py
 @@ -80,6 +80,7 @@ def __virtual__():
@@ -20,6 +20,6 @@ index c5bf3f2d54..a5ec426ec4 100644
          return __virtualname__
      else:
 -- 
-2.16.2
+2.12.3
 
 

@@ -9,7 +9,7 @@ Co-authored-by: Jochen Breuer <jbreuer@suse.de>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/salt/master.py b/salt/master.py
-index fb704909c8..6fb37ece1a 100644
+index fb704909c..6fb37ece1 100644
 --- a/salt/master.py
 +++ b/salt/master.py
 @@ -1451,7 +1451,7 @@ class AESFuncs(object):
@@ -22,6 +22,6 @@ index fb704909c8..6fb37ece1a 100644
  
      def _pillar(self, load):
 -- 
-2.16.2
+2.12.3
 
 

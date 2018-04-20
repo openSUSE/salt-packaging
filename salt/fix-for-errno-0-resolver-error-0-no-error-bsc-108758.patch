@@ -1,4 +1,4 @@
-From 06793f4794d3681d536058b02c74eb6cb55a0393 Mon Sep 17 00:00:00 2001
+From c226374c35b86b7c34f5892368a91d45d5b5392f Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Wed, 21 Mar 2018 11:10:23 +0100
 Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
@@ -13,7 +13,7 @@ Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
  2 files changed, 44 insertions(+), 7 deletions(-)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index 17a7d9819a..55100b38fc 100644
+index 17a7d9819..55100b38f 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
 @@ -1900,16 +1900,21 @@ def fqdns():
@@ -46,7 +46,7 @@ index 17a7d9819a..55100b38fc 100644
      grains['fqdns'] = list(fqdns)
      return grains
 diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
-index 47c9cdd35b..c604df6c57 100644
+index 47c9cdd35..c604df6c5 100644
 --- a/tests/unit/grains/test_core.py
 +++ b/tests/unit/grains/test_core.py
 @@ -784,3 +784,35 @@ SwapTotal:       4789244 kB'''
@@ -86,6 +86,6 @@ index 47c9cdd35b..c604df6c57 100644
 +            self.assertEqual(set(fqdns['fqdns']), set(ret['fqdns']))
 +
 -- 
-2.13.6
+2.12.3
 
 

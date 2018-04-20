@@ -54,7 +54,7 @@ This patch changes the log level of the exception to INFO, since the resolve-una
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index 96b7ce2cf2..17a7d9819a 100644
+index 96b7ce2cf..17a7d9819 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
 @@ -1909,7 +1909,7 @@ def fqdns():
@@ -67,6 +67,6 @@ index 96b7ce2cf2..17a7d9819a 100644
      grains['fqdns'] = list(fqdns)
      return grains
 -- 
-2.16.2
+2.12.3
 
 
