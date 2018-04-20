@@ -14,7 +14,7 @@ add unit test for failed login
  2 files changed, 30 insertions(+), 4 deletions(-)
 
 diff --git a/salt/modules/dockermod.py b/salt/modules/dockermod.py
-index 23cff8806b..c20b73452b 100644
+index 23cff8806..c20b73452 100644
 --- a/salt/modules/dockermod.py
 +++ b/salt/modules/dockermod.py
 @@ -1354,7 +1354,7 @@ def login(*registries):
@@ -83,7 +83,7 @@ index 23cff8806b..c20b73452b 100644
  
  
 diff --git a/tests/unit/modules/test_dockermod.py b/tests/unit/modules/test_dockermod.py
-index 4e061ce369..77c4bcfb85 100644
+index 4e061ce36..77c4bcfb8 100644
 --- a/tests/unit/modules/test_dockermod.py
 +++ b/tests/unit/modules/test_dockermod.py
 @@ -64,6 +64,26 @@ class DockerTestCase(TestCase, LoaderModuleMockMixin):
@@ -114,6 +114,6 @@ index 4e061ce369..77c4bcfb85 100644
          '''
          Check that docker.ps called with host is ``True``,
 -- 
-2.16.2
+2.12.3
 
 

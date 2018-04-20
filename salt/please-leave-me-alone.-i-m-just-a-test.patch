@@ -1,0 +1,21 @@
+From 223e218fc5480c7012b8cdb2572acfbdf16a21cc Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Wed, 18 Apr 2018 09:40:37 +0200
+Subject: [PATCH] Please leave me alone. I'm just a test!
+
+---
+ test | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 test
+
+diff --git a/test b/test
+new file mode 100644
+index 000000000..257cc5642
+--- /dev/null
++++ b/test
+@@ -0,0 +1 @@
++foo
+-- 
+2.12.3
+
+

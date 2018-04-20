@@ -8,7 +8,7 @@ Subject: [PATCH] Remove obsolete unicode handling in pkg.info_installed
  1 file changed, 5 insertions(+), 10 deletions(-)
 
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index 51d01c3fc9..16fc877684 100644
+index 51d01c3fc..16fc87768 100644
 --- a/salt/modules/zypper.py
 +++ b/salt/modules/zypper.py
 @@ -309,7 +309,11 @@ class _Zypper(object):
@@ -41,6 +41,6 @@ index 51d01c3fc9..16fc877684 100644
                  t_nfo['source'] = value
              else:
 -- 
-2.16.2
+2.12.3
 
 
