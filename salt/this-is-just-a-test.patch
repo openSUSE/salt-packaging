@@ -1,0 +1,17 @@
+From 759d495494155d13423a890a1c363ae6b43add9d Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Sun, 22 Apr 2018 22:06:28 +0200
+Subject: [PATCH] This is just a test
+
+---
+ test_foo | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 test_foo
+
+diff --git a/test_foo b/test_foo
+new file mode 100644
+index 0000000000..e69de29bb2
+-- 
+2.12.3
+
+
