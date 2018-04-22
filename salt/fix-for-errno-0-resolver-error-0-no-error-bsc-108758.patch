@@ -1,4 +1,4 @@
-From 06793f4794d3681d536058b02c74eb6cb55a0393 Mon Sep 17 00:00:00 2001
+From b9cc71639d4e918ef14635124f6991917150de46 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Wed, 21 Mar 2018 11:10:23 +0100
 Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
@@ -13,7 +13,7 @@ Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
  2 files changed, 44 insertions(+), 7 deletions(-)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index 17a7d9819a..55100b38fc 100644
+index 17a7d9819a..cd9ba1f29c 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
 @@ -1900,16 +1900,21 @@ def fqdns():
@@ -35,7 +35,7 @@ index 17a7d9819a..55100b38fc 100644
 -            log.info("Exception during resolving address: " + str(e))
 +            fqdns.add(socket.getfqdn(socket.gethostbyaddr(ip)[0]))
 +        except socket.herror as err:
-+            if err.errno == 1:
++            if err.errno == 0:
 +                # No FQDN for this IP address, so we don't need to know this all the time.
 +                log.debug("Unable to resolve address %s: %s", ip, err)
 +            else:
