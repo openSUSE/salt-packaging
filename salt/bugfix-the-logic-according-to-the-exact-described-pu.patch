@@ -1,0 +1,306 @@
+From 4f70805112a410b3915ba106c4313a9ebe25c846 Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Tue, 21 Nov 2017 12:53:11 +0100
+Subject: [PATCH] Bugfix the logic according to the exact described
+ purpose of the function.
+
+Rename function from ambiguous name
+
+Fix and clarify docstring.
+
+Invert logic on error checking in all pillars
+
+Fix old tests
+
+Add unit tests for _get_pillar_errors
+---
+ salt/modules/state.py            | 81 +++++++++++++++++++--------------------
+ tests/unit/modules/state_test.py | 82 +++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 110 insertions(+), 53 deletions(-)
+
+diff --git a/salt/modules/state.py b/salt/modules/state.py
+index 37b91ee169..6a6a476388 100644
+--- a/salt/modules/state.py
++++ b/salt/modules/state.py
+@@ -98,17 +98,16 @@ def _set_retcode(ret):
+         __context__['retcode'] = 2
+ 
+ 
+-def _check_pillar(kwargs, pillar=None):
++def _get_pillar_errors(kwargs, pillar=None):
+     '''
+-    Check the pillar for errors, refuse to run the state if there are errors
+-    in the pillar and return the pillar errors
++    Checks all pillars (external and internal) for errors.
++    Return an error message, if anywhere or None.
++
++    :param kwargs: dictionary of options
++    :param pillar: external pillar
++    :return: None or an error message
+     '''
+-    if kwargs.get('force'):
+-        return True
+-    pillar_dict = pillar if pillar is not None else __pillar__
+-    if '_errors' in pillar_dict:
+-        return False
+-    return True
++    return None if kwargs.get('force') else (pillar or {}).get('_errors', __pillar__.get('_errors')) or None
+ 
+ 
+ def _wait(jid):
+@@ -381,10 +380,10 @@ def template(tem, queue=False, **kwargs):
+         return conflict
+     st_ = salt.state.HighState(__opts__, context=__context__)
+ 
+-    if not _check_pillar(kwargs, st_.opts['pillar']):
++    errors = _get_pillar_errors(kwargs, pillar=st_.opts['pillar'])
++    if errors:
+         __context__['retcode'] = 5
+-        raise CommandExecutionError('Pillar failed to render',
+-                                    info=st_.opts['pillar']['_errors'])
++        raise CommandExecutionError('Pillar failed to render', info=errors)
+ 
+     if not tem.endswith('.sls'):
+         tem = '{sls}.sls'.format(sls=tem)
+@@ -809,11 +808,10 @@ def highstate(test=None,
+                                    pillar_enc=pillar_enc,
+                                    mocked=kwargs.get('mock', False))
+ 
+-    if not _check_pillar(kwargs, st_.opts['pillar']):
++    errors = _get_pillar_errors(kwargs, pillar=st_.opts['pillar'])
++    if errors:
+         __context__['retcode'] = 5
+-        err = ['Pillar failed to render with the following messages:']
+-        err += __pillar__['_errors']
+-        return err
++        return ['Pillar failed to render with the following messages:'] + errors
+ 
+     st_.push_active()
+     ret = {}
+@@ -1015,11 +1013,10 @@ def sls(mods,
+                                    pillar_enc=pillar_enc,
+                                    mocked=kwargs.get('mock', False))
+ 
+-    if not _check_pillar(kwargs, st_.opts['pillar']):
++    errors = _get_pillar_errors(kwargs, pillar=st_.opts['pillar'])
++    if errors:
+         __context__['retcode'] = 5
+-        err = ['Pillar failed to render with the following messages:']
+-        err += __pillar__['_errors']
+-        return err
++        return ['Pillar failed to render with the following messages:'] + errors
+ 
+     orchestration_jid = kwargs.get('orchestration_jid')
+     umask = os.umask(0o77)
+@@ -1122,11 +1119,10 @@ def top(topfn,
+         )
+ 
+     st_ = salt.state.HighState(opts, pillar, pillar_enc=pillar_enc, context=__context__)
+-    if not _check_pillar(kwargs, st_.opts['pillar']):
++    errors = _get_pillar_errors(kwargs, st_.opts['pillar'])
++    if errors:
+         __context__['retcode'] = 5
+-        err = ['Pillar failed to render with the following messages:']
+-        err += __pillar__['_errors']
+-        return err
++        return ['Pillar failed to render with the following messages:'] + errors
+ 
+     st_.push_active()
+     st_.opts['state_top'] = salt.utils.url.create(topfn)
+@@ -1179,10 +1175,10 @@ def show_highstate(queue=False, **kwargs):
+ 
+     st_ = salt.state.HighState(__opts__, pillar, pillar_enc=pillar_enc)
+ 
+-    if not _check_pillar(kwargs, st_.opts['pillar']):
++    errors = _get_pillar_errors(kwargs, pillar=st_.opts['pillar'])
++    if errors:
+         __context__['retcode'] = 5
+-        raise CommandExecutionError('Pillar failed to render',
+-                                    info=st_.opts['pillar']['_errors'])
++        raise CommandExecutionError('Pillar failed to render', info=errors)
+ 
+     st_.push_active()
+     try:
+@@ -1209,10 +1205,10 @@ def show_lowstate(queue=False, **kwargs):
+         return conflict
+     st_ = salt.state.HighState(__opts__)
+ 
+-    if not _check_pillar(kwargs, st_.opts['pillar']):
++    errors = _get_pillar_errors(kwargs, pillar=st_.opts['pillar'])
++    if errors:
+         __context__['retcode'] = 5
+-        raise CommandExecutionError('Pillar failed to render',
+-                                    info=st_.opts['pillar']['_errors'])
++        raise CommandExecutionError('Pillar failed to render', info=errors)
+ 
+     st_.push_active()
+     try:
+@@ -1255,11 +1251,10 @@ def sls_id(
+     except NameError:
+         st_ = salt.state.HighState(opts)
+ 
+-    if not _check_pillar(kwargs, st_.opts['pillar']):
++    errors = _get_pillar_errors(kwargs, pillar=st_.opts['pillar'])
++    if errors:
+         __context__['retcode'] = 5
+-        err = ['Pillar failed to render with the following messages:']
+-        err += __pillar__['_errors']
+-        return err
++        return ['Pillar failed to render with the following messages:'] + errors
+ 
+     if isinstance(mods, six.string_types):
+         split_mods = mods.split(',')
+@@ -1324,10 +1319,10 @@ def show_low_sls(mods,
+         opts['pillarenv'] = kwargs['pillarenv']
+     st_ = salt.state.HighState(opts)
+ 
+-    if not _check_pillar(kwargs, st_.opts['pillar']):
++    errors = _get_pillar_errors(kwargs, pillar=st_.opts['pillar'])
++    if errors:
+         __context__['retcode'] = 5
+-        raise CommandExecutionError('Pillar failed to render',
+-                                    info=st_.opts['pillar']['_errors'])
++        raise CommandExecutionError('Pillar failed to render', info=errors)
+ 
+     if isinstance(mods, six.string_types):
+         mods = mods.split(',')
+@@ -1396,10 +1391,10 @@ def show_sls(mods, saltenv='base', test=None, queue=False, **kwargs):
+ 
+     st_ = salt.state.HighState(opts, pillar, pillar_enc=pillar_enc)
+ 
+-    if not _check_pillar(kwargs, st_.opts['pillar']):
++    errors = _get_pillar_errors(kwargs, st_.opts['pillar'])
++    if errors:
+         __context__['retcode'] = 5
+-        raise CommandExecutionError('Pillar failed to render',
+-                                    info=st_.opts['pillar']['_errors'])
++        raise CommandExecutionError('Pillar failed to render', info=errors)
+ 
+     if isinstance(mods, six.string_types):
+         mods = mods.split(',')
+@@ -1446,10 +1441,10 @@ def show_top(queue=False, **kwargs):
+         return conflict
+     st_ = salt.state.HighState(opts)
+ 
+-    if not _check_pillar(kwargs, st_.opts['pillar']):
++    errors = _get_pillar_errors(kwargs, pillar=st_.opts['pillar'])
++    if errors:
+         __context__['retcode'] = 5
+-        raise CommandExecutionError('Pillar failed to render',
+-                                    info=st_.opts['pillar']['_errors'])
++        raise CommandExecutionError('Pillar failed to render', info=errors)
+ 
+     errors = []
+     top_ = st_.get_top()
+diff --git a/tests/unit/modules/state_test.py b/tests/unit/modules/state_test.py
+index fb343043f6..8e8bebd4e2 100644
+--- a/tests/unit/modules/state_test.py
++++ b/tests/unit/modules/state_test.py
+@@ -644,9 +644,9 @@ class StateTestCase(TestCase):
+         with patch.object(state, '_check_queue', mock):
+             self.assertEqual(state.top("reverse_top.sls"), "A")
+ 
+-            mock = MagicMock(side_effect=[False, True, True])
+-            with patch.object(state, '_check_pillar', mock):
+-                with patch.dict(state.__pillar__, {"_errors": "E"}):
++            mock = MagicMock(side_effect=[['E'], None, None])
++            with patch.object(state, '_get_pillar_errors', mock):
++                with patch.dict(state.__pillar__, {"_errors": ["E"]}):
+                     self.assertListEqual(state.top("reverse_top.sls"), ret)
+ 
+                 with patch.dict(state.__opts__, {"test": "A"}):
+@@ -804,14 +804,14 @@ class StateTestCase(TestCase):
+                                                True),
+                                      ["A"])
+ 
+-                mock = MagicMock(side_effect=[False,
+-                                              True,
+-                                              True,
+-                                              True,
+-                                              True])
+-                with patch.object(state, '_check_pillar', mock):
++                mock = MagicMock(side_effect=[['E', '1'],
++                                              None,
++                                              None,
++                                              None,
++                                              None])
++                with patch.object(state, '_get_pillar_errors', mock):
+                     with patch.dict(state.__context__, {"retcode": 5}):
+-                        with patch.dict(state.__pillar__, {"_errors": "E1"}):
++                        with patch.dict(state.__pillar__, {"_errors": ['E', '1']}):
+                             self.assertListEqual(state.sls("core,edit.vim dev",
+                                                            None,
+                                                            None,
+@@ -934,6 +934,68 @@ class StateTestCase(TestCase):
+                     self.assertTrue(state.pkg("/tmp/state_pkg.tgz",
+                                               0, "md5"))
+ 
++
++class TestCasePillarChecks(TestCase):
++    def test_get_pillar_errors_CC(self):
++        '''
++        Test _get_pillar_errors function.
++        CC: External clean, Internal clean
++        :return:
++        '''
++        for int_pillar, ext_pillar in [({'foo': 'bar'}, {'fred': 'baz'}),
++                                       ({'foo': 'bar'}, None),
++                                       ({}, {'fred': 'baz'})]:
++            with patch('salt.modules.state.__pillar__', int_pillar):
++                for opts, res in [({'force': True}, None),
++                                  ({'force': False}, None),
++                                  ({}, None)]:
++                    assert res == state._get_pillar_errors(kwargs=opts, pillar=ext_pillar)
++
++    def test_get_pillar_errors_EC(self):
++        '''
++        Test _get_pillar_errors function.
++        EC: External erroneous, Internal clean
++        :return:
++        '''
++        errors = ['failure', 'everywhere']
++        for int_pillar, ext_pillar in [({'foo': 'bar'}, {'fred': 'baz', '_errors': errors}),
++                                       ({}, {'fred': 'baz', '_errors': ['failure', 'everywhere']})]:
++            with patch('salt.modules.state.__pillar__', int_pillar):
++                for opts, res in [({'force': True}, None),
++                                  ({'force': False}, errors),
++                                  ({}, errors)]:
++                    assert res == state._get_pillar_errors(kwargs=opts, pillar=ext_pillar)
++
++    def test_get_pillar_errors_EE(self):
++        '''
++        Test _get_pillar_errors function.
++        CC: External erroneous, Internal erroneous
++        :return:
++        '''
++        errors = ['failure', 'everywhere']
++        for int_pillar, ext_pillar in [({'foo': 'bar', '_errors': errors}, {'fred': 'baz', '_errors': errors})]:
++            with patch('salt.modules.state.__pillar__', int_pillar):
++                for opts, res in [({'force': True}, None),
++                                  ({'force': False}, errors),
++                                  ({}, errors)]:
++                    assert res == state._get_pillar_errors(kwargs=opts, pillar=ext_pillar)
++
++    def test_get_pillar_errors_CE(self):
++        '''
++        Test _get_pillar_errors function.
++        CC: External clean, Internal erroneous
++        :return:
++        '''
++        errors = ['failure', 'everywhere']
++        for int_pillar, ext_pillar in [({'foo': 'bar', '_errors': errors}, {'fred': 'baz'}),
++                                       ({'foo': 'bar', '_errors': errors}, None)]:
++            with patch('salt.modules.state.__pillar__', int_pillar):
++                for opts, res in [({'force': True}, None),
++                                  ({'force': False}, errors),
++                                  ({}, errors)]:
++                    assert res == state._get_pillar_errors(kwargs=opts, pillar=ext_pillar)
++
++
+ if __name__ == '__main__':
+     from integration import run_tests
+     run_tests(StateTestCase, needs_daemon=False)
+-- 
+2.13.6
+
+

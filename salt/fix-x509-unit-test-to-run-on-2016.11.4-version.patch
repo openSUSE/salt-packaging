@@ -1,0 +1,39 @@
+From 2a0513e24f6bd2b13a4c2564b45746b6346fca82 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Thu, 22 Feb 2018 08:55:43 +0000
+Subject: [PATCH] Fix x509 unit test to run on 2016.11.4 version
+
+---
+ tests/unit/modules/test_x509.py | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/tests/unit/modules/test_x509.py b/tests/unit/modules/test_x509.py
+index edafe4ff44..fec90e903b 100644
+--- a/tests/unit/modules/test_x509.py
++++ b/tests/unit/modules/test_x509.py
+@@ -23,9 +23,8 @@ try:
+ except ImportError as import_error:
+     pytest = None
+ 
+-from tests.support.mixins import LoaderModuleMockMixin
+-from tests.support.unit import TestCase, skipIf
+-from tests.support.mock import (
++from salttesting.unit import TestCase, skipIf
++from salttesting.mock import (
+     patch,
+     MagicMock,
+     NO_MOCK,
+@@ -37,7 +36,7 @@ from salt.modules import x509
+ 
+ @skipIf(NO_MOCK, NO_MOCK_REASON)
+ @skipIf(not bool(pytest), False)
+-class X509TestCase(TestCase, LoaderModuleMockMixin):
++class X509TestCase(TestCase):
+ 
+     def setup_loader_modules(self):
+         return {x509: {}}
+-- 
+2.15.1
+
+

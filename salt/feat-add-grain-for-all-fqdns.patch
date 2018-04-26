@@ -1,0 +1,117 @@
+From 54e1bafbf4a7d7274d41747464bb16bf0226398a Mon Sep 17 00:00:00 2001
+From: Michele Bologna <michele.bologna@suse.com>
+Date: Thu, 14 Dec 2017 18:20:02 +0100
+Subject: [PATCH] Feat: add grain for all FQDNs
+
+This PR adds a grain named fqdns to the grains.
+fqdns represents all the FQDNs known for the system on all available interfaces (excluding lo).
+
+Note: hostname != FQDN
+
+hostname is the UNIX name of the machine. A machine can have one and only one hostname.
+FQDN is host.domain that resolves to an IP address that the machines is answering to.
+A machine can have 1+ FQDNs.
+
+Upstream PR:
+https://github.com/saltstack/salt/pull/45060
+---
+ salt/grains/core.py                 | 27 +++++++++++++++++++++++++++
+ tests/integration/modules/grains.py |  1 +
+ tests/unit/grains/core_test.py      | 23 +++++++++++++++++++++++
+ 3 files changed, 51 insertions(+)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index a577c7c9d8..a039aaffba 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -1670,6 +1670,33 @@ def append_domain():
+     return grain
+ 
+ 
++def fqdns():
++    '''
++    Return all known FQDNs for the system by enumerating all interfaces and
++    then trying to reverse resolve them (excluding 'lo' interface).
++    '''
++    # Provides:
++    # fqdns
++
++    grains = {}
++    fqdns = set()
++
++    addresses = salt.utils.network.ip_addrs(include_loopback=False,
++        interface_data=_INTERFACES)
++    addresses.extend(salt.utils.network.ip_addrs6(include_loopback=False,
++        interface_data=_INTERFACES))
++
++    for ip in addresses:
++        try:
++            fqdns.add(socket.gethostbyaddr(ip)[0])
++        except (socket.error, socket.herror,
++            socket.gaierror, socket.timeout) as e:
++            log.error("Exception during resolving address: " + str(e))
++
++    grains['fqdns'] = list(fqdns)
++    return grains
++
++
+ def ip_fqdn():
+     '''
+     Return ip address and FQDN grains
+diff --git a/tests/integration/modules/grains.py b/tests/integration/modules/grains.py
+index 848a111720..ce0f037817 100644
+--- a/tests/integration/modules/grains.py
++++ b/tests/integration/modules/grains.py
+@@ -52,6 +52,7 @@ class TestModulesGrains(integration.ModuleCase):
+             'cpuarch',
+             'domain',
+             'fqdn',
++            'fqdns',
+             'gid',
+             'groupname',
+             'host',
+diff --git a/tests/unit/grains/core_test.py b/tests/unit/grains/core_test.py
+index 7f5430c233..c60bf373d6 100644
+--- a/tests/unit/grains/core_test.py
++++ b/tests/unit/grains/core_test.py
+@@ -7,6 +7,7 @@
+ from __future__ import absolute_import
+ import os
+ import platform
++import socket
+ 
+ # Import Salt Testing Libs
+ from salttesting import TestCase, skipIf
+@@ -459,6 +460,28 @@ PATCHLEVEL = 3
+         self.assertListEqual(list(os_grains.get('osrelease_info')), os_release_map['osrelease_info'])
+         self.assertEqual(os_grains.get('osmajorrelease'), os_release_map['osmajorrelease'])
+ 
++    @skipIf(not salt.utils.is_linux(), 'System is not Linux')
++    def test_fqdns_return(self):
++        '''
++        test the return for a dns grain. test for issue:
++        https://github.com/saltstack/salt/issues/41230
++        '''
++        reverse_resolv_mock = [('foo.bar.baz', [], ['1.2.3.4']),
++        ('rinzler.evil-corp.com', [], ['5.6.7.8']),
++        ('foo.bar.baz', [], ['fe80::a8b2:93ff:fe00:0']),
++        ('bluesniff.foo.bar', [], ['fe80::a8b2:93ff:dead:beef'])]
++        ret = {'fqdns': ['rinzler.evil-corp.com', 'foo.bar.baz', 'bluesniff.foo.bar']}
++        self._run_fqdns_test(reverse_resolv_mock, ret)
++
++    def _run_fqdns_test(self, reverse_resolv_mock, ret):
++        with patch.object(salt.utils, 'is_windows', MagicMock(return_value=False)):
++            with patch('salt.utils.network.ip_addrs',
++            MagicMock(return_value=['1.2.3.4', '5.6.7.8'])),\
++            patch('salt.utils.network.ip_addrs6',
++            MagicMock(return_value=['fe80::a8b2:93ff:fe00:0', 'fe80::a8b2:93ff:dead:beef'])):
++                with patch.object(socket, 'gethostbyaddr', side_effect=reverse_resolv_mock):
++                    fqdns = core.fqdns()
++                    self.assertEqual(fqdns, ret)
+ 
+ if __name__ == '__main__':
+     from integration import run_tests
+-- 
+2.13.6
+
+

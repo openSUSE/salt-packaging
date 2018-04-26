@@ -1,0 +1,36 @@
+From b54dc99fc9b56a9150e277425c9cb99631338778 Mon Sep 17 00:00:00 2001
+From: Hubert Mantel <mantel@suse.de>
+Date: Thu, 18 Jan 2018 11:03:47 +0100
+Subject: [PATCH] setvcpus/setmem: fix return value parsing issue when
+ calling vm_state(vm_) (bsc#1073618) (#65)
+
+---
+ salt/modules/virt.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/salt/modules/virt.py b/salt/modules/virt.py
+index f4901c1940..b904dbab66 100644
+--- a/salt/modules/virt.py
++++ b/salt/modules/virt.py
+@@ -1029,7 +1029,7 @@ def setmem(vm_, memory, config=False):
+         salt '*' virt.setmem <domain> <size>
+         salt '*' virt.setmem my_domain 768
+     '''
+-    if vm_state(vm_) != 'shutdown':
++    if vm_state(vm_)[vm_] != 'shutdown':
+         return False
+ 
+     dom = _get_domain(vm_)
+@@ -1063,7 +1063,7 @@ def setvcpus(vm_, vcpus, config=False):
+         salt '*' virt.setvcpus <domain> <amount>
+         salt '*' virt.setvcpus my_domain 4
+     '''
+-    if vm_state(vm_) != 'shutdown':
++    if vm_state(vm_)[vm_] != 'shutdown':
+         return False
+ 
+     dom = _get_domain(vm_)
+-- 
+2.13.6
+
+

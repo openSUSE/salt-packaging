@@ -1,0 +1,120 @@
+From 0750fe5c8592381cbfadc08b2cc00bd1e6ffe523 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Wed, 10 Jan 2018 11:59:33 +0000
+Subject: [PATCH] Return error when gid_from_name and group does not
+ exist.
+
+Fixes #45345
+
+Ensure empty string gid is set to None
+
+Make pylint happy
+
+Update documentation for 'gid_from_name' parameter
+
+Refactor to prevent logical bug when gid is 0
+
+Fix integration tests for 'user.present' state.
+---
+ salt/states/user.py              |  7 ++++++-
+ tests/integration/states/user.py | 41 +++++++++++++++++++++++++++-------------
+ 2 files changed, 34 insertions(+), 14 deletions(-)
+
+diff --git a/salt/states/user.py b/salt/states/user.py
+index 57623b2e94..48f0563ffb 100644
+--- a/salt/states/user.py
++++ b/salt/states/user.py
+@@ -237,7 +237,8 @@ def present(name,
+ 
+     gid_from_name
+         If True, the default group id will be set to the id of the group with
+-        the same name as the user, Default is ``False``.
++        the same name as the user. If the group does not exist the state will
++        fail. Default is ``False``.
+ 
+     groups
+         A list of groups to assign the user to, pass a list object. If a group
+@@ -443,6 +444,10 @@ def present(name,
+ 
+     if gid_from_name:
+         gid = __salt__['file.group_to_gid'](name)
++        if gid == '':
++            ret['comment'] = 'Default group with name "{0}" is not present'.format(name)
++            ret['result'] = False
++            return ret
+ 
+     if empty_password:
+         __salt__['shadow.del_password'](name)
+diff --git a/tests/integration/states/user.py b/tests/integration/states/user.py
+index 22ed655a00..7fd91d3406 100644
+--- a/tests/integration/states/user.py
++++ b/tests/integration/states/user.py
+@@ -116,13 +116,23 @@ class UserTest(integration.ModuleCase,
+ 
+     @destructiveTest
+     @skipIf(os.geteuid() != 0, 'you must be root to run this test')
+-    def test_user_present_nondefault(self):
++    @requires_system_grains
++    def test_user_present_nondefault(self, grains=None):
+         '''
+         This is a DESTRUCTIVE TEST it creates a new user on the on the minion.
+         '''
+         ret = self.run_state('user.present', name='salt_test',
+                              home='/var/lib/salt_test')
+         self.assertSaltTrueReturn(ret)
++        ret = self.run_function('user.info', ['salt_test'])
++        self.assertReturnNonEmptySaltType(ret)
++        group_name = grp.getgrgid(ret['gid']).gr_name
++        if grains['os_family'] in ('Suse',):
++            self.assertEqual(group_name, 'users')
++        elif grains['os_family'] == 'MacOS':
++            self.assertEqual(group_name, 'staff')
++        else:
++            self.assertEqual(group_name, 'salt_test')
+         self.assertTrue(os.path.isdir('/var/lib/salt_test'))
+         ret = self.run_state('user.absent', name='salt_test')
+         self.assertSaltTrueReturn(ret)
+@@ -142,21 +152,26 @@ class UserTest(integration.ModuleCase,
+         # user
+         gid_from_name = False if grains['os_family'] == 'MacOS' else True
+ 
+-        ret = self.run_state('user.present', name='salt_test',
++        ret_user_present = self.run_state('user.present', name='salt_test',
+                              gid_from_name=gid_from_name, home='/var/lib/salt_test')
+-        self.assertSaltTrueReturn(ret)
+-
+-        ret = self.run_function('user.info', ['salt_test'])
+-        self.assertReturnNonEmptySaltType(ret)
+-        group_name = grp.getgrgid(ret['gid']).gr_name
+ 
+-        self.assertTrue(os.path.isdir('/var/lib/salt_test'))
+-        if grains['os_family'] in ('Suse',):
+-            self.assertEqual(group_name, 'users')
+-        elif grains['os_family'] == 'MacOS':
+-            self.assertEqual(group_name, 'staff')
++        if gid_from_name:
++            self.assertSaltFalseReturn(ret_user_present)
++            ret_user_present = ret_user_present[next(iter(ret_user_present))]
++            self.assertTrue('is not present' in ret_user_present['comment'])
+         else:
+-            self.assertEqual(group_name, 'salt_test')
++            self.assertSaltTrueReturn(ret_user_present)
++            ret_user_info = self.run_function('user.info', ['salt_test'])
++            self.assertReturnNonEmptySaltType(ret_user_info)
++            group_name = grp.getgrgid(ret_user_info['gid']).gr_name
++            if not salt.utils.is_darwin():
++                self.assertTrue(os.path.isdir('/var/lib/salt_test'))
++            if grains['os_family'] in ('Suse',):
++                self.assertEqual(group_name, 'users')
++            elif grains['os_family'] == 'MacOS':
++                self.assertEqual(group_name, 'staff')
++            else:
++                self.assertEqual(group_name, 'salt_test')
+ 
+         ret = self.run_state('user.absent', name='salt_test')
+         self.assertSaltTrueReturn(ret)
+-- 
+2.13.6
+
+

@@ -1,0 +1,45 @@
+From ece2dcb905a9c9b819a890afb5ca8e1322776f41 Mon Sep 17 00:00:00 2001
+From: Daniel Wallace <danielwallace@gtmanfred.com>
+Date: Thu, 17 Aug 2017 15:46:10 -0600
+Subject: [PATCH] catch ImportError for kubernetes.client import
+
+---
+ salt/modules/kubernetes.py | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/salt/modules/kubernetes.py b/salt/modules/kubernetes.py
+index 8f2fd2f646..0c5c5336cb 100644
+--- a/salt/modules/kubernetes.py
++++ b/salt/modules/kubernetes.py
+@@ -54,20 +54,18 @@ try:
+     import kubernetes.client
+     from kubernetes.client.rest import ApiException
+     from urllib3.exceptions import HTTPError
++    try:
++        # There is an API change in Kubernetes >= 2.0.0.
++        from kubernetes.client import V1beta1Deployment as AppsV1beta1Deployment
++        from kubernetes.client import V1beta1DeploymentSpec as AppsV1beta1DeploymentSpec
++    except ImportError:
++        from kubernetes.client import AppsV1beta1Deployment
++        from kubernetes.client import AppsV1beta1DeploymentSpec
+ 
+     HAS_LIBS = True
+ except ImportError:
+     HAS_LIBS = False
+ 
+-try:
+-    # There is an API change in Kubernetes >= 2.0.0.
+-    from kubernetes.client import V1beta1Deployment as AppsV1beta1Deployment
+-    from kubernetes.client import V1beta1DeploymentSpec as AppsV1beta1DeploymentSpec
+-except ImportError:
+-    from kubernetes.client import AppsV1beta1Deployment
+-    from kubernetes.client import AppsV1beta1DeploymentSpec
+-
+-
+ log = logging.getLogger(__name__)
+ 
+ __virtualname__ = 'kubernetes'
+-- 
+2.13.6
+
+

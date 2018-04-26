@@ -1,0 +1,23 @@
+From a1b7ed5d749f7df248179e89593d38495346b661 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Fri, 20 Apr 2018 11:34:46 +0100
+Subject: [PATCH] Add rsyslog rule to avoid salt-minion-watcher cron logs
+ on RHEL6 (bsc#1090271)
+
+---
+ pkg/suse/rsyslog-cron-salt-watcher.conf | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 pkg/suse/rsyslog-cron-salt-watcher.conf
+
+diff --git a/pkg/suse/rsyslog-cron-salt-watcher.conf b/pkg/suse/rsyslog-cron-salt-watcher.conf
+new file mode 100644
+index 0000000000..acbb63341e
+--- /dev/null
++++ b/pkg/suse/rsyslog-cron-salt-watcher.conf
+@@ -0,0 +1 @@
++:msg, contains, "CMD (/usr/bin/salt-daemon-watcher --with-init)" ~ &
+-- 
+2.15.1
+
+

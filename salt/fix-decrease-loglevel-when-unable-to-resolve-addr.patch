@@ -1,0 +1,71 @@
+From 2e52d13c5345140873bc276834b6f9f45b4e6c59 Mon Sep 17 00:00:00 2001
+From: Michele Bologna <michele.bologna@suse.com>
+Date: Tue, 20 Mar 2018 19:27:36 +0100
+Subject: [PATCH] Fix: decrease loglevel when unable to resolve addr
+
+Upstream PR: https://github.com/saltstack/salt/pull/46575
+
+It occurs that when the machine has multiple interfaces without an associated FQDN, Salt logs are polluted by this error.
+Some examples:
+
+```
+caasp-admin:~ # uptime
+ 09:08am  up   0:13,  2 users,  load average: 1.30, 1.37, 0.98
+caasp-admin:~ # docker logs $(docker ps | grep salt-master | awk '{print $1}') 2>&1 | grep "Exception during resolving address" | wc -l
+528
+```
+
+```
+caasp-admin:~ # docker exec -it $(docker ps | grep salt-master | awk '{print $1}') salt '*' cmd.run uptime
+b24f41eb4cc94624862ca0c9e8afcd15:
+     09:08am  up   0:11,  0 users,  load average: 1.26, 0.83, 0.40
+admin:
+     09:08am  up   0:13,  2 users,  load average: 1.33, 1.37, 0.99
+ba8c76af029043a39ba917f7ab2af796:
+     09:08am  up   0:12,  0 users,  load average: 0.84, 0.63, 0.32
+7b7aa52158524556a0c46ae57569ce93:
+     09:08am  up   0:11,  1 user,  load average: 1.05, 0.77, 0.38
+5ab0e18cbd084e9088a928a17edb86cb:
+     09:08am  up   0:10,  0 users,  load average: 0.12, 0.25, 0.20
+1756c9cd9a9a402b91d8636400d1e512:
+     09:08am  up   0:09,  0 users,  load average: 0.12, 0.23, 0.14
+ca:
+     09:08am  up   0:13,  0 users,  load average: 1.33, 1.37, 0.99
+caasp-admin:~ # docker exec -it $(docker ps | grep salt-master | awk '{print $1}') salt '*' cmd.run "bash -c 'cat /var/log/salt/minion | grep \"Exception during resolving address\" | wc -l'"
+admin:
+    63
+ba8c76af029043a39ba917f7ab2af796:
+    47
+5ab0e18cbd084e9088a928a17edb86cb:
+    55
+7b7aa52158524556a0c46ae57569ce93:
+    59
+b24f41eb4cc94624862ca0c9e8afcd15:
+    47
+1756c9cd9a9a402b91d8636400d1e512:
+    59
+ca:
+    25
+```
+
+This patch changes the log level of the exception to INFO, since the resolve-unable problem is not blocking.
+---
+ salt/grains/core.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index 04b73f9120..081f40dca0 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -1777,7 +1777,7 @@ def fqdns():
+             fqdns.add(socket.gethostbyaddr(ip)[0])
+         except (socket.error, socket.herror,
+             socket.gaierror, socket.timeout) as e:
+-            log.error("Exception during resolving address: " + str(e))
++            log.info("Exception during resolving address: " + str(e))
+ 
+     grains['fqdns'] = list(fqdns)
+     return grains
+-- 
+2.13.6
+

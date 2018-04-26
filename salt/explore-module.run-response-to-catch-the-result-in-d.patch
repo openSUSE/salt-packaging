@@ -1,0 +1,137 @@
+From 9fec0d667a73df85537cfe9ac0f97e914c2ba725 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Wed, 7 Mar 2018 09:42:46 +0000
+Subject: [PATCH] Explore 'module.run' response to catch the 'result' in
+ depth
+
+Fix Python3 and pylint issue
+
+Rename and fix recursive method
+
+Add new unit test to check state.apply within module.run
+---
+ salt/states/module.py            | 19 +++++++++++++
+ tests/unit/states/module_test.py | 61 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 80 insertions(+)
+
+diff --git a/salt/states/module.py b/salt/states/module.py
+index adc6e12c9d..90c3760805 100644
+--- a/salt/states/module.py
++++ b/salt/states/module.py
+@@ -99,6 +99,7 @@ import salt.loader
+ import salt.utils
+ import salt.utils.jid
+ from salt.ext.six.moves import range
++from salt.ext import six
+ 
+ 
+ def wait(name, **kwargs):
+@@ -291,6 +292,24 @@ def run(name, **kwargs):
+                 ret['result'] = changes_ret.get('result', {})
+             elif changes_ret.get('retcode', 0) != 0:
+                 ret['result'] = False
++            # Explore dict in depth to determine if there is a
++            # 'result' key set to False which sets the global
++            # state result.
++            else:
++                ret['result'] = _get_dict_result(changes_ret)
++    return ret
++
++
++def _get_dict_result(node):
++    ret = True
++    for key, val in six.iteritems(node):
++        if key == 'result' and val is False:
++            ret = False
++            break
++        elif isinstance(val, dict):
++            ret = _get_dict_result(val)
++            if ret is False:
++                break
+     return ret
+ 
+ mod_watch = salt.utils.alias_function(run, 'mod_watch')
+diff --git a/tests/unit/states/module_test.py b/tests/unit/states/module_test.py
+index 20dda73938..86a37ac0dc 100644
+--- a/tests/unit/states/module_test.py
++++ b/tests/unit/states/module_test.py
+@@ -27,6 +27,57 @@ MOCK = MagicMock()
+ module.__salt__ = {CMD: MOCK}
+ module.__opts__ = {'test': False}
+ 
++STATE_APPLY_RET = {
++    'module_|-test2_|-state.apply_|-run': {
++        'comment': 'Module function state.apply executed',
++        'name': 'state.apply',
++        'start_time': '16:11:48.818932',
++        'result': False,
++        'duration': 179.439,
++        '__run_num__': 0,
++        'changes': {
++            'ret': {
++                'module_|-test3_|-state.apply_|-run': {
++                    'comment': 'Module function state.apply executed',
++                    'name': 'state.apply',
++                    'start_time': '16:11:48.904796',
++                    'result': True,
++                    'duration': 89.522,
++                    '__run_num__': 0,
++                    'changes': {
++                        'ret': {
++                            'module_|-test4_|-cmd.run_|-run': {
++                                'comment': 'Module function cmd.run executed',
++                                'name': 'cmd.run',
++                                'start_time': '16:11:48.988574',
++                                'result': True,
++                                'duration': 4.543,
++                                '__run_num__': 0,
++                                'changes': {
++                                    'ret': 'Wed Mar  7 16:11:48 CET 2018'
++                                },
++                                '__id__': 'test4'
++                            }
++                        }
++                    },
++                    '__id__': 'test3'
++                },
++                'module_|-test3_fail_|-test3_fail_|-run': {
++                    'comment': 'Module function test3_fail is not available',
++                    'name': 'test3_fail',
++                    'start_time': '16:11:48.994607',
++                    'result': False,
++                    'duration': 0.466,
++                    '__run_num__': 1,
++                    'changes': {},
++                    '__id__': 'test3_fail'
++                }
++            }
++        },
++        '__id__': 'test2'
++    }
++}
++
+ 
+ @skipIf(NO_MOCK, NO_MOCK_REASON)
+ class ModuleStateTest(TestCase):
+@@ -64,6 +115,16 @@ class ModuleStateTest(TestCase):
+             comment = 'Module function {0} is set to execute'.format(CMD)
+             self.assertEqual(ret['comment'], comment)
+ 
++    def test_run_state_apply_result_false(self):
++        '''
++        Tests the 'result' of module.run that calls state.apply execution module
++        :return:
++        '''
++        with patch.dict(module.__salt__, {"state.apply": MagicMock(return_value=STATE_APPLY_RET)}):
++            ret = module.run(**{"name": "state.apply", 'mods': 'test2'})
++            if ret['result']:
++                self.fail('module.run did not report false result: {0}'.format(ret))
++
+     @patch('salt.utils.args.get_function_argspec', MagicMock(return_value=aspec))
+     def test_module_run_missing_arg(self):
+         '''
+-- 
+2.15.1
+
+

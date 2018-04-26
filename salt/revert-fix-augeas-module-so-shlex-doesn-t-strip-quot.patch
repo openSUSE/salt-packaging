@@ -1,0 +1,26 @@
+From 2218fa2f7eecdcc2ffdef779189e46e89330e6dd Mon Sep 17 00:00:00 2001
+From: "C. R. Oldham" <cro@ncbt.org>
+Date: Tue, 6 Dec 2016 16:39:15 -0700
+Subject: [PATCH] Revert "fix augeas module so shlex doesn't strip quotes"
+
+---
+ salt/modules/augeas_cfg.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/modules/augeas_cfg.py b/salt/modules/augeas_cfg.py
+index 401a11eb1b..6b1f1e7b1b 100644
+--- a/salt/modules/augeas_cfg.py
++++ b/salt/modules/augeas_cfg.py
+@@ -199,7 +199,7 @@ def execute(context=None, lens=None, commands=(), load_path=None):
+             method = METHOD_MAP[cmd]
+             nargs = arg_map[method]
+ 
+-            parts = salt.utils.shlex_split(arg, posix=False)
++            parts = salt.utils.shlex_split(arg)
+ 
+             if len(parts) not in nargs:
+                 err = '{0} takes {1} args: {2}'.format(method, nargs, parts)
+-- 
+2.16.2
+
+

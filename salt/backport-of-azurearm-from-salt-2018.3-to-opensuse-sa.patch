@@ -1,0 +1,5010 @@
+From e41bf24bdf543ec960b297de5354e36d58f97940 Mon Sep 17 00:00:00 2001
+From: ed lane <ed.lane.0@gmail.com>
+Date: Mon, 16 Apr 2018 09:01:13 -0600
+Subject: [PATCH] Backport of AzureARM from Salt 2018.3 to OpenSUSE-Salt
+ 2016.11.4 (#72)
+
+* patches applied from azurearm-backport-from-2018.3-to-2016.11.4
+* fix Python 2.6 incompatible syntax
+---
+ salt/cloud/clouds/azurearm.py  | 396 +++++++++++++++++------
+ salt/utils/cloud.py            | 694 +++++++++++++++++++++--------------------
+ salt/utils/crypt.py            | 140 +++++++++
+ salt/utils/data.py             | 568 +++++++++++++++++++++++++++++++++
+ salt/utils/decorators/jinja.py |  85 +++++
+ salt/utils/files.py            | 528 ++++++++++++++++++++++++++++++-
+ salt/utils/msazure.py          |   4 +-
+ salt/utils/platform.py         | 158 ++++++++++
+ salt/utils/stringutils.py      | 405 ++++++++++++++++++++++++
+ salt/utils/versions.py         | 293 +++++++++++++++++
+ salt/utils/yaml.py             |  10 +
+ salt/utils/yamldumper.py       |  74 ++++-
+ salt/utils/yamlloader.py       |  79 +++--
+ 13 files changed, 2960 insertions(+), 474 deletions(-)
+ create mode 100644 salt/utils/crypt.py
+ create mode 100644 salt/utils/data.py
+ create mode 100644 salt/utils/decorators/jinja.py
+ create mode 100644 salt/utils/platform.py
+ create mode 100644 salt/utils/stringutils.py
+ create mode 100644 salt/utils/versions.py
+ create mode 100644 salt/utils/yaml.py
+
+diff --git a/salt/cloud/clouds/azurearm.py b/salt/cloud/clouds/azurearm.py
+index fcec348ab5..05038e501b 100644
+--- a/salt/cloud/clouds/azurearm.py
++++ b/salt/cloud/clouds/azurearm.py
+@@ -10,23 +10,44 @@ The Azure cloud module is used to control access to Microsoft Azure
+ :depends:
+     * `Microsoft Azure SDK for Python <https://pypi.python.org/pypi/azure>`_ >= 2.0rc5
+     * `Microsoft Azure Storage SDK for Python <https://pypi.python.org/pypi/azure-storage>`_ >= 0.32
++    * `Microsoft Azure CLI <https://pypi.python.org/pypi/azure-cli>` >= 2.0.12
+ :configuration:
+     Required provider parameters:
+ 
++    if using username and password:
+     * ``subscription_id``
+     * ``username``
+     * ``password``
+ 
++    if using a service principal:
++    * ``subscription_id``
++    * ``tenant``
++    * ``client_id``
++    * ``secret``
++
+ Example ``/etc/salt/cloud.providers`` or
+ ``/etc/salt/cloud.providers.d/azure.conf`` configuration:
+ 
+ .. code-block:: yaml
+ 
+-    my-azure-config:
++    my-azure-config with username and password:
+       driver: azure
+       subscription_id: 3287abc8-f98a-c678-3bde-326766fd3617
+       username: larry
+       password: 123pass
++
++    Or my-azure-config with service principal:
++      driver: azure
++      subscription_id: 3287abc8-f98a-c678-3bde-326766fd3617
++      tenant: ABCDEFAB-1234-ABCD-1234-ABCDEFABCDEF
++      client_id: ABCDEFAB-1234-ABCD-1234-ABCDEFABCDEF
++      secret: XXXXXXXXXXXXXXXXXXXXXXXX
++
++      The Service Principal can be created with the new Azure CLI (https://github.com/Azure/azure-cli) with:
++      az ad sp create-for-rbac -n "http://<yourappname>" --role <role> --scopes <scope>
++      For example, this creates a service principal with 'owner' role for the whole subscription:
++      az ad sp create-for-rbac -n "http://mysaltapp" --role owner --scopes /subscriptions/3287abc8-f98a-c678-3bde-326766fd3617
++      *Note: review the details of Service Principals. Owner role is more than you normally need, and you can restrict scope to a resource group or individual resources.
+ '''
+ # pylint: disable=E0102
+ 
+@@ -39,25 +60,31 @@ import logging
+ import pprint
+ import base64
+ import yaml
++import collections
+ import salt.cache
+ import salt.config as config
+-import salt.utils
+ import salt.utils.cloud
+-import salt.ext.six as six
++import salt.utils.data
++import salt.utils.files
++from salt.utils.versions import LooseVersion
++from salt.ext import six
+ import salt.version
+ from salt.exceptions import (
+     SaltCloudSystemExit,
+     SaltCloudExecutionFailure,
+     SaltCloudExecutionTimeout,
+ )
++from salt.ext.six.moves import filter
+ 
+ # Import 3rd-party libs
+ HAS_LIBS = False
+ try:
+     import salt.utils.msazure
+     from salt.utils.msazure import object_to_dict
+-    import azure.storage
+-    from azure.common.credentials import UserPassCredentials
++    from azure.common.credentials import (
++        UserPassCredentials,
++        ServicePrincipalCredentials,
++    )
+     from azure.mgmt.compute import ComputeManagementClient
+     from azure.mgmt.compute.models import (
+         CachingTypes,
+@@ -70,6 +97,7 @@ try:
+         OSDisk,
+         OSProfile,
+         StorageProfile,
++        SubResource,
+         VirtualHardDisk,
+         VirtualMachine,
+         VirtualMachineSizeTypes,
+@@ -78,6 +106,7 @@ try:
+     from azure.mgmt.network.models import (
+         IPAllocationMethod,
+         NetworkInterface,
++        NetworkInterfaceDnsSettings,
+         NetworkInterfaceIPConfiguration,
+         NetworkSecurityGroup,
+         PublicIPAddress,
+@@ -87,6 +116,7 @@ try:
+     from azure.mgmt.storage import StorageManagementClient
+     from azure.mgmt.web import WebSiteManagementClient
+     from msrestazure.azure_exceptions import CloudError
++    from azure.storage.cloudstorageaccount import CloudStorageAccount
+     HAS_LIBS = True
+ except ImportError:
+     pass
+@@ -116,7 +146,13 @@ def __virtual__():
+         return False
+ 
+     if get_dependencies() is False:
+-        return False
++        return (
++            False,
++            'The following dependencies are required to use the AzureARM driver: '
++            'Microsoft Azure SDK for Python >= 2.0rc5, '
++            'Microsoft Azure Storage SDK for Python >= 0.32, '
++            'Microsoft Azure CLI >= 2.0.12'
++        )
+ 
+     global cache  # pylint: disable=global-statement,invalid-name
+     cache = salt.cache.Cache(__opts__)
+@@ -128,11 +164,19 @@ def get_configured_provider():
+     '''
+     Return the first configured instance.
+     '''
+-    return config.is_provider_configured(
++    provider = config.is_provider_configured(
+         __opts__,
+         __active_provider_name__ or __virtualname__,
+-        ('subscription_id', 'username', 'password')
+-    )
++        ('subscription_id', 'tenant', 'client_id', 'secret')
++        )
++    if provider is False:
++        return config.is_provider_configured(
++            __opts__,
++            __active_provider_name__ or __virtualname__,
++            ('subscription_id', 'username', 'password')
++        )
++    else:
++        return provider
+ 
+ 
+ def get_dependencies():
+@@ -157,17 +201,31 @@ def get_conn(Client=None):
+         get_configured_provider(), __opts__, search_global=False
+     )
+ 
+-    username = config.get_cloud_config_value(
+-        'username',
+-        get_configured_provider(), __opts__, search_global=False
+-    )
+-
+-    password = config.get_cloud_config_value(
+-        'password',
++    tenant = config.get_cloud_config_value(
++        'tenant',
+         get_configured_provider(), __opts__, search_global=False
+     )
++    if tenant is not None:
++        client_id = config.get_cloud_config_value(
++            'client_id',
++            get_configured_provider(), __opts__, search_global=False
++        )
++        secret = config.get_cloud_config_value(
++            'secret',
++            get_configured_provider(), __opts__, search_global=False
++        )
++        credentials = ServicePrincipalCredentials(client_id, secret, tenant=tenant)
++    else:
++        username = config.get_cloud_config_value(
++            'username',
++            get_configured_provider(), __opts__, search_global=False
++        )
++        password = config.get_cloud_config_value(
++            'password',
++            get_configured_provider(), __opts__, search_global=False
++        )
++        credentials = UserPassCredentials(username, password)
+ 
+-    credentials = UserPassCredentials(username, password)
+     client = Client(
+         credentials=credentials,
+         subscription_id=subscription_id,
+@@ -202,29 +260,14 @@ def avail_locations(conn=None, call=None):  # pylint: disable=unused-argument
+ 
+     ret = {}
+     regions = webconn.global_model.get_subscription_geo_regions()
+-    for location in regions.value:  # pylint: disable=no-member
++    if hasattr(regions, 'value'):
++        regions = regions.value
++    for location in regions:  # pylint: disable=no-member
+         lowername = str(location.name).lower().replace(' ', '')
+         ret[lowername] = object_to_dict(location)
+     return ret
+ 
+ 
+-def _cache(bank, key, fun, **kwargs):
+-    '''
+-    Cache an Azure ARM object
+-    '''
+-    items = cache.fetch(bank, key)
+-    if items is None:
+-        items = {}
+-        try:
+-            item_list = fun(**kwargs)
+-        except CloudError as exc:
+-            log.warning('There was a cloud error calling {0} with kwargs {1}: {2}'.format(fun, kwargs, exc))
+-        for item in item_list:
+-            items[item.name] = object_to_dict(item)
+-        cache.store(bank, key, items)
+-    return items
+-
+-
+ def avail_images(conn=None, call=None):  # pylint: disable=unused-argument
+     '''
+     List available images for Azure
+@@ -241,59 +284,79 @@ def avail_images(conn=None, call=None):  # pylint: disable=unused-argument
+ 
+     region = get_location()
+     bank = 'cloud/metadata/azurearm/{0}'.format(region)
+-    publishers = _cache(
++    publishers = cache.cache(
+         bank,
+         'publishers',
+         compconn.virtual_machine_images.list_publishers,
++        loop_fun=object_to_dict,
++        expire=config.get_cloud_config_value(
++            'expire_publisher_cache', get_configured_provider(),
++            __opts__, search_global=False, default=604800,  # 7 days
++        ),
+         location=region,
+     )
+ 
+     ret = {}
+     for publisher in publishers:
+-        pub_bank = os.path.join(bank, 'publishers', publisher)
+-        offers = _cache(
++        pub_bank = os.path.join(bank, 'publishers', publisher['name'])
++        offers = cache.cache(
+             pub_bank,
+             'offers',
+             compconn.virtual_machine_images.list_offers,
++            loop_fun=object_to_dict,
++            expire=config.get_cloud_config_value(
++                'expire_offer_cache', get_configured_provider(),
++                __opts__, search_global=False, default=518400,  # 6 days
++            ),
+             location=region,
+-            publisher_name=publishers[publisher]['name'],
++            publisher_name=publisher['name'],
+         )
+ 
+         for offer in offers:
+-            offer_bank = os.path.join(pub_bank, 'offers', offer)
+-            skus = _cache(
++            offer_bank = os.path.join(pub_bank, 'offers', offer['name'])
++            skus = cache.cache(
+                 offer_bank,
+                 'skus',
+                 compconn.virtual_machine_images.list_skus,
++                loop_fun=object_to_dict,
++                expire=config.get_cloud_config_value(
++                    'expire_sku_cache', get_configured_provider(),
++                    __opts__, search_global=False, default=432000,  # 5 days
++                ),
+                 location=region,
+-                publisher_name=publishers[publisher]['name'],
+-                offer=offers[offer]['name'],
++                publisher_name=publisher['name'],
++                offer=offer['name'],
+             )
+ 
+             for sku in skus:
+-                sku_bank = os.path.join(offer_bank, 'skus', sku)
+-                results = _cache(
++                sku_bank = os.path.join(offer_bank, 'skus', sku['name'])
++                results = cache.cache(
+                     sku_bank,
+                     'results',
+                     compconn.virtual_machine_images.list,
++                    loop_fun=object_to_dict,
++                    expire=config.get_cloud_config_value(
++                        'expire_version_cache', get_configured_provider(),
++                        __opts__, search_global=False, default=345600,  # 4 days
++                    ),
+                     location=region,
+-                    publisher_name=publishers[publisher]['name'],
+-                    offer=offers[offer]['name'],
+-                    skus=skus[sku]['name'],
++                    publisher_name=publisher['name'],
++                    offer=offer['name'],
++                    skus=sku['name'],
+                 )
+ 
+                 for version in results:
+                     name = '|'.join((
+-                        publishers[publisher]['name'],
+-                        offers[offer]['name'],
+-                        skus[sku]['name'],
+-                        results[version]['name'],
++                        publisher['name'],
++                        offer['name'],
++                        sku['name'],
++                        version['name'],
+                     ))
+                     ret[name] = {
+-                        'publisher': publishers[publisher]['name'],
+-                        'offer': offers[offer]['name'],
+-                        'sku': skus[sku]['name'],
+-                        'version': results[version]['name'],
++                        'publisher': publisher['name'],
++                        'offer': offer['name'],
++                        'sku': sku['name'],
++                        'version': version['name'],
+                     }
+     return ret
+ 
+@@ -322,7 +385,7 @@ def avail_sizes(call=None):  # pylint: disable=unused-argument
+ 
+ def list_nodes(conn=None, call=None):  # pylint: disable=unused-argument
+     '''
+-    List VMs on this Azure account
++    List VMs on this Azure Active Provider
+     '''
+     if call == 'action':
+         raise SaltCloudSystemExit(
+@@ -335,7 +398,18 @@ def list_nodes(conn=None, call=None):  # pylint: disable=unused-argument
+         compconn = get_conn()
+ 
+     nodes = list_nodes_full(compconn, call)
++
++    active_resource_group = None
++    try:
++        provider, driver = __active_provider_name__.split(':')
++        active_resource_group = __opts__['providers'][provider][driver]['resource_group']
++    except KeyError:
++        pass
++
+     for node in nodes:
++        if active_resource_group is not None:
++            if nodes[node]['resource_group'] != active_resource_group:
++                continue
+         ret[node] = {'name': node}
+         for prop in ('id', 'image', 'size', 'state', 'private_ips', 'public_ips'):
+             ret[node][prop] = nodes[node].get(prop)
+@@ -359,14 +433,16 @@ def list_nodes_full(conn=None, call=None):  # pylint: disable=unused-argument
+     for group in list_resource_groups():
+         nodes = compconn.virtual_machines.list(group)
+         for node in nodes:
++            private_ips, public_ips = __get_ips_from_node(group, node)
+             ret[node.name] = object_to_dict(node)
+             ret[node.name]['id'] = node.id
+             ret[node.name]['name'] = node.name
+             ret[node.name]['size'] = node.hardware_profile.vm_size
+             ret[node.name]['state'] = node.provisioning_state
+-            ret[node.name]['private_ips'] = node.network_profile.network_interfaces
+-            ret[node.name]['public_ips'] = node.network_profile.network_interfaces
++            ret[node.name]['private_ips'] = private_ips
++            ret[node.name]['public_ips'] = public_ips
+             ret[node.name]['storage_profile']['data_disks'] = []
++            ret[node.name]['resource_group'] = group
+             for disk in node.storage_profile.data_disks:
+                 ret[node.name]['storage_profile']['data_disks'].append(make_safe(disk))
+             try:
+@@ -384,6 +460,30 @@ def list_nodes_full(conn=None, call=None):  # pylint: disable=unused-argument
+     return ret
+ 
+ 
++def __get_ips_from_node(resource_group, node):
++    '''
++    List private and public IPs from a VM interface
++    '''
++    global netconn  # pylint: disable=global-statement,invalid-name
++    if not netconn:
++        netconn = get_conn(NetworkManagementClient)
++
++    private_ips = []
++    public_ips = []
++    for node_iface in node.network_profile.network_interfaces:
++        node_iface_name = node_iface.id.split('/')[-1]
++        network_interface = netconn.network_interfaces.get(resource_group, node_iface_name)
++        for ip_configuration in network_interface.ip_configurations:
++            if ip_configuration.private_ip_address:
++                private_ips.append(ip_configuration.private_ip_address)
++            if ip_configuration.public_ip_address and ip_configuration.public_ip_address.id:
++                public_iface_name = ip_configuration.public_ip_address.id.split('/')[-1]
++                public_iface = netconn.public_ip_addresses.get(resource_group, public_iface_name)
++                public_ips.append(public_iface.ip_address)
++
++    return private_ips, public_ips
++
++
+ def list_resource_groups(conn=None, call=None):  # pylint: disable=unused-argument
+     '''
+     List resource groups associated with the account
+@@ -409,7 +509,7 @@ def list_resource_groups(conn=None, call=None):  # pylint: disable=unused-argume
+         loop_fun=object_to_dict,
+         expire=config.get_cloud_config_value(
+             'expire_group_cache', get_configured_provider(),
+-            __opts__, search_global=False, default=86400,
++            __opts__, search_global=False, default=14400,
+         )
+     )
+ 
+@@ -474,7 +574,7 @@ def show_instance(name, resource_group=None, call=None):  # pylint: disable=unus
+     data['resource_group'] = resource_group
+ 
+     __utils__['cloud.cache_node'](
+-        salt.utils.simple_types_filter(data),
++        salt.utils.data.simple_types_filter(data),
+         __active_provider_name__,
+         __opts__
+     )
+@@ -516,7 +616,7 @@ def list_networks(call=None, kwargs=None):  # pylint: disable=unused-argument
+                 loop_fun=make_safe,
+                 expire=config.get_cloud_config_value(
+                     'expire_network_cache', get_configured_provider(),
+-                    __opts__, search_global=False, default=86400,
++                    __opts__, search_global=False, default=3600,
+                 ),
+                 resource_group_name=group,
+             )
+@@ -566,11 +666,12 @@ def list_subnets(call=None, kwargs=None):  # pylint: disable=unused-argument
+     for subnet in subnets:
+         ret[subnet.name] = make_safe(subnet)
+         ret[subnet.name]['ip_configurations'] = {}
+-        for ip_ in subnet.ip_configurations:
+-            comps = ip_.id.split('/')
+-            name = comps[-1]
+-            ret[subnet.name]['ip_configurations'][name] = make_safe(ip_)
+-            ret[subnet.name]['ip_configurations'][name]['subnet'] = subnet.name
++        if subnet.ip_configurations:
++            for ip_ in subnet.ip_configurations:
++                comps = ip_.id.split('/')
++                name = comps[-1]
++                ret[subnet.name]['ip_configurations'][name] = make_safe(ip_)
++                ret[subnet.name]['ip_configurations'][name]['subnet'] = subnet.name
+         ret[subnet.name]['resource_group'] = kwargs['resource_group']
+     return ret
+ 
+@@ -658,11 +759,18 @@ def show_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
+     data['ip_configurations'] = {}
+     for ip_ in iface.ip_configurations:
+         data['ip_configurations'][ip_.name] = make_safe(ip_)
+-        pubip = netconn.public_ip_addresses.get(
+-            kwargs['resource_group'],
+-            ip_.name,
+-        )
+-        data['ip_configurations'][ip_.name]['public_ip_address']['ip_address'] = pubip.ip_address
++        if ip_.public_ip_address is not None:
++            try:
++                pubip = netconn.public_ip_addresses.get(
++                    kwargs['resource_group'],
++                    ip_.name,
++                )
++                data['ip_configurations'][ip_.name]['public_ip_address']['ip_address'] = pubip.ip_address
++            except Exception as exc:
++                log.warning('There was a cloud error: {0}'.format(exc))
++                log.warning('{0}'.format(type(exc)))
++                continue
++
+     return data
+ 
+ 
+@@ -712,6 +820,9 @@ def list_interfaces(call=None, kwargs=None):  # pylint: disable=unused-argument
+         kwargs = {}
+ 
+     if kwargs.get('resource_group') is None:
++        kwargs['resource_group'] = kwargs.get('group')
++
++    if kwargs['resource_group'] is None:
+         kwargs['resource_group'] = config.get_cloud_config_value(
+             'resource_group', {}, __opts__, search_global=True,
+             default=config.get_cloud_config_value(
+@@ -728,7 +839,7 @@ def list_interfaces(call=None, kwargs=None):  # pylint: disable=unused-argument
+         loop_fun=make_safe,
+         expire=config.get_cloud_config_value(
+             'expire_interface_cache', get_configured_provider(),
+-            __opts__, search_global=False, default=86400,
++            __opts__, search_global=False, default=3600,
+         ),
+         resource_group_name=kwargs['resource_group']
+     )
+@@ -766,6 +877,17 @@ def create_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
+     if kwargs.get('iface_name') is None:
+         kwargs['iface_name'] = '{0}-iface0'.format(vm_['name'])
+ 
++    backend_pools = None
++    if kwargs.get('load_balancer') and kwargs.get('backend_pool'):
++        load_balancer_obj = netconn.load_balancers.get(
++            resource_group_name=kwargs['network_resource_group'],
++            load_balancer_name=kwargs['load_balancer'],
++        )
++        backend_pools = list(filter(
++            lambda backend: backend.name == kwargs['backend_pool'],
++            load_balancer_obj.backend_address_pools,
++        ))
++
+     subnet_obj = netconn.subnets.get(
+         resource_group_name=kwargs['network_resource_group'],
+         virtual_network_name=kwargs['network'],
+@@ -774,6 +896,13 @@ def create_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
+ 
+     ip_kwargs = {}
+     ip_configurations = None
++
++    if 'private_ip_address' in kwargs.keys():
++        ip_kwargs['private_ip_address'] = kwargs['private_ip_address']
++        ip_kwargs['private_ip_allocation_method'] = IPAllocationMethod.static
++    else:
++        ip_kwargs['private_ip_allocation_method'] = IPAllocationMethod.dynamic
++
+     if bool(kwargs.get('public_ip')) is True:
+         pub_ip_name = '{0}-ip'.format(kwargs['iface_name'])
+         poller = netconn.public_ip_addresses.create_or_update(
+@@ -799,7 +928,7 @@ def create_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
+                     ip_configurations = [
+                         NetworkInterfaceIPConfiguration(
+                             name='{0}-ip'.format(kwargs['iface_name']),
+-                            private_ip_allocation_method='Dynamic',
++                            load_balancer_backend_address_pools=backend_pools,
+                             subnet=subnet_obj,
+                             **ip_kwargs
+                         )
+@@ -816,14 +945,35 @@ def create_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
+         ip_configurations = [
+             NetworkInterfaceIPConfiguration(
+                 name='{0}-ip'.format(kwargs['iface_name']),
+-                private_ip_allocation_method='Dynamic',
++                load_balancer_backend_address_pools=backend_pools,
+                 subnet=subnet_obj,
++                **ip_kwargs
+             )
+         ]
+ 
++    dns_settings = None
++    if kwargs.get('dns_servers') is not None:
++        if isinstance(kwargs['dns_servers'], list):
++            dns_settings = NetworkInterfaceDnsSettings(
++                dns_servers=kwargs['dns_servers'],
++                applied_dns_servers=kwargs['dns_servers'],
++                internal_dns_name_label=None,
++                internal_fqdn=None,
++                internal_domain_name_suffix=None,
++            )
++
++    network_security_group = None
++    if kwargs.get('security_group') is not None:
++        network_security_group = netconn.network_security_groups.get(
++            resource_group_name=kwargs['resource_group'],
++            network_security_group_name=kwargs['security_group'],
++        )
++
+     iface_params = NetworkInterface(
+         location=kwargs['location'],
++        network_security_group=network_security_group,
+         ip_configurations=ip_configurations,
++        dns_settings=dns_settings,
+     )
+ 
+     poller = netconn.network_interfaces.create_or_update(
+@@ -867,6 +1017,16 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
+             'name', vm_, __opts__, search_global=True
+         )
+ 
++    vm_['availability_set_id'] = None
++    if vm_.get('availability_set'):
++        availability_set = compconn.availability_sets.get(
++            resource_group_name=vm_['resource_group'],
++            availability_set_name=vm_['availability_set'],
++        )
++        vm_['availability_set_id'] = SubResource(
++            id=availability_set.id
++        )
++
+     os_kwargs = {}
+     userdata = None
+     userdata_file = config.get_cloud_config_value(
+@@ -878,7 +1038,7 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
+         )
+     else:
+         if os.path.exists(userdata_file):
+-            with salt.utils.fopen(userdata_file, 'r') as fh_:
++            with salt.utils.files.fopen(userdata_file, 'r') as fh_:
+                 userdata = fh_.read()
+ 
+     userdata = salt.utils.cloud.userdata_template(__opts__, vm_, userdata)
+@@ -924,6 +1084,19 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
+     for volume in volumes:
+         if isinstance(volume, six.string_types):
+             volume = {'name': volume}
++
++        # Creating the name of the datadisk if missing in the configuration of the minion
++        # If the "name: name_of_my_disk" entry then we create it with the same logic than the os disk
++        volume.setdefault(
++            'name', volume.get(
++                'name', volume.get('name', '{0}-datadisk{1}'.format(
++                    vm_['name'],
++                    str(lun),
++                    ),
++                )
++            )
++        )
++
+         # Use the size keyword to set a size, but you can use either the new
+         # azure name (disk_size_gb) or the old (logical_disk_size_in_gb)
+         # instead. If none are set, the disk has size 100GB.
+@@ -1006,6 +1179,7 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
+                 ),
+                 os_type=os_type,
+                 image=source_image,
++                disk_size_gb=vm_.get('os_disk_size_gb', 30)
+             ),
+             data_disks=data_disks,
+             image_reference=img_ref,
+@@ -1021,6 +1195,16 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
+                 NetworkInterfaceReference(vm_['iface_id']),
+             ],
+         ),
++        availability_set=vm_['availability_set_id'],
++    )
++
++    __utils__['cloud.fire_event'](
++        'event',
++        'requesting instance',
++        'salt/cloud/{0}/requesting'.format(vm_['name']),
++        args=__utils__['cloud.filter_event']('requesting', vm_, ['name', 'profile', 'provider', 'driver']),
++        sock_dir=__opts__['sock_dir'],
++        transport=__opts__['transport']
+     )
+ 
+     poller = compconn.virtual_machines.create_or_update(
+@@ -1052,20 +1236,11 @@ def create(vm_):
+     except AttributeError:
+         pass
+ 
+-    # Since using "provider: <provider-engine>" is deprecated, alias provider
+-    # to use driver: "driver: <provider-engine>"
+-    if 'provider' in vm_:
+-        vm_['driver'] = vm_.pop('provider')
+-
+     __utils__['cloud.fire_event'](
+         'event',
+         'starting create',
+         'salt/cloud/{0}/creating'.format(vm_['name']),
+-        args={
+-            'name': vm_['name'],
+-            'profile': vm_['profile'],
+-            'provider': vm_['driver'],
+-        },
++        args=__utils__['cloud.filter_event']('creating', vm_, ['name', 'profile', 'provider', 'driver']),
+         sock_dir=__opts__['sock_dir'],
+         transport=__opts__['transport']
+     )
+@@ -1078,8 +1253,8 @@ def create(vm_):
+     def _query_ip_address():
+         data = request_instance(kwargs=vm_)
+         ifaces = data['network_profile']['network_interfaces']
+-        iface = ifaces.keys()[0]
+-        ip_name = ifaces[iface]['ip_configurations'].keys()[0]
++        iface = list(ifaces)[0]
++        ip_name = list(ifaces[iface]['ip_configurations'])[0]
+ 
+         if vm_.get('public_ip') is True:
+             hostname = ifaces[iface]['ip_configurations'][ip_name]['public_ip_address']
+@@ -1109,7 +1284,9 @@ def create(vm_):
+         finally:
+             raise SaltCloudSystemExit(str(exc))
+ 
+-    hostname = _query_ip_address()
++    # calling _query_ip_address() causes Salt to attempt to build the VM again.
++    #hostname = _query_ip_address()
++    hostname = data
+ 
+     if not hostname or not isinstance(hostname, six.string_types):
+         log.error('Failed to get a value for the hostname.')
+@@ -1139,11 +1316,7 @@ def create(vm_):
+         'event',
+         'created instance',
+         'salt/cloud/{0}/created'.format(vm_['name']),
+-        args={
+-            'name': vm_['name'],
+-            'profile': vm_['profile'],
+-            'provider': vm_['driver'],
+-        },
++        args=__utils__['cloud.filter_event']('created', vm_, ['name', 'profile', 'provider', 'driver']),
+         sock_dir=__opts__['sock_dir'],
+         transport=__opts__['transport']
+     )
+@@ -1168,6 +1341,15 @@ def destroy(name, conn=None, call=None, kwargs=None):  # pylint: disable=unused-
+             '-a or --action.'
+         )
+ 
++    __utils__['cloud.fire_event'](
++        'event',
++        'destroying instance',
++        'salt/cloud/{0}/destroying'.format(name),
++        args={'name': name},
++        sock_dir=__opts__['sock_dir'],
++        transport=__opts__['transport']
++    )
++
+     global compconn  # pylint: disable=global-statement,invalid-name
+     if not compconn:
+         compconn = get_conn()
+@@ -1261,6 +1443,15 @@ def destroy(name, conn=None, call=None, kwargs=None):  # pylint: disable=unused-
+                 )
+             )
+ 
++    __utils__['cloud.fire_event'](
++        'event',
++        'destroyed instance',
++        'salt/cloud/{0}/destroyed'.format(name),
++        args={'name': name},
++        sock_dir=__opts__['sock_dir'],
++        transport=__opts__['transport']
++    )
++
+     return ret
+ 
+ 
+@@ -1268,7 +1459,7 @@ def make_safe(data):
+     '''
+     Turn object data into something serializable
+     '''
+-    return salt.utils.simple_types_filter(object_to_dict(data))
++    return salt.utils.data.simple_types_filter(object_to_dict(data))
+ 
+ 
+ def create_security_group(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -1509,10 +1700,15 @@ def pages_to_list(items):
+     while True:
+         try:
+             page = items.next()  # pylint: disable=incompatible-py3-code
+-            for item in page:
+-                objs.append(item)
++            if isinstance(page, collections.Iterable):
++                for item in page:
++                    objs.append(item)
++            else:
++                objs.append(page)
+         except GeneratorExit:
+             break
++        except StopIteration:
++            break
+     return objs
+ 
+ 
+@@ -1542,7 +1738,7 @@ def list_containers(call=None, kwargs=None):  # pylint: disable=unused-argument
+     if not storconn:
+         storconn = get_conn(StorageManagementClient)
+ 
+-    storageaccount = azure.storage.CloudStorageAccount(
++    storageaccount = CloudStorageAccount(
+         config.get_cloud_config_value(
+             'storage_account',
+             get_configured_provider(), __opts__, search_global=False
+@@ -1583,7 +1779,7 @@ def list_blobs(call=None, kwargs=None):  # pylint: disable=unused-argument
+             'A container must be specified'
+         )
+ 
+-    storageaccount = azure.storage.CloudStorageAccount(
++    storageaccount = CloudStorageAccount(
+         config.get_cloud_config_value(
+             'storage_account',
+             get_configured_provider(), __opts__, search_global=False
+@@ -1623,7 +1819,7 @@ def delete_blob(call=None, kwargs=None):  # pylint: disable=unused-argument
+             'A blob must be specified'
+         )
+ 
+-    storageaccount = azure.storage.CloudStorageAccount(
++    storageaccount = CloudStorageAccount(
+         config.get_cloud_config_value(
+             'storage_account',
+             get_configured_provider(), __opts__, search_global=False
+diff --git a/salt/utils/cloud.py b/salt/utils/cloud.py
+index 0485a7476a..0d59aaf7db 100644
+--- a/salt/utils/cloud.py
++++ b/salt/utils/cloud.py
+@@ -4,10 +4,9 @@ Utility functions for salt.cloud
+ '''
+ 
+ # Import python libs
+-from __future__ import absolute_import
++from __future__ import absolute_import, print_function, unicode_literals
+ import errno
+ import os
+-import sys
+ import stat
+ import codecs
+ import shutil
+@@ -26,16 +25,6 @@ import re
+ import uuid
+ 
+ 
+-# Let's import pwd and catch the ImportError. We'll raise it if this is not
+-# Windows
+-try:
+-    import pwd
+-except ImportError:
+-    if not sys.platform.lower().startswith('win'):
+-        # We can't use salt.utils.is_windows() from the import a little down
+-        # because that will cause issues under windows at install time.
+-        raise
+-
+ try:
+     import salt.utils.smb
+ 
+@@ -57,11 +46,17 @@ import salt.client
+ import salt.config
+ import salt.loader
+ import salt.template
+-import salt.utils
++import salt.utils.compat
++import salt.utils.crypt
++import salt.utils.data
+ import salt.utils.event
+-from salt.utils import vt
++import salt.utils.files
++import salt.utils.platform
++import salt.utils.stringutils
++import salt.utils.versions
++import salt.utils.vt
++import salt.utils.yaml
+ from salt.utils.nb_popen import NonBlockingPopen
+-from salt.utils.yamldumper import SafeOrderedDumper
+ from salt.utils.validate.path import is_writeable
+ 
+ # Import salt cloud libs
+@@ -75,11 +70,18 @@ from salt.exceptions import (
+     SaltCloudPasswordError
+ )
+ 
+-# Import third party libs
+-import salt.ext.six as six
++# Import 3rd-party libs
++from salt.ext import six
+ from salt.ext.six.moves import range  # pylint: disable=import-error,redefined-builtin,W0611
+ from jinja2 import Template
+-import yaml
++
++# Let's import pwd and catch the ImportError. We'll raise it if this is not
++# Windows. This import has to be below where we import salt.utils.platform!
++try:
++    import pwd
++except ImportError:
++    if not salt.utils.platform.is_windows():
++        raise
+ 
+ try:
+     import getpass
+@@ -88,6 +90,10 @@ try:
+ except ImportError:
+     HAS_GETPASS = False
+ 
++# This is required to support international characters in AWS EC2 tags or any
++# other kind of metadata provided by particular Cloud vendor.
++MSGPACK_ENCODING = 'utf-8'
++
+ NSTATES = {
+     0: 'running',
+     1: 'rebooting',
+@@ -107,15 +113,15 @@ def __render_script(path, vm_=None, opts=None, minion=''):
+     '''
+     Return the rendered script
+     '''
+-    log.info('Rendering deploy script: {0}'.format(path))
++    log.info('Rendering deploy script: %s', path)
+     try:
+-        with salt.utils.fopen(path, 'r') as fp_:
+-            template = Template(fp_.read())
+-            return str(template.render(opts=opts, vm=vm_, minion=minion))
++        with salt.utils.files.fopen(path, 'r') as fp_:
++            template = Template(salt.utils.stringutils.to_unicode(fp_.read()))
++            return six.text_type(template.render(opts=opts, vm=vm_, minion=minion))
+     except AttributeError:
+         # Specified renderer was not found
+-        with salt.utils.fopen(path, 'r') as fp_:
+-            return fp_.read()
++        with salt.utils.files.fopen(path, 'r') as fp_:
++            return six.text_type(fp_.read())
+ 
+ 
+ def os_script(os_, vm_=None, opts=None, minion=''):
+@@ -161,10 +167,10 @@ def gen_keys(keysize=2048):
+     salt.crypt.gen_keys(tdir, 'minion', keysize)
+     priv_path = os.path.join(tdir, 'minion.pem')
+     pub_path = os.path.join(tdir, 'minion.pub')
+-    with salt.utils.fopen(priv_path) as fp_:
+-        priv = fp_.read()
+-    with salt.utils.fopen(pub_path) as fp_:
+-        pub = fp_.read()
++    with salt.utils.files.fopen(priv_path) as fp_:
++        priv = salt.utils.stringutils.to_unicode(fp_.read())
++    with salt.utils.files.fopen(pub_path) as fp_:
++        pub = salt.utils.stringutils.to_unicode(fp_.read())
+     shutil.rmtree(tdir)
+     return priv, pub
+ 
+@@ -181,12 +187,12 @@ def accept_key(pki_dir, pub, id_):
+             os.makedirs(key_path)
+ 
+     key = os.path.join(pki_dir, 'minions', id_)
+-    with salt.utils.fopen(key, 'w+') as fp_:
+-        fp_.write(pub)
++    with salt.utils.files.fopen(key, 'w+') as fp_:
++        fp_.write(salt.utils.stringutils.to_str(pub))
+ 
+     oldkey = os.path.join(pki_dir, 'minions_pre', id_)
+     if os.path.isfile(oldkey):
+-        with salt.utils.fopen(oldkey) as fp_:
++        with salt.utils.files.fopen(oldkey) as fp_:
+             if fp_.read() == pub:
+                 os.remove(oldkey)
+ 
+@@ -198,7 +204,7 @@ def remove_key(pki_dir, id_):
+     key = os.path.join(pki_dir, 'minions', id_)
+     if os.path.isfile(key):
+         os.remove(key)
+-        log.debug('Deleted \'{0}\''.format(key))
++        log.debug('Deleted \'%s\'', key)
+ 
+ 
+ def rename_key(pki_dir, id_, new_id):
+@@ -286,18 +292,20 @@ def salt_config_to_yaml(configuration, line_break='\n'):
+     '''
+     Return a salt configuration dictionary, master or minion, as a yaml dump
+     '''
+-    return yaml.dump(configuration,
+-                     line_break=line_break,
+-                     default_flow_style=False,
+-                     Dumper=SafeOrderedDumper)
++    return salt.utils.yaml.safe_dump(
++        configuration,
++        line_break=line_break,
++        default_flow_style=False)
+ 
+ 
+-def bootstrap(vm_, opts):
++def bootstrap(vm_, opts=None):
+     '''
+     This is the primary entry point for logging into any system (POSIX or
+     Windows) to install Salt. It will make the decision on its own as to which
+     deploy function to call.
+     '''
++    if opts is None:
++        opts = __opts__
+     deploy_config = salt.config.get_cloud_config_value(
+         'deploy',
+         vm_, opts, default=False)
+@@ -311,6 +319,11 @@ def bootstrap(vm_, opts):
+             }
+         }
+ 
++    if vm_.get('driver') == 'saltify':
++        saltify_driver = True
++    else:
++        saltify_driver = False
++
+     key_filename = salt.config.get_cloud_config_value(
+         'key_filename', vm_, opts, search_global=False,
+         default=salt.config.get_cloud_config_value(
+@@ -346,7 +359,7 @@ def bootstrap(vm_, opts):
+ 
+     ret = {}
+ 
+-    minion_conf = salt.utils.cloud.minion_config(opts, vm_)
++    minion_conf = minion_config(opts, vm_)
+     deploy_script_code = os_script(
+         salt.config.get_cloud_config_value(
+             'os', vm_, opts, default='bootstrap-salt'
+@@ -363,7 +376,7 @@ def bootstrap(vm_, opts):
+ 
+     # If we haven't generated any keys yet, do so now.
+     if 'pub_key' not in vm_ and 'priv_key' not in vm_:
+-        log.debug('Generating keys for \'{0[name]}\''.format(vm_))
++        log.debug('Generating keys for \'%s\'', vm_['name'])
+ 
+         vm_['priv_key'], vm_['pub_key'] = gen_keys(
+             salt.config.get_cloud_config_value(
+@@ -390,13 +403,14 @@ def bootstrap(vm_, opts):
+ 
+     # NOTE: deploy_kwargs is also used to pass inline_script variable content
+     #       to run_inline_script function
++    host = salt.config.get_cloud_config_value('ssh_host', vm_, opts)
+     deploy_kwargs = {
+         'opts': opts,
+-        'host': vm_['ssh_host'],
++        'host': host,
+         'port': salt.config.get_cloud_config_value(
+             'ssh_port', vm_, opts, default=22
+         ),
+-        'salt_host': vm_.get('salt_host', vm_['ssh_host']),
++        'salt_host': vm_.get('salt_host', host),
+         'username': ssh_username,
+         'script': deploy_script_code,
+         'inline_script': inline_script_config,
+@@ -405,10 +419,7 @@ def bootstrap(vm_, opts):
+         'tmp_dir': salt.config.get_cloud_config_value(
+             'tmp_dir', vm_, opts, default='/tmp/.saltcloud'
+         ),
+-        'deploy_command': salt.config.get_cloud_config_value(
+-            'deploy_command', vm_, opts,
+-            default='/tmp/.saltcloud/deploy.sh',
+-        ),
++        'vm_': vm_,
+         'start_action': opts['start_action'],
+         'parallel': opts['parallel'],
+         'sock_dir': opts['sock_dir'],
+@@ -438,6 +449,9 @@ def bootstrap(vm_, opts):
+             'script_env', vm_, opts
+         ),
+         'minion_conf': minion_conf,
++        'force_minion_config': salt.config.get_cloud_config_value(
++            'force_minion_config', vm_, opts, default=False
++        ),
+         'preseed_minion_keys': vm_.get('preseed_minion_keys', None),
+         'display_ssh_output': salt.config.get_cloud_config_value(
+             'display_ssh_output', vm_, opts, default=True
+@@ -451,9 +465,17 @@ def bootstrap(vm_, opts):
+         'maxtries': salt.config.get_cloud_config_value(
+             'wait_for_passwd_maxtries', vm_, opts, default=15
+         ),
++        'preflight_cmds': salt.config.get_cloud_config_value(
++            'preflight_cmds', vm_, opts, default=[]
++        ),
++        'cloud_grains': {'driver': vm_['driver'],
++                         # XXXXXXXX hack to make backport of 2018.3 to 2016.11.4 work
++                         # 'provider': vm_['provider'],
++                         'profile': vm_['profile']
++                         }
+     }
+ 
+-    inline_script_kwargs = deploy_kwargs
++    inline_script_kwargs = deploy_kwargs.copy()  # make a copy at this point
+ 
+     # forward any info about possible ssh gateway to deploy script
+     # as some providers need also a 'gateway' configuration
+@@ -465,7 +487,7 @@ def bootstrap(vm_, opts):
+         deploy_kwargs['make_master'] = True
+         deploy_kwargs['master_pub'] = vm_['master_pub']
+         deploy_kwargs['master_pem'] = vm_['master_pem']
+-        master_conf = salt.utils.cloud.master_config(opts, vm_)
++        master_conf = master_config(opts, vm_)
+         deploy_kwargs['master_conf'] = master_conf
+ 
+         if master_conf.get('syndic_master', None):
+@@ -475,6 +497,9 @@ def bootstrap(vm_, opts):
+         'make_minion', vm_, opts, default=True
+     )
+ 
++    if saltify_driver:
++        deploy_kwargs['wait_for_passwd_maxtries'] = 0  # No need to wait/retry with Saltify
++
+     win_installer = salt.config.get_cloud_config_value(
+         'win_installer', vm_, opts
+     )
+@@ -483,7 +508,7 @@ def bootstrap(vm_, opts):
+             'smb_port', vm_, opts, default=445
+         )
+         deploy_kwargs['win_installer'] = win_installer
+-        minion = salt.utils.cloud.minion_config(opts, vm_)
++        minion = minion_config(opts, vm_)
+         deploy_kwargs['master'] = minion['master']
+         deploy_kwargs['username'] = salt.config.get_cloud_config_value(
+             'win_username', vm_, opts, default='Administrator'
+@@ -499,6 +524,14 @@ def bootstrap(vm_, opts):
+         deploy_kwargs['winrm_port'] = salt.config.get_cloud_config_value(
+             'winrm_port', vm_, opts, default=5986
+         )
++        deploy_kwargs['winrm_use_ssl'] = salt.config.get_cloud_config_value(
++            'winrm_use_ssl', vm_, opts, default=True
++        )
++        deploy_kwargs['winrm_verify_ssl'] = salt.config.get_cloud_config_value(
++            'winrm_verify_ssl', vm_, opts, default=True
++        )
++        if saltify_driver:
++            deploy_kwargs['port_timeout'] = 1  # No need to wait/retry with Saltify
+ 
+     # Store what was used to the deploy the VM
+     event_kwargs = copy.deepcopy(deploy_kwargs)
+@@ -524,7 +557,7 @@ def bootstrap(vm_, opts):
+     if inline_script_config and deploy_config is False:
+         inline_script_deployed = run_inline_script(**inline_script_kwargs)
+         if inline_script_deployed is not False:
+-            log.info('Inline script(s) ha(s|ve) run on {0}'.format(vm_['name']))
++            log.info('Inline script(s) ha(s|ve) run on %s', vm_['name'])
+         ret['deployed'] = False
+         return ret
+     else:
+@@ -536,16 +569,16 @@ def bootstrap(vm_, opts):
+         if inline_script_config:
+             inline_script_deployed = run_inline_script(**inline_script_kwargs)
+             if inline_script_deployed is not False:
+-                log.info('Inline script(s) ha(s|ve) run on {0}'.format(vm_['name']))
++                log.info('Inline script(s) ha(s|ve) run on %s', vm_['name'])
+ 
+         if deployed is not False:
+             ret['deployed'] = True
+             if deployed is not True:
+                 ret.update(deployed)
+-            log.info('Salt installed on {0}'.format(vm_['name']))
++            log.info('Salt installed on %s', vm_['name'])
+             return ret
+ 
+-    log.error('Failed to start Salt on host {0}'.format(vm_['name']))
++    log.error('Failed to start Salt on host %s', vm_['name'])
+     return {
+         'Error': {
+             'Not Deployed': 'Failed to start Salt on host {0}'.format(
+@@ -591,7 +624,7 @@ def wait_for_fun(fun, timeout=900, **kwargs):
+     Wait until a function finishes, or times out
+     '''
+     start = time.time()
+-    log.debug('Attempting function {0}'.format(fun))
++    log.debug('Attempting function %s', fun)
+     trycount = 0
+     while True:
+         trycount += 1
+@@ -600,15 +633,11 @@ def wait_for_fun(fun, timeout=900, **kwargs):
+             if not isinstance(response, bool):
+                 return response
+         except Exception as exc:
+-            log.debug('Caught exception in wait_for_fun: {0}'.format(exc))
++            log.debug('Caught exception in wait_for_fun: %s', exc)
+             time.sleep(1)
+-            log.debug(
+-                'Retrying function {0} on  (try {1})'.format(
+-                    fun, trycount
+-                )
+-            )
++            log.debug('Retrying function %s on  (try %s)', fun, trycount)
+         if time.time() - start > timeout:
+-            log.error('Function timed out: {0}'.format(timeout))
++            log.error('Function timed out: %s', timeout)
+             return False
+ 
+ 
+@@ -635,17 +664,12 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
+         test_ssh_host = ssh_gateway
+         test_ssh_port = ssh_gateway_port
+         log.debug(
+-            'Attempting connection to host {0} on port {1} '
+-            'via gateway {2} on port {3}'.format(
+-                host, port, ssh_gateway, ssh_gateway_port
+-            )
++            'Attempting connection to host %s on port %s '
++            'via gateway %s on port %s',
++            host, port, ssh_gateway, ssh_gateway_port
+         )
+     else:
+-        log.debug(
+-            'Attempting connection to host {0} on port {1}'.format(
+-                host, port
+-            )
+-        )
++        log.debug('Attempting connection to host %s on port %s', host, port)
+     trycount = 0
+     while True:
+         trycount += 1
+@@ -665,33 +689,19 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
+             sock.close()
+             break
+         except socket.error as exc:
+-            log.debug('Caught exception in wait_for_port: {0}'.format(exc))
++            log.debug('Caught exception in wait_for_port: %s', exc)
+             time.sleep(1)
+             if time.time() - start > timeout:
+-                log.error('Port connection timed out: {0}'.format(timeout))
++                log.error('Port connection timed out: %s', timeout)
+                 return False
+-            if not gateway:
+-                log.debug(
+-                    'Retrying connection to host {0} on port {1} '
+-                    '(try {2})'.format(
+-                        test_ssh_host, test_ssh_port, trycount
+-                    )
+-                )
+-            else:
+-                log.debug(
+-                    'Retrying connection to Gateway {0} on port {1} '
+-                    '(try {2})'.format(
+-                        test_ssh_host, test_ssh_port, trycount
+-                    )
+-                )
++            log.debug(
++                'Retrying connection to %s %s on port %s (try %s)',
++                'gateway' if gateway else 'host', test_ssh_host, test_ssh_port, trycount
++            )
+     if not gateway:
+         return True
+     # Let the user know that his gateway is good!
+-    log.debug(
+-        'Gateway {0} on port {1} is reachable.'.format(
+-            test_ssh_host, test_ssh_port
+-        )
+-    )
++    log.debug('Gateway %s on port %s is reachable.', test_ssh_host, test_ssh_port)
+ 
+     # Now we need to test the host via the gateway.
+     # We will use netcat on the gateway to test the port
+@@ -730,7 +740,7 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
+         ' '.join(ssh_args), gateway['ssh_gateway_user'], ssh_gateway,
+         ssh_gateway_port, pipes.quote(command)
+     )
+-    log.debug('SSH command: \'{0}\''.format(cmd))
++    log.debug('SSH command: \'%s\'', cmd)
+ 
+     kwargs = {'display_ssh_output': False,
+               'password': gateway.get('ssh_gateway_password', None)}
+@@ -748,7 +758,7 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
+                 gateway_retries -= 1
+                 log.error(
+                     'Gateway usage seems to be broken, '
+-                    'password error ? Tries left: {0}'.format(gateway_retries))
++                    'password error ? Tries left: %s', gateway_retries)
+             if not gateway_retries:
+                 raise SaltCloudExecutionFailure(
+                     'SSH gateway is reachable but we can not login')
+@@ -761,14 +771,12 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
+                 return True
+         time.sleep(1)
+         if time.time() - start > timeout:
+-            log.error('Port connection timed out: {0}'.format(timeout))
++            log.error('Port connection timed out: %s', timeout)
+             return False
+         log.debug(
+-            'Retrying connection to host {0} on port {1} '
+-            'via gateway {2} on port {3}. (try {4})'.format(
+-                host, port, ssh_gateway, ssh_gateway_port,
+-                trycount
+-            )
++            'Retrying connection to host %s on port %s '
++            'via gateway %s on port %s. (try %s)',
++            host, port, ssh_gateway, ssh_gateway_port, trycount
+         )
+ 
+ 
+@@ -778,10 +786,8 @@ def wait_for_winexesvc(host, port, username, password, timeout=900):
+     '''
+     start = time.time()
+     log.debug(
+-        'Attempting winexe connection to host {0} on port {1}'.format(
+-            host,
+-            port
+-        )
++        'Attempting winexe connection to host %s on port %s',
++        host, port
+     )
+     creds = "-U '{0}%{1}' //{2}".format(
+         username,
+@@ -805,60 +811,62 @@ def wait_for_winexesvc(host, port, username, password, timeout=900):
+             if ret_code == 0:
+                 log.debug('winexe connected...')
+                 return True
+-            log.debug('Return code was {0}'.format(ret_code))
+-            time.sleep(1)
++            log.debug('Return code was %s', ret_code)
+         except socket.error as exc:
+-            log.debug('Caught exception in wait_for_winexesvc: {0}'.format(exc))
+-            time.sleep(1)
+-            if time.time() - start > timeout:
+-                log.error('winexe connection timed out: {0}'.format(timeout))
+-                return False
+-            log.debug(
+-                'Retrying winexe connection to host {0} on port {1} '
+-                '(try {2})'.format(
+-                    host,
+-                    port,
+-                    try_count
+-                )
+-            )
++            log.debug('Caught exception in wait_for_winexesvc: %s', exc)
++
++        if time.time() - start > timeout:
++            log.error('winexe connection timed out: %s', timeout)
++            return False
++        log.debug(
++            'Retrying winexe connection to host %s on port %s (try %s)',
++            host, port, try_count
++        )
++        time.sleep(1)
+ 
+ 
+-def wait_for_winrm(host, port, username, password, timeout=900):
++def wait_for_winrm(host, port, username, password, timeout=900, use_ssl=True, verify=True):
+     '''
+     Wait until WinRM connection can be established.
+     '''
+     start = time.time()
+     log.debug(
+-        'Attempting WinRM connection to host {0} on port {1}'.format(
+-            host, port
+-        )
++        'Attempting WinRM connection to host %s on port %s',
++        host, port
+     )
++    transport = 'ssl'
++    if not use_ssl:
++        transport = 'plaintext'
+     trycount = 0
+     while True:
+         trycount += 1
+         try:
+-            s = winrm.Session(host, auth=(username, password), transport='ssl')
++            winrm_kwargs = {'target': host,
++                            'auth': (username, password),
++                            'transport': transport}
++            if not verify:
++                log.debug("SSL validation for WinRM disabled.")
++                winrm_kwargs['server_cert_validation'] = 'ignore'
++            s = winrm.Session(**winrm_kwargs)
+             if hasattr(s.protocol, 'set_timeout'):
+                 s.protocol.set_timeout(15)
+-            log.trace('WinRM endpoint url: {0}'.format(s.url))
++            log.trace('WinRM endpoint url: %s', s.url)
+             r = s.run_cmd('sc query winrm')
+             if r.status_code == 0:
+                 log.debug('WinRM session connected...')
+                 return s
+-            log.debug('Return code was {0}'.format(r.status_code))
+-            time.sleep(1)
++            log.debug('Return code was %s', r.status_code)
+         except WinRMTransportError as exc:
+-            log.debug('Caught exception in wait_for_winrm: {0}'.format(exc))
+-            if time.time() - start > timeout:
+-                log.error('WinRM connection timed out: {0}'.format(timeout))
+-                return None
+-            log.debug(
+-                'Retrying WinRM connection to host {0} on port {1} '
+-                '(try {2})'.format(
+-                    host, port, trycount
+-                )
+-            )
+-            time.sleep(1)
++            log.debug('Caught exception in wait_for_winrm: %s', exc)
++
++        if time.time() - start > timeout:
++            log.error('WinRM connection timed out: %s', timeout)
++            return None
++        log.debug(
++            'Retrying WinRM connection to host %s on port %s (try %s)',
++            host, port, trycount
++        )
++        time.sleep(1)
+ 
+ 
+ def validate_windows_cred(host,
+@@ -879,7 +887,7 @@ def validate_windows_cred(host,
+         host
+     )
+ 
+-    for i in xrange(retries):
++    for i in range(retries):
+         ret_code = win_cmd(
+             cmd,
+             logging_command=logging_cmd
+@@ -923,16 +931,15 @@ def wait_for_passwd(host, port=22, ssh_timeout=15, username='root',
+                         )
+                     )
+                 kwargs['key_filename'] = key_filename
+-                log.debug('Using {0} as the key_filename'.format(key_filename))
++                log.debug('Using %s as the key_filename', key_filename)
+             elif password:
+                 kwargs['password'] = password
+                 log.debug('Using password authentication')
+ 
+             trycount += 1
+             log.debug(
+-                'Attempting to authenticate as {0} (try {1} of {2})'.format(
+-                    username, trycount, maxtries
+-                )
++                'Attempting to authenticate as %s (try %s of %s)',
++                username, trycount, maxtries
+             )
+ 
+             status = root_cmd('date', tty=False, sudo=False, **kwargs)
+@@ -942,11 +949,7 @@ def wait_for_passwd(host, port=22, ssh_timeout=15, username='root',
+                     time.sleep(trysleep)
+                     continue
+ 
+-                log.error(
+-                    'Authentication failed: status code {0}'.format(
+-                        status
+-                    )
+-                )
++                log.error('Authentication failed: status code %s', status)
+                 return False
+             if connectfail is False:
+                 return True
+@@ -984,6 +987,8 @@ def deploy_windows(host,
+                    master_sign_pub_file=None,
+                    use_winrm=False,
+                    winrm_port=5986,
++                   winrm_use_ssl=True,
++                   winrm_verify_ssl=True,
+                    **kwargs):
+     '''
+     Copy the install files to a remote Windows box, and execute them
+@@ -996,8 +1001,8 @@ def deploy_windows(host,
+         return False
+ 
+     starttime = time.mktime(time.localtime())
+-    log.debug('Deploying {0} at {1} (Windows)'.format(host, starttime))
+-    log.trace('HAS_WINRM: {0}, use_winrm: {1}'.format(HAS_WINRM, use_winrm))
++    log.debug('Deploying %s at %s (Windows)', host, starttime)
++    log.trace('HAS_WINRM: %s, use_winrm: %s', HAS_WINRM, use_winrm)
+ 
+     port_available = wait_for_port(host=host, port=port, timeout=port_timeout * 60)
+ 
+@@ -1009,8 +1014,9 @@ def deploy_windows(host,
+ 
+     if HAS_WINRM and use_winrm:
+         winrm_session = wait_for_winrm(host=host, port=winrm_port,
+-                                           username=username, password=password,
+-                                           timeout=port_timeout * 60)
++                                       username=username, password=password,
++                                       timeout=port_timeout * 60, use_ssl=winrm_use_ssl,
++                                       verify=winrm_verify_ssl)
+         if winrm_session is not None:
+             service_available = True
+     else:
+@@ -1019,12 +1025,8 @@ def deploy_windows(host,
+                                                timeout=port_timeout * 60)
+ 
+     if port_available and service_available:
+-        log.debug('SMB port {0} on {1} is available'.format(port, host))
+-        log.debug(
+-            'Logging into {0}:{1} as {2}'.format(
+-                host, port, username
+-            )
+-        )
++        log.debug('SMB port %s on %s is available', port, host)
++        log.debug('Logging into %s:%s as %s', host, port, username)
+         newtimeout = timeout - (time.mktime(time.localtime()) - starttime)
+ 
+         smb_conn = salt.utils.smb.get_conn(host, username, password)
+@@ -1056,12 +1058,12 @@ def deploy_windows(host,
+ 
+         if master_sign_pub_file:
+             # Read master-sign.pub file
+-            log.debug("Copying master_sign.pub file from {0} to minion".format(master_sign_pub_file))
++            log.debug("Copying master_sign.pub file from %s to minion", master_sign_pub_file)
+             try:
+-                with salt.utils.fopen(master_sign_pub_file, 'rb') as master_sign_fh:
++                with salt.utils.files.fopen(master_sign_pub_file, 'rb') as master_sign_fh:
+                     smb_conn.putFile('C$', 'salt\\conf\\pki\\minion\\master_sign.pub', master_sign_fh.read)
+             except Exception as e:
+-                log.debug("Exception copying master_sign.pub file {0} to minion".format(master_sign_pub_file))
++                log.debug("Exception copying master_sign.pub file %s to minion", master_sign_pub_file)
+ 
+         # Copy over win_installer
+         # win_installer refers to a file such as:
+@@ -1070,7 +1072,7 @@ def deploy_windows(host,
+         comps = win_installer.split('/')
+         local_path = '/'.join(comps[:-1])
+         installer = comps[-1]
+-        with salt.utils.fopen(win_installer, 'rb') as inst_fh:
++        with salt.utils.files.fopen(win_installer, 'rb') as inst_fh:
+             smb_conn.putFile('C$', 'salttemp/{0}'.format(installer), inst_fh.read)
+ 
+         if use_winrm:
+@@ -1129,8 +1131,11 @@ def deploy_windows(host,
+         # Delete C:\salttmp\ and installer file
+         # Unless keep_tmp is True
+         if not keep_tmp:
+-            smb_conn.deleteFile('C$', 'salttemp/{0}'.format(installer))
+-            smb_conn.deleteDirectory('C$', 'salttemp')
++            if use_winrm:
++                winrm_cmd(winrm_session, 'rmdir', ['/Q', '/S', 'C:\\salttemp\\'])
++            else:
++                smb_conn.deleteFile('C$', 'salttemp/{0}'.format(installer))
++                smb_conn.deleteDirectory('C$', 'salttemp')
+         # Shell out to winexe to ensure salt-minion service started
+         if use_winrm:
+             winrm_cmd(winrm_session, 'sc', ['stop', 'salt-minion'])
+@@ -1201,20 +1206,26 @@ def deploy_script(host,
+                   sudo_password=None,
+                   sudo=False,
+                   tty=None,
+-                  deploy_command='/tmp/.saltcloud/deploy.sh',
++                  vm_=None,
+                   opts=None,
+                   tmp_dir='/tmp/.saltcloud',
+                   file_map=None,
+                   master_sign_pub_file=None,
++                  cloud_grains=None,
++                  force_minion_config=False,
+                   **kwargs):
+     '''
+     Copy a deploy script to a remote server, execute it, and remove it
+     '''
+     if not isinstance(opts, dict):
+         opts = {}
++    vm_ = vm_ or {}  # if None, default to empty dict
++    cloud_grains = cloud_grains or {}
+ 
+     tmp_dir = '{0}-{1}'.format(tmp_dir.rstrip('/'), uuid.uuid4())
+-    deploy_command = os.path.join(tmp_dir, 'deploy.sh')
++    deploy_command = salt.config.get_cloud_config_value(
++        'deploy_command', vm_, opts,
++        default=os.path.join(tmp_dir, 'deploy.sh'))
+     if key_filename is not None and not os.path.isfile(key_filename):
+         raise SaltCloudConfigError(
+             'The defined key_filename \'{0}\' does not exist'.format(
+@@ -1226,14 +1237,16 @@ def deploy_script(host,
+     if 'gateway' in kwargs:
+         gateway = kwargs['gateway']
+ 
+-    starttime = time.mktime(time.localtime())
+-    log.debug('Deploying {0} at {1}'.format(host, starttime))
+-
++    starttime = time.localtime()
++    log.debug(
++        'Deploying %s at %s',
++        host, time.strftime('%Y-%m-%d %H:%M:%S', starttime)
++    )
+     known_hosts_file = kwargs.get('known_hosts_file', '/dev/null')
+     hard_timeout = opts.get('hard_timeout', None)
+ 
+     if wait_for_port(host=host, port=port, gateway=gateway):
+-        log.debug('SSH port {0} on {1} is available'.format(port, host))
++        log.debug('SSH port %s on %s is available', port, host)
+         if wait_for_passwd(host, port=port, username=username,
+                            password=password, key_filename=key_filename,
+                            ssh_timeout=ssh_timeout,
+@@ -1241,11 +1254,7 @@ def deploy_script(host,
+                            gateway=gateway, known_hosts_file=known_hosts_file,
+                            maxtries=maxtries, hard_timeout=hard_timeout):
+ 
+-            log.debug(
+-                'Logging into {0}:{1} as {2}'.format(
+-                    host, port, username
+-                )
+-            )
++            log.debug('Logging into %s:%s as %s', host, port, username)
+             ssh_kwargs = {
+                 'hostname': host,
+                 'port': port,
+@@ -1260,7 +1269,7 @@ def deploy_script(host,
+                 ssh_kwargs['ssh_gateway_key'] = gateway['ssh_gateway_key']
+                 ssh_kwargs['ssh_gateway_user'] = gateway['ssh_gateway_user']
+             if key_filename:
+-                log.debug('Using {0} as the key_filename'.format(key_filename))
++                log.debug('Using %s as the key_filename', key_filename)
+                 ssh_kwargs['key_filename'] = key_filename
+             elif password and kwargs.get('has_ssh_agent', False) is False:
+                 ssh_kwargs['password'] = password
+@@ -1299,10 +1308,9 @@ def deploy_script(host,
+                 remote_file = file_map[map_item]
+                 if not os.path.exists(map_item):
+                     log.error(
+-                        'The local file "{0}" does not exist, and will not be '
+-                        'copied to "{1}" on the target system'.format(
+-                            local_file, remote_file
+-                        )
++                        'The local file "%s" does not exist, and will not be '
++                        'copied to "%s" on the target system',
++                        local_file, remote_file
+                     )
+                     file_map_fail.append({local_file: remote_file})
+                     continue
+@@ -1360,6 +1368,8 @@ def deploy_script(host,
+                         salt_config_to_yaml(minion_grains),
+                         ssh_kwargs
+                     )
++                if cloud_grains and opts.get('enable_cloud_grains', True):
++                    minion_conf['grains'] = {'salt-cloud': cloud_grains}
+                 ssh_file(
+                     opts,
+                     '{0}/minion'.format(tmp_dir),
+@@ -1443,6 +1453,15 @@ def deploy_script(host,
+                             'Can\'t set ownership for {0}'.format(
+                                 preseed_minion_keys_tempdir))
+ 
++            # Run any pre-flight commands before running deploy scripts
++            preflight_cmds = kwargs.get('preflight_cmds', [])
++            for command in preflight_cmds:
++                cmd_ret = root_cmd(command, tty, sudo, **ssh_kwargs)
++                if cmd_ret:
++                    raise SaltCloudSystemExit(
++                        'Pre-flight command failed: \'{0}\''.format(command)
++                    )
++
+             # The actual deploy script
+             if script:
+                 # got strange escaping issues with sudoer, going onto a
+@@ -1456,7 +1475,8 @@ def deploy_script(host,
+                     raise SaltCloudSystemExit(
+                         'Can\'t set perms on {0}/deploy.sh'.format(tmp_dir))
+ 
+-            newtimeout = timeout - (time.mktime(time.localtime()) - starttime)
++            time_used = time.mktime(time.localtime()) - time.mktime(starttime)
++            newtimeout = timeout - time_used
+             queue = None
+             process = None
+             # Consider this code experimental. It causes Salt Cloud to wait
+@@ -1477,6 +1497,8 @@ def deploy_script(host,
+             if script:
+                 if 'bootstrap-salt' in script:
+                     deploy_command += ' -c \'{0}\''.format(tmp_dir)
++                    if force_minion_config:
++                        deploy_command += ' -F'
+                     if make_syndic is True:
+                         deploy_command += ' -S'
+                     if make_master is True:
+@@ -1529,13 +1551,13 @@ def deploy_script(host,
+                             deploy_command
+                         )
+                     )
+-                log.debug('Executed command \'{0}\''.format(deploy_command))
++                log.debug('Executed command \'%s\'', deploy_command)
+ 
+                 # Remove the deploy script
+                 if not keep_tmp:
+                     root_cmd('rm -f \'{0}/deploy.sh\''.format(tmp_dir),
+                              tty, sudo, **ssh_kwargs)
+-                    log.debug('Removed {0}/deploy.sh'.format(tmp_dir))
++                    log.debug('Removed %s/deploy.sh', tmp_dir)
+                     if script_env:
+                         root_cmd(
+                             'rm -f \'{0}/environ-deploy-wrapper.sh\''.format(
+@@ -1543,51 +1565,45 @@ def deploy_script(host,
+                             ),
+                             tty, sudo, **ssh_kwargs
+                         )
+-                        log.debug(
+-                            'Removed {0}/environ-deploy-wrapper.sh'.format(
+-                                tmp_dir
+-                            )
+-                        )
++                        log.debug('Removed %s/environ-deploy-wrapper.sh', tmp_dir)
+ 
+             if keep_tmp:
+-                log.debug(
+-                    'Not removing deployment files from {0}/'.format(tmp_dir)
+-                )
++                log.debug('Not removing deployment files from %s/', tmp_dir)
+             else:
+                 # Remove minion configuration
+                 if minion_pub:
+                     root_cmd('rm -f \'{0}/minion.pub\''.format(tmp_dir),
+                              tty, sudo, **ssh_kwargs)
+-                    log.debug('Removed {0}/minion.pub'.format(tmp_dir))
++                    log.debug('Removed %s/minion.pub', tmp_dir)
+                 if minion_pem:
+                     root_cmd('rm -f \'{0}/minion.pem\''.format(tmp_dir),
+                              tty, sudo, **ssh_kwargs)
+-                    log.debug('Removed {0}/minion.pem'.format(tmp_dir))
++                    log.debug('Removed %s/minion.pem', tmp_dir)
+                 if minion_conf:
+                     root_cmd('rm -f \'{0}/grains\''.format(tmp_dir),
+                              tty, sudo, **ssh_kwargs)
+-                    log.debug('Removed {0}/grains'.format(tmp_dir))
++                    log.debug('Removed %s/grains', tmp_dir)
+                     root_cmd('rm -f \'{0}/minion\''.format(tmp_dir),
+                              tty, sudo, **ssh_kwargs)
+-                    log.debug('Removed {0}/minion'.format(tmp_dir))
++                    log.debug('Removed %s/minion', tmp_dir)
+                 if master_sign_pub_file:
+                     root_cmd('rm -f {0}/master_sign.pub'.format(tmp_dir),
+                              tty, sudo, **ssh_kwargs)
+-                    log.debug('Removed {0}/master_sign.pub'.format(tmp_dir))
++                    log.debug('Removed %s/master_sign.pub', tmp_dir)
+ 
+                 # Remove master configuration
+                 if master_pub:
+                     root_cmd('rm -f \'{0}/master.pub\''.format(tmp_dir),
+                              tty, sudo, **ssh_kwargs)
+-                    log.debug('Removed {0}/master.pub'.format(tmp_dir))
++                    log.debug('Removed %s/master.pub', tmp_dir)
+                 if master_pem:
+                     root_cmd('rm -f \'{0}/master.pem\''.format(tmp_dir),
+                              tty, sudo, **ssh_kwargs)
+-                    log.debug('Removed {0}/master.pem'.format(tmp_dir))
++                    log.debug('Removed %s/master.pem', tmp_dir)
+                 if master_conf:
+                     root_cmd('rm -f \'{0}/master\''.format(tmp_dir),
+                              tty, sudo, **ssh_kwargs)
+-                    log.debug('Removed {0}/master'.format(tmp_dir))
++                    log.debug('Removed %s/master', tmp_dir)
+ 
+                 # Remove pre-seed keys directory
+                 if preseed_minion_keys is not None:
+@@ -1596,9 +1612,7 @@ def deploy_script(host,
+                             preseed_minion_keys_tempdir
+                         ), tty, sudo, **ssh_kwargs
+                     )
+-                    log.debug(
+-                        'Removed {0}'.format(preseed_minion_keys_tempdir)
+-                    )
++                    log.debug('Removed %s', preseed_minion_keys_tempdir)
+ 
+             if start_action and not parallel:
+                 queuereturn = queue.get()
+@@ -1610,19 +1624,14 @@ def deploy_script(host,
+                     # )
+                     # for line in output:
+                     #    print(line)
+-                    log.info(
+-                        'Executing {0} on the salt-minion'.format(
+-                            start_action
+-                        )
+-                    )
++                    log.info('Executing %s on the salt-minion', start_action)
+                     root_cmd(
+                         'salt-call {0}'.format(start_action),
+                         tty, sudo, **ssh_kwargs
+                     )
+                     log.info(
+-                        'Finished executing {0} on the salt-minion'.format(
+-                            start_action
+-                        )
++                        'Finished executing %s on the salt-minion',
++                        start_action
+                     )
+             # Fire deploy action
+             fire_event(
+@@ -1674,12 +1683,12 @@ def run_inline_script(host,
+         gateway = kwargs['gateway']
+ 
+     starttime = time.mktime(time.localtime())
+-    log.debug('Deploying {0} at {1}'.format(host, starttime))
++    log.debug('Deploying %s at %s', host, starttime)
+ 
+     known_hosts_file = kwargs.get('known_hosts_file', '/dev/null')
+ 
+     if wait_for_port(host=host, port=port, gateway=gateway):
+-        log.debug('SSH port {0} on {1} is available'.format(port, host))
++        log.debug('SSH port %s on %s is available', port, host)
+         newtimeout = timeout - (time.mktime(time.localtime()) - starttime)
+         if wait_for_passwd(host, port=port, username=username,
+                            password=password, key_filename=key_filename,
+@@ -1687,11 +1696,7 @@ def run_inline_script(host,
+                            display_ssh_output=display_ssh_output,
+                            gateway=gateway, known_hosts_file=known_hosts_file):
+ 
+-            log.debug(
+-                'Logging into {0}:{1} as {2}'.format(
+-                    host, port, username
+-                )
+-            )
++            log.debug('Logging into %s:%s as %s', host, port, username)
+             newtimeout = timeout - (time.mktime(time.localtime()) - starttime)
+             ssh_kwargs = {
+                 'hostname': host,
+@@ -1707,7 +1712,7 @@ def run_inline_script(host,
+                 ssh_kwargs['ssh_gateway_key'] = gateway['ssh_gateway_key']
+                 ssh_kwargs['ssh_gateway_user'] = gateway['ssh_gateway_user']
+             if key_filename:
+-                log.debug('Using {0} as the key_filename'.format(key_filename))
++                log.debug('Using %s as the key_filename', key_filename)
+                 ssh_kwargs['key_filename'] = key_filename
+             elif password and 'has_ssh_agent' in kwargs and kwargs['has_ssh_agent'] is False:
+                 ssh_kwargs['password'] = password
+@@ -1718,26 +1723,53 @@ def run_inline_script(host,
+                         allow_failure=True, **ssh_kwargs) and inline_script:
+                 log.debug('Found inline script to execute.')
+                 for cmd_line in inline_script:
+-                    log.info("Executing inline command: " + str(cmd_line))
++                    log.info('Executing inline command: %s', cmd_line)
+                     ret = root_cmd('sh -c "( {0} )"'.format(cmd_line),
+                                    tty, sudo, allow_failure=True, **ssh_kwargs)
+                     if ret:
+-                        log.info("[" + str(cmd_line) + "] Output: " + str(ret))
++                        log.info('[%s] Output: %s', cmd_line, ret)
+ 
+     # TODO: ensure we send the correct return value
+     return True
+ 
+ 
+-def fire_event(key, msg, tag, args=None, sock_dir=None, transport='zeromq'):
+-    # Fire deploy action
+-    if sock_dir is None:
+-        salt.utils.warn_until(
+-            'Oxygen',
+-            '`salt.utils.cloud.fire_event` requires that the `sock_dir`'
+-            'parameter be passed in when calling the function.'
+-        )
+-        sock_dir = __opts__['sock_dir']
++def filter_event(tag, data, defaults):
++    '''
++    Accept a tag, a dict and a list of default keys to return from the dict, and
++    check them against the cloud configuration for that tag
++    '''
++    ret = {}
++    keys = []
++    use_defaults = True
+ 
++    for ktag in __opts__.get('filter_events', {}):
++        if tag != ktag:
++            continue
++        keys = __opts__['filter_events'][ktag]['keys']
++        use_defaults = __opts__['filter_events'][ktag].get('use_defaults', True)
++
++    if use_defaults is False:
++        defaults = []
++
++    # For PY3, if something like ".keys()" or ".values()" is used on a dictionary,
++    # it returns a dict_view and not a list like in PY2. "defaults" should be passed
++    # in with the correct data type, but don't stack-trace in case it wasn't.
++    if not isinstance(defaults, list):
++        defaults = list(defaults)
++
++    defaults = list(set(defaults + keys))
++
++    for key in defaults:
++        if key in data:
++            ret[key] = data[key]
++
++    return ret
++
++
++def fire_event(key, msg, tag, sock_dir, args=None, transport='zeromq'):
++    '''
++    Fire deploy action
++    '''
+     event = salt.utils.event.get_event(
+         'master',
+         sock_dir,
+@@ -1765,7 +1797,7 @@ def _exec_ssh_cmd(cmd, error_msg=None, allow_failure=False, **kwargs):
+     password_retries = kwargs.get('password_retries', 3)
+     try:
+         stdout, stderr = None, None
+-        proc = vt.Terminal(
++        proc = salt.utils.vt.Terminal(
+             cmd,
+             shell=True,
+             log_stdout=True,
+@@ -1782,7 +1814,7 @@ def _exec_ssh_cmd(cmd, error_msg=None, allow_failure=False, **kwargs):
+                 if ('key_filename' in kwargs and kwargs['key_filename']
+                     and SSH_PASSWORD_PROMP_SUDO_RE.search(stdout)
+                 ):
+-                    proc.sendline(kwargs['sudo_password', None])
++                    proc.sendline(kwargs['sudo_password'])
+                 # elif authenticating via password and haven't exhausted our
+                 # password_retires
+                 elif (
+@@ -1805,9 +1837,9 @@ def _exec_ssh_cmd(cmd, error_msg=None, allow_failure=False, **kwargs):
+                 )
+             )
+         return proc.exitstatus
+-    except vt.TerminalException as err:
++    except salt.utils.vt.TerminalException as err:
+         trace = traceback.format_exc()
+-        log.error(error_msg.format(cmd, err, trace))
++        log.error(error_msg.format(cmd, err, trace))  # pylint: disable=str-format-in-logging
+     finally:
+         proc.close(terminate=True, kill=True)
+     # Signal an error
+@@ -1831,7 +1863,7 @@ def scp_file(dest_path, contents=None, kwargs=None, local_file=None):
+                     if exc.errno != errno.EBADF:
+                         raise exc
+ 
+-        log.debug('Uploading {0} to {1}'.format(dest_path, kwargs['hostname']))
++        log.debug('Uploading %s to %s', dest_path, kwargs['hostname'])
+ 
+         ssh_args = [
+             # Don't add new hosts to the host key database
+@@ -1917,7 +1949,7 @@ def scp_file(dest_path, contents=None, kwargs=None, local_file=None):
+             )
+         )
+ 
+-        log.debug('SCP command: \'{0}\''.format(cmd))
++        log.debug('SCP command: \'%s\'', cmd)
+         retcode = _exec_ssh_cmd(cmd,
+                                 error_msg='Failed to upload file \'{0}\': {1}\n{2}',
+                                 password_retries=3,
+@@ -1956,7 +1988,7 @@ def sftp_file(dest_path, contents=None, kwargs=None, local_file=None):
+         if contents is not None:
+             try:
+                 tmpfd, file_to_upload = tempfile.mkstemp()
+-                if isinstance(contents, str):
++                if isinstance(contents, six.string_types):
+                     os.write(tmpfd, contents.encode(__salt_system_encoding__))
+                 else:
+                     os.write(tmpfd, contents)
+@@ -1972,7 +2004,7 @@ def sftp_file(dest_path, contents=None, kwargs=None, local_file=None):
+             if os.path.isdir(local_file):
+                 put_args = ['-r']
+ 
+-        log.debug('Uploading {0} to {1} (sftp)'.format(dest_path, kwargs.get('hostname')))
++        log.debug('Uploading %s to %s (sftp)', dest_path, kwargs.get('hostname'))
+ 
+         ssh_args = [
+             # Don't add new hosts to the host key database
+@@ -2047,7 +2079,7 @@ def sftp_file(dest_path, contents=None, kwargs=None, local_file=None):
+         cmd = 'echo "put {0} {1} {2}" | sftp {3} {4[username]}@{5}'.format(
+             ' '.join(put_args), file_to_upload, dest_path, ' '.join(ssh_args), kwargs, ipaddr
+         )
+-        log.debug('SFTP command: \'{0}\''.format(cmd))
++        log.debug('SFTP command: \'%s\'', cmd)
+         retcode = _exec_ssh_cmd(cmd,
+                                 error_msg='Failed to upload file \'{0}\': {1}\n{2}',
+                                 password_retries=3,
+@@ -2093,13 +2125,7 @@ def win_cmd(command, **kwargs):
+         proc.communicate()
+         return proc.returncode
+     except Exception as err:
+-        log.error(
+-            'Failed to execute command \'{0}\': {1}\n'.format(
+-                logging_command,
+-                err
+-            ),
+-            exc_info=True
+-        )
++        log.exception('Failed to execute command \'%s\'', logging_command)
+     # Signal an error
+     return 1
+ 
+@@ -2108,9 +2134,7 @@ def winrm_cmd(session, command, flags, **kwargs):
+     '''
+     Wrapper for commands to be run against Windows boxes using WinRM.
+     '''
+-    log.debug('Executing WinRM command: {0} {1}'.format(
+-        command, flags
+-    ))
++    log.debug('Executing WinRM command: %s %s', command, flags)
+     r = session.run_cmd(command, flags)
+     return r.status_code
+ 
+@@ -2130,7 +2154,7 @@ def root_cmd(command, tty, sudo, allow_failure=False, **kwargs):
+             logging_command = 'sudo -S "XXX-REDACTED-XXX" {0}'.format(command)
+             command = 'sudo -S {0}'.format(command)
+ 
+-        log.debug('Using sudo to run command {0}'.format(logging_command))
++        log.debug('Using sudo to run command %s', logging_command)
+ 
+     ssh_args = []
+ 
+@@ -2201,9 +2225,8 @@ def root_cmd(command, tty, sudo, allow_failure=False, **kwargs):
+             )
+         ])
+         log.info(
+-            'Using SSH gateway {0}@{1}:{2}'.format(
+-                ssh_gateway_user, ssh_gateway, ssh_gateway_port
+-            )
++            'Using SSH gateway %s@%s:%s',
++            ssh_gateway_user, ssh_gateway, ssh_gateway_port
+         )
+ 
+     if 'port' in kwargs:
+@@ -2221,7 +2244,7 @@ def root_cmd(command, tty, sudo, allow_failure=False, **kwargs):
+         logging_command = 'timeout {0} {1}'.format(hard_timeout, logging_command)
+         cmd = 'timeout {0} {1}'.format(hard_timeout, cmd)
+ 
+-    log.debug('SSH command: \'{0}\''.format(logging_command))
++    log.debug('SSH command: \'%s\'', logging_command)
+ 
+     retcode = _exec_ssh_cmd(cmd, allow_failure=allow_failure, **kwargs)
+     return retcode
+@@ -2235,11 +2258,7 @@ def check_auth(name, sock_dir=None, queue=None, timeout=300):
+     event = salt.utils.event.SaltEvent('master', sock_dir, listen=True)
+     starttime = time.mktime(time.localtime())
+     newtimeout = timeout
+-    log.debug(
+-        'In check_auth, waiting for {0} to become available'.format(
+-            name
+-        )
+-    )
++    log.debug('In check_auth, waiting for %s to become available', name)
+     while newtimeout > 0:
+         newtimeout = timeout - (time.mktime(time.localtime()) - starttime)
+         ret = event.get_event(full=True)
+@@ -2248,7 +2267,7 @@ def check_auth(name, sock_dir=None, queue=None, timeout=300):
+         if ret['tag'] == 'minion_start' and ret['data']['id'] == name:
+             queue.put(name)
+             newtimeout = 0
+-            log.debug('Minion {0} is ready to receive commands'.format(name))
++            log.debug('Minion %s is ready to receive commands', name)
+ 
+ 
+ def ip_to_int(ip):
+@@ -2318,14 +2337,11 @@ def remove_sshkey(host, known_hosts=None):
+ 
+     if known_hosts is not None:
+         log.debug(
+-            'Removing ssh key for {0} from known hosts file {1}'.format(
+-                host, known_hosts
+-            )
++            'Removing ssh key for %s from known hosts file %s',
++            host, known_hosts
+         )
+     else:
+-        log.debug(
+-            'Removing ssh key for {0} from known hosts file'.format(host)
+-        )
++        log.debug('Removing ssh key for %s from known hosts file', host)
+ 
+     cmd = 'ssh-keygen -R {0}'.format(host)
+     subprocess.call(cmd, shell=True)
+@@ -2368,18 +2384,14 @@ def wait_for_ip(update_callback,
+     duration = timeout
+     while True:
+         log.debug(
+-            'Waiting for VM IP. Giving up in 00:{0:02d}:{1:02d}.'.format(
+-                int(timeout // 60),
+-                int(timeout % 60)
+-            )
++            'Waiting for VM IP. Giving up in 00:%02d:%02d.',
++            int(timeout // 60), int(timeout % 60)
+         )
+         data = update_callback(*update_args, **update_kwargs)
+         if data is False:
+             log.debug(
+                 '\'update_callback\' has returned \'False\', which is '
+-                'considered a failure. Remaining Failures: {0}.'.format(
+-                    max_failures
+-                )
++                'considered a failure. Remaining Failures: %s.', max_failures
+             )
+             max_failures -= 1
+             if max_failures <= 0:
+@@ -2405,7 +2417,7 @@ def wait_for_ip(update_callback,
+             if interval > timeout:
+                 interval = timeout + 1
+             log.info('Interval multiplier in effect; interval is '
+-                     'now {0}s.'.format(interval))
++                     'now %ss.', interval)
+ 
+ 
+ def list_nodes_select(nodes, selection, call=None):
+@@ -2430,7 +2442,7 @@ def list_nodes_select(nodes, selection, call=None):
+         pairs = {}
+         data = nodes[node]
+         for key in data:
+-            if str(key) in selection:
++            if six.text_type(key) in selection:
+                 value = data[key]
+                 pairs[key] = value
+         ret[node] = pairs
+@@ -2446,19 +2458,19 @@ def lock_file(filename, interval=.5, timeout=15):
+     Note that these locks are only recognized by Salt Cloud, and not other
+     programs or platforms.
+     '''
+-    log.trace('Attempting to obtain lock for {0}'.format(filename))
++    log.trace('Attempting to obtain lock for %s', filename)
+     lock = filename + '.lock'
+     start = time.time()
+     while True:
+         if os.path.exists(lock):
+             if time.time() - start >= timeout:
+-                log.warning('Unable to obtain lock for {0}'.format(filename))
++                log.warning('Unable to obtain lock for %s', filename)
+                 return False
+             time.sleep(interval)
+         else:
+             break
+ 
+-    with salt.utils.fopen(lock, 'a'):
++    with salt.utils.files.fopen(lock, 'a'):
+         pass
+ 
+ 
+@@ -2469,12 +2481,12 @@ def unlock_file(filename):
+     Note that these locks are only recognized by Salt Cloud, and not other
+     programs or platforms.
+     '''
+-    log.trace('Removing lock for {0}'.format(filename))
++    log.trace('Removing lock for %s', filename)
+     lock = filename + '.lock'
+     try:
+         os.remove(lock)
+     except OSError as exc:
+-        log.trace('Unable to remove lock for {0}: {1}'.format(filename, exc))
++        log.trace('Unable to remove lock for %s: %s', filename, exc)
+ 
+ 
+ def cachedir_index_add(minion_id, profile, driver, provider, base=None):
+@@ -2497,8 +2509,9 @@ def cachedir_index_add(minion_id, profile, driver, provider, base=None):
+     lock_file(index_file)
+ 
+     if os.path.exists(index_file):
+-        with salt.utils.fopen(index_file, 'r') as fh_:
+-            index = msgpack.load(fh_)
++        mode = 'rb' if six.PY3 else 'r'
++        with salt.utils.files.fopen(index_file, mode) as fh_:
++            index = salt.utils.data.decode(msgpack.load(fh_, encoding=MSGPACK_ENCODING))
+     else:
+         index = {}
+ 
+@@ -2513,8 +2526,9 @@ def cachedir_index_add(minion_id, profile, driver, provider, base=None):
+         }
+     })
+ 
+-    with salt.utils.fopen(index_file, 'w') as fh_:
+-        msgpack.dump(index, fh_)
++    mode = 'wb' if six.PY3 else 'w'
++    with salt.utils.files.fopen(index_file, mode) as fh_:
++        msgpack.dump(index, fh_, encoding=MSGPACK_ENCODING)
+ 
+     unlock_file(index_file)
+ 
+@@ -2529,16 +2543,18 @@ def cachedir_index_del(minion_id, base=None):
+     lock_file(index_file)
+ 
+     if os.path.exists(index_file):
+-        with salt.utils.fopen(index_file, 'r') as fh_:
+-            index = msgpack.load(fh_)
++        mode = 'rb' if six.PY3 else 'r'
++        with salt.utils.files.fopen(index_file, mode) as fh_:
++            index = salt.utils.data.decode(msgpack.load(fh_, encoding=MSGPACK_ENCODING))
+     else:
+         return
+ 
+     if minion_id in index:
+         del index[minion_id]
+ 
+-    with salt.utils.fopen(index_file, 'w') as fh_:
+-        msgpack.dump(index, fh_)
++    mode = 'wb' if six.PY3 else 'w'
++    with salt.utils.files.fopen(index_file, mode) as fh_:
++        msgpack.dump(index, fh_, encoding=MSGPACK_ENCODING)
+ 
+     unlock_file(index_file)
+ 
+@@ -2582,7 +2598,7 @@ def request_minion_cachedir(
+         base = __opts__['cachedir']
+ 
+     if not fingerprint and pubkey is not None:
+-        fingerprint = salt.utils.pem_finger(key=pubkey, sum_type=(opts and opts.get('hash_type') or 'sha256'))
++        fingerprint = salt.utils.crypt.pem_finger(key=pubkey, sum_type=(opts and opts.get('hash_type') or 'sha256'))
+ 
+     init_cachedir(base)
+ 
+@@ -2594,8 +2610,9 @@ def request_minion_cachedir(
+ 
+     fname = '{0}.p'.format(minion_id)
+     path = os.path.join(base, 'requested', fname)
+-    with salt.utils.fopen(path, 'w') as fh_:
+-        msgpack.dump(data, fh_)
++    mode = 'wb' if six.PY3 else 'w'
++    with salt.utils.files.fopen(path, mode) as fh_:
++        msgpack.dump(data, fh_, encoding=MSGPACK_ENCODING)
+ 
+ 
+ def change_minion_cachedir(
+@@ -2626,13 +2643,13 @@ def change_minion_cachedir(
+     fname = '{0}.p'.format(minion_id)
+     path = os.path.join(base, cachedir, fname)
+ 
+-    with salt.utils.fopen(path, 'r') as fh_:
+-        cache_data = msgpack.load(fh_)
++    with salt.utils.files.fopen(path, 'r') as fh_:
++        cache_data = salt.utils.data.decode(msgpack.load(fh_, encoding=MSGPACK_ENCODING))
+ 
+     cache_data.update(data)
+ 
+-    with salt.utils.fopen(path, 'w') as fh_:
+-        msgpack.dump(cache_data, fh_)
++    with salt.utils.files.fopen(path, 'w') as fh_:
++        msgpack.dump(cache_data, fh_, encoding=MSGPACK_ENCODING)
+ 
+ 
+ def activate_minion_cachedir(minion_id, base=None):
+@@ -2669,21 +2686,23 @@ def delete_minion_cachedir(minion_id, provider, opts, base=None):
+     fname = '{0}.p'.format(minion_id)
+     for cachedir in 'requested', 'active':
+         path = os.path.join(base, cachedir, driver, provider, fname)
+-        log.debug('path: {0}'.format(path))
++        log.debug('path: %s', path)
+         if os.path.exists(path):
+             os.remove(path)
+ 
+ 
+-def list_cache_nodes_full(opts, provider=None, base=None):
++def list_cache_nodes_full(opts=None, provider=None, base=None):
+     '''
+     Return a list of minion data from the cloud cache, rather from the cloud
+     providers themselves. This is the cloud cache version of list_nodes_full().
+     '''
++    if opts is None:
++        opts = __opts__
+     if opts.get('update_cachedir', False) is False:
+         return
+ 
+     if base is None:
+-        base = os.path.join(__opts__['cachedir'], 'active')
++        base = os.path.join(opts['cachedir'], 'active')
+ 
+     minions = {}
+     # First, get a list of all drivers in use
+@@ -2698,12 +2717,13 @@ def list_cache_nodes_full(opts, provider=None, base=None):
+             minions[driver][prov] = {}
+             min_dir = os.path.join(prov_dir, prov)
+             # Get a list of all nodes per provider
+-            for minion_id in os.listdir(min_dir):
++            for fname in os.listdir(min_dir):
+                 # Finally, get a list of full minion data
+-                fname = '{0}.p'.format(minion_id)
+                 fpath = os.path.join(min_dir, fname)
+-                with salt.utils.fopen(fpath, 'r') as fh_:
+-                    minions[driver][prov][minion_id] = msgpack.load(fh_)
++                minion_id = fname[:-2]  # strip '.p' from end of msgpack filename
++                mode = 'rb' if six.PY3 else 'r'
++                with salt.utils.files.fopen(fpath, mode) as fh_:
++                    minions[driver][prov][minion_id] = salt.utils.data.decode(msgpack.load(fh_, encoding=MSGPACK_ENCODING))
+ 
+     return minions
+ 
+@@ -2713,8 +2733,13 @@ def cache_nodes_ip(opts, base=None):
+     Retrieve a list of all nodes from Salt Cloud cache, and any associated IP
+     addresses. Returns a dict.
+     '''
++    salt.utils.versions.warn_until(
++        'Flourine',
++        'This function is incomplete and non-functional '
++        'and will be removed in Salt Flourine.'
++    )
+     if base is None:
+-        base = __opts__['cachedir']
++        base = opts['cachedir']
+ 
+     minions = list_cache_nodes_full(opts, base=base)
+ 
+@@ -2759,8 +2784,8 @@ def update_bootstrap(config, url=None):
+         else:
+             script_name = os.path.basename(url)
+     elif os.path.exists(url):
+-        with salt.utils.fopen(url) as fic:
+-            script_content = fic.read()
++        with salt.utils.files.fopen(url) as fic:
++            script_content = salt.utils.stringutils.to_unicode(fic.read())
+         script_name = os.path.basename(url)
+     # in last case, assuming we got a script content
+     else:
+@@ -2832,28 +2857,20 @@ def update_bootstrap(config, url=None):
+             try:
+                 os.makedirs(entry)
+             except (OSError, IOError) as err:
+-                log.info(
+-                    'Failed to create directory \'{0}\''.format(entry)
+-                )
++                log.info('Failed to create directory \'%s\'', entry)
+                 continue
+ 
+         if not is_writeable(entry):
+-            log.debug(
+-                'The \'{0}\' is not writeable. Continuing...'.format(
+-                    entry
+-                )
+-            )
++            log.debug('The \'%s\' is not writeable. Continuing...', entry)
+             continue
+ 
+         deploy_path = os.path.join(entry, script_name)
+         try:
+             finished_full.append(deploy_path)
+-            with salt.utils.fopen(deploy_path, 'w') as fp_:
+-                fp_.write(script_content)
++            with salt.utils.files.fopen(deploy_path, 'w') as fp_:
++                fp_.write(salt.utils.stringutils.to_str(script_content))
+         except (OSError, IOError) as err:
+-            log.debug(
+-                'Failed to write the updated script: {0}'.format(err)
+-            )
++            log.debug('Failed to write the updated script: %s', err)
+             continue
+ 
+     return {'Success': {'Files updated': finished_full}}
+@@ -2881,8 +2898,9 @@ def cache_node_list(nodes, provider, opts):
+     for node in nodes:
+         diff_node_cache(prov_dir, node, nodes[node], opts)
+         path = os.path.join(prov_dir, '{0}.p'.format(node))
+-        with salt.utils.fopen(path, 'w') as fh_:
+-            msgpack.dump(nodes[node], fh_)
++        mode = 'wb' if six.PY3 else 'w'
++        with salt.utils.files.fopen(path, mode) as fh_:
++            msgpack.dump(nodes[node], fh_, encoding=MSGPACK_ENCODING)
+ 
+ 
+ def cache_node(node, provider, opts):
+@@ -2906,8 +2924,9 @@ def cache_node(node, provider, opts):
+     if not os.path.exists(prov_dir):
+         os.makedirs(prov_dir)
+     path = os.path.join(prov_dir, '{0}.p'.format(node['name']))
+-    with salt.utils.fopen(path, 'w') as fh_:
+-        msgpack.dump(node, fh_)
++    mode = 'wb' if six.PY3 else 'w'
++    with salt.utils.files.fopen(path, mode) as fh_:
++        msgpack.dump(node, fh_, encoding=MSGPACK_ENCODING)
+ 
+ 
+ def missing_node_cache(prov_dir, node_list, provider, opts):
+@@ -2980,17 +2999,17 @@ def diff_node_cache(prov_dir, node, new_data, opts):
+         )
+         return
+ 
+-    with salt.utils.fopen(path, 'r') as fh_:
++    with salt.utils.files.fopen(path, 'r') as fh_:
+         try:
+-            cache_data = msgpack.load(fh_)
++            cache_data = salt.utils.data.decode(msgpack.load(fh_, encoding=MSGPACK_ENCODING))
+         except ValueError:
+-            log.warning('Cache for {0} was corrupt: Deleting'.format(node))
++            log.warning('Cache for %s was corrupt: Deleting', node)
+             cache_data = {}
+ 
+     # Perform a simple diff between the old and the new data, and if it differs,
+     # return both dicts.
+     # TODO: Return an actual diff
+-    diff = cmp(new_data, cache_data)
++    diff = salt.utils.compat.cmp(new_data, cache_data)
+     if diff != 0:
+         fire_event(
+             'event',
+@@ -3108,7 +3127,7 @@ def store_password_in_keyring(credential_id, username, password=None):
+         try:
+             _save_password_in_keyring(credential_id, username, password)
+         except keyring.errors.PasswordSetError as exc:
+-            log.debug('Problem saving password in the keyring: {0}'.format(exc))
++            log.debug('Problem saving password in the keyring: %s', exc)
+     except ImportError:
+         log.error('Tried to store password in keyring, but no keyring module is installed')
+         return False
+@@ -3145,9 +3164,10 @@ def run_func_until_ret_arg(fun, kwargs, fun_call=None,
+                     for k, v in six.iteritems(d0):
+                         r_set[k] = v
+         status = _unwrap_dict(r_set, argument_being_watched)
+-        log.debug('Function: {0}, Watched arg: {1}, Response: {2}'.format(str(fun).split(' ')[1],
+-                                                                          argument_being_watched,
+-                                                                          status))
++        log.debug(
++            'Function: %s, Watched arg: %s, Response: %s',
++            six.text_type(fun).split(' ')[1], argument_being_watched, status
++        )
+         time.sleep(5)
+ 
+     return True
+@@ -3189,22 +3209,16 @@ def check_key_path_and_mode(provider, key_path):
+     '''
+     if not os.path.exists(key_path):
+         log.error(
+-            'The key file \'{0}\' used in the \'{1}\' provider configuration '
+-            'does not exist.\n'.format(
+-                key_path,
+-                provider
+-            )
++            'The key file \'%s\' used in the \'%s\' provider configuration '
++            'does not exist.\n', key_path, provider
+         )
+         return False
+ 
+-    key_mode = str(oct(stat.S_IMODE(os.stat(key_path).st_mode)))
+-    if key_mode not in ('0400', '0600'):
++    key_mode = stat.S_IMODE(os.stat(key_path).st_mode)
++    if key_mode not in (0o400, 0o600):
+         log.error(
+-            'The key file \'{0}\' used in the \'{1}\' provider configuration '
+-            'needs to be set to mode 0400 or 0600.\n'.format(
+-                key_path,
+-                provider
+-            )
++            'The key file \'%s\' used in the \'%s\' provider configuration '
++            'needs to be set to mode 0400 or 0600.\n', key_path, provider
+         )
+         return False
+ 
+@@ -3254,6 +3268,6 @@ def userdata_template(opts, vm_, userdata):
+                     'Templated userdata resulted in non-string result (%s), '
+                     'converting to string', templated
+                 )
+-                templated = str(templated)
++                templated = six.text_type(templated)
+ 
+         return templated
+diff --git a/salt/utils/crypt.py b/salt/utils/crypt.py
+new file mode 100644
+index 0000000000..10b744044e
+--- /dev/null
++++ b/salt/utils/crypt.py
+@@ -0,0 +1,140 @@
++# -*- coding: utf-8 -*-
++'''
++Functions dealing with encryption
++'''
++
++from __future__ import absolute_import, print_function, unicode_literals
++
++# Import Python libs
++import hashlib
++import logging
++import os
++
++log = logging.getLogger(__name__)
++
++# Import Salt libs
++import salt.loader
++import salt.utils.files
++from salt.exceptions import SaltInvocationError
++
++try:
++    import Crypto.Random
++    HAS_CRYPTO = True
++except ImportError:
++    HAS_CRYPTO = False
++
++
++def decrypt(data,
++            rend,
++            translate_newlines=False,
++            renderers=None,
++            opts=None,
++            valid_rend=None):
++    '''
++    .. versionadded:: 2017.7.0
++
++    Decrypt a data structure using the specified renderer. Written originally
++    as a common codebase to handle decryption of encrypted elements within
++    Pillar data, but should be flexible enough for other uses as well.
++
++    Returns the decrypted result, but any decryption renderer should be
++    recursively decrypting mutable types in-place, so any data structure passed
++    should be automagically decrypted using this function. Immutable types
++    obviously won't, so it's a good idea to check if ``data`` is hashable in
++    the calling function, and replace the original value with the decrypted
++    result if that is not the case. For an example of this, see
++    salt.pillar.Pillar.decrypt_pillar().
++
++    data
++        The data to be decrypted. This can be a string of ciphertext or a data
++        structure. If it is a data structure, the items in the data structure
++        will be recursively decrypted.
++
++    rend
++        The renderer used to decrypt
++
++    translate_newlines : False
++        If True, then the renderer will convert a literal backslash followed by
++        an 'n' into a newline before performing the decryption.
++
++    renderers
++        Optionally pass a loader instance containing loaded renderer functions.
++        If not passed, then the ``opts`` will be required and will be used to
++        invoke the loader to get the available renderers. Where possible,
++        renderers should be passed to avoid the overhead of loading them here.
++
++    opts
++        The master/minion configuration opts. Used only if renderers are not
++        passed.
++
++    valid_rend
++        A list containing valid renderers, used to restrict the renderers which
++        this function will be allowed to use. If not passed, no restriction
++        will be made.
++    '''
++    try:
++        if valid_rend and rend not in valid_rend:
++            raise SaltInvocationError(
++                '\'{0}\' is not a valid decryption renderer. Valid choices '
++                'are: {1}'.format(rend, ', '.join(valid_rend))
++            )
++    except TypeError as exc:
++        # SaltInvocationError inherits TypeError, so check for it first and
++        # raise if needed.
++        if isinstance(exc, SaltInvocationError):
++            raise
++        # 'valid' argument is not iterable
++        log.error('Non-iterable value %s passed for valid_rend', valid_rend)
++
++    if renderers is None:
++        if opts is None:
++            raise TypeError('opts are required')
++        renderers = salt.loader.render(opts, {})
++
++    rend_func = renderers.get(rend)
++    if rend_func is None:
++        raise SaltInvocationError(
++            'Decryption renderer \'{0}\' is not available'.format(rend)
++        )
++
++    return rend_func(data, translate_newlines=translate_newlines)
++
++
++def reinit_crypto():
++    '''
++    When a fork arises, pycrypto needs to reinit
++    From its doc::
++
++        Caveat: For the random number generator to work correctly,
++        you must call Random.atfork() in both the parent and
++        child processes after using os.fork()
++
++    '''
++    if HAS_CRYPTO:
++        Crypto.Random.atfork()
++
++
++def pem_finger(path=None, key=None, sum_type='sha256'):
++    '''
++    Pass in either a raw pem string, or the path on disk to the location of a
++    pem file, and the type of cryptographic hash to use. The default is SHA256.
++    The fingerprint of the pem will be returned.
++
++    If neither a key nor a path are passed in, a blank string will be returned.
++    '''
++    if not key:
++        if not os.path.isfile(path):
++            return ''
++
++        with salt.utils.files.fopen(path, 'rb') as fp_:
++            key = b''.join([x for x in fp_.readlines() if x.strip()][1:-1])
++
++    pre = getattr(hashlib, sum_type)(key).hexdigest()
++    finger = ''
++    for ind, _ in enumerate(pre):
++        if ind % 2:
++            # Is odd
++            finger += '{0}:'.format(pre[ind])
++        else:
++            finger += pre[ind]
++    return finger.rstrip(':')
+diff --git a/salt/utils/data.py b/salt/utils/data.py
+new file mode 100644
+index 0000000000..b3b8aa2ff9
+--- /dev/null
++++ b/salt/utils/data.py
+@@ -0,0 +1,568 @@
++# -*- coding: utf-8 -*-
++'''
++Functions for manipulating, inspecting, or otherwise working with data types
++and data structures.
++'''
++
++from __future__ import absolute_import
++
++# Import Python libs
++import collections
++import copy
++import fnmatch
++import logging
++import re
++import yaml
++
++# Import Salt libs
++import salt.utils.dictupdate
++import salt.utils.stringutils
++from salt.defaults import DEFAULT_TARGET_DELIM
++from salt.exceptions import SaltException
++from salt.utils.decorators.jinja import jinja_filter
++
++# Import 3rd-party libs
++from salt.ext import six
++from salt.ext.six.moves import range  # pylint: disable=redefined-builtin
++
++log = logging.getLogger(__name__)
++
++
++@jinja_filter('compare_dicts')
++def compare_dicts(old=None, new=None):
++    '''
++    Compare before and after results from various salt functions, returning a
++    dict describing the changes that were made.
++    '''
++    ret = {}
++    for key in set((new or {})).union((old or {})):
++        if key not in old:
++            # New key
++            ret[key] = {'old': '',
++                        'new': new[key]}
++        elif key not in new:
++            # Key removed
++            ret[key] = {'new': '',
++                        'old': old[key]}
++        elif new[key] != old[key]:
++            # Key modified
++            ret[key] = {'old': old[key],
++                        'new': new[key]}
++    return ret
++
++
++@jinja_filter('compare_lists')
++def compare_lists(old=None, new=None):
++    '''
++    Compare before and after results from various salt functions, returning a
++    dict describing the changes that were made
++    '''
++    ret = dict()
++    for item in new:
++        if item not in old:
++            ret['new'] = item
++    for item in old:
++        if item not in new:
++            ret['old'] = item
++    return ret
++
++
++@jinja_filter('json_decode_dict')
++def decode_dict(data):
++    '''
++    JSON decodes as unicode, Jinja needs bytes...
++    '''
++    rv = {}
++    for key, value in six.iteritems(data):
++        if isinstance(key, six.text_type) and six.PY2:
++            key = key.encode('utf-8')
++        if isinstance(value, six.text_type) and six.PY2:
++            value = value.encode('utf-8')
++        elif isinstance(value, list):
++            value = decode_list(value)
++        elif isinstance(value, dict):
++            value = decode_dict(value)
++        rv[key] = value
++    return rv
++
++
++@jinja_filter('json_decode_list')
++def decode_list(data):
++    '''
++    JSON decodes as unicode, Jinja needs bytes...
++    '''
++    rv = []
++    for item in data:
++        if isinstance(item, six.text_type) and six.PY2:
++            item = item.encode('utf-8')
++        elif isinstance(item, list):
++            item = decode_list(item)
++        elif isinstance(item, dict):
++            item = decode_dict(item)
++        rv.append(item)
++    return rv
++
++
++@jinja_filter('exactly_n_true')
++def exactly_n(l, n=1):
++    '''
++    Tests that exactly N items in an iterable are "truthy" (neither None,
++    False, nor 0).
++    '''
++    i = iter(l)
++    return all(any(i) for j in range(n)) and not any(i)
++
++
++@jinja_filter('exactly_one_true')
++def exactly_one(l):
++    '''
++    Check if only one item is not None, False, or 0 in an iterable.
++    '''
++    return exactly_n(l)
++
++
++def filter_by(lookup_dict,
++              lookup,
++              traverse,
++              merge=None,
++              default='default',
++              base=None):
++    '''
++    Common code to filter data structures like grains and pillar
++    '''
++    ret = None
++    # Default value would be an empty list if lookup not found
++    val = traverse_dict_and_list(traverse, lookup, [])
++
++    # Iterate over the list of values to match against patterns in the
++    # lookup_dict keys
++    for each in val if isinstance(val, list) else [val]:
++        for key in lookup_dict:
++            test_key = key if isinstance(key, six.string_types) else str(key)
++            test_each = each if isinstance(each, six.string_types) else str(each)
++            if fnmatch.fnmatchcase(test_each, test_key):
++                ret = lookup_dict[key]
++                break
++        if ret is not None:
++            break
++
++    if ret is None:
++        ret = lookup_dict.get(default, None)
++
++    if base and base in lookup_dict:
++        base_values = lookup_dict[base]
++        if ret is None:
++            ret = base_values
++
++        elif isinstance(base_values, collections.Mapping):
++            if not isinstance(ret, collections.Mapping):
++                raise SaltException(
++                    'filter_by default and look-up values must both be '
++                    'dictionaries.')
++            ret = salt.utils.dictupdate.update(copy.deepcopy(base_values), ret)
++
++    if merge:
++        if not isinstance(merge, collections.Mapping):
++            raise SaltException(
++                'filter_by merge argument must be a dictionary.')
++
++        if ret is None:
++            ret = merge
++        else:
++            salt.utils.dictupdate.update(ret, copy.deepcopy(merge))
++
++    return ret
++
++
++def traverse_dict(data, key, default=None, delimiter=DEFAULT_TARGET_DELIM):
++    '''
++    Traverse a dict using a colon-delimited (or otherwise delimited, using the
++    'delimiter' param) target string. The target 'foo:bar:baz' will return
++    data['foo']['bar']['baz'] if this value exists, and will otherwise return
++    the dict in the default argument.
++    '''
++    try:
++        for each in key.split(delimiter):
++            data = data[each]
++    except (KeyError, IndexError, TypeError):
++        # Encountered a non-indexable value in the middle of traversing
++        return default
++    return data
++
++
++def traverse_dict_and_list(data, key, default=None, delimiter=DEFAULT_TARGET_DELIM):
++    '''
++    Traverse a dict or list using a colon-delimited (or otherwise delimited,
++    using the 'delimiter' param) target string. The target 'foo:bar:0' will
++    return data['foo']['bar'][0] if this value exists, and will otherwise
++    return the dict in the default argument.
++    Function will automatically determine the target type.
++    The target 'foo:bar:0' will return data['foo']['bar'][0] if data like
++    {'foo':{'bar':['baz']}} , if data like {'foo':{'bar':{'0':'baz'}}}
++    then return data['foo']['bar']['0']
++    '''
++    for each in key.split(delimiter):
++        if isinstance(data, list):
++            try:
++                idx = int(each)
++            except ValueError:
++                embed_match = False
++                # Index was not numeric, lets look at any embedded dicts
++                for embedded in (x for x in data if isinstance(x, dict)):
++                    try:
++                        data = embedded[each]
++                        embed_match = True
++                        break
++                    except KeyError:
++                        pass
++                if not embed_match:
++                    # No embedded dicts matched, return the default
++                    return default
++            else:
++                try:
++                    data = data[idx]
++                except IndexError:
++                    return default
++        else:
++            try:
++                data = data[each]
++            except (KeyError, TypeError):
++                return default
++    return data
++
++
++def subdict_match(data,
++                  expr,
++                  delimiter=DEFAULT_TARGET_DELIM,
++                  regex_match=False,
++                  exact_match=False):
++    '''
++    Check for a match in a dictionary using a delimiter character to denote
++    levels of subdicts, and also allowing the delimiter character to be
++    matched. Thus, 'foo:bar:baz' will match data['foo'] == 'bar:baz' and
++    data['foo']['bar'] == 'baz'. The former would take priority over the
++    latter.
++    '''
++    def _match(target, pattern, regex_match=False, exact_match=False):
++        if regex_match:
++            try:
++                return re.match(pattern.lower(), str(target).lower())
++            except Exception:
++                log.error('Invalid regex \'{0}\' in match'.format(pattern))
++                return False
++        elif exact_match:
++            return str(target).lower() == pattern.lower()
++        else:
++            return fnmatch.fnmatch(str(target).lower(), pattern.lower())
++
++    def _dict_match(target, pattern, regex_match=False, exact_match=False):
++        wildcard = pattern.startswith('*:')
++        if wildcard:
++            pattern = pattern[2:]
++
++        if pattern == '*':
++            # We are just checking that the key exists
++            return True
++        elif pattern in target:
++            # We might want to search for a key
++            return True
++        elif subdict_match(target,
++                           pattern,
++                           regex_match=regex_match,
++                           exact_match=exact_match):
++            return True
++        if wildcard:
++            for key in target:
++                if _match(key,
++                          pattern,
++                          regex_match=regex_match,
++                          exact_match=exact_match):
++                    return True
++                if isinstance(target[key], dict):
++                    if _dict_match(target[key],
++                                   pattern,
++                                   regex_match=regex_match,
++                                   exact_match=exact_match):
++                        return True
++                elif isinstance(target[key], list):
++                    for item in target[key]:
++                        if _match(item,
++                                  pattern,
++                                  regex_match=regex_match,
++                                  exact_match=exact_match):
++                            return True
++        return False
++
++    for idx in range(1, expr.count(delimiter) + 1):
++        splits = expr.split(delimiter)
++        key = delimiter.join(splits[:idx])
++        matchstr = delimiter.join(splits[idx:])
++        log.debug('Attempting to match \'{0}\' in \'{1}\' using delimiter '
++                  '\'{2}\''.format(matchstr, key, delimiter))
++        match = traverse_dict_and_list(data, key, {}, delimiter=delimiter)
++        if match == {}:
++            continue
++        if isinstance(match, dict):
++            if _dict_match(match,
++                           matchstr,
++                           regex_match=regex_match,
++                           exact_match=exact_match):
++                return True
++            continue
++        if isinstance(match, list):
++            # We are matching a single component to a single list member
++            for member in match:
++                if isinstance(member, dict):
++                    if _dict_match(member,
++                                   matchstr,
++                                   regex_match=regex_match,
++                                   exact_match=exact_match):
++                        return True
++                if _match(member,
++                          matchstr,
++                          regex_match=regex_match,
++                          exact_match=exact_match):
++                    return True
++            continue
++        if _match(match,
++                  matchstr,
++                  regex_match=regex_match,
++                  exact_match=exact_match):
++            return True
++    return False
++
++
++@jinja_filter('substring_in_list')
++def substr_in_list(string_to_search_for, list_to_search):
++    '''
++    Return a boolean value that indicates whether or not a given
++    string is present in any of the strings which comprise a list
++    '''
++    return any(string_to_search_for in s for s in list_to_search)
++
++
++def is_dictlist(data):
++    '''
++    Returns True if data is a list of one-element dicts (as found in many SLS
++    schemas), otherwise returns False
++    '''
++    if isinstance(data, list):
++        for element in data:
++            if isinstance(element, dict):
++                if len(element) != 1:
++                    return False
++            else:
++                return False
++        return True
++    return False
++
++
++def repack_dictlist(data,
++                    strict=False,
++                    recurse=False,
++                    key_cb=None,
++                    val_cb=None):
++    '''
++    Takes a list of one-element dicts (as found in many SLS schemas) and
++    repacks into a single dictionary.
++    '''
++    if isinstance(data, six.string_types):
++        try:
++            data = yaml.safe_load(data)
++        except yaml.parser.ParserError as err:
++            log.error(err)
++            return {}
++
++    if key_cb is None:
++        key_cb = lambda x: x
++    if val_cb is None:
++        val_cb = lambda x, y: y
++
++    valid_non_dict = (six.string_types, six.integer_types, float)
++    if isinstance(data, list):
++        for element in data:
++            if isinstance(element, valid_non_dict):
++                continue
++            elif isinstance(element, dict):
++                if len(element) != 1:
++                    log.error(
++                        'Invalid input for repack_dictlist: key/value pairs '
++                        'must contain only one element (data passed: %s).',
++                        element
++                    )
++                    return {}
++            else:
++                log.error(
++                    'Invalid input for repack_dictlist: element %s is '
++                    'not a string/dict/numeric value', element
++                )
++                return {}
++    else:
++        log.error(
++            'Invalid input for repack_dictlist, data passed is not a list '
++            '(%s)', data
++        )
++        return {}
++
++    ret = {}
++    for element in data:
++        if isinstance(element, valid_non_dict):
++            ret[key_cb(element)] = None
++        else:
++            key = next(iter(element))
++            val = element[key]
++            if is_dictlist(val):
++                if recurse:
++                    ret[key_cb(key)] = repack_dictlist(val, recurse=recurse)
++                elif strict:
++                    log.error(
++                        'Invalid input for repack_dictlist: nested dictlist '
++                        'found, but recurse is set to False'
++                    )
++                    return {}
++                else:
++                    ret[key_cb(key)] = val_cb(key, val)
++            else:
++                ret[key_cb(key)] = val_cb(key, val)
++    return ret
++
++
++@jinja_filter('is_list')
++def is_list(value):
++    '''
++    Check if a variable is a list.
++    '''
++    return isinstance(value, list)
++
++
++@jinja_filter('is_iter')
++def is_iter(y, ignore=six.string_types):
++    '''
++    Test if an object is iterable, but not a string type.
++
++    Test if an object is an iterator or is iterable itself. By default this
++    does not return True for string objects.
++
++    The `ignore` argument defaults to a list of string types that are not
++    considered iterable. This can be used to also exclude things like
++    dictionaries or named tuples.
++
++    Based on https://bitbucket.org/petershinners/yter
++    '''
++
++    if ignore and isinstance(y, ignore):
++        return False
++    try:
++        iter(y)
++        return True
++    except TypeError:
++        return False
++
++
++@jinja_filter('sorted_ignorecase')
++def sorted_ignorecase(to_sort):
++    '''
++    Sort a list of strings ignoring case.
++
++    >>> L = ['foo', 'Foo', 'bar', 'Bar']
++    >>> sorted(L)
++    ['Bar', 'Foo', 'bar', 'foo']
++    >>> sorted(L, key=lambda x: x.lower())
++    ['bar', 'Bar', 'foo', 'Foo']
++    >>>
++    '''
++    return sorted(to_sort, key=lambda x: x.lower())
++
++
++def is_true(value=None):
++    '''
++    Returns a boolean value representing the "truth" of the value passed. The
++    rules for what is a "True" value are:
++
++        1. Integer/float values greater than 0
++        2. The string values "True" and "true"
++        3. Any object for which bool(obj) returns True
++    '''
++    # First, try int/float conversion
++    try:
++        value = int(value)
++    except (ValueError, TypeError):
++        pass
++    try:
++        value = float(value)
++    except (ValueError, TypeError):
++        pass
++
++    # Now check for truthiness
++    if isinstance(value, (six.integer_types, float)):
++        return value > 0
++    elif isinstance(value, six.string_types):
++        return str(value).lower() == 'true'
++    else:
++        return bool(value)
++
++
++@jinja_filter('mysql_to_dict')
++def mysql_to_dict(data, key):
++    '''
++    Convert MySQL-style output to a python dictionary
++    '''
++    ret = {}
++    headers = ['']
++    for line in data:
++        if not line:
++            continue
++        if line.startswith('+'):
++            continue
++        comps = line.split('|')
++        for comp in range(len(comps)):
++            comps[comp] = comps[comp].strip()
++        if len(headers) > 1:
++            index = len(headers) - 1
++            row = {}
++            for field in range(index):
++                if field < 1:
++                    continue
++                else:
++                    row[headers[field]] = salt.utils.stringutils.to_num(comps[field])
++            ret[row[key]] = row
++        else:
++            headers = comps
++    return ret
++
++
++def simple_types_filter(data):
++    '''
++    Convert the data list, dictionary into simple types, i.e., int, float, string,
++    bool, etc.
++    '''
++    if data is None:
++        return data
++
++    simpletypes_keys = (six.string_types, six.text_type, six.integer_types, float, bool)
++    simpletypes_values = tuple(list(simpletypes_keys) + [list, tuple])
++
++    if isinstance(data, (list, tuple)):
++        simplearray = []
++        for value in data:
++            if value is not None:
++                if isinstance(value, (dict, list)):
++                    value = simple_types_filter(value)
++                elif not isinstance(value, simpletypes_values):
++                    value = repr(value)
++            simplearray.append(value)
++        return simplearray
++
++    if isinstance(data, dict):
++        simpledict = {}
++        for key, value in six.iteritems(data):
++            if key is not None and not isinstance(key, simpletypes_keys):
++                key = repr(key)
++            if value is not None and isinstance(value, (dict, list, tuple)):
++                value = simple_types_filter(value)
++            elif value is not None and not isinstance(value, simpletypes_values):
++                value = repr(value)
++            simpledict[key] = value
++        return simpledict
++
++    return data
+diff --git a/salt/utils/decorators/jinja.py b/salt/utils/decorators/jinja.py
+new file mode 100644
+index 0000000000..7af0f3a7b6
+--- /dev/null
++++ b/salt/utils/decorators/jinja.py
+@@ -0,0 +1,85 @@
++# -*- coding: utf-8 -*-
++'''
++Jinja-specific decorators
++'''
++from __future__ import absolute_import
++
++# Import Python libs
++import logging
++
++log = logging.getLogger(__name__)
++
++
++class JinjaFilter(object):
++    '''
++    This decorator is used to specify that a function is to be loaded as a
++    Jinja filter.
++    '''
++    salt_jinja_filters = {}
++
++    def __init__(self, name=None):
++        '''
++        '''
++        self.name = name
++
++    def __call__(self, function):
++        '''
++        '''
++        name = self.name or function.__name__
++        if name not in self.salt_jinja_filters:
++            log.debug('Marking \'%s\' as a jinja filter', name)
++            self.salt_jinja_filters[name] = function
++        return function
++
++
++jinja_filter = JinjaFilter
++
++
++class JinjaTest(object):
++    '''
++    This decorator is used to specify that a function is to be loaded as a
++    Jinja test.
++    '''
++    salt_jinja_tests = {}
++
++    def __init__(self, name=None):
++        '''
++        '''
++        self.name = name
++
++    def __call__(self, function):
++        '''
++        '''
++        name = self.name or function.__name__
++        if name not in self.salt_jinja_tests:
++            log.debug('Marking \'%s\' as a jinja test', name)
++            self.salt_jinja_tests[name] = function
++        return function
++
++
++jinja_test = JinjaTest
++
++
++class JinjaGlobal(object):
++    '''
++    This decorator is used to specify that a function is to be loaded as a
++    Jinja global.
++    '''
++    salt_jinja_globals = {}
++
++    def __init__(self, name=None):
++        '''
++        '''
++        self.name = name
++
++    def __call__(self, function):
++        '''
++        '''
++        name = self.name or function.__name__
++        if name not in self.salt_jinja_globals:
++            log.debug('Marking "{0}" as a jinja global'.format(name))
++            self.salt_jinja_globals[name] = function
++        return function
++
++
++jinja_global = JinjaGlobal
+diff --git a/salt/utils/files.py b/salt/utils/files.py
+index 5097f8e6fd..04e33a5679 100644
+--- a/salt/utils/files.py
++++ b/salt/utils/files.py
+@@ -1,4 +1,7 @@
+ # -*- coding: utf-8 -*-
++'''
++Functions for working with files
++'''
+ 
+ from __future__ import absolute_import
+ 
+@@ -7,23 +10,48 @@ import contextlib
+ import errno
+ import logging
+ import os
++import re
+ import shutil
++import stat
+ import subprocess
++import tempfile
+ import time
++import urllib
+ 
+-# Import salt libs
+-import salt.utils
++# Import Salt libs
++import salt.utils.validate.path
++import salt.utils.platform
++import salt.utils.stringutils
+ import salt.modules.selinux
+ from salt.exceptions import CommandExecutionError, FileLockError, MinionError
++from salt.utils.decorators.jinja import jinja_filter
+ 
+ # Import 3rd-party libs
+ from salt.ext import six
++from salt.ext.six.moves import range
++try:
++    import fcntl
++    HAS_FCNTL = True
++except ImportError:
++    # fcntl is not available on windows
++    HAS_FCNTL = False
+ 
+ log = logging.getLogger(__name__)
+ 
+-TEMPFILE_PREFIX = '__salt.tmp.'
++LOCAL_PROTOS = ('', 'file')
+ REMOTE_PROTOS = ('http', 'https', 'ftp', 'swift', 's3')
+ VALID_PROTOS = ('salt', 'file') + REMOTE_PROTOS
++TEMPFILE_PREFIX = '__salt.tmp.'
++
++HASHES = {
++    'sha512': 128,
++    'sha384': 96,
++    'sha256': 64,
++    'sha224': 56,
++    'sha1': 40,
++    'md5': 32,
++}
++HASHES_REVMAP = dict([(y, x) for x, y in six.iteritems(HASHES)])
+ 
+ 
+ def guess_archive_type(name):
+@@ -31,7 +59,9 @@ def guess_archive_type(name):
+     Guess an archive type (tar, zip, or rar) by its file extension
+     '''
+     name = name.lower()
+-    for ending in ('tar', 'tar.gz', 'tar.bz2', 'tar.xz', 'tgz', 'tbz2', 'txz',
++    for ending in ('tar', 'tar.gz', 'tgz',
++                   'tar.bz2', 'tbz2', 'tbz',
++                   'tar.xz', 'txz',
+                    'tar.lzma', 'tlz'):
+         if name.endswith('.' + ending):
+             return 'tar'
+@@ -41,6 +71,24 @@ def guess_archive_type(name):
+     return None
+ 
+ 
++def mkstemp(*args, **kwargs):
++    '''
++    Helper function which does exactly what ``tempfile.mkstemp()`` does but
++    accepts another argument, ``close_fd``, which, by default, is true and closes
++    the fd before returning the file path. Something commonly done throughout
++    Salt's code.
++    '''
++    if 'prefix' not in kwargs:
++        kwargs['prefix'] = '__salt.tmp.'
++    close_fd = kwargs.pop('close_fd', True)
++    fd_, f_path = tempfile.mkstemp(*args, **kwargs)
++    if close_fd is False:
++        return fd_, f_path
++    os.close(fd_)
++    del fd_
++    return f_path
++
++
+ def recursive_copy(source, dest):
+     '''
+     Recursively copy the source directory to the destination,
+@@ -49,7 +97,7 @@ def recursive_copy(source, dest):
+     (identical to cp -r on a unix machine)
+     '''
+     for root, _, files in os.walk(source):
+-        path_from_source = root.replace(source, '').lstrip('/')
++        path_from_source = root.replace(source, '').lstrip(os.sep)
+         target_directory = os.path.join(dest, path_from_source)
+         if not os.path.exists(target_directory):
+             os.makedirs(target_directory)
+@@ -74,21 +122,21 @@ def copyfile(source, dest, backup_mode='', cachedir=''):
+         )
+     bname = os.path.basename(dest)
+     dname = os.path.dirname(os.path.abspath(dest))
+-    tgt = salt.utils.mkstemp(prefix=bname, dir=dname)
++    tgt = mkstemp(prefix=bname, dir=dname)
+     shutil.copyfile(source, tgt)
+     bkroot = ''
+     if cachedir:
+         bkroot = os.path.join(cachedir, 'file_backup')
+     if backup_mode == 'minion' or backup_mode == 'both' and bkroot:
+         if os.path.exists(dest):
+-            salt.utils.backup_minion(dest, bkroot)
++            backup_minion(dest, bkroot)
+     if backup_mode == 'master' or backup_mode == 'both' and bkroot:
+         # TODO, backup to master
+         pass
+     # Get current file stats to they can be replicated after the new file is
+     # moved to the destination path.
+     fstat = None
+-    if not salt.utils.is_windows():
++    if not salt.utils.platform.is_windows():
+         try:
+             fstat = os.stat(dest)
+         except OSError:
+@@ -98,7 +146,7 @@ def copyfile(source, dest, backup_mode='', cachedir=''):
+         os.chown(dest, fstat.st_uid, fstat.st_gid)
+         os.chmod(dest, fstat.st_mode)
+     # If SELINUX is available run a restorecon on the file
+-    rcon = salt.utils.which('restorecon')
++    rcon = salt.utils.path.which('restorecon')
+     if rcon:
+         policy = False
+         try:
+@@ -106,7 +154,7 @@ def copyfile(source, dest, backup_mode='', cachedir=''):
+         except (ImportError, CommandExecutionError):
+             pass
+         if policy == 'Enforcing':
+-            with salt.utils.fopen(os.devnull, 'w') as dev_null:
++            with fopen(os.devnull, 'w') as dev_null:
+                 cmd = [rcon, dest]
+                 subprocess.call(cmd, stdout=dev_null, stderr=dev_null)
+     if os.path.isfile(tgt):
+@@ -234,3 +282,463 @@ def wait_lock(path, lock_fn=None, timeout=5, sleep=0.1, time_start=None):
+         if obtained_lock:
+             os.remove(lock_fn)
+             log.trace('Write lock for %s (%s) released', path, lock_fn)
++
++
++@contextlib.contextmanager
++def set_umask(mask):
++    '''
++    Temporarily set the umask and restore once the contextmanager exits
++    '''
++    if salt.utils.platform.is_windows():
++        # Don't attempt on Windows
++        yield
++    else:
++        try:
++            orig_mask = os.umask(mask)
++            yield
++        finally:
++            os.umask(orig_mask)
++
++
++def fopen(*args, **kwargs):
++    '''
++    Wrapper around open() built-in to set CLOEXEC on the fd.
++
++    This flag specifies that the file descriptor should be closed when an exec
++    function is invoked;
++
++    When a file descriptor is allocated (as with open or dup), this bit is
++    initially cleared on the new file descriptor, meaning that descriptor will
++    survive into the new program after exec.
++
++    NB! We still have small race condition between open and fcntl.
++    '''
++    binary = None
++    # ensure 'binary' mode is always used on Windows in Python 2
++    if ((six.PY2 and salt.utils.platform.is_windows() and 'binary' not in kwargs) or
++            kwargs.pop('binary', False)):
++        if len(args) > 1:
++            args = list(args)
++            if 'b' not in args[1]:
++                args[1] = args[1].replace('t', 'b')
++                if 'b' not in args[1]:
++                    args[1] += 'b'
++        elif kwargs.get('mode'):
++            if 'b' not in kwargs['mode']:
++                kwargs['mode'] = kwargs['mode'].replace('t', 'b')
++                if 'b' not in kwargs['mode']:
++                    kwargs['mode'] += 'b'
++        else:
++            # the default is to read
++            kwargs['mode'] = 'rb'
++    elif six.PY3 and 'encoding' not in kwargs:
++        # In Python 3, if text mode is used and the encoding
++        # is not specified, set the encoding to 'utf-8'.
++        binary = False
++        if len(args) > 1:
++            args = list(args)
++            if 'b' in args[1]:
++                binary = True
++        if kwargs.get('mode', None):
++            if 'b' in kwargs['mode']:
++                binary = True
++        if not binary:
++            kwargs['encoding'] = __salt_system_encoding__
++
++    if six.PY3 and not binary and not kwargs.get('newline', None):
++        kwargs['newline'] = ''
++
++    f_handle = open(*args, **kwargs)  # pylint: disable=resource-leakage
++
++    if is_fcntl_available():
++        # modify the file descriptor on systems with fcntl
++        # unix and unix-like systems only
++        try:
++            FD_CLOEXEC = fcntl.FD_CLOEXEC   # pylint: disable=C0103
++        except AttributeError:
++            FD_CLOEXEC = 1                  # pylint: disable=C0103
++        old_flags = fcntl.fcntl(f_handle.fileno(), fcntl.F_GETFD)
++        fcntl.fcntl(f_handle.fileno(), fcntl.F_SETFD, old_flags | FD_CLOEXEC)
++
++    return f_handle
++
++
++@contextlib.contextmanager
++def flopen(*args, **kwargs):
++    '''
++    Shortcut for fopen with lock and context manager.
++    '''
++    with fopen(*args, **kwargs) as f_handle:
++        try:
++            if is_fcntl_available(check_sunos=True):
++                fcntl.flock(f_handle.fileno(), fcntl.LOCK_SH)
++            yield f_handle
++        finally:
++            if is_fcntl_available(check_sunos=True):
++                fcntl.flock(f_handle.fileno(), fcntl.LOCK_UN)
++
++
++@contextlib.contextmanager
++def fpopen(*args, **kwargs):
++    '''
++    Shortcut for fopen with extra uid, gid, and mode options.
++
++    Supported optional Keyword Arguments:
++
++    mode
++        Explicit mode to set. Mode is anything os.chmod would accept
++        as input for mode. Works only on unix/unix-like systems.
++
++    uid
++        The uid to set, if not set, or it is None or -1 no changes are
++        made. Same applies if the path is already owned by this uid.
++        Must be int. Works only on unix/unix-like systems.
++
++    gid
++        The gid to set, if not set, or it is None or -1 no changes are
++        made. Same applies if the path is already owned by this gid.
++        Must be int. Works only on unix/unix-like systems.
++
++    '''
++    # Remove uid, gid and mode from kwargs if present
++    uid = kwargs.pop('uid', -1)  # -1 means no change to current uid
++    gid = kwargs.pop('gid', -1)  # -1 means no change to current gid
++    mode = kwargs.pop('mode', None)
++    with fopen(*args, **kwargs) as f_handle:
++        path = args[0]
++        d_stat = os.stat(path)
++
++        if hasattr(os, 'chown'):
++            # if uid and gid are both -1 then go ahead with
++            # no changes at all
++            if (d_stat.st_uid != uid or d_stat.st_gid != gid) and \
++                    [i for i in (uid, gid) if i != -1]:
++                os.chown(path, uid, gid)
++
++        if mode is not None:
++            mode_part = stat.S_IMODE(d_stat.st_mode)
++            if mode_part != mode:
++                os.chmod(path, (d_stat.st_mode ^ mode_part) | mode)
++
++        yield f_handle
++
++
++def safe_walk(top, topdown=True, onerror=None, followlinks=True, _seen=None):
++    '''
++    A clone of the python os.walk function with some checks for recursive
++    symlinks. Unlike os.walk this follows symlinks by default.
++    '''
++    if _seen is None:
++        _seen = set()
++
++    # We may not have read permission for top, in which case we can't
++    # get a list of the files the directory contains.  os.path.walk
++    # always suppressed the exception then, rather than blow up for a
++    # minor reason when (say) a thousand readable directories are still
++    # left to visit.  That logic is copied here.
++    try:
++        # Note that listdir and error are globals in this module due
++        # to earlier import-*.
++        names = os.listdir(top)
++    except os.error as err:
++        if onerror is not None:
++            onerror(err)
++        return
++
++    if followlinks:
++        status = os.stat(top)
++        # st_ino is always 0 on some filesystems (FAT, NTFS); ignore them
++        if status.st_ino != 0:
++            node = (status.st_dev, status.st_ino)
++            if node in _seen:
++                return
++            _seen.add(node)
++
++    dirs, nondirs = [], []
++    for name in names:
++        full_path = os.path.join(top, name)
++        if os.path.isdir(full_path):
++            dirs.append(name)
++        else:
++            nondirs.append(name)
++
++    if topdown:
++        yield top, dirs, nondirs
++    for name in dirs:
++        new_path = os.path.join(top, name)
++        if followlinks or not os.path.islink(new_path):
++            for x in safe_walk(new_path, topdown, onerror, followlinks, _seen):
++                yield x
++    if not topdown:
++        yield top, dirs, nondirs
++
++
++def safe_rm(tgt):
++    '''
++    Safely remove a file
++    '''
++    try:
++        os.remove(tgt)
++    except (IOError, OSError):
++        pass
++
++
++def rm_rf(path):
++    '''
++    Platform-independent recursive delete. Includes code from
++    http://stackoverflow.com/a/2656405
++    '''
++    def _onerror(func, path, exc_info):
++        '''
++        Error handler for `shutil.rmtree`.
++
++        If the error is due to an access error (read only file)
++        it attempts to add write permission and then retries.
++
++        If the error is for another reason it re-raises the error.
++
++        Usage : `shutil.rmtree(path, onerror=onerror)`
++        '''
++        if salt.utils.platform.is_windows() and not os.access(path, os.W_OK):
++            # Is the error an access error ?
++            os.chmod(path, stat.S_IWUSR)
++            func(path)
++        else:
++            raise  # pylint: disable=E0704
++    if os.path.islink(path) or not os.path.isdir(path):
++        os.remove(path)
++    else:
++        shutil.rmtree(path, onerror=_onerror)
++
++
++@jinja_filter('is_empty')
++def is_empty(filename):
++    '''
++    Is a file empty?
++    '''
++    try:
++        return os.stat(filename).st_size == 0
++    except OSError:
++        # Non-existent file or permission denied to the parent dir
++        return False
++
++
++def is_fcntl_available(check_sunos=False):
++    '''
++    Simple function to check if the ``fcntl`` module is available or not.
++
++    If ``check_sunos`` is passed as ``True`` an additional check to see if host is
++    SunOS is also made. For additional information see: http://goo.gl/159FF8
++    '''
++    if check_sunos and salt.utils.platform.is_sunos():
++        return False
++    return HAS_FCNTL
++
++
++def safe_filename_leaf(file_basename):
++    '''
++    Input the basename of a file, without the directory tree, and returns a safe name to use
++    i.e. only the required characters are converted by urllib.quote
++    If the input is a PY2 String, output a PY2 String. If input is Unicode output Unicode.
++    For consistency all platforms are treated the same. Hard coded to utf8 as its ascii compatible
++    windows is \\ / : * ? " < > | posix is /
++
++    .. versionadded:: 2017.7.2
++
++    :codeauthor: Damon Atkins <https://github.com/damon-atkins>
++    '''
++    def _replace(re_obj):
++        return urllib.quote(re_obj.group(0), safe='')
++    if not isinstance(file_basename, six.text_type):
++        # the following string is not prefixed with u
++        return re.sub('[\\\\:/*?"<>|]',
++                      _replace,
++                      six.text_type(file_basename, 'utf8').encode('ascii', 'backslashreplace'))
++    # the following string is prefixed with u
++    return re.sub('[\\\\:/*?"<>|]', _replace, file_basename, flags=re.UNICODE)
++
++
++def safe_filepath(file_path_name, dir_sep=None):
++    '''
++    Input the full path and filename, splits on directory separator and calls safe_filename_leaf for
++    each part of the path. dir_sep allows coder to force a directory separate to a particular character
++
++    .. versionadded:: 2017.7.2
++
++    :codeauthor: Damon Atkins <https://github.com/damon-atkins>
++    '''
++    if not dir_sep:
++        dir_sep = os.sep
++    # Normally if file_path_name or dir_sep is Unicode then the output will be Unicode
++    # This code ensure the output type is the same as file_path_name
++    if not isinstance(file_path_name, six.text_type) and isinstance(dir_sep, six.text_type):
++        dir_sep = dir_sep.encode('ascii')  # This should not be executed under PY3
++    # splitdrive only set drive on windows platform
++    (drive, path) = os.path.splitdrive(file_path_name)
++    path = dir_sep.join([safe_filename_leaf(file_section) for file_section in path.rsplit(dir_sep)])
++    if drive:
++        path = dir_sep.join([drive, path])
++    return path
++
++
++@jinja_filter('is_text_file')
++def is_text(fp_, blocksize=512):
++    '''
++    Uses heuristics to guess whether the given file is text or binary,
++    by reading a single block of bytes from the file.
++    If more than 30% of the chars in the block are non-text, or there
++    are NUL ('\x00') bytes in the block, assume this is a binary file.
++    '''
++    int2byte = (lambda x: bytes((x,))) if six.PY3 else chr
++    text_characters = (
++        b''.join(int2byte(i) for i in range(32, 127)) +
++        b'\n\r\t\f\b')
++    try:
++        block = fp_.read(blocksize)
++    except AttributeError:
++        # This wasn't an open filehandle, so treat it as a file path and try to
++        # open the file
++        try:
++            with fopen(fp_, 'rb') as fp2_:
++                block = fp2_.read(blocksize)
++        except IOError:
++            # Unable to open file, bail out and return false
++            return False
++    if b'\x00' in block:
++        # Files with null bytes are binary
++        return False
++    elif not block:
++        # An empty file is considered a valid text file
++        return True
++    try:
++        block.decode('utf-8')
++        return True
++    except UnicodeDecodeError:
++        pass
++
++    nontext = block.translate(None, text_characters)
++    return float(len(nontext)) / len(block) <= 0.30
++
++
++@jinja_filter('is_bin_file')
++def is_binary(path):
++    '''
++    Detects if the file is a binary, returns bool. Returns True if the file is
++    a bin, False if the file is not and None if the file is not available.
++    '''
++    if not os.path.isfile(path):
++        return False
++    try:
++        with fopen(path, 'rb') as fp_:
++            try:
++                data = fp_.read(2048)
++                if six.PY3:
++                    data = data.decode(__salt_system_encoding__)
++                return salt.utils.stringutils.is_binary(data)
++            except UnicodeDecodeError:
++                return True
++    except os.error:
++        return False
++
++
++def remove(path):
++    '''
++    Runs os.remove(path) and suppresses the OSError if the file doesn't exist
++    '''
++    try:
++        os.remove(path)
++    except OSError as exc:
++        if exc.errno != errno.ENOENT:
++            raise
++
++
++@jinja_filter('list_files')
++def list_files(directory):
++    '''
++    Return a list of all files found under directory (and its subdirectories)
++    '''
++    ret = set()
++    ret.add(directory)
++    for root, dirs, files in safe_walk(directory):
++        for name in files:
++            ret.add(os.path.join(root, name))
++        for name in dirs:
++            ret.add(os.path.join(root, name))
++
++    return list(ret)
++
++
++def st_mode_to_octal(mode):
++    '''
++    Convert the st_mode value from a stat(2) call (as returned from os.stat())
++    to an octal mode.
++    '''
++    try:
++        return oct(mode)[-4:]
++    except (TypeError, IndexError):
++        return ''
++
++
++def normalize_mode(mode):
++    '''
++    Return a mode value, normalized to a string and containing a leading zero
++    if it does not have one.
++
++    Allow "keep" as a valid mode (used by file state/module to preserve mode
++    from the Salt fileserver in file states).
++    '''
++    if mode is None:
++        return None
++    if not isinstance(mode, six.string_types):
++        mode = str(mode)
++    if six.PY3:
++        mode = mode.replace('0o', '0')
++    # Strip any quotes any initial zeroes, then though zero-pad it up to 4.
++    # This ensures that somethign like '00644' is normalized to '0644'
++    return mode.strip('"').strip('\'').lstrip('0').zfill(4)
++
++
++def human_size_to_bytes(human_size):
++    '''
++    Convert human-readable units to bytes
++    '''
++    size_exp_map = {'K': 1, 'M': 2, 'G': 3, 'T': 4, 'P': 5}
++    human_size_str = str(human_size)
++    match = re.match(r'^(\d+)([KMGTP])?$', human_size_str)
++    if not match:
++        raise ValueError(
++            'Size must be all digits, with an optional unit type '
++            '(K, M, G, T, or P)'
++        )
++    size_num = int(match.group(1))
++    unit_multiplier = 1024 ** size_exp_map.get(match.group(2), 0)
++    return size_num * unit_multiplier
++
++
++def backup_minion(path, bkroot):
++    '''
++    Backup a file on the minion
++    '''
++    dname, bname = os.path.split(path)
++    if salt.utils.platform.is_windows():
++        src_dir = dname.replace(':', '_')
++    else:
++        src_dir = dname[1:]
++    if not salt.utils.platform.is_windows():
++        fstat = os.stat(path)
++    msecs = str(int(time.time() * 1000000))[-6:]
++    if salt.utils.platform.is_windows():
++        # ':' is an illegal filesystem path character on Windows
++        stamp = time.strftime('%a_%b_%d_%H-%M-%S_%Y')
++    else:
++        stamp = time.strftime('%a_%b_%d_%H:%M:%S_%Y')
++    stamp = '{0}{1}_{2}'.format(stamp[:-4], msecs, stamp[-4:])
++    bkpath = os.path.join(bkroot,
++                          src_dir,
++                          '{0}_{1}'.format(bname, stamp))
++    if not os.path.isdir(os.path.dirname(bkpath)):
++        os.makedirs(os.path.dirname(bkpath))
++    shutil.copyfile(path, bkpath)
++    if not salt.utils.platform.is_windows():
++        os.chown(bkpath, fstat.st_uid, fstat.st_gid)
++        os.chmod(bkpath, fstat.st_mode)
+diff --git a/salt/utils/msazure.py b/salt/utils/msazure.py
+index 7488f3077c..8080b9049e 100644
+--- a/salt/utils/msazure.py
++++ b/salt/utils/msazure.py
+@@ -19,7 +19,7 @@ except ImportError:
+     pass
+ 
+ # Import salt libs
+-import salt.ext.six as six
++from salt.ext import six
+ from salt.exceptions import SaltSystemExit
+ 
+ log = logging.getLogger(__name__)
+@@ -186,7 +186,7 @@ def object_to_dict(obj):
+         ret = obj
+     else:
+         ret = {}
+-        for item in dir(obj):
++        for item in obj.__dict__:
+             if item.startswith('_'):
+                 continue
+             # This is ugly, but inspect.isclass() doesn't seem to work
+diff --git a/salt/utils/platform.py b/salt/utils/platform.py
+new file mode 100644
+index 0000000000..8ba56f2023
+--- /dev/null
++++ b/salt/utils/platform.py
+@@ -0,0 +1,158 @@
++# -*- coding: utf-8 -*-
++'''
++Functions for identifying which platform a machine is
++'''
++# Import Python libs
++from __future__ import absolute_import, print_function, unicode_literals
++import os
++import subprocess
++import sys
++
++# Import Salt libs
++from salt.utils.decorators import memoize as real_memoize
++
++
++@real_memoize
++def is_windows():
++    '''
++    Simple function to return if a host is Windows or not
++    '''
++    return sys.platform.startswith('win')
++
++
++@real_memoize
++def is_proxy():
++    '''
++    Return True if this minion is a proxy minion.
++    Leverages the fact that is_linux() and is_windows
++    both return False for proxies.
++    TODO: Need to extend this for proxies that might run on
++    other Unices
++    '''
++    import __main__ as main
++    # This is a hack.  If a proxy minion is started by other
++    # means, e.g. a custom script that creates the minion objects
++    # then this will fail.
++    ret = False
++    try:
++        # Changed this from 'salt-proxy in main...' to 'proxy in main...'
++        # to support the testsuite's temp script that is called 'cli_salt_proxy'
++        if 'proxy' in main.__file__:
++            ret = True
++    except AttributeError:
++        pass
++    return ret
++
++
++@real_memoize
++def is_linux():
++    '''
++    Simple function to return if a host is Linux or not.
++    Note for a proxy minion, we need to return something else
++    '''
++    return sys.platform.startswith('linux')
++
++
++@real_memoize
++def is_darwin():
++    '''
++    Simple function to return if a host is Darwin (macOS) or not
++    '''
++    return sys.platform.startswith('darwin')
++
++
++@real_memoize
++def is_sunos():
++    '''
++    Simple function to return if host is SunOS or not
++    '''
++    return sys.platform.startswith('sunos')
++
++
++@real_memoize
++def is_smartos():
++    '''
++    Simple function to return if host is SmartOS (Illumos) or not
++    '''
++    if not is_sunos():
++        return False
++    else:
++        return os.uname()[3].startswith('joyent_')
++
++
++@real_memoize
++def is_smartos_globalzone():
++    '''
++    Function to return if host is SmartOS (Illumos) global zone or not
++    '''
++    if not is_smartos():
++        return False
++    else:
++        cmd = ['zonename']
++        try:
++            zonename = subprocess.Popen(
++                cmd, shell=False,
++                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++        except OSError:
++            return False
++        if zonename.returncode:
++            return False
++        if zonename.stdout.read().strip() == 'global':
++            return True
++
++        return False
++
++
++@real_memoize
++def is_smartos_zone():
++    '''
++    Function to return if host is SmartOS (Illumos) and not the gz
++    '''
++    if not is_smartos():
++        return False
++    else:
++        cmd = ['zonename']
++        try:
++            zonename = subprocess.Popen(
++                cmd, shell=False,
++                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++        except OSError:
++            return False
++        if zonename.returncode:
++            return False
++        if zonename.stdout.read().strip() == 'global':
++            return False
++
++        return True
++
++
++@real_memoize
++def is_freebsd():
++    '''
++    Simple function to return if host is FreeBSD or not
++    '''
++    return sys.platform.startswith('freebsd')
++
++
++@real_memoize
++def is_netbsd():
++    '''
++    Simple function to return if host is NetBSD or not
++    '''
++    return sys.platform.startswith('netbsd')
++
++
++@real_memoize
++def is_openbsd():
++    '''
++    Simple function to return if host is OpenBSD or not
++    '''
++    return sys.platform.startswith('openbsd')
++
++
++@real_memoize
++def is_aix():
++    '''
++    Simple function to return if host is AIX or not
++    '''
++    return sys.platform.startswith('aix')
+diff --git a/salt/utils/stringutils.py b/salt/utils/stringutils.py
+new file mode 100644
+index 0000000000..9b6d285791
+--- /dev/null
++++ b/salt/utils/stringutils.py
+@@ -0,0 +1,405 @@
++# -*- coding: utf-8 -*-
++'''
++Functions for manipulating or otherwise processing strings
++'''
++
++# Import Python libs
++from __future__ import absolute_import, print_function, unicode_literals
++import errno
++import fnmatch
++import logging
++import os
++import shlex
++import re
++import time
++
++# Import Salt libs
++from salt.utils.decorators.jinja import jinja_filter
++
++# Import 3rd-party libs
++from salt.ext import six
++from salt.ext.six.moves import range  # pylint: disable=redefined-builtin
++
++log = logging.getLogger(__name__)
++
++
++@jinja_filter('to_bytes')
++def to_bytes(s, encoding=None):
++    '''
++    Given bytes, bytearray, str, or unicode (python 2), return bytes (str for
++    python 2)
++    '''
++    if six.PY3:
++        if isinstance(s, bytes):
++            return s
++        if isinstance(s, bytearray):
++            return bytes(s)
++        if isinstance(s, six.string_types):
++            return s.encode(encoding or __salt_system_encoding__)
++        raise TypeError('expected bytes, bytearray, or str')
++    else:
++        return to_str(s, encoding)
++
++
++def to_str(s, encoding=None):
++    '''
++    Given str, bytes, bytearray, or unicode (py2), return str
++    '''
++    # This shouldn't be six.string_types because if we're on PY2 and we already
++    # have a string, we should just return it.
++    if isinstance(s, str):
++        return s
++    if six.PY3:
++        if isinstance(s, (bytes, bytearray)):
++            # https://docs.python.org/3/howto/unicode.html#the-unicode-type
++            # replace error with U+FFFD, REPLACEMENT CHARACTER
++            return s.decode(encoding or __salt_system_encoding__, "replace")
++        raise TypeError('expected str, bytes, or bytearray not {}'.format(type(s)))
++    else:
++        if isinstance(s, bytearray):
++            return str(s)
++        if isinstance(s, unicode):  # pylint: disable=incompatible-py3-code,undefined-variable
++            return s.encode(encoding or __salt_system_encoding__)
++        raise TypeError('expected str, bytearray, or unicode')
++
++
++def to_unicode(s, encoding=None):
++    '''
++    Given str or unicode, return unicode (str for python 3)
++    '''
++    if not isinstance(s, (bytes, bytearray, six.string_types)):
++        return s
++    if six.PY3:
++        if isinstance(s, (bytes, bytearray)):
++            return to_str(s, encoding)
++    else:
++        # This needs to be str and not six.string_types, since if the string is
++        # already a unicode type, it does not need to be decoded (and doing so
++        # will raise an exception).
++        if isinstance(s, str):
++            return s.decode(encoding or __salt_system_encoding__)
++    return s
++
++
++@jinja_filter('str_to_num')  # Remove this for Neon
++@jinja_filter('to_num')
++def to_num(text):
++    '''
++    Convert a string to a number.
++    Returns an integer if the string represents an integer, a floating
++    point number if the string is a real number, or the string unchanged
++    otherwise.
++    '''
++    try:
++        return int(text)
++    except ValueError:
++        try:
++            return float(text)
++        except ValueError:
++            return text
++
++
++def to_none(text):
++    '''
++    Convert a string to None if the string is empty or contains only spaces.
++    '''
++    if str(text).strip():
++        return text
++    return None
++
++
++def is_quoted(value):
++    '''
++    Return a single or double quote, if a string is wrapped in extra quotes.
++    Otherwise return an empty string.
++    '''
++    ret = ''
++    if isinstance(value, six.string_types) \
++            and value[0] == value[-1] \
++            and value.startswith(('\'', '"')):
++        ret = value[0]
++    return ret
++
++
++def dequote(value):
++    '''
++    Remove extra quotes around a string.
++    '''
++    if is_quoted(value):
++        return value[1:-1]
++    return value
++
++
++@jinja_filter('is_hex')
++def is_hex(value):
++    '''
++    Returns True if value is a hexidecimal string, otherwise returns False
++    '''
++    try:
++        int(value, 16)
++        return True
++    except (TypeError, ValueError):
++        return False
++
++
++def is_binary(data):
++    '''
++    Detects if the passed string of data is binary or text
++    '''
++    if not data or not isinstance(data, six.string_types):
++        return False
++    if '\0' in data:
++        return True
++
++    text_characters = ''.join([chr(x) for x in range(32, 127)] + list('\n\r\t\b'))
++    # Get the non-text characters (map each character to itself then use the
++    # 'remove' option to get rid of the text characters.)
++    if six.PY3:
++        trans = ''.maketrans('', '', text_characters)
++        nontext = data.translate(trans)
++    else:
++        if isinstance(data, unicode):  # pylint: disable=incompatible-py3-code
++            char_map = {}
++            for x in text_characters:
++                char_map[ord(x)] = None
++            trans_args = (char_map,)
++        else:
++            trans_args = (None, str(text_characters))  # future lint: blacklisted-function
++        nontext = data.translate(*trans_args)
++
++    # If more than 30% non-text characters, then
++    # this is considered binary data
++    if float(len(nontext)) / len(data) > 0.30:
++        return True
++    return False
++
++
++@jinja_filter('random_str')
++def random(size=32):
++    key = os.urandom(size)
++    return key.encode('base64').replace('\n', '')[:size]
++
++
++@jinja_filter('contains_whitespace')
++def contains_whitespace(text):
++    '''
++    Returns True if there are any whitespace characters in the string
++    '''
++    return any(x.isspace() for x in text)
++
++
++def human_to_bytes(size):
++    '''
++    Given a human-readable byte string (e.g. 2G, 30M),
++    return the number of bytes.  Will return 0 if the argument has
++    unexpected form.
++
++    .. versionadded:: Oxygen
++    '''
++    sbytes = size[:-1]
++    unit = size[-1]
++    if sbytes.isdigit():
++        sbytes = int(sbytes)
++        if unit == 'P':
++            sbytes *= 1125899906842624
++        elif unit == 'T':
++            sbytes *= 1099511627776
++        elif unit == 'G':
++            sbytes *= 1073741824
++        elif unit == 'M':
++            sbytes *= 1048576
++        else:
++            sbytes = 0
++    else:
++        sbytes = 0
++    return sbytes
++
++
++def build_whitespace_split_regex(text):
++    '''
++    Create a regular expression at runtime which should match ignoring the
++    addition or deletion of white space or line breaks, unless between commas
++
++    Example:
++
++    .. code-block:: python
++
++        >>> import re
++        >>> import salt.utils.stringutils
++        >>> regex = salt.utils.stringutils.build_whitespace_split_regex(
++        ...     """if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then"""
++        ... )
++
++        >>> regex
++        '(?:[\\s]+)?if(?:[\\s]+)?\\[(?:[\\s]+)?\\-z(?:[\\s]+)?\\"\\$debian'
++        '\\_chroot\\"(?:[\\s]+)?\\](?:[\\s]+)?\\&\\&(?:[\\s]+)?\\[(?:[\\s]+)?'
++        '\\-r(?:[\\s]+)?\\/etc\\/debian\\_chroot(?:[\\s]+)?\\]\\;(?:[\\s]+)?'
++        'then(?:[\\s]+)?'
++        >>> re.search(
++        ...     regex,
++        ...     """if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then"""
++        ... )
++
++        <_sre.SRE_Match object at 0xb70639c0>
++        >>>
++
++    '''
++    def __build_parts(text):
++        lexer = shlex.shlex(text)
++        lexer.whitespace_split = True
++        lexer.commenters = ''
++        if '\'' in text:
++            lexer.quotes = '"'
++        elif '"' in text:
++            lexer.quotes = '\''
++        return list(lexer)
++
++    regex = r''
++    for line in text.splitlines():
++        parts = [re.escape(s) for s in __build_parts(line)]
++        regex += r'(?:[\s]+)?{0}(?:[\s]+)?'.format(r'(?:[\s]+)?'.join(parts))
++    return r'(?m)^{0}$'.format(regex)
++
++
++def expr_match(line, expr):
++    '''
++    Evaluate a line of text against an expression. First try a full-string
++    match, next try globbing, and then try to match assuming expr is a regular
++    expression. Originally designed to match minion IDs for
++    whitelists/blacklists.
++    '''
++    if line == expr:
++        return True
++    if fnmatch.fnmatch(line, expr):
++        return True
++    try:
++        if re.match(r'\A{0}\Z'.format(expr), line):
++            return True
++    except re.error:
++        pass
++    return False
++
++
++@jinja_filter('check_whitelist_blacklist')
++def check_whitelist_blacklist(value, whitelist=None, blacklist=None):
++    '''
++    Check a whitelist and/or blacklist to see if the value matches it.
++
++    value
++        The item to check the whitelist and/or blacklist against.
++
++    whitelist
++        The list of items that are white-listed. If ``value`` is found
++        in the whitelist, then the function returns ``True``. Otherwise,
++        it returns ``False``.
++
++    blacklist
++        The list of items that are black-listed. If ``value`` is found
++        in the blacklist, then the function returns ``False``. Otherwise,
++        it returns ``True``.
++
++    If both a whitelist and a blacklist are provided, value membership
++    in the blacklist will be examined first. If the value is not found
++    in the blacklist, then the whitelist is checked. If the value isn't
++    found in the whitelist, the function returns ``False``.
++    '''
++    if blacklist is not None:
++        if not hasattr(blacklist, '__iter__'):
++            blacklist = [blacklist]
++        try:
++            for expr in blacklist:
++                if expr_match(value, expr):
++                    return False
++        except TypeError:
++            log.error('Non-iterable blacklist %s', blacklist)
++
++    if whitelist:
++        if not hasattr(whitelist, '__iter__'):
++            whitelist = [whitelist]
++        try:
++            for expr in whitelist:
++                if expr_match(value, expr):
++                    return True
++        except TypeError:
++            log.error('Non-iterable whitelist %s', whitelist)
++    else:
++        return True
++
++    return False
++
++
++def check_include_exclude(path_str, include_pat=None, exclude_pat=None):
++    '''
++    Check for glob or regexp patterns for include_pat and exclude_pat in the
++    'path_str' string and return True/False conditions as follows.
++      - Default: return 'True' if no include_pat or exclude_pat patterns are
++        supplied
++      - If only include_pat or exclude_pat is supplied: return 'True' if string
++        passes the include_pat test or fails exclude_pat test respectively
++      - If both include_pat and exclude_pat are supplied: return 'True' if
++        include_pat matches AND exclude_pat does not match
++    '''
++    ret = True  # -- default true
++    # Before pattern match, check if it is regexp (E@'') or glob(default)
++    if include_pat:
++        if re.match('E@', include_pat):
++            retchk_include = True if re.search(
++                include_pat[2:],
++                path_str
++            ) else False
++        else:
++            retchk_include = True if fnmatch.fnmatch(
++                path_str,
++                include_pat
++            ) else False
++
++    if exclude_pat:
++        if re.match('E@', exclude_pat):
++            retchk_exclude = False if re.search(
++                exclude_pat[2:],
++                path_str
++            ) else True
++        else:
++            retchk_exclude = False if fnmatch.fnmatch(
++                path_str,
++                exclude_pat
++            ) else True
++
++    # Now apply include/exclude conditions
++    if include_pat and not exclude_pat:
++        ret = retchk_include
++    elif exclude_pat and not include_pat:
++        ret = retchk_exclude
++    elif include_pat and exclude_pat:
++        ret = retchk_include and retchk_exclude
++    else:
++        ret = True
++
++    return ret
++
++
++def print_cli(msg, retries=10, step=0.01):
++    '''
++    Wrapper around print() that suppresses tracebacks on broken pipes (i.e.
++    when salt output is piped to less and less is stopped prematurely).
++    '''
++    while retries:
++        try:
++            try:
++                print(msg)
++            except UnicodeEncodeError:
++                print(msg.encode('utf-8'))
++        except IOError as exc:
++            err = "{0}".format(exc)
++            if exc.errno != errno.EPIPE:
++                if (
++                    ("temporarily unavailable" in err or
++                     exc.errno in (errno.EAGAIN,)) and
++                    retries
++                ):
++                    time.sleep(step)
++                    retries -= 1
++                    continue
++                else:
++                    raise
++        break
+diff --git a/salt/utils/versions.py b/salt/utils/versions.py
+new file mode 100644
+index 0000000000..e51ae40b75
+--- /dev/null
++++ b/salt/utils/versions.py
+@@ -0,0 +1,293 @@
++# -*- coding: utf-8 -*-
++'''
++    :copyright: Copyright 2017 by the SaltStack Team, see AUTHORS for more details.
++    :license: Apache 2.0, see LICENSE for more details.
++
++
++    salt.utils.versions
++    ~~~~~~~~~~~~~~~~~~~
++
++    Version parsing based on distutils.version which works under python 3
++    because on python 3 you can no longer compare strings against integers.
++'''
++
++# Import Python libs
++from __future__ import absolute_import
++import logging
++import numbers
++import sys
++import warnings
++# pylint: disable=blacklisted-module
++from distutils.version import StrictVersion as _StrictVersion
++from distutils.version import LooseVersion as _LooseVersion
++# pylint: enable=blacklisted-module
++
++# Import Salt libs
++import salt.version
++
++# Import 3rd-party libs
++from salt.ext import six
++
++log = logging.getLogger(__name__)
++
++
++class StrictVersion(_StrictVersion):
++    def parse(self, vstring):
++        _StrictVersion.parse(self, vstring)
++
++    def _cmp(self, other):
++        if isinstance(other, six.string_types):
++            other = StrictVersion(other)
++        return _StrictVersion._cmp(self, other)
++
++
++class LooseVersion(_LooseVersion):
++
++    def parse(self, vstring):
++        _LooseVersion.parse(self, vstring)
++
++        if six.PY3:
++            # Convert every part of the version to string in order to be able to compare
++            self._str_version = [
++                str(vp).zfill(8) if isinstance(vp, int) else vp for vp in self.version]
++
++    if six.PY3:
++        def _cmp(self, other):
++            if isinstance(other, six.string_types):
++                other = LooseVersion(other)
++
++            string_in_version = False
++            for part in self.version + other.version:
++                if not isinstance(part, int):
++                    string_in_version = True
++                    break
++
++            if string_in_version is False:
++                return _LooseVersion._cmp(self, other)
++
++            # If we reached this far, it means at least a part of the version contains a string
++            # In python 3, strings and integers are not comparable
++            if self._str_version == other._str_version:
++                return 0
++            if self._str_version < other._str_version:
++                return -1
++            if self._str_version > other._str_version:
++                return 1
++
++
++def warn_until(version,
++               message,
++               category=DeprecationWarning,
++               stacklevel=None,
++               _version_info_=None,
++               _dont_call_warnings=False):
++    '''
++    Helper function to raise a warning, by default, a ``DeprecationWarning``,
++    until the provided ``version``, after which, a ``RuntimeError`` will
++    be raised to remind the developers to remove the warning because the
++    target version has been reached.
++
++    :param version: The version info or name after which the warning becomes a
++                    ``RuntimeError``. For example ``(0, 17)`` or ``Hydrogen``
++                    or an instance of :class:`salt.version.SaltStackVersion`.
++    :param message: The warning message to be displayed.
++    :param category: The warning class to be thrown, by default
++                     ``DeprecationWarning``
++    :param stacklevel: There should be no need to set the value of
++                       ``stacklevel``. Salt should be able to do the right thing.
++    :param _version_info_: In order to reuse this function for other SaltStack
++                           projects, they need to be able to provide the
++                           version info to compare to.
++    :param _dont_call_warnings: This parameter is used just to get the
++                                functionality until the actual error is to be
++                                issued. When we're only after the salt version
++                                checks to raise a ``RuntimeError``.
++    '''
++    if not isinstance(version, (tuple,
++                                six.string_types,
++                                salt.version.SaltStackVersion)):
++        raise RuntimeError(
++            'The \'version\' argument should be passed as a tuple, string or '
++            'an instance of \'salt.version.SaltStackVersion\'.'
++        )
++    elif isinstance(version, tuple):
++        version = salt.version.SaltStackVersion(*version)
++    elif isinstance(version, six.string_types):
++        version = salt.version.SaltStackVersion.from_name(version)
++
++    if stacklevel is None:
++        # Attribute the warning to the calling function, not to warn_until()
++        stacklevel = 2
++
++    if _version_info_ is None:
++        _version_info_ = salt.version.__version_info__
++
++    _version_ = salt.version.SaltStackVersion(*_version_info_)
++
++    if _version_ >= version:
++        import inspect
++        caller = inspect.getframeinfo(sys._getframe(stacklevel - 1))
++        raise RuntimeError(
++            'The warning triggered on filename \'{filename}\', line number '
++            '{lineno}, is supposed to be shown until version '
++            '{until_version} is released. Current version is now '
++            '{salt_version}. Please remove the warning.'.format(
++                filename=caller.filename,
++                lineno=caller.lineno,
++                until_version=version.formatted_version,
++                salt_version=_version_.formatted_version
++            ),
++        )
++
++    if _dont_call_warnings is False:
++        def _formatwarning(message,
++                           category,
++                           filename,
++                           lineno,
++                           line=None):  # pylint: disable=W0613
++            '''
++            Replacement for warnings.formatwarning that disables the echoing of
++            the 'line' parameter.
++            '''
++            return '{0}:{1}: {2}: {3}\n'.format(
++                filename, lineno, category.__name__, message
++            )
++        saved = warnings.formatwarning
++        warnings.formatwarning = _formatwarning
++        warnings.warn(
++            message.format(version=version.formatted_version),
++            category,
++            stacklevel=stacklevel
++        )
++        warnings.formatwarning = saved
++
++
++def kwargs_warn_until(kwargs,
++                      version,
++                      category=DeprecationWarning,
++                      stacklevel=None,
++                      _version_info_=None,
++                      _dont_call_warnings=False):
++    '''
++    Helper function to raise a warning (by default, a ``DeprecationWarning``)
++    when unhandled keyword arguments are passed to function, until the
++    provided ``version_info``, after which, a ``RuntimeError`` will be raised
++    to remind the developers to remove the ``**kwargs`` because the target
++    version has been reached.
++    This function is used to help deprecate unused legacy ``**kwargs`` that
++    were added to function parameters lists to preserve backwards compatibility
++    when removing a parameter. See
++    :ref:`the deprecation development docs <deprecations>`
++    for the modern strategy for deprecating a function parameter.
++
++    :param kwargs: The caller's ``**kwargs`` argument value (a ``dict``).
++    :param version: The version info or name after which the warning becomes a
++                    ``RuntimeError``. For example ``(0, 17)`` or ``Hydrogen``
++                    or an instance of :class:`salt.version.SaltStackVersion`.
++    :param category: The warning class to be thrown, by default
++                     ``DeprecationWarning``
++    :param stacklevel: There should be no need to set the value of
++                       ``stacklevel``. Salt should be able to do the right thing.
++    :param _version_info_: In order to reuse this function for other SaltStack
++                           projects, they need to be able to provide the
++                           version info to compare to.
++    :param _dont_call_warnings: This parameter is used just to get the
++                                functionality until the actual error is to be
++                                issued. When we're only after the salt version
++                                checks to raise a ``RuntimeError``.
++    '''
++    if not isinstance(version, (tuple,
++                                six.string_types,
++                                salt.version.SaltStackVersion)):
++        raise RuntimeError(
++            'The \'version\' argument should be passed as a tuple, string or '
++            'an instance of \'salt.version.SaltStackVersion\'.'
++        )
++    elif isinstance(version, tuple):
++        version = salt.version.SaltStackVersion(*version)
++    elif isinstance(version, six.string_types):
++        version = salt.version.SaltStackVersion.from_name(version)
++
++    if stacklevel is None:
++        # Attribute the warning to the calling function,
++        # not to kwargs_warn_until() or warn_until()
++        stacklevel = 3
++
++    if _version_info_ is None:
++        _version_info_ = salt.version.__version_info__
++
++    _version_ = salt.version.SaltStackVersion(*_version_info_)
++
++    if kwargs or _version_.info >= version.info:
++        arg_names = ', '.join('\'{0}\''.format(key) for key in kwargs)
++        warn_until(
++            version,
++            message='The following parameter(s) have been deprecated and '
++                    'will be removed in \'{0}\': {1}.'.format(version.string,
++                                                              arg_names),
++            category=category,
++            stacklevel=stacklevel,
++            _version_info_=_version_.info,
++            _dont_call_warnings=_dont_call_warnings
++        )
++
++
++def version_cmp(pkg1, pkg2, ignore_epoch=False):
++    '''
++    Compares two version strings using salt.utils.versions.LooseVersion. This
++    is a fallback for providers which don't have a version comparison utility
++    built into them.  Return -1 if version1 < version2, 0 if version1 ==
++    version2, and 1 if version1 > version2. Return None if there was a problem
++    making the comparison.
++    '''
++    normalize = lambda x: str(x).split(':', 1)[-1] if ignore_epoch else str(x)
++    pkg1 = normalize(pkg1)
++    pkg2 = normalize(pkg2)
++
++    try:
++        # pylint: disable=no-member
++        if LooseVersion(pkg1) < LooseVersion(pkg2):
++            return -1
++        elif LooseVersion(pkg1) == LooseVersion(pkg2):
++            return 0
++        elif LooseVersion(pkg1) > LooseVersion(pkg2):
++            return 1
++    except Exception as exc:
++        log.exception(exc)
++    return None
++
++
++def compare(ver1='', oper='==', ver2='', cmp_func=None, ignore_epoch=False):
++    '''
++    Compares two version numbers. Accepts a custom function to perform the
++    cmp-style version comparison, otherwise uses version_cmp().
++    '''
++    cmp_map = {'<': (-1,), '<=': (-1, 0), '==': (0,),
++               '>=': (0, 1), '>': (1,)}
++    if oper not in ('!=',) and oper not in cmp_map:
++        log.error('Invalid operator \'%s\' for version comparison', oper)
++        return False
++
++    if cmp_func is None:
++        cmp_func = version_cmp
++
++    cmp_result = cmp_func(ver1, ver2, ignore_epoch=ignore_epoch)
++    if cmp_result is None:
++        return False
++
++    # Check if integer/long
++    if not isinstance(cmp_result, numbers.Integral):
++        log.error('The version comparison function did not return an '
++                  'integer/long.')
++        return False
++
++    if oper == '!=':
++        return cmp_result not in cmp_map['==']
++    else:
++        # Gracefully handle cmp_result not in (-1, 0, 1).
++        if cmp_result < -1:
++            cmp_result = -1
++        elif cmp_result > 1:
++            cmp_result = 1
++
++        return cmp_result in cmp_map[oper]
+diff --git a/salt/utils/yaml.py b/salt/utils/yaml.py
+new file mode 100644
+index 0000000000..7fbfbe6035
+--- /dev/null
++++ b/salt/utils/yaml.py
+@@ -0,0 +1,10 @@
++# -*- coding: utf-8 -*-
++'''
++Convenience module that provides our custom loader and dumper in a single module
++'''
++from __future__ import absolute_import, print_function, unicode_literals
++
++# pylint: disable=wildcard-import,unused-wildcard-import,unused-import
++from yaml import YAMLError, parser, scanner
++from salt.utils.yamldumper import *
++from salt.utils.yamlloader import *
+diff --git a/salt/utils/yamldumper.py b/salt/utils/yamldumper.py
+index 8f8742cf14..ae43154bf2 100644
+--- a/salt/utils/yamldumper.py
++++ b/salt/utils/yamldumper.py
+@@ -7,7 +7,7 @@
+ # pylint: disable=W0232
+ #         class has no __init__ method
+ 
+-from __future__ import absolute_import
++from __future__ import absolute_import, print_function, unicode_literals
+ try:
+     from yaml import CDumper as Dumper
+     from yaml import CSafeDumper as SafeDumper
+@@ -15,6 +15,9 @@ except ImportError:
+     from yaml import Dumper
+     from yaml import SafeDumper
+ 
++import yaml  # pylint: disable=blacklisted-import
++import collections
++
+ from salt.utils.odict import OrderedDict
+ 
+ try:
+@@ -24,6 +27,20 @@ except ImportError:
+     odict = None
+     HAS_IOFLO = False
+ 
++__all__ = ['OrderedDumper', 'SafeOrderedDumper', 'IndentedSafeOrderedDumper',
++           'get_dumper', 'dump', 'safe_dump']
++
++
++class IndentMixin(Dumper):
++    '''
++    Mixin that improves YAML dumped list readability
++    by indenting them by two spaces,
++    instead of being flush with the key they are under.
++    '''
++
++    def increase_indent(self, flow=False, indentless=False):
++        return super(IndentMixin, self).increase_indent(flow, False)
++
+ 
+ class OrderedDumper(Dumper):
+     '''
+@@ -37,6 +54,14 @@ class SafeOrderedDumper(SafeDumper):
+     '''
+ 
+ 
++class IndentedSafeOrderedDumper(IndentMixin, SafeOrderedDumper):
++    '''
++    A YAML safe dumper that represents python OrderedDict as simple YAML map,
++    and also indents lists by two spaces.
++    '''
++    pass
++
++
+ def represent_ordereddict(dumper, data):
+     return dumper.represent_dict(list(data.items()))
+ 
+@@ -44,6 +69,53 @@ def represent_ordereddict(dumper, data):
+ OrderedDumper.add_representer(OrderedDict, represent_ordereddict)
+ SafeOrderedDumper.add_representer(OrderedDict, represent_ordereddict)
+ 
++OrderedDumper.add_representer(
++    collections.defaultdict,
++    yaml.representer.SafeRepresenter.represent_dict
++)
++SafeOrderedDumper.add_representer(
++    collections.defaultdict,
++    yaml.representer.SafeRepresenter.represent_dict
++)
++
++OrderedDumper.add_representer(
++    'tag:yaml.org,2002:timestamp',
++    OrderedDumper.represent_scalar)
++SafeOrderedDumper.add_representer(
++    'tag:yaml.org,2002:timestamp',
++    SafeOrderedDumper.represent_scalar)
++
+ if HAS_IOFLO:
+     OrderedDumper.add_representer(odict, represent_ordereddict)
+     SafeOrderedDumper.add_representer(odict, represent_ordereddict)
++
++
++def get_dumper(dumper_name):
++    return {
++        'OrderedDumper': OrderedDumper,
++        'SafeOrderedDumper': SafeOrderedDumper,
++        'IndentedSafeOrderedDumper': IndentedSafeOrderedDumper,
++    }.get(dumper_name)
++
++
++def dump(data, stream=None, **kwargs):
++    '''
++    .. versionadded:: 2018.3.0
++
++    Helper that wraps yaml.dump and ensures that we encode unicode strings
++    unless explicitly told not to.
++    '''
++    if 'allow_unicode' not in kwargs:
++        kwargs['allow_unicode'] = True
++    return yaml.dump(data, stream, **kwargs)
++
++
++def safe_dump(data, stream=None, **kwargs):
++    '''
++    Use a custom dumper to ensure that defaultdict and OrderedDict are
++    represented properly. Ensure that unicode strings are encoded unless
++    explicitly told not to.
++    '''
++    if 'allow_unicode' not in kwargs:
++        kwargs['allow_unicode'] = True
++    return yaml.dump(data, stream, Dumper=SafeOrderedDumper, **kwargs)
+diff --git a/salt/utils/yamlloader.py b/salt/utils/yamlloader.py
+index a51d1f1f25..16e30d1836 100644
+--- a/salt/utils/yamlloader.py
++++ b/salt/utils/yamlloader.py
+@@ -1,10 +1,14 @@
+ # -*- coding: utf-8 -*-
++'''
++Custom YAML loading in Salt
++'''
++
+ # Import python libs
+-from __future__ import absolute_import
++from __future__ import absolute_import, print_function, unicode_literals
++import re
+ import warnings
+ 
+-# Import third party libs
+-import yaml
++import yaml  # pylint: disable=blacklisted-import
+ from yaml.nodes import MappingNode, SequenceNode
+ from yaml.constructor import ConstructorError
+ try:
+@@ -13,11 +17,9 @@ try:
+ except Exception:
+     pass
+ 
+-# This function is safe and needs to stay as yaml.load. The load function
+-# accepts a custom loader, and every time this function is used in Salt
+-# the custom loader defined below is used. This should be altered though to
+-# not require the custom loader to be explicitly added.
+-load = yaml.load  # pylint: disable=C0103
++import salt.utils.stringutils
++
++__all__ = ['SaltYamlSafeLoader', 'load', 'safe_load']
+ 
+ 
+ class DuplicateKeyWarning(RuntimeWarning):
+@@ -36,18 +38,24 @@ class SaltYamlSafeLoader(yaml.SafeLoader, object):
+     to make things like sls file more intuitive.
+     '''
+     def __init__(self, stream, dictclass=dict):
+-        yaml.SafeLoader.__init__(self, stream)
++        super(SaltYamlSafeLoader, self).__init__(stream)
+         if dictclass is not dict:
+             # then assume ordered dict and use it for both !map and !omap
+             self.add_constructor(
+-                u'tag:yaml.org,2002:map',
++                'tag:yaml.org,2002:map',
+                 type(self).construct_yaml_map)
+             self.add_constructor(
+-                u'tag:yaml.org,2002:omap',
++                'tag:yaml.org,2002:omap',
+                 type(self).construct_yaml_map)
+-            self.add_constructor(
+-                u'tag:yaml.org,2002:python/unicode',
+-                type(self).construct_unicode)
++        self.add_constructor(
++            'tag:yaml.org,2002:str',
++            type(self).construct_yaml_str)
++        self.add_constructor(
++            'tag:yaml.org,2002:python/unicode',
++            type(self).construct_unicode)
++        self.add_constructor(
++            'tag:yaml.org,2002:timestamp',
++            type(self).construct_scalar)
+         self.dictclass = dictclass
+ 
+     def construct_yaml_map(self, node):
+@@ -72,18 +80,25 @@ class SaltYamlSafeLoader(yaml.SafeLoader, object):
+ 
+         self.flatten_mapping(node)
+ 
++        context = 'while constructing a mapping'
+         mapping = self.dictclass()
+         for key_node, value_node in node.value:
+             key = self.construct_object(key_node, deep=deep)
+             try:
+                 hash(key)
+             except TypeError:
+-                err = ('While constructing a mapping {0} found unacceptable '
+-                       'key {1}').format(node.start_mark, key_node.start_mark)
+-                raise ConstructorError(err)
++                raise ConstructorError(
++                    context,
++                    node.start_mark,
++                    "found unacceptable key {0}".format(key_node.value),
++                    key_node.start_mark)
+             value = self.construct_object(value_node, deep=deep)
+             if key in mapping:
+-                raise ConstructorError('Conflicting ID \'{0}\''.format(key))
++                raise ConstructorError(
++                    context,
++                    node.start_mark,
++                    "found conflicting ID '{0}'".format(key),
++                    key_node.start_mark)
+             mapping[key] = value
+         return mapping
+ 
+@@ -101,15 +116,24 @@ class SaltYamlSafeLoader(yaml.SafeLoader, object):
+                 # an empty string. Change it to '0'.
+                 if node.value == '':
+                     node.value = '0'
++        elif node.tag == 'tag:yaml.org,2002:str':
++            # If any string comes in as a quoted unicode literal, eval it into
++            # the proper unicode string type.
++            if re.match(r'^u([\'"]).+\1$', node.value, flags=re.IGNORECASE):
++                node.value = eval(node.value, {}, {})  # pylint: disable=W0123
+         return super(SaltYamlSafeLoader, self).construct_scalar(node)
+ 
++    def construct_yaml_str(self, node):
++        value = self.construct_scalar(node)
++        return salt.utils.stringutils.to_unicode(value)
++
+     def flatten_mapping(self, node):
+         merge = []
+         index = 0
+         while index < len(node.value):
+             key_node, value_node = node.value[index]
+ 
+-            if key_node.tag == u'tag:yaml.org,2002:merge':
++            if key_node.tag == 'tag:yaml.org,2002:merge':
+                 del node.value[index]
+                 if isinstance(value_node, MappingNode):
+                     self.flatten_mapping(value_node)
+@@ -132,8 +156,8 @@ class SaltYamlSafeLoader(yaml.SafeLoader, object):
+                                            node.start_mark,
+                                            "expected a mapping or list of mappings for merging, but found {0}".format(value_node.id),
+                                            value_node.start_mark)
+-            elif key_node.tag == u'tag:yaml.org,2002:value':
+-                key_node.tag = u'tag:yaml.org,2002:str'
++            elif key_node.tag == 'tag:yaml.org,2002:value':
++                key_node.tag = 'tag:yaml.org,2002:str'
+                 index += 1
+             else:
+                 index += 1
+@@ -143,3 +167,16 @@ class SaltYamlSafeLoader(yaml.SafeLoader, object):
+             mergeable_items = [x for x in merge if x[0].value not in existing_nodes]
+ 
+             node.value = mergeable_items + node.value
++
++
++def load(stream, Loader=SaltYamlSafeLoader):
++    return yaml.load(stream, Loader=Loader)
++
++
++def safe_load(stream, Loader=SaltYamlSafeLoader):
++    '''
++    .. versionadded:: 2018.3.0
++
++    Helper function which automagically uses our custom loader.
++    '''
++    return yaml.load(stream, Loader=Loader)
+-- 
+2.13.6
+
+

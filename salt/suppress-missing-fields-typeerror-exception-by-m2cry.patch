@@ -1,0 +1,117 @@
+From e4149ba32ce6d35fab946d6acd9229190d908cf4 Mon Sep 17 00:00:00 2001
+From: Aljosha Friemann <a.friemann@automate.wtf>
+Date: Sat, 5 Aug 2017 03:53:48 +0200
+Subject: [PATCH] Suppress missing fields TypeError exception by m2crypto
+
+Add logging to the subject parsing
+
+Add unit test for x509 module on function _parse_subject
+
+Lintfix: unused import
+
+Fix unit test on Python3
+---
+ salt/modules/x509.py            | 11 ++++---
+ tests/unit/modules/test_x509.py | 67 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 74 insertions(+), 4 deletions(-)
+ create mode 100644 tests/unit/modules/test_x509.py
+
+diff --git a/salt/modules/x509.py b/salt/modules/x509.py
+index 349997988a..162310b6c1 100644
+--- a/salt/modules/x509.py
++++ b/salt/modules/x509.py
+@@ -330,10 +330,13 @@ def _parse_subject(subject):
+     for nid_name, nid_num in six.iteritems(subject.nid):
+         if nid_num in nids:
+             continue
+-        val = getattr(subject, nid_name)
+-        if val:
+-            ret[nid_name] = val
+-            nids.append(nid_num)
++        try:
++            val = getattr(subject, nid_name)
++            if val:
++                ret[nid_name] = val
++                nids.append(nid_num)
++        except TypeError as err:
++            log.trace("Missing attribute '%s'. Error: %s", nid_name, err)
+ 
+     return ret
+ 
+diff --git a/tests/unit/modules/test_x509.py b/tests/unit/modules/test_x509.py
+new file mode 100644
+index 0000000000..edafe4ff44
+--- /dev/null
++++ b/tests/unit/modules/test_x509.py
+@@ -0,0 +1,67 @@
++# -*- coding: utf-8 -*-
++#
++# Author: Bo Maryniuk <bo@suse.de>
++#
++# Copyright 2018 SUSE LLC
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++# http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++# Import Salt Testing Libs
++from __future__ import absolute_import, print_function, unicode_literals
++
++try:
++    import pytest
++except ImportError as import_error:
++    pytest = None
++
++from tests.support.mixins import LoaderModuleMockMixin
++from tests.support.unit import TestCase, skipIf
++from tests.support.mock import (
++    patch,
++    MagicMock,
++    NO_MOCK,
++    NO_MOCK_REASON
++)
++
++from salt.modules import x509
++
++
++@skipIf(NO_MOCK, NO_MOCK_REASON)
++@skipIf(not bool(pytest), False)
++class X509TestCase(TestCase, LoaderModuleMockMixin):
++
++    def setup_loader_modules(self):
++        return {x509: {}}
++
++    @patch('salt.modules.x509.log', MagicMock())
++    def test_private_func__parse_subject(self):
++        '''
++        Test private function _parse_subject(subject) it handles a missing fields
++        :return:
++        '''
++        class FakeSubject(object):
++            '''
++            Class for faking x509'th subject.
++            '''
++            def __init__(self):
++                self.nid = {'Darth Vader': 1}
++
++            def __getattr__(self, item):
++                if item != 'nid':
++                    raise TypeError('A star wars satellite accidentally blew up the WAN.')
++
++        subj = FakeSubject()
++        x509._parse_subject(subj)
++        x509.log.trace.assert_called_once()
++        assert x509.log.trace.call_args[0][0] == "Missing attribute '%s'. Error: %s"
++        assert x509.log.trace.call_args[0][1] == list(subj.nid.keys())[0]
++        assert isinstance(x509.log.trace.call_args[0][2], TypeError)
+-- 
+2.16.1
+
+

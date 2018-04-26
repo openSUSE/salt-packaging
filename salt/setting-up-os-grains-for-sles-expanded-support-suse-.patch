@@ -1,0 +1,28 @@
+From bbf5a6cb858605ebc724dd0dc29ebebacabe2176 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Fri, 30 Sep 2016 13:06:52 +0100
+Subject: [PATCH] Setting up OS grains for SLES Expanded Support (SUSE's
+ Red Hat compatible platform)
+
+core.py: quote style fixed
+---
+ salt/grains/core.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index 19c684da2b..a577c7c9d8 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -1051,6 +1051,7 @@ _OS_NAME_MAP = {
+     'sles': 'SUSE',
+     'slesexpand': 'RES',
+     'void': 'Void',
++    'slesexpand': 'RES',
+     'linuxmint': 'Mint',
+ }
+ 
+-- 
+2.13.6
+
+

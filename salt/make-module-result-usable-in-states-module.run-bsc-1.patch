@@ -1,0 +1,41 @@
+From 5335430d2a64fa2f27533ba51d96eef01fb082d8 Mon Sep 17 00:00:00 2001
+From: Michael Calmer <mc@suse.de>
+Date: Wed, 21 Mar 2018 14:50:03 +0100
+Subject: [PATCH] make module result usable in states module.run (bsc#1085635)
+
+---
+ salt/modules/dockerng.py | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/salt/modules/dockerng.py b/salt/modules/dockerng.py
+index 8366e5e8ba..6302275b32 100644
+--- a/salt/modules/dockerng.py
++++ b/salt/modules/dockerng.py
+@@ -1904,6 +1904,7 @@ def login(*registries):
+                     errors.append(login_cmd['stderr'])
+                 elif login_cmd['stdout']:
+                     errors.append(login_cmd['stdout'])
++    ret['retcode'] = len(errors)
+     return ret
+ 
+ 
+@@ -4129,6 +4130,7 @@ def push(image,
+ 
+     if errors:
+         ret['Errors'] = errors
++    ret['retcode'] = len(errors)
+     return ret
+ 
+ 
+@@ -4203,6 +4205,7 @@ def rmi(*names, **kwargs):
+            'Tags': [x for x in pre_tags if x not in list_tags()]}
+     if errors:
+         ret['Errors'] = errors
++    ret['retcode'] = len(errors)
+     return ret
+ 
+ 
+-- 
+2.16.2
+
+

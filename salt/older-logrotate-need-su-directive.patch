@@ -1,0 +1,25 @@
+From 97b288f0c8b81a49da25ed974b787d17f6735ec9 Mon Sep 17 00:00:00 2001
+From: Michael Calmer <mc@suse.de>
+Date: Thu, 7 Dec 2017 17:38:44 +0100
+Subject: [PATCH] older logrotate need su directive
+
+---
+ pkg/salt-common.logrotate | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/pkg/salt-common.logrotate b/pkg/salt-common.logrotate
+index 0d99d1b801..625670942c 100644
+--- a/pkg/salt-common.logrotate
++++ b/pkg/salt-common.logrotate
+@@ -8,6 +8,7 @@
+ }
+ 
+ /var/log/salt/minion {
++	su root root
+ 	weekly
+ 	missingok
+ 	rotate 7
+-- 
+2.13.6
+
+

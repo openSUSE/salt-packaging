@@ -1,0 +1,95 @@
+From 8e463a5105c9157e2691f7b8cd206fee4631bfe6 Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Wed, 21 Mar 2018 11:10:23 +0100
+Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
+ (bsc#1087581)
+
+  * Lintfix: PEP8 ident
+  * Use proper levels of the error handling, use proper log formatting.
+  * Fix unit test for reversed fqdns return data
+---
+ salt/grains/core.py            | 19 ++++++++++++-------
+ tests/unit/grains/core_test.py | 26 ++++++++++++++------------
+ 2 files changed, 26 insertions(+), 19 deletions(-)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index c6984f471c..496beec14c 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -1682,16 +1682,21 @@ def fqdns():
+     fqdns = set()
+ 
+     addresses = salt.utils.network.ip_addrs(include_loopback=False,
+-        interface_data=_INTERFACES)
++                                            interface_data=_INTERFACES)
+     addresses.extend(salt.utils.network.ip_addrs6(include_loopback=False,
+-        interface_data=_INTERFACES))
+-
++                                                  interface_data=_INTERFACES))
++    err_message = 'Exception during resolving address: %s'
+     for ip in addresses:
+         try:
+-            fqdns.add(socket.gethostbyaddr(ip)[0])
+-        except (socket.error, socket.herror,
+-            socket.gaierror, socket.timeout) as e:
+-            log.info("Exception during resolving address: " + str(e))
++            fqdns.add(socket.getfqdn(socket.gethostbyaddr(ip)[0]))
++        except socket.herror as err:
++            if err.errno == 0:
++                # No FQDN for this IP address, so we don't need to know this all the time.
++                log.debug("Unable to resolve address %s: %s", ip, err)
++            else:
++                log.error(err_message, err)
++        except (socket.error, socket.gaierror, socket.timeout) as err:
++            log.error(err_message, err)
+ 
+     grains['fqdns'] = list(fqdns)
+     return grains
+diff --git a/tests/unit/grains/core_test.py b/tests/unit/grains/core_test.py
+index d339561816..e99d804266 100644
+--- a/tests/unit/grains/core_test.py
++++ b/tests/unit/grains/core_test.py
+@@ -461,25 +461,27 @@ PATCHLEVEL = 3
+         self.assertEqual(os_grains.get('osmajorrelease'), os_release_map['osmajorrelease'])
+ 
+     @skipIf(not salt.utils.is_linux(), 'System is not Linux')
++    @patch.object(salt.utils, 'is_windows', MagicMock(return_value=False))
++    @patch('salt.utils.network.ip_addrs', MagicMock(return_value=['1.2.3.4', '5.6.7.8']))
++    @patch('salt.utils.network.ip_addrs6',
++           MagicMock(return_value=['fe80::a8b2:93ff:fe00:0', 'fe80::a8b2:93ff:dead:beef']))
++    @patch('salt.utils.network.socket.getfqdn', MagicMock(side_effect=lambda v: v))  # Just pass-through
+     def test_fqdns_return(self):
+         '''
+         test the return for a dns grain. test for issue:
+         https://github.com/saltstack/salt/issues/41230
+         '''
+         reverse_resolv_mock = [('foo.bar.baz', [], ['1.2.3.4']),
+-        ('rinzler.evil-corp.com', [], ['5.6.7.8']),
+-        ('foo.bar.baz', [], ['fe80::a8b2:93ff:fe00:0']),
+-        ('bluesniff.foo.bar', [], ['fe80::a8b2:93ff:dead:beef'])]
++                               ('rinzler.evil-corp.com', [], ['5.6.7.8']),
++                               ('foo.bar.baz', [], ['fe80::a8b2:93ff:fe00:0']),
++                               ('bluesniff.foo.bar', [], ['fe80::a8b2:93ff:dead:beef'])]
+         ret = {'fqdns': ['rinzler.evil-corp.com', 'foo.bar.baz', 'bluesniff.foo.bar']}
+-        self._run_fqdns_test(reverse_resolv_mock, ret)
+-
+-    def _run_fqdns_test(self, reverse_resolv_mock, ret):
+-        with patch.object(salt.utils, 'is_windows', MagicMock(return_value=False)):
+-            with patch('salt.utils.network.ip_addrs', MagicMock(return_value=['1.2.3.4', '5.6.7.8'])):
+-                with patch('salt.utils.network.ip_addrs6', MagicMock(return_value=['fe80::a8b2:93ff:fe00:0', 'fe80::a8b2:93ff:dead:beef'])):
+-                    with patch.object(socket, 'gethostbyaddr', side_effect=reverse_resolv_mock):
+-                        fqdns = core.fqdns()
+-                        self.assertEqual(fqdns, ret)
++        with patch.object(socket, 'gethostbyaddr', side_effect=reverse_resolv_mock):
++            fqdns = core.fqdns()
++            self.assertIn('fqdns', fqdns)
++            self.assertEqual(len(fqdns['fqdns']), len(ret['fqdns']))
++            self.assertEqual(set(fqdns['fqdns']), set(ret['fqdns']))
++
+ 
+ if __name__ == '__main__':
+     from integration import run_tests
+-- 
+2.13.6
+
+
