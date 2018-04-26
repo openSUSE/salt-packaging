@@ -1,7 +1,7 @@
 #
-# spec file for package salt
+# spec file for package py26-compat-salt
 #
-# Copyright (c) 2016 SUSE LINUX GmbH, Nuernberg, Germany.
+# Copyright (c) 2018 SUSE LINUX GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -16,32 +16,22 @@
 #
 
 
-%if 0%{?suse_version} > 1210 || 0%{?rhel} >= 7 || 0%{?fedora}
-%bcond_without systemd
-%else
-%bcond_with    systemd
-%endif
 %{!?python_sitelib: %global python_sitelib %(python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%if 0%{?suse_version} > 1110
-%bcond_without bash_completion
-%bcond_without fish_completion
-%bcond_without zsh_completion
-%else
-%bcond_with    bash_completion
-%bcond_with    fish_completion
-%bcond_with    zsh_completion
-%endif
 %bcond_with    test
-%bcond_without docs
+%bcond_with    docs
 %bcond_with    builddocs
 
-Name:           salt
+%define compatdir %{_datadir}/susemanager/py26-compat
+%define origname salt
+
+Name:           py26-compat-salt
 Version:        2016.11.10
 Release:        0
-Summary:        A parallel remote execution system
+Summary:        Python 2.6 compatible salt
 License:        Apache-2.0
 Group:          System/Management
 Url:            http://saltstack.org/
+BuildArch:      noarch
 # Git: https://github.com/openSUSE/salt.git
 Source0:        https://pypi.python.org/packages/a9/0a/31908d158c055248d5b5b22e66863eb98167aecad71edda92b58b223db7b/salt-2016.11.10.tar.gz
 Source1:        README.SUSE
@@ -49,6 +39,7 @@ Source2:        salt-tmpfiles.d
 Source3:        html.tar.bz2
 Source4:        update-documentation.sh
 Source5:        travis.yml
+Source6:        py26-compat-salt.conf
 
 # PATCH-FIX-OPENSUSE use-forking-daemon.patch tserong@suse.com -- We don't have python-systemd, so notify can't work
 # We do not upstream this patch because this is something that we have to fix on our side
@@ -225,7 +216,6 @@ Patch81:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
 Patch82:        fix-minion-arguments-assign-via-sysctl-bsc-1124290.patch
 
 
-
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
 BuildRequires:  python
@@ -287,14 +277,13 @@ Requires:       python-certifi
 %endif
 # requirements/base.txt
 %if 0%{?rhel}
-Requires:  python-jinja2
-Requires:  yum
+Requires:       python-jinja2
+Requires:       yum
 %if 0%{?rhel} == 6
-Requires:  yum-plugin-security
-Requires:  rsyslog
+Requires:       yum-plugin-security
 %endif
 %else
-Requires:  python-Jinja2
+Requires:       python-Jinja2
 %endif
 Requires:       python-futures >= 2.0
 Requires:       python-markupsafe
@@ -354,212 +343,12 @@ BuildRequires:  zsh
 BuildRequires:  yum
 %endif
 
+# for salt user and /etc directory structure
+BuildRequires:  salt-master
+Requires(pre):  salt-master
+
 %description
-Salt is a distributed remote execution system used to execute commands and
-query data. It was developed in order to bring the best solutions found in
-the world of remote execution together and make them better, faster and more
-malleable. Salt accomplishes this via its ability to handle larger loads of
-information, and not just dozens, but hundreds or even thousands of individual
-servers, handle them quickly and through a simple and manageable interface.
-
-%package api
-Summary:        The api for Salt a parallel remote execution system
-Group:          System/Management
-Requires:       %{name} = %{version}-%{release}
-Requires:       %{name}-master = %{version}-%{release}
-Requires:       python-CherryPy >= 3.2.2
-
-%description api
-salt-api is a modular interface on top of Salt that can provide a variety of entry points into a running Salt system.
-
-%package cloud
-Summary:        Generic cloud provisioning tool for Saltstack
-Group:          System/Management
-Requires:       %{name} = %{version}-%{release}
-Requires:       %{name}-master = %{version}-%{release}
-Requires:       python-apache-libcloud
-%if 0%{?suse_version}
-Recommends:     python-botocore
-Recommends:     python-netaddr
-%endif
-
-%description cloud
-public cloud VM management system
-provision virtual machines on various public clouds via a cleanly
-controlled profile and mapping system.
-
-%if %{with docs}
-%package doc
-Summary:        Documentation for salt, a parallel remote execution system
-Group:          Documentation/HTML
-Requires:       %{name} = %{version}
-
-%description doc
-This contains the documentation of salt, it is an offline version of http://docs.saltstack.com.
-%endif
-
-%package master
-Summary:        The management component of Saltstack with zmq protocol supported
-Group:          System/Management
-Requires:       %{name} = %{version}-%{release}
-%if 0%{?suse_version}
-Recommends:     python-pygit2 >= 0.20.3
-%endif
-%ifarch %{ix86} x86_64
-%if 0%{?suse_version}
-%if 0%{?suse_version} > 1110
-Requires:       dmidecode
-%else
-Requires:       pmtools
-%endif
-%endif
-%endif
-%if %{with systemd}
-%{?systemd_requires}
-%else
-%if 0%{?suse_version}
-Requires(pre):  %insserv_prereq
-%endif
-%endif
-%if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
-%endif
-
-%description master
-The Salt master is the central server to which all minions connect.
-Enabled commands to remote systems to be called in parallel rather
-than serially.
-
-%package minion
-Summary:        The client component for Saltstack
-Group:          System/Management
-Requires(pre):  %{name} = %{version}-%{release}
-
-%if %{with systemd}
-%{?systemd_requires}
-%else
-%if 0%{?suse_version}
-Requires(pre):  %insserv_prereq
-%endif
-%endif
-%if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
-%endif
-
-%description minion
-Salt minion is queried and controlled from the master.
-Listens to the salt master and execute the commands.
-
-%package proxy
-Summary:        Component for salt that enables controlling arbitrary devices
-Group:          System/Management
-Requires:       %{name} = %{version}-%{release}
-%if %{with systemd}
-%{?systemd_requires}
-%else
-%if 0%{?suse_version}
-Requires(pre):  %insserv_prereq
-%endif
-%endif
-%if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
-%endif
-
-%description proxy
-Proxy minions are a developing Salt feature that enables controlling devices that,
-for whatever reason, cannot run a standard salt-minion.
-Examples include network gear that has an API but runs a proprietary OS,
-devices with limited CPU or memory, or devices that could run a minion, but for
-security reasons, will not.
-
-
-%package syndic
-Summary:        The syndic component for saltstack
-Group:          System/Management
-Requires:       %{name} = %{version}-%{release}
-Requires:       %{name}-master = %{version}-%{release}
-%if %{with systemd}
-%{?systemd_requires}
-%else
-%if 0%{?suse_version}
-Requires(pre):  %insserv_prereq
-%endif
-%endif
-%if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
-%endif
-
-%description syndic
-Salt syndic is the master-of-masters for salt
-The master of masters for salt-- it enables
-the management of multiple masters at a time..
-
-%package ssh
-Summary:        Management component for Saltstack with ssh protocol
-Group:          System/Management
-Requires:       %{name} = %{version}-%{release}
-Requires:       %{name}-master = %{version}-%{release}
-%if 0%{?suse_version}
-Recommends:     sshpass
-%endif
-%if %{with systemd}
-%{?systemd_requires}
-%else
-%if 0%{?suse_version}
-Requires(pre):  %insserv_prereq
-%endif
-%endif
-%if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
-%endif
-
-%description ssh
-Salt ssh is a master running without zmq.
-it enables the management of minions over a ssh connection.
-
-%if %{with bash_completion}
-%package bash-completion
-Summary:        Bash Completion for %{name}
-Group:          System/Management
-Requires:       %{name} = %{version}-%{release}
-Requires:       bash-completion
-%if 0%{?suse_version} > 1110
-BuildArch:      noarch
-%endif
-
-%description bash-completion
-Bash command line completion support for %{name}.
-
-%endif
-
-%if %{with fish_completion}
-%package fish-completion
-Summary:        Fish Completion for %{name}
-Group:          System/Management
-Requires:       %{name} = %{version}-%{release}
-
-%if 0%{?suse_version} > 1110
-BuildArch:      noarch
-%endif
-
-%description fish-completion
-Fish command line completion support for %{name}.
-%endif
-
-%if %{with zsh_completion}
-%package zsh-completion
-Summary:        Zsh Completion for %{name}
-Group:          System/Management
-Requires:       %{name} = %{version}-%{release}
-Requires:       zsh
-%if 0%{?suse_version} > 1110
-BuildArch:      noarch
-%endif
-
-%description zsh-completion
-Zsh command line completion support for %{name}.
-
-%endif
+Python 2.6 compatible salt library used for thin generation.
 
 %prep
 %setup -q -n salt-%{version}
@@ -680,616 +469,30 @@ cd doc && make html && rm _build/html/.buildinfo && rm _build/html/_images/proxy
 %endif
 
 %install
-%{__python} setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot}
-## create missing directories
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/master.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/minion.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/cloud.maps.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/cloud.profiles.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/cloud.providers.d
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/log/salt
-install -Dd -m 0755 %{buildroot}%{_sysconfdir}/logrotate.d/
-install -Dd -m 0755 %{buildroot}%{_sbindir}
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/log/salt
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/minion/extmod
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/jobs
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/proc
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/queues
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/roots
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/syndics
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/tokens
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/cloud
-install -Dd -m 0750 %{buildroot}/var/lib/salt
-install -Dd -m 0750 %{buildroot}/srv/salt
-install -Dd -m 0750 %{buildroot}/srv/pillar
-install -Dd -m 0750 %{buildroot}/srv/spm
-install -Dd -m 0755 %{buildroot}%{_docdir}/salt
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/cloud.maps.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/cloud.profiles.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/cloud.providers.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/master.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/minion.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_autosign
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_denied
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_pre
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_rejected
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/minion
+%{__python} setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot} --install-lib=%{compatdir}/
 
-## Install Zypper plugins only on SUSE machines
-%if 0%{?suse_version}
-install -Dd -m 0750 %{buildroot}%{_prefix}/lib/zypp/plugins/commit
-%{__install} scripts/zypper/plugins/commit/zyppnotify %{buildroot}%{_prefix}/lib/zypp/plugins/commit/zyppnotify
-%endif
+mkdir -p %{buildroot}/etc/salt/master.d
+install -m 644 %{S:6} %{buildroot}/etc/salt/master.d
 
-# Install Yum plugins only on RH machines
-%if 0%{?fedora} || 0%{?rhel}
-install -Dd %{buildroot}%{_prefix}/share/yum-plugins
-install -Dd %{buildroot}/etc/yum/pluginconf.d
-%{__install} scripts/yum/plugins/yumnotify.py %{buildroot}%{_prefix}/share/yum-plugins
-%{__install} scripts/yum/plugins/yumnotify.conf %{buildroot}/etc/yum/pluginconf.d
-%endif
-
-## install init and systemd scripts
-%if %{with systemd}
-install -Dpm 0644 pkg/salt-master.service %{buildroot}%{_unitdir}/salt-master.service
-%if 0%{?suse_version}
-install -Dpm 0644 pkg/suse/salt-minion.service %{buildroot}%{_unitdir}/salt-minion.service
-%else
-install -Dpm 0644 pkg/salt-minion.service.rhel7 %{buildroot}%{_unitdir}/salt-minion.service
-%endif
-install -Dpm 0644 pkg/salt-syndic.service %{buildroot}%{_unitdir}/salt-syndic.service
-install -Dpm 0644 pkg/suse/salt-api.service    %{buildroot}%{_unitdir}/salt-api.service
-install -Dpm 0644 pkg/salt-proxy@.service %{buildroot}%{_unitdir}/salt-proxy@.service
-ln -s service %{buildroot}%{_sbindir}/rcsalt-master
-ln -s service %{buildroot}%{_sbindir}/rcsalt-syndic
-ln -s service %{buildroot}%{_sbindir}/rcsalt-minion
-ln -s service %{buildroot}%{_sbindir}/rcsalt-api
-install -Dpm 644 %{S:2}                   %{buildroot}/usr/lib/tmpfiles.d/salt.conf
-%else
-mkdir -p %{buildroot}%{_initddir}
-## install init scripts
-install -Dpm 0755 pkg/suse/salt-master %{buildroot}%{_initddir}/salt-master
-install -Dpm 0755 pkg/suse/salt-syndic %{buildroot}%{_initddir}/salt-syndic
-install -Dpm 0755 pkg/suse/salt-minion %{buildroot}%{_initddir}/salt-minion
-install -Dpm 0755 pkg/suse/salt-api %{buildroot}%{_initddir}/salt-api
-ln -sf %{_initddir}/salt-master %{buildroot}%{_sbindir}/rcsalt-master
-ln -sf %{_initddir}/salt-syndic %{buildroot}%{_sbindir}/rcsalt-syndic
-ln -sf %{_initddir}/salt-minion %{buildroot}%{_sbindir}/rcsalt-minion
-ln -sf %{_initddir}/salt-api %{buildroot}%{_sbindir}/rcsalt-api
-%endif
-
-## Install sysV salt-minion watchdog for SLES11 and RHEL6
-%if 0%{?rhel} == 6 || 0%{?suse_version} == 1110
-install -Dpm 0755 scripts/watchdog/salt-daemon-watcher %{buildroot}%{_bindir}/salt-daemon-watcher
-%if 0%{?rhel} == 6
-install -Dpm 0640 pkg/suse/rsyslog-cron-salt-watcher.conf %{buildroot}%{_sysconfdir}/rsyslog.d/rsyslog-cron-salt-watcher.conf
-%endif 
-%endif 
-
-#
-## install config files
-install -Dpm 0640 conf/minion %{buildroot}%{_sysconfdir}/salt/minion
-install -Dpm 0640 /dev/null   %{buildroot}%{_sysconfdir}/salt/minion_id
-install -Dpm 0640 conf/master %{buildroot}%{_sysconfdir}/salt/master
-install -Dpm 0640 conf/roster %{buildroot}%{_sysconfdir}/salt/roster
-install -Dpm 0640 conf/cloud %{buildroot}%{_sysconfdir}/salt/cloud
-install -Dpm 0640 conf/cloud.profiles %{buildroot}%{_sysconfdir}/salt/cloud.profiles
-install -Dpm 0640 conf/cloud.providers %{buildroot}%{_sysconfdir}/salt/cloud.providers
-#
-## install logrotate file
-install -Dpm 0644  pkg/salt-common.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/salt
-#
-## install SuSEfirewall2 rules
-install -Dpm 0644  pkg/suse/salt.SuSEfirewall2 %{buildroot}%{_sysconfdir}/sysconfig/SuSEfirewall2.d/services/salt
-#
-## install completion scripts
-%if %{with bash_completion}
-install -Dpm 0644 pkg/salt.bash %{buildroot}%{_sysconfdir}/bash_completion.d/salt
-%endif
-%if %{with zsh_completion}
-install -Dpm 0644 pkg/zsh_completion.zsh %{buildroot}%{_sysconfdir}/zsh_completion.d/salt
-%endif
-
-%if %{with fish_completion}
-mkdir -p %{buildroot}%{fish_completions_dir}
-install -Dpm 0644 pkg/fish-completions/* %{buildroot}%{fish_completions_dir}
-%endif
-
-%if 0%{?suse_version} > 1020
-%fdupes %{buildroot}%{_docdir}
-%fdupes %{buildroot}%{python_sitelib}
-%endif
-
-%check
-%if %{with test}
-python setup.py test --runtests-opts=-u
-%endif
-
-%pre
-S_HOME="/var/lib/salt"
-S_PHOME="/srv/salt"
-getent passwd salt | grep $S_PHOME >/dev/null && usermod -d $S_HOME salt
-getent group salt >/dev/null || %{_sbindir}/groupadd -r salt
-getent passwd salt >/dev/null || %{_sbindir}/useradd -r -g salt -d $S_HOME -s /bin/false -c "salt-master daemon" salt
-if [[ -d "$S_PHOME/.ssh" ]]; then
-    mv $S_PHOME/.ssh $S_HOME
-fi
+rm -rf %{buildroot}/usr/bin
+rm -rf %{buildroot}/usr/share/man
+find %{buildroot}%{compatdir}/ -name "*.pyc" | xargs rm
 
 %post
-%if %{with systemd}
-systemd-tmpfiles --create /usr/lib/tmpfiles.d/salt.conf || true
-%else
-dbus-uuidgen --ensure
-%endif
-
-%preun proxy
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_del_preun salt-proxy@.service
-%else
-%systemd_preun salt-proxy@.service
-%endif
-%else
-%if 0%{?suse_version}
-%stop_on_removal salt-proxy
-%endif
-%endif
-
-%pre proxy
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_add_pre salt-proxy@.service
-%endif
-%endif
-
-%post proxy
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_add_post salt-proxy@.service
-%fillup_only
-%else
-%systemd_post salt-proxy@.service
-%endif
-%else
-%if 0%{?suse_version}
-%fillup_and_insserv
-%endif
-%endif
-
-%postun proxy
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_del_postun salt-proxy@.service
-%else
-%systemd_postun_with_restart salt-proxy@.service
-%endif
-%else
-%if 0%{?suse_version}
-%insserv_cleanup
-%restart_on_update salt-proxy
-%endif
-%endif
-
-%preun syndic
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_del_preun salt-syndic.service
-%else
-%systemd_preun salt-syndic.service
-%endif
-%else
-%if 0%{?suse_version}
-%stop_on_removal salt-syndic
-%else
-  if [ $1 -eq 0 ] ; then
-      /sbin/service salt-syndic stop >/dev/null 2>&1
-      /sbin/chkconfig --del salt-syndic
-  fi
-%endif
-%endif
-
-%pre syndic
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_add_pre salt-syndic.service
-%endif
-%endif
-
-%post syndic
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_add_post salt-syndic.service
-%fillup_only
-%else
-%systemd_post salt-syndic.service
-%endif
-%else
-%if 0%{?suse_version}
-%fillup_and_insserv
-%endif
-%endif
-
-%postun syndic
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_del_postun salt-syndic.service
-%else
-%systemd_postun_with_restart salt-syndic.service
-%endif
-%else
-%if 0%{?suse_version}
-%insserv_cleanup
-%restart_on_update salt-syndic
-%endif
-%endif
-
-%preun master
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_del_preun salt-master.service
-%else
-%systemd_preun salt-master.service
-%endif
-%else
-%if 0%{?suse_version}
-%stop_on_removal salt-master
-%else
-  if [ $1 -eq 0 ] ; then
-      /sbin/service salt-master stop >/dev/null 2>&1
-      /sbin/chkconfig --del salt-master
-  fi
-%endif
-%endif
-
-%pre master
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_add_pre salt-master.service
-%endif
-%endif
-
-%post master
-if [ $1 -eq 2 ] ; then
-  # Upgrading from an earlier version.  If this is from 2014, where daemons
-  # ran as root, we need to chown some stuff to salt in order for the new
-  # version to actually work.  It seems a manual restart of salt-master may
-  # still be required, but at least this will actually work given the file
-  # ownership is correct.
-  for file in master.{pem,pub} ; do
-    [ -f /etc/salt/pki/master/$file ] && chown salt /etc/salt/pki/master/$file
-  done
-  MASTER_CACHE_DIR="/var/cache/salt/master"
-  [ -d $MASTER_CACHE_DIR ] && chown -R salt:salt $MASTER_CACHE_DIR
-  [ -f $MASTER_CACHE_DIR/.root_key ] && chown root:root $MASTER_CACHE_DIR/.root_key
-  true
-fi
-%if %{with systemd}
-if [ `rpm -q systemd --queryformat="%{VERSION}"` -lt 228 ]; then
-  # On systemd < 228 the 'TasksTask' attribute is not available.
-  # Removing TasksMax from salt-master.service on SLE12SP1 LTSS (bsc#985112)
-  sed -i '/TasksMax=infinity/d' %{_unitdir}/salt-master.service
-fi
-%if 0%{?suse_version}
-%service_add_post salt-master.service
-%fillup_only
-%else
-%systemd_post salt-master.service
-%endif
-%else
-%if 0%{?suse_version}
-%fillup_and_insserv
-%else
-  /sbin/chkconfig --add salt-master
-%endif
-%endif
-
-%postun master
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_del_postun salt-master.service
-%else
-%systemd_postun_with_restart salt-master.service
-%endif
-%else
-%if 0%{?suse_version}
-%restart_on_update salt-master
-%insserv_cleanup
-%else
-  if [ "$1" -ge "1" ] ; then
-      /sbin/service salt-master condrestart >/dev/null 2>&1 || :
-  fi
-%endif
-%endif
-
-%preun minion
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_del_preun salt-minion.service
-%else
-%systemd_preun salt-minion.service
-%endif
-%else
-%if 0%{?suse_version}
-%stop_on_removal salt-minion
-%else
-  if [ $1 -eq 0 ] ; then
-      /sbin/service salt-minion stop >/dev/null 2>&1
-      /sbin/chkconfig --del salt-minion
-  fi
-%endif
-%endif
-
-%pre minion
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_add_pre salt-minion.service
-%endif
-%endif
-
-%post minion
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_add_post salt-minion.service
-%fillup_only
-%else
-%systemd_post salt-minion.service
-%endif
-%else
-%if 0%{?suse_version}
-%fillup_and_insserv
-%else
-  /sbin/chkconfig --add salt-minion
-  /sbin/service rsyslog condrestart >/dev/null 2>&1 || :
-%endif
-%endif
-
-%postun minion
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_del_postun salt-minion.service
-%else
-%systemd_postun_with_restart salt-minion.service
-%endif
-%else
-%if 0%{?suse_version}
-%insserv_cleanup
-%restart_on_update salt-minion
-%else
-  if [ "$1" -ge "1" ] ; then
-      /sbin/service salt-minion condrestart >/dev/null 2>&1 || :
-      /sbin/service rsyslog condrestart >/dev/null 2>&1 || :
-  fi
-%endif
-%endif
-
-%preun api
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_del_preun salt-api.service
-%else
-%systemd_preun salt-api.service
-%endif
-%else
-%stop_on_removal
-%endif
-
-%pre api
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_add_pre salt-api.service
-%endif
-%endif
-
-%post api
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_add_post salt-api.service
-%else
-%systemd_post salt-api.service
-%endif
-%else
-%if 0%{?suse_version}
-%fillup_and_insserv
-%endif
-%endif
-
-%postun api
-%if %{with systemd}
-%if 0%{?suse_version}
-%service_del_postun salt-api.service
-%else
-%systemd_postun_with_restart salt-api.service
-%endif
-%else
-%if 0%{?suse_version}
-%insserv_cleanup
-%restart_on_update
-%endif
-%endif
-
-%files api
-%defattr(-,root,root)
-%{_bindir}/salt-api
-%{_sbindir}/rcsalt-api
-%if %{with systemd}
-%{_unitdir}/salt-api.service
-%else
-%{_initddir}/salt-api
-%endif
-%{_mandir}/man1/salt-api.1.*
-
-%files cloud
-%defattr(-,root,root)
-%{_bindir}/salt-cloud
-%dir               %attr(0750, root, salt) %{_sysconfdir}/salt/cloud.maps.d
-%dir               %attr(0750, root, salt) %{_sysconfdir}/salt/cloud.profiles.d
-%dir               %attr(0750, root, salt) %{_sysconfdir}/salt/cloud.providers.d
-%config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/cloud
-%config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/cloud.profiles
-%config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/cloud.providers
-%dir               %attr(0750, root, salt) %{_localstatedir}/cache/salt/cloud
-%{python_sitelib}/salt/cloud/deploy/bootstrap-salt.sh
-%attr(755,root,root)%{python_sitelib}/salt/cloud/deploy/bootstrap-salt.sh
-%{_mandir}/man1/salt-cloud.1.*
-
-%files ssh
-%defattr(-,root,root)
-%{_bindir}/salt-ssh
-%{_mandir}/man1/salt-ssh.1.gz
-
-%files syndic
-%defattr(-,root,root)
-%{_bindir}/salt-syndic
-%{_mandir}/man1/salt-syndic.1.gz
-%{_sbindir}/rcsalt-syndic
-%if %{with systemd}
-%{_unitdir}/salt-syndic.service
-%else
-%{_initddir}/salt-syndic
-%endif
-
-%files minion
-%defattr(-,root,root)
-%{_bindir}/salt-minion
-%{_mandir}/man1/salt-minion.1.gz
-%config(noreplace) %attr(0640, root, root) %{_sysconfdir}/salt/minion
-%config(noreplace) %attr(0640, root, root) %ghost %{_sysconfdir}/salt/minion_id
-%dir               %attr(0750, root, root) %{_sysconfdir}/salt/minion.d/
-%dir               %attr(0750, root, root) %{_sysconfdir}/salt/pki/minion/
-%dir               %attr(0750, root, root) %{_localstatedir}/cache/salt/minion/
-#%dir %ghost        %attr(0750, root, salt) %{_localstatedir}/run/salt/minion
-%{_sbindir}/rcsalt-minion
-
-# Install plugin only on SUSE machines
-%if 0%{?suse_version}
-%{_prefix}/lib/zypp/plugins/commit/zyppnotify
-%endif
-
-# Install Yum plugins only on RH machines
-%if 0%{?fedora} || 0%{?rhel}
-%{_prefix}/share/yum-plugins/
-/etc/yum/pluginconf.d/yumnotify.conf
-%endif
-
-%if %{with systemd}
-%{_unitdir}/salt-minion.service
-%else
-%config(noreplace) %{_initddir}/salt-minion
-%endif
-
-## Install sysV salt-minion watchdog for SLES11 and RHEL6
-%if 0%{?rhel} == 6 || 0%{?suse_version} == 1110
-%{_bindir}/salt-daemon-watcher
-%if 0%{?rhel} == 6 
-%{_sysconfdir}/rsyslog.d/rsyslog-cron-salt-watcher.conf
-%endif
-%endif
-
-%files proxy
-%defattr(-,root,root)
-%{_bindir}/salt-proxy
-%{_mandir}/man1/salt-proxy.1.gz
-%if %{with systemd}
-%{_unitdir}/salt-proxy@.service
-%endif
-
-%files master
-%defattr(-,root,root)
-%{_bindir}/salt
-%{_bindir}/salt-master
-%{_bindir}/salt-cp
-%{_bindir}/salt-key
-%{_bindir}/salt-run
-%{_mandir}/man1/salt-master.1.gz
-%{_mandir}/man1/salt-cp.1.gz
-%{_mandir}/man1/salt-key.1.gz
-%{_mandir}/man1/salt-run.1.gz
-%{_mandir}/man7/salt.7.gz
-%config(noreplace) %{_sysconfdir}/sysconfig/SuSEfirewall2.d/services/salt
-%{_sbindir}/rcsalt-master
-%if %{with systemd}
-%{_unitdir}/salt-master.service
-%else
-%config(noreplace) %{_initddir}/salt-master
-%endif
-#
-%config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/master
-%config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/roster
-%dir               %attr(0755, root, salt) %{_sysconfdir}/salt/master.d/
-%dir               %attr(0750, salt, salt) %{_sysconfdir}/salt/pki/master/
-%dir               %attr(0750, salt, salt) %{_sysconfdir}/salt/pki/master/minions/
-%dir               %attr(0750, salt, salt) %{_sysconfdir}/salt/pki/master/minions_autosign/
-%dir               %attr(0750, salt, salt) %{_sysconfdir}/salt/pki/master/minions_denied/
-%dir               %attr(0750, salt, salt) %{_sysconfdir}/salt/pki/master/minions_pre/
-%dir               %attr(0750, salt, salt) %{_sysconfdir}/salt/pki/master/minions_rejected/
-%dir               %attr(0755, salt, salt) /var/lib/salt
-%dir               %attr(0755, root, salt) /srv/salt
-%dir               %attr(0755, root, salt) /srv/pillar
-%dir               %attr(0750, salt, salt) %{_localstatedir}/cache/salt/master/
-%dir               %attr(0750, salt, salt) %{_localstatedir}/cache/salt/master/jobs/
-%dir               %attr(0750, salt, salt) %{_localstatedir}/cache/salt/master/proc/
-%dir               %attr(0750, salt, salt) %{_localstatedir}/cache/salt/master/queues/
-%dir               %attr(0750, salt, salt) %{_localstatedir}/cache/salt/master/roots/
-%dir               %attr(0750, salt, salt) %{_localstatedir}/cache/salt/master/syndics/
-%dir               %attr(0750, salt, salt) %{_localstatedir}/cache/salt/master/tokens/
-#%dir %ghost        %attr(0750, salt, salt) %{_localstatedir}/run/salt/master/
+rm -f /var/cache/salt/master/thin/version
 
 %files
 %defattr(-,root,root,-)
-%{_bindir}/spm
-%{_bindir}/salt-call
-%{_bindir}/salt-unity
-%{_mandir}/man1/salt-unity.1.gz
-%{_mandir}/man1/salt-call.1.gz
-%{_mandir}/man1/spm.1.gz
-%config(noreplace) %{_sysconfdir}/logrotate.d/salt
-%{python_sitelib}/*
-%exclude %{python_sitelib}/salt/cloud/deploy/*.sh
-%attr(755,root,root)%{python_sitelib}/salt/cloud/deploy/*.sh
+%dir %{_datadir}/susemanager
+%config /etc/salt/master.d/py26-compat-salt.conf
+
+%{compatdir}
 %doc LICENSE AUTHORS README.rst HACKING.rst README.SUSE
-#
-%dir        %attr(0750, root, salt) %{_sysconfdir}/salt
-%dir        %attr(0750, root, salt) %{_sysconfdir}/salt/pki
-%dir        %attr(0750, salt, salt) %{_localstatedir}/log/salt
-%dir        %attr(0750, root, salt) %{_localstatedir}/cache/salt
-#%dir %ghost %attr(0750, root, salt) %{_localstatedir}/run/salt
-%dir        %attr(0750, root, salt) /srv/spm
-%if %{with systemd}
-/usr/lib/tmpfiles.d/salt.conf
-%endif
-%{_mandir}/man1/salt.1.*
 
 %if %{with docs}
 %files doc
 %defattr(-,root,root)
 %doc doc/_build/html
-%endif
-
-%if %{with bash_completion}
-%files bash-completion
-%defattr(-,root,root)
-%dir %{_sysconfdir}/bash_completion.d/
-%config %{_sysconfdir}/bash_completion.d/%{name}
-%endif
-
-%if %{with zsh_completion}
-%files zsh-completion
-%defattr(-,root,root)
-%dir %{_sysconfdir}/zsh_completion.d/
-%config %{_sysconfdir}/zsh_completion.d/%{name}
-%endif
-
-%if %{with fish_completion}
-%files fish-completion
-%defattr(-,root,root)
-%{fish_completions_dir}/salt*
-%dir %{fish_completions_dir}
-%dir %{fish_dir}
 %endif
 
 %changelog
