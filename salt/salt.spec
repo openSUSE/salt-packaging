@@ -96,6 +96,8 @@ Patch17:       strip-trailing-commas-on-linux-user-gecos-fields.patch
 Patch18:       provide-kwargs-to-pkg_resource.parse_targets-require.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47270
 Patch19:       initialize-__context__-retcode-for-functions-handled.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47232
+Patch20:       fixed-usage-of-ipaddress.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -574,6 +576,7 @@ cp %{S:5} ./.travis.yml
 %patch17 -p1
 %patch18 -p1
 %patch19 -p1
+%patch20 -p1
 
 %build
 %if 0%{?build_py2}
