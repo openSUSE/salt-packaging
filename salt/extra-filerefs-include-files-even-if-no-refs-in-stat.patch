@@ -1,0 +1,32 @@
+From 544dfd7dbaa1c837b75976f15ad67159b1bdedbb Mon Sep 17 00:00:00 2001
+From: Matei Albu <malbu@suse.de>
+Date: Sun, 6 May 2018 11:56:18 +0200
+Subject: [PATCH] --extra-filerefs include files even if no refs in
+ states to apply
+
+Fixes #47496
+(cherry picked from commit d67239a)
+---
+ salt/client/ssh/state.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/salt/client/ssh/state.py b/salt/client/ssh/state.py
+index 8fa11d031e..08d4846bb6 100644
+--- a/salt/client/ssh/state.py
++++ b/salt/client/ssh/state.py
+@@ -135,9 +135,9 @@ def lowstate_file_refs(chunks, extras=''):
+             elif state.startswith('__'):
+                 continue
+             crefs.extend(salt_refs(chunk[state]))
++        if saltenv not in refs:
++            refs[saltenv] = []
+         if crefs:
+-            if saltenv not in refs:
+-                refs[saltenv] = []
+             refs[saltenv].append(crefs)
+     if extras:
+         extra_refs = extras.split(',')
+-- 
+2.13.6
+
+

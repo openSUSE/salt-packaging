@@ -98,7 +98,10 @@ Patch18:       provide-kwargs-to-pkg_resource.parse_targets-require.patch
 Patch19:       initialize-__context__-retcode-for-functions-handled.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47232
 Patch20:       fixed-usage-of-ipaddress.patch
-
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47497
+Patch21:       extra-filerefs-include-files-even-if-no-refs-in-stat.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47504
+Patch22:       option-to-merge-current-pillar-with-opts-pillar-duri.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -577,6 +580,8 @@ cp %{S:5} ./.travis.yml
 %patch18 -p1
 %patch19 -p1
 %patch20 -p1
+%patch21 -p1
+%patch22 -p1
 
 %build
 %if 0%{?build_py2}

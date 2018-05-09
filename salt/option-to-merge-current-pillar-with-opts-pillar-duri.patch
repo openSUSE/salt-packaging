@@ -1,0 +1,101 @@
+From 0cfa4f2a1cf559f87286069691a2766cb24f6076 Mon Sep 17 00:00:00 2001
+From: Matei Albu <malbu@suse.de>
+Date: Sun, 6 May 2018 21:15:58 +0200
+Subject: [PATCH] Option to merge current pillar with opts['pillar']
+ during pillar compile
+
+Fixes #47501
+(cherry picked from commit 2f1485e)
+---
+ doc/ref/configuration/minion.rst | 28 ++++++++++++++++++++++++++++
+ salt/config/__init__.py          |  4 +++-
+ salt/pillar/__init__.py          |  7 +++++++
+ 3 files changed, 38 insertions(+), 1 deletion(-)
+
+diff --git a/doc/ref/configuration/minion.rst b/doc/ref/configuration/minion.rst
+index 9683a0a20a..75ad26c723 100644
+--- a/doc/ref/configuration/minion.rst
++++ b/doc/ref/configuration/minion.rst
+@@ -3219,3 +3219,31 @@ URL of the repository:
+ Replace ``<commit_id>`` with the SHA1 hash of a commit ID. Specifying a commit
+ ID is useful in that it allows one to revert back to a previous version in the
+ event that an error is introduced in the latest revision of the repo.
++
++``ssh_merge_pillar``
++--------------------
++
++.. versionadded:: 2018.3.2
++
++Default: ``True``
++
++Merges the compiled pillar data with the pillar data already available globally.
++This is useful when using ``salt-ssh`` or ``salt-call --local`` and overriding the pillar
++data in a state file:
++
++.. code-block:: yaml
++
++    apply_showpillar:
++      module.run:
++        - name: state.apply
++        - mods:
++          - showpillar
++        - kwargs:
++              pillar:
++                  test: "foo bar"
++
++If set to ``True`` the ``showpillar`` state will have access to the
++global pillar data.
++
++If set to ``False`` only the overriding pillar data will be available
++to the ``showpillar`` state.
+diff --git a/salt/config/__init__.py b/salt/config/__init__.py
+index b3de3820b0..82d3dfa07f 100644
+--- a/salt/config/__init__.py
++++ b/salt/config/__init__.py
+@@ -983,6 +983,7 @@ VALID_OPTS = {
+     'ssh_identities_only': bool,
+     'ssh_log_file': six.string_types,
+     'ssh_config_file': six.string_types,
++    'ssh_merge_pillar': bool,
+ 
+     # Enable ioflo verbose logging. Warning! Very verbose!
+     'ioflo_verbose': int,
+@@ -1476,6 +1477,7 @@ DEFAULT_MINION_OPTS = {
+     },
+     'discovery': False,
+     'schedule': {},
++    'ssh_merge_pillar': True
+ }
+ 
+ DEFAULT_MASTER_OPTS = {
+@@ -2078,7 +2080,7 @@ def _validate_ssh_minion_opts(opts):
+ 
+     for opt_name in list(ssh_minion_opts):
+         if re.match('^[a-z0-9]+fs_', opt_name, flags=re.IGNORECASE) \
+-                or 'pillar' in opt_name \
++                or ('pillar' in opt_name and not 'ssh_merge_pillar' == opt_name) \
+                 or opt_name in ('fileserver_backend',):
+             log.warning(
+                 '\'%s\' is not a valid ssh_minion_opts parameter, ignoring',
+diff --git a/salt/pillar/__init__.py b/salt/pillar/__init__.py
+index 388b774434..5940b7c105 100644
+--- a/salt/pillar/__init__.py
++++ b/salt/pillar/__init__.py
+@@ -993,6 +993,13 @@ class Pillar(object):
+             mopts['file_roots'] = self.actual_file_roots
+             mopts['saltversion'] = __version__
+             pillar['master'] = mopts
++        if 'pillar' in self.opts and self.opts.get('ssh_merge_pillar', False):
++            pillar = merge(
++                self.opts['pillar'],
++                pillar,
++                self.merge_strategy,
++                self.opts.get('renderer', 'yaml'),
++                self.opts.get('pillar_merge_lists', False))
+         if errors:
+             for error in errors:
+                 log.critical('Pillar render error: %s', error)
+-- 
+2.13.6
+
+
