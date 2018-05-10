@@ -102,6 +102,8 @@ Patch20:       fixed-usage-of-ipaddress.patch
 Patch21:       extra-filerefs-include-files-even-if-no-refs-in-stat.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47504
 Patch22:       option-to-merge-current-pillar-with-opts-pillar-duri.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47471
+Patch23:       do-not-override-jid-on-returners-only-sending-back-t.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -582,6 +584,7 @@ cp %{S:5} ./.travis.yml
 %patch20 -p1
 %patch21 -p1
 %patch22 -p1
+%patch23 -p1
 
 %build
 %if 0%{?build_py2}

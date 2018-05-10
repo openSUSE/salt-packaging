@@ -1,0 +1,38 @@
+From c49a9aca3519d1baef2f9d82963a6e80eabb26d4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Fri, 4 May 2018 09:34:13 +0100
+Subject: [PATCH] Do not override jid on returners, only sending back to
+ master (bsc#1092373)
+
+---
+ salt/utils/schedule.py | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/salt/utils/schedule.py b/salt/utils/schedule.py
+index 6cb3ce0ef8..e81ae143bd 100644
+--- a/salt/utils/schedule.py
++++ b/salt/utils/schedule.py
+@@ -753,11 +753,13 @@ class Schedule(object):
+                 else:
+                     # Send back to master so the job is included in the job list
+                     mret = ret.copy()
+-                    mret['jid'] = 'req'
+-                    if data.get('return_job') == 'nocache':
+-                        # overwrite 'req' to signal to master that
+-                        # this job shouldn't be stored
+-                        mret['jid'] = 'nocache'
++                    # No returners defined, so we're only sending back to the master
++                    if not data_returner and not self.schedule_returner:
++                        mret['jid'] = 'req'
++                        if data.get('return_job') == 'nocache':
++                            # overwrite 'req' to signal to master that
++                            # this job shouldn't be stored
++                            mret['jid'] = 'nocache'
+                     load = {'cmd': '_return', 'id': self.opts['id']}
+                     for key, value in six.iteritems(mret):
+                         load[key] = value
+-- 
+2.15.1
+
+
