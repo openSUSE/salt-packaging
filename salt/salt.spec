@@ -104,6 +104,10 @@ Patch21:       extra-filerefs-include-files-even-if-no-refs-in-stat.patch
 Patch22:       option-to-merge-current-pillar-with-opts-pillar-duri.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47471
 Patch23:       do-not-override-jid-on-returners-only-sending-back-t.patch
+# PATCH-FIX_OPENSUSE bsc#1091371
+Patch24:       enable-passing-a-unix_socket-for-mysql-returners-bsc.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47211
+Patch25:       fix-for-ec2-rate-limit-failures.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -585,6 +589,8 @@ cp %{S:5} ./.travis.yml
 %patch21 -p1
 %patch22 -p1
 %patch23 -p1
+%patch24 -p1
+%patch25 -p1
 
 %build
 %if 0%{?build_py2}
