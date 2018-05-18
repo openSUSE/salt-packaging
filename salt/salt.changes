@@ -1,4 +1,37 @@
 -------------------------------------------------------------------
+Wed May  9 16:01:56 UTC 2018 - pablo.suarezhernandez@suse.com
+
+- Do not override jid on returners, only sending back to
+  master (bsc#1092373)
+
+- Added:
+  * do-not-override-jid-on-returners-only-sending-back-t.patch
+
+-------------------------------------------------------------------
+Wed May  9 07:17:02 UTC 2018 - jbreuer@suse.de
+
+- No more AWS EC2 rate limitations in salt-cloud (bsc#1088888)
+
+- Added:
+  * fix-for-ec2-rate-limit-failures.patch
+
+-------------------------------------------------------------------
+Thu May  3 12:25:54 UTC 2018 - pablo.suarezhernandez@suse.com
+
+- Add 'retcode' to returners output on scheduled jobs (bsc#1089112)
+
+- Added:
+  * update-return-data-before-calling-returners.patch
+
+-------------------------------------------------------------------
+Mon Apr 30 11:40:00 UTC 2018 - jbreuer@suse.de
+
+- Fixed Python 3 issue with CIDR addresses.
+
+- Added:
+  * fixed-usage-of-ipaddress.patch
+
+-------------------------------------------------------------------
 Wed Apr 25 10:46:45 UTC 2018 - pablo.suarezhernandez@suse.com
 
 - Fix minion scheduler to return a 'retcode' attribute (bsc#1089112)
@@ -50,7 +83,7 @@ Fri Apr 13 11:34:16 UTC 2018 - bmaryniuk@suse.com
 -------------------------------------------------------------------
 Mon Apr  9 07:11:39 UTC 2018 - jbreuer@suse.de
 
-- Fix for [Errno 0] Resolver Error 0 (no error) (bsc#108758)
+- Fix for [Errno 0] Resolver Error 0 (no error) (bsc#1087581)
                                                               
 - Added:
   * fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch

@@ -1,0 +1,50 @@
+From 0f05e3e77ded2b161344e15cf5ee226a27bf5e9b Mon Sep 17 00:00:00 2001
+From: Sebastian Sobczynski <sebastian.seo@live.co.uk>
+Date: Tue, 8 Aug 2017 16:19:29 +0100
+Subject: [PATCH] Update return data before calling returners
+
+---
+ salt/utils/schedule.py | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/salt/utils/schedule.py b/salt/utils/schedule.py
+index b2b7a8a108..d902c6814e 100644
+--- a/salt/utils/schedule.py
++++ b/salt/utils/schedule.py
+@@ -845,6 +845,12 @@ class Schedule(object):
+             self.functions.pack['__context__']['retcode'] = 0
+             ret['return'] = self.functions[func](*args, **kwargs)
+ 
++            # runners do not provide retcode
++            if 'retcode' in self.functions.pack['__context__']:
++                ret['retcode'] = self.functions.pack['__context__']['retcode']
++
++            ret['success'] = True
++
+             data_returner = data.get('returner', None)
+             if data_returner or self.schedule_returner:
+                 if 'return_config' in data:
+@@ -861,7 +867,6 @@ class Schedule(object):
+                 for returner in OrderedDict.fromkeys(rets):
+                     ret_str = '{0}.returner'.format(returner)
+                     if ret_str in self.returners:
+-                        ret['success'] = True
+                         self.returners[ret_str](ret)
+                     else:
+                         log.info(
+@@ -870,11 +875,6 @@ class Schedule(object):
+                             )
+                         )
+ 
+-            # runners do not provide retcode
+-            if 'retcode' in self.functions.pack['__context__']:
+-                ret['retcode'] = self.functions.pack['__context__']['retcode']
+-
+-            ret['success'] = True
+         except Exception:
+             log.exception("Unhandled exception running {0}".format(ret['fun']))
+             # Although catch-all exception handlers are bad, the exception here
+-- 
+2.15.1
+
+

@@ -208,6 +208,14 @@ Patch73:        backport-of-azurearm-from-salt-2018.3-to-opensuse-sa.patch
 Patch74:        strip-trailing-commas-on-linux-user-gecos-fields.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47270
 Patch75:        initialize-__context__-retcode-for-functions-handled.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47232
+Patch76:        fixed-usage-of-ipaddress.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/42798
+Patch77:        update-return-data-before-calling-returners.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47211
+Patch78:        fix-for-ec2-rate-limit-failures.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47471
+Patch79:        do-not-override-jid-on-returners-only-sending-back-t.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -639,6 +647,10 @@ cp %{S:5} ./.travis.yml
 %patch73 -p1
 %patch74 -p1
 %patch75 -p1
+%patch76 -p1
+%patch77 -p1
+%patch78 -p1
+%patch79 -p1
 
 %build
 %{__python} setup.py --salt-transport=both build

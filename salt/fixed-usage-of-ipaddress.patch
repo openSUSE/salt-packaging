@@ -1,0 +1,28 @@
+From ceff7af526bb48d370d36f4ecfe1e5f6888b6a5c Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Sun, 22 Apr 2018 23:11:11 +0200
+Subject: [PATCH] Fixed usage of ipaddress
+
+ipaddress is imported either directly or from salt.ext. If we
+use it, we shouldn't address it with salt.ext.ipaddress.
+---
+ salt/modules/network.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/modules/network.py b/salt/modules/network.py
+index cdb606fe90..f09a6a1e76 100644
+--- a/salt/modules/network.py
++++ b/salt/modules/network.py
+@@ -979,7 +979,7 @@ def convert_cidr(cidr):
+     ret = {'network': None,
+            'netmask': None}
+     cidr = calc_net(cidr)
+-    network_info = salt.ext.ipaddress.ip_network(cidr)
++    network_info = ipaddress.ip_network(cidr)
+     ret['network'] = str(network_info.network_address)
+     ret['netmask'] = str(network_info.netmask)
+     return ret
+-- 
+2.13.6
+
+
