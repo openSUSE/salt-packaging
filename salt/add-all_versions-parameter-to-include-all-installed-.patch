@@ -1,0 +1,467 @@
+From da52c7f9b00f85f091e8eee95d93b2c290306ba0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Mon, 14 May 2018 11:33:13 +0100
+Subject: [PATCH] Add "all_versions" parameter to include all installed
+ version on rpm.info
+
+Enable "all_versions" parameter for zypper.info_installed
+
+Enable "all_versions" parameter for yumpkg.info_installed
+
+Prevent adding failed packages when pkg name contains the arch (on SUSE)
+
+Add 'all_versions' documentation for info_installed on yum/zypper modules
+
+Add unit tests for info_installed with all_versions
+
+Allow removing only specific package versions with zypper and yum
+
+Refactor: use dict.setdefault instead if-else statement
+---
+ salt/modules/rpm.py               | 18 +++++++--
+ salt/modules/yumpkg.py            | 49 ++++++++++++++++++------
+ salt/modules/zypper.py            | 80 +++++++++++++++++++++++++++++----------
+ salt/states/pkg.py                | 33 +++++++++++++++-
+ tests/unit/modules/test_yumpkg.py | 50 ++++++++++++++++++++++++
+ tests/unit/modules/zypper_test.py | 50 ++++++++++++++++++++++++
+ 6 files changed, 244 insertions(+), 36 deletions(-)
+
+diff --git a/salt/modules/rpm.py b/salt/modules/rpm.py
+index 9dace3cb6f..0874101d76 100644
+--- a/salt/modules/rpm.py
++++ b/salt/modules/rpm.py
+@@ -448,7 +448,7 @@ def diff(package, path):
+     return res
+ 
+ 
+-def info(*packages, **attr):
++def info(*packages, **kwargs):
+     '''
+     Return a detailed package(s) summary information.
+     If no packages specified, all packages will be returned.
+@@ -462,6 +462,9 @@ def info(*packages, **attr):
+             version, vendor, release, build_date, build_date_time_t, install_date, install_date_time_t,
+             build_host, group, source_rpm, arch, epoch, size, license, signature, packager, url, summary, description.
+ 
++    :param all_versions:
++        Return information for all installed versions of the packages
++
+     :return:
+ 
+     CLI example:
+@@ -471,7 +474,9 @@ def info(*packages, **attr):
+         salt '*' lowpkg.info apache2 bash
+         salt '*' lowpkg.info apache2 bash attr=version
+         salt '*' lowpkg.info apache2 bash attr=version,build_date_iso,size
++        salt '*' lowpkg.info apache2 bash attr=version,build_date_iso,size all_versions=True
+     '''
++    all_versions = kwargs.get('all_versions', False)
+     # LONGSIZE is not a valid tag for all versions of rpm. If LONGSIZE isn't
+     # available, then we can just use SIZE for older versions. See Issue #31366.
+     rpm_tags = __salt__['cmd.run_stdout'](
+@@ -511,7 +516,7 @@ def info(*packages, **attr):
+         "edition": "edition: %|EPOCH?{%{EPOCH}:}|%{VERSION}-%{RELEASE}\\n",
+     }
+ 
+-    attr = attr.get('attr', None) and attr['attr'].split(",") or None
++    attr = kwargs.get('attr', None) and kwargs['attr'].split(",") or None
+     query = list()
+     if attr:
+         for attr_k in attr:
+@@ -605,8 +610,13 @@ def info(*packages, **attr):
+         if pkg_name.startswith('gpg-pubkey'):
+             continue
+         if pkg_name not in ret:
+-            ret[pkg_name] = pkg_data.copy()
+-            del ret[pkg_name]['edition']
++            if all_versions:
++                ret[pkg_name] = [pkg_data.copy()]
++            else:
++                ret[pkg_name] = pkg_data.copy()
++                del ret[pkg_name]['edition']
++        elif all_versions:
++            ret[pkg_name].append(pkg_data.copy())
+ 
+     return ret
+ 
+diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
+index 8a0d22e062..b88c4e1f13 100644
+--- a/salt/modules/yumpkg.py
++++ b/salt/modules/yumpkg.py
+@@ -867,31 +867,39 @@ def list_downloaded():
+     return ret
+ 
+ 
+-def info_installed(*names):
++def info_installed(*names, **kwargs):
+     '''
+     .. versionadded:: 2015.8.1
+ 
+     Return the information of the named package(s), installed on the system.
+ 
++    :param all_versions:
++        Include information for all versions of the packages installed on the minion.
++
+     CLI example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' pkg.info_installed <package1>
+         salt '*' pkg.info_installed <package1> <package2> <package3> ...
++        salt '*' pkg.info_installed <package1> <package2> <package3> all_versions=True
+     '''
++    all_versions = kwargs.get('all_versions', False)
+     ret = dict()
+-    for pkg_name, pkg_nfo in __salt__['lowpkg.info'](*names).items():
+-        t_nfo = dict()
+-        # Translate dpkg-specific keys to a common structure
+-        for key, value in pkg_nfo.items():
+-            if key == 'source_rpm':
+-                t_nfo['source'] = value
++    for pkg_name, pkgs_nfo in __salt__['lowpkg.info'](*names, **kwargs).items():
++        pkg_nfo = pkgs_nfo if all_versions else [pkgs_nfo]
++        for _nfo in pkg_nfo:
++            t_nfo = dict()
++            # Translate dpkg-specific keys to a common structure
++            for key, value in _nfo.items():
++                if key == 'source_rpm':
++                    t_nfo['source'] = value
++                else:
++                    t_nfo[key] = value
++            if not all_versions:
++                ret[pkg_name] = t_nfo
+             else:
+-                t_nfo[key] = value
+-
+-        ret[pkg_name] = t_nfo
+-
++                ret.setdefault(pkg_name, []).append(t_nfo)
+     return ret
+ 
+ 
+@@ -1707,7 +1715,24 @@ def remove(name=None, pkgs=None, **kwargs):  # pylint: disable=W0613
+         raise CommandExecutionError(exc)
+ 
+     old = list_pkgs()
+-    targets = [x for x in pkg_params if x in old]
++    targets = []
++    for target in pkg_params:
++        # Check if package version set to be removed is actually installed:
++        # old[target] contains a comma-separated list of installed versions
++        if target in old and not pkg_params[target]:
++            targets.append(target)
++        elif target in old and pkg_params[target] in old[target].split(','):
++            arch = ''
++            pkgname = target
++            try:
++                namepart, archpart = target.rsplit('.', 1)
++            except ValueError:
++                pass
++            else:
++                if archpart in salt.utils.pkg.rpm.ARCHES:
++                    arch = '.' + archpart
++                    pkgname = namepart
++            targets.append('{0}-{1}{2}'.format(pkgname, pkg_params[target], arch))
+     if not targets:
+         return {}
+ 
+diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
+index 77cb9d9fbb..cce2ffd895 100644
+--- a/salt/modules/zypper.py
++++ b/salt/modules/zypper.py
+@@ -373,37 +373,46 @@ def info_installed(*names, **kwargs):
+         Valid attributes are:
+             ignore, report
+ 
++    :param all_versions:
++        Include information for all versions of the packages installed on the minion.
++
+     CLI example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' pkg.info_installed <package1>
+         salt '*' pkg.info_installed <package1> <package2> <package3> ...
+-        salt '*' pkg.info_installed <package1> attr=version,vendor
++        salt '*' pkg.info_installed <package1> <package2> <package3> all_versions=True
++        salt '*' pkg.info_installed <package1> attr=version,vendor all_versions=True
+         salt '*' pkg.info_installed <package1> <package2> <package3> ... attr=version,vendor
+         salt '*' pkg.info_installed <package1> <package2> <package3> ... attr=version,vendor errors=ignore
+         salt '*' pkg.info_installed <package1> <package2> <package3> ... attr=version,vendor errors=report
+     '''
++    all_versions = kwargs.get('all_versions', False)
+     ret = dict()
+-    for pkg_name, pkg_nfo in __salt__['lowpkg.info'](*names, **kwargs).items():
+-        t_nfo = dict()
+-        # Translate dpkg-specific keys to a common structure
+-        for key, value in pkg_nfo.items():
+-            if isinstance(value, six.string_types):
+-                # Check, if string is encoded in a proper UTF-8
+-                if six.PY3:
+-                    value_ = value.encode('UTF-8', 'ignore').decode('UTF-8', 'ignore')
++    for pkg_name, pkgs_nfo in __salt__['lowpkg.info'](*names, **kwargs).items():
++        pkg_nfo = pkgs_nfo if all_versions else [pkgs_nfo]
++        for _nfo in pkg_nfo:
++            t_nfo = dict()
++            # Translate dpkg-specific keys to a common structure
++            for key, value in _nfo.items():
++                if isinstance(value, six.string_types):
++                    # Check, if string is encoded in a proper UTF-8
++                    if six.PY3:
++                        value_ = value.encode('UTF-8', 'ignore').decode('UTF-8', 'ignore')
++                    else:
++                        value_ = value.decode('UTF-8', 'ignore').encode('UTF-8', 'ignore')
++                    if value != value_:
++                        value = kwargs.get('errors', 'ignore') == 'ignore' and value_ or 'N/A (invalid UTF-8)'
++                        log.error('Package {0} has bad UTF-8 code in {1}: {2}'.format(pkg_name, key, value))
++                if key == 'source_rpm':
++                    t_nfo['source'] = value
+                 else:
+-                    value_ = value.decode('UTF-8', 'ignore').encode('UTF-8', 'ignore')
+-                if value != value_:
+-                    value = kwargs.get('errors', 'ignore') == 'ignore' and value_ or 'N/A (invalid UTF-8)'
+-                    log.error('Package {0} has bad UTF-8 code in {1}: {2}'.format(pkg_name, key, value))
+-            if key == 'source_rpm':
+-                t_nfo['source'] = value
++                    t_nfo[key] = value
++            if not all_versions:
++                ret[pkg_name] = t_nfo
+             else:
+-                t_nfo[key] = value
+-        ret[pkg_name] = t_nfo
+-
++                ret.setdefault(pkg_name, []).append(t_nfo)
+     return ret
+ 
+ 
+@@ -1271,7 +1280,14 @@ def _uninstall(name=None, pkgs=None):
+         raise CommandExecutionError(exc)
+ 
+     old = list_pkgs()
+-    targets = [target for target in pkg_params if target in old]
++    targets = []
++    for target in pkg_params:
++        # Check if package version set to be removed is actually installed:
++        # old[target] contains a comma-separated list of installed versions
++        if target in old and pkg_params[target] in old[target].split(','):
++            targets.append(target + "-" + pkg_params[target])
++        elif target in old and not pkg_params[target]:
++            targets.append(target)
+     if not targets:
+         return {}
+ 
+@@ -1294,6 +1310,32 @@ def _uninstall(name=None, pkgs=None):
+     return ret
+ 
+ 
++def normalize_name(name):
++    '''
++    Strips the architecture from the specified package name, if necessary.
++    Circumstances where this would be done include:
++
++    * If the arch is 32 bit and the package name ends in a 32-bit arch.
++    * If the arch matches the OS arch, or is ``noarch``.
++
++    CLI Example:
++
++    .. code-block:: bash
++
++        salt '*' pkg.normalize_name zsh.x86_64
++    '''
++    try:
++        arch = name.rsplit('.', 1)[-1]
++        if arch not in salt.utils.pkg.rpm.ARCHES + ('noarch',):
++            return name
++    except ValueError:
++        return name
++    if arch in (__grains__['osarch'], 'noarch') \
++            or salt.utils.pkg.rpm.check_32(arch, osarch=__grains__['osarch']):
++        return name[:-(len(arch) + 1)]
++    return name
++
++
+ def remove(name=None, pkgs=None, **kwargs):  # pylint: disable=unused-argument
+     '''
+     .. versionchanged:: 2015.8.12,2016.3.3,2016.11.0
+diff --git a/salt/states/pkg.py b/salt/states/pkg.py
+index db67ade08e..1aadae80cb 100644
+--- a/salt/states/pkg.py
++++ b/salt/states/pkg.py
+@@ -417,6 +417,16 @@ def _find_remove_targets(name=None,
+ 
+         if __grains__['os'] == 'FreeBSD' and origin:
+             cver = [k for k, v in six.iteritems(cur_pkgs) if v['origin'] == pkgname]
++        elif __grains__['os_family'] == 'Suse':
++            # On SUSE systems. Zypper returns packages without "arch" in name
++            try:
++                namepart, archpart = pkgname.rsplit('.', 1)
++            except ValueError:
++                cver = cur_pkgs.get(pkgname, [])
++            else:
++                if archpart in salt.utils.pkg.rpm.ARCHES + ("noarch",):
++                    pkgname = namepart
++                cver = cur_pkgs.get(pkgname, [])
+         else:
+             cver = cur_pkgs.get(pkgname, [])
+ 
+@@ -767,6 +777,17 @@ def _verify_install(desired, new_pkgs, ignore_epoch=False):
+             cver = [k for k, v in six.iteritems(new_pkgs) if v['origin'] == pkgname]
+         elif __grains__['os_family'] == 'Debian':
+             cver = new_pkgs.get(pkgname.split('=')[0])
++        elif __grains__['os_family'] == 'Suse':
++            # On SUSE systems. Zypper returns packages without "arch" in name
++            try:
++                namepart, archpart = pkgname.rsplit('.', 1)
++            except ValueError:
++                cver = new_pkgs.get(pkgname)
++            else:
++                if archpart in salt.utils.pkg.rpm.ARCHES + ("noarch",):
++                    cver = new_pkgs.get(namepart)
++                else:
++                    cver = new_pkgs.get(pkgname)
+         else:
+             cver = new_pkgs.get(pkgname)
+ 
+@@ -2545,7 +2566,17 @@ def _uninstall(
+ 
+     changes = __salt__['pkg.{0}'.format(action)](name, pkgs=pkgs, version=version, **kwargs)
+     new = __salt__['pkg.list_pkgs'](versions_as_list=True, **kwargs)
+-    failed = [x for x in pkg_params if x in new]
++    failed = []
++    for x in pkg_params:
++        if __grains__['os_family'] in ['Suse', 'RedHat']:
++            # Check if the package version set to be removed is actually removed:
++            if x in new and not pkg_params[x]:
++                failed.append(x)
++            elif x in new and pkg_params[x] in new[x]:
++                failed.append(x + "-" + pkg_params[x])
++        elif x in new:
++            failed.append(x)
++
+     if action == 'purge':
+         new_removed = __salt__['pkg.list_pkgs'](versions_as_list=True,
+                                                 removed=True,
+diff --git a/tests/unit/modules/test_yumpkg.py b/tests/unit/modules/test_yumpkg.py
+index ae3b29c472..40fc3e95ed 100644
+--- a/tests/unit/modules/test_yumpkg.py
++++ b/tests/unit/modules/test_yumpkg.py
+@@ -206,3 +206,53 @@ class YumTestCase(TestCase):
+             }}.items():
+             self.assertTrue(pkgs.get(pkg_name))
+             self.assertEqual(pkgs[pkg_name], [pkg_attr])
++
++    def test_info_installed_with_all_versions(self):
++        '''
++        Test the return information of all versions for the named package(s), installed on the system.
++
++        :return:
++        '''
++        run_out = {
++            'virgo-dummy': [
++                {'build_date': '2015-07-09T10:55:19Z',
++                 'vendor': 'openSUSE Build Service',
++                 'description': 'This is the Virgo dummy package used for testing SUSE Manager',
++                 'license': 'GPL-2.0', 'build_host': 'sheep05', 'url': 'http://www.suse.com',
++                 'build_date_time_t': 1436432119, 'relocations': '(not relocatable)',
++                 'source_rpm': 'virgo-dummy-1.0-1.1.src.rpm', 'install_date': '2016-02-23T16:31:57Z',
++                 'install_date_time_t': 1456241517, 'summary': 'Virgo dummy package', 'version': '1.0',
++                 'signature': 'DSA/SHA1, Thu Jul  9 08:55:33 2015, Key ID 27fa41bd8a7c64f9',
++                 'release': '1.1', 'group': 'Applications/System', 'arch': 'i686', 'size': '17992'},
++                {'build_date': '2015-07-09T10:15:19Z',
++                 'vendor': 'openSUSE Build Service',
++                 'description': 'This is the Virgo dummy package used for testing SUSE Manager',
++                 'license': 'GPL-2.0', 'build_host': 'sheep05', 'url': 'http://www.suse.com',
++                 'build_date_time_t': 1436432119, 'relocations': '(not relocatable)',
++                 'source_rpm': 'virgo-dummy-1.0-1.1.src.rpm', 'install_date': '2016-02-23T16:31:57Z',
++                 'install_date_time_t': 14562415127, 'summary': 'Virgo dummy package', 'version': '1.0',
++                 'signature': 'DSA/SHA1, Thu Jul  9 08:55:33 2015, Key ID 27fa41bd8a7c64f9',
++                 'release': '1.1', 'group': 'Applications/System', 'arch': 'x86_64', 'size': '13124'}
++            ],
++            'libopenssl1_0_0': [
++                {'build_date': '2015-11-04T23:20:34Z', 'vendor': 'SUSE LLC <https://www.suse.com/>',
++                 'description': 'The OpenSSL Project is a collaborative effort.',
++                 'license': 'OpenSSL', 'build_host': 'sheep11', 'url': 'https://www.openssl.org/',
++                 'build_date_time_t': 1446675634, 'relocations': '(not relocatable)',
++                 'source_rpm': 'openssl-1.0.1i-34.1.src.rpm', 'install_date': '2016-02-23T16:31:35Z',
++                 'install_date_time_t': 1456241495, 'summary': 'Secure Sockets and Transport Layer Security',
++                 'version': '1.0.1i', 'signature': 'RSA/SHA256, Wed Nov  4 22:21:34 2015, Key ID 70af9e8139db7c82',
++                 'release': '34.1', 'group': 'Productivity/Networking/Security', 'packager': 'https://www.suse.com/',
++                 'arch': 'x86_64', 'size': '2576912'}
++            ]
++        }
++        with patch.dict(yumpkg.__salt__, {'lowpkg.info': MagicMock(return_value=run_out)}):
++            installed = yumpkg.info_installed(all_versions=True)
++            # Test overall products length
++            self.assertEqual(len(installed), 2)
++
++            # Test multiple versions for the same package
++            for pkg_name, pkg_info_list in installed.items():
++                self.assertEqual(len(pkg_info_list), 2 if pkg_name == "virgo-dummy" else 1)
++                for info in pkg_info_list:
++                    self.assertTrue(info['arch'] in ('x86_64', 'i686'))
+diff --git a/tests/unit/modules/zypper_test.py b/tests/unit/modules/zypper_test.py
+index c82dedec29..a0d136a9c1 100644
+--- a/tests/unit/modules/zypper_test.py
++++ b/tests/unit/modules/zypper_test.py
+@@ -324,6 +324,56 @@ class ZypperTestCase(TestCase):
+             installed = zypper.info_installed()
+             self.assertEqual(installed['vīrgô']['description'], 'vīrgô d€šçripţiǫñ')
+ 
++    def test_info_installed_with_all_versions(self):
++        '''
++        Test the return information of all versions for the named package(s), installed on the system.
++
++        :return:
++        '''
++        run_out = {
++            'virgo-dummy': [
++                {'build_date': '2015-07-09T10:55:19Z',
++                 'vendor': 'openSUSE Build Service',
++                 'description': 'This is the Virgo dummy package used for testing SUSE Manager',
++                 'license': 'GPL-2.0', 'build_host': 'sheep05', 'url': 'http://www.suse.com',
++                 'build_date_time_t': 1436432119, 'relocations': '(not relocatable)',
++                 'source_rpm': 'virgo-dummy-1.0-1.1.src.rpm', 'install_date': '2016-02-23T16:31:57Z',
++                 'install_date_time_t': 1456241517, 'summary': 'Virgo dummy package', 'version': '1.0',
++                 'signature': 'DSA/SHA1, Thu Jul  9 08:55:33 2015, Key ID 27fa41bd8a7c64f9',
++                 'release': '1.1', 'group': 'Applications/System', 'arch': 'i686', 'size': '17992'},
++                {'build_date': '2015-07-09T10:15:19Z',
++                 'vendor': 'openSUSE Build Service',
++                 'description': 'This is the Virgo dummy package used for testing SUSE Manager',
++                 'license': 'GPL-2.0', 'build_host': 'sheep05', 'url': 'http://www.suse.com',
++                 'build_date_time_t': 1436432119, 'relocations': '(not relocatable)',
++                 'source_rpm': 'virgo-dummy-1.0-1.1.src.rpm', 'install_date': '2016-02-23T16:31:57Z',
++                 'install_date_time_t': 14562415127, 'summary': 'Virgo dummy package', 'version': '1.0',
++                 'signature': 'DSA/SHA1, Thu Jul  9 08:55:33 2015, Key ID 27fa41bd8a7c64f9',
++                 'release': '1.1', 'group': 'Applications/System', 'arch': 'x86_64', 'size': '13124'}
++            ],
++            'libopenssl1_0_0': [
++                {'build_date': '2015-11-04T23:20:34Z', 'vendor': 'SUSE LLC <https://www.suse.com/>',
++                 'description': 'The OpenSSL Project is a collaborative effort.',
++                 'license': 'OpenSSL', 'build_host': 'sheep11', 'url': 'https://www.openssl.org/',
++                 'build_date_time_t': 1446675634, 'relocations': '(not relocatable)',
++                 'source_rpm': 'openssl-1.0.1i-34.1.src.rpm', 'install_date': '2016-02-23T16:31:35Z',
++                 'install_date_time_t': 1456241495, 'summary': 'Secure Sockets and Transport Layer Security',
++                 'version': '1.0.1i', 'signature': 'RSA/SHA256, Wed Nov  4 22:21:34 2015, Key ID 70af9e8139db7c82',
++                 'release': '34.1', 'group': 'Productivity/Networking/Security', 'packager': 'https://www.suse.com/',
++                 'arch': 'x86_64', 'size': '2576912'}
++            ]
++        }
++        with patch.dict(zypper.__salt__, {'lowpkg.info': MagicMock(return_value=run_out)}):
++            installed = zypper.info_installed(all_versions=True)
++            # Test overall products length
++            self.assertEqual(len(installed), 2)
++
++            # Test multiple versions for the same package
++            for pkg_name, pkg_info_list in installed.items():
++                self.assertEqual(len(pkg_info_list), 2 if pkg_name == "virgo-dummy" else 1)
++                for info in pkg_info_list:
++                    self.assertTrue(info['arch'] in ('x86_64', 'i686'))
++
+     def test_info_available(self):
+         '''
+         Test return the information of the named package available for the system.
+-- 
+2.15.1
+
+
