@@ -1,0 +1,28 @@
+From 0b5fae4ba6ab779844c71cf323a6fb49ebdb2c01 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Tue, 22 May 2018 12:04:48 +0100
+Subject: [PATCH] Prevent zypper from parsing repo configuration from not
+ .repo files
+
+---
+ salt/modules/zypper.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
+index cce2ffd895..33d5a72332 100644
+--- a/salt/modules/zypper.py
++++ b/salt/modules/zypper.py
+@@ -675,7 +675,7 @@ def _get_configured_repos():
+     '''
+ 
+     repos_cfg = configparser.ConfigParser()
+-    repos_cfg.read([REPOS + '/' + fname for fname in os.listdir(REPOS)])
++    repos_cfg.read([REPOS + '/' + fname for fname in os.listdir(REPOS) if fname.endswith(".repo")])
+ 
+     return repos_cfg
+ 
+-- 
+2.15.1
+
+

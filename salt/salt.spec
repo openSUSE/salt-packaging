@@ -218,6 +218,8 @@ Patch78:        fix-for-ec2-rate-limit-failures.patch
 Patch79:        do-not-override-jid-on-returners-only-sending-back-t.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47638
 Patch80:        add-all_versions-parameter-to-include-all-installed-.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47765
+Patch81:        prevent-zypper-from-parsing-repo-configuration-from-.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -654,6 +656,7 @@ cp %{S:5} ./.travis.yml
 %patch78 -p1
 %patch79 -p1
 %patch80 -p1
+%patch81 -p1
 
 %build
 %{__python} setup.py --salt-transport=both build
