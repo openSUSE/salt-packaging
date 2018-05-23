@@ -112,6 +112,8 @@ Patch25:       fix-for-ec2-rate-limit-failures.patch
 Patch26:       add-all_versions-parameter-to-include-all-installed-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47765
 Patch27:       prevent-zypper-from-parsing-repo-configuration-from-.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
+Patch28:       add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -597,6 +599,7 @@ cp %{S:5} ./.travis.yml
 %patch25 -p1
 %patch26 -p1
 %patch27 -p1
+%patch28 -p1
 
 %build
 %if 0%{?build_py2}

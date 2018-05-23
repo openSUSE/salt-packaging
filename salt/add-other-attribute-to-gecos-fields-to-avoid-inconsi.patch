@@ -1,0 +1,294 @@
+From ba2c5b66dbefd31d8f4505e92fb122abe3613276 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Wed, 25 Apr 2018 12:55:36 +0100
+Subject: [PATCH] Add 'other' attribute to GECOS fields to avoid
+ inconsistencies with chfn
+
+Fix unsupported chars checking on GECOS fields
+
+Add unit test for new method 'user.chother'
+
+Do make comparisons in a single line
+
+Add 'other' as valid kwargs for 'user.add' method
+---
+ salt/modules/useradd.py            | 41 ++++++++++++++++++++++++++++----------
+ salt/states/user.py                | 28 ++++++++++++++++++--------
+ tests/unit/modules/test_useradd.py | 36 +++++++++++++++++++++++++++++++--
+ 3 files changed, 84 insertions(+), 21 deletions(-)
+
+diff --git a/salt/modules/useradd.py b/salt/modules/useradd.py
+index a61ba0e960..fc3c82a8bc 100644
+--- a/salt/modules/useradd.py
++++ b/salt/modules/useradd.py
+@@ -60,17 +60,18 @@ def _get_gecos(name):
+     Retrieve GECOS field info and return it in dictionary form
+     '''
+     gecos_field = salt.utils.stringutils.to_unicode(
+-        pwd.getpwnam(_quote_username(name)).pw_gecos).split(',', 3)
++        pwd.getpwnam(_quote_username(name)).pw_gecos).split(',', 4)
+     if not gecos_field:
+         return {}
+     else:
+         # Assign empty strings for any unspecified trailing GECOS fields
+-        while len(gecos_field) < 4:
++        while len(gecos_field) < 5:
+             gecos_field.append('')
+         return {'fullname': salt.utils.locales.sdecode(gecos_field[0]),
+                 'roomnumber': salt.utils.locales.sdecode(gecos_field[1]),
+                 'workphone': salt.utils.locales.sdecode(gecos_field[2]),
+-                'homephone': salt.utils.locales.sdecode(gecos_field[3])}
++                'homephone': salt.utils.locales.sdecode(gecos_field[3]),
++                'other': salt.utils.locales.sdecode(gecos_field[4])}
+ 
+ 
+ def _build_gecos(gecos_dict):
+@@ -78,10 +79,11 @@ def _build_gecos(gecos_dict):
+     Accepts a dictionary entry containing GECOS field names and their values,
+     and returns a full GECOS comment string, to be used with usermod.
+     '''
+-    return '{0},{1},{2},{3}'.format(gecos_dict.get('fullname', ''),
+-                                    gecos_dict.get('roomnumber', ''),
+-                                    gecos_dict.get('workphone', ''),
+-                                    gecos_dict.get('homephone', '')).rstrip(',')
++    return '{0},{1},{2},{3},{4}'.format(gecos_dict.get('fullname', ''),
++                                        gecos_dict.get('roomnumber', ''),
++                                        gecos_dict.get('workphone', ''),
++                                        gecos_dict.get('homephone', ''),
++                                        gecos_dict.get('other', ''),).rstrip(',')
+ 
+ 
+ def _update_gecos(name, key, value, root=None):
+@@ -124,6 +126,7 @@ def add(name,
+         roomnumber='',
+         workphone='',
+         homephone='',
++        other='',
+         createhome=True,
+         loginclass=None,
+         root=None,
+@@ -237,6 +240,8 @@ def add(name,
+         chworkphone(name, workphone)
+     if homephone:
+         chhomephone(name, homephone)
++    if other:
++        chother(name, other)
+     return True
+ 
+ 
+@@ -507,6 +512,19 @@ def chhomephone(name, homephone):
+     return _update_gecos(name, 'homephone', homephone)
+ 
+ 
++def chother(name, other):
++    '''
++    Change the user's other GECOS attribute
++
++    CLI Example:
++
++    .. code-block:: bash
++
++        salt '*' user.chother foobar
++    '''
++    return _update_gecos(name, 'other', other)
++
++
+ def chloginclass(name, loginclass, root=None):
+     '''
+     Change the default login class of the user
+@@ -588,9 +606,9 @@ def _format_info(data):
+     Return user information in a pretty way
+     '''
+     # Put GECOS info into a list
+-    gecos_field = salt.utils.stringutils.to_unicode(data.pw_gecos).split(',', 3)
+-    # Make sure our list has at least four elements
+-    while len(gecos_field) < 4:
++    gecos_field = salt.utils.stringutils.to_unicode(data.pw_gecos).split(',', 4)
++    # Make sure our list has at least five elements
++    while len(gecos_field) < 5:
+         gecos_field.append('')
+ 
+     return {'gid': data.pw_gid,
+@@ -603,7 +621,8 @@ def _format_info(data):
+             'fullname': gecos_field[0],
+             'roomnumber': gecos_field[1],
+             'workphone': gecos_field[2],
+-            'homephone': gecos_field[3]}
++            'homephone': gecos_field[3],
++            'other': gecos_field[4]}
+ 
+ 
+ @salt.utils.decorators.path.which('id')
+diff --git a/salt/states/user.py b/salt/states/user.py
+index 691300aa5b..6d34a90652 100644
+--- a/salt/states/user.py
++++ b/salt/states/user.py
+@@ -67,6 +67,7 @@ def _changes(name,
+              roomnumber='',
+              workphone='',
+              homephone='',
++             other='',
+              loginclass=None,
+              date=None,
+              mindays=0,
+@@ -167,24 +168,26 @@ def _changes(name,
+ 
+     # MacOS doesn't have full GECOS support, so check for the "ch" functions
+     # and ignore these parameters if these functions do not exist.
+-    if 'user.chroomnumber' in __salt__ \
+-            and roomnumber is not None:
++    if 'user.chroomnumber' in __salt__ and roomnumber is not None:
+         roomnumber = sdecode_if_string(roomnumber)
+         lusr['roomnumber'] = sdecode_if_string(lusr['roomnumber'])
+         if lusr['roomnumber'] != roomnumber:
+             change['roomnumber'] = roomnumber
+-    if 'user.chworkphone' in __salt__ \
+-            and workphone is not None:
++    if 'user.chworkphone' in __salt__ and workphone is not None:
+         workphone = sdecode_if_string(workphone)
+         lusr['workphone'] = sdecode_if_string(lusr['workphone'])
+         if lusr['workphone'] != workphone:
+             change['workphone'] = workphone
+-    if 'user.chhomephone' in __salt__ \
+-            and homephone is not None:
++    if 'user.chhomephone' in __salt__ and homephone is not None:
+         homephone = sdecode_if_string(homephone)
+         lusr['homephone'] = sdecode_if_string(lusr['homephone'])
+         if lusr['homephone'] != homephone:
+             change['homephone'] = homephone
++    if 'user.chother' in __salt__ and other is not None:
++        other = sdecode_if_string(other)
++        lusr['other'] = sdecode_if_string(lusr['other'])
++        if lusr['other'] != other:
++            change['other'] = other
+     # OpenBSD/FreeBSD login class
+     if __grains__['kernel'] in ('OpenBSD', 'FreeBSD'):
+         if loginclass:
+@@ -214,6 +217,7 @@ def present(name,
+             roomnumber=None,
+             workphone=None,
+             homephone=None,
++            other=None,
+             loginclass=None,
+             date=None,
+             mindays=None,
+@@ -341,7 +345,10 @@ def present(name,
+ 
+     homephone
+         The user's home phone number (not supported in MacOS)
+-        If GECOS field contains more than 3 commas, this field will have the rest of 'em
++
++    other
++        The user's other attribute (not supported in MacOS)
++        If GECOS field contains more than 4 commas, this field will have the rest of 'em
+ 
+     .. versionchanged:: 2014.7.0
+        Shadow attribute support added.
+@@ -412,6 +419,8 @@ def present(name,
+         workphone = sdecode(workphone)
+     if homephone is not None:
+         homephone = sdecode(homephone)
++    if other is not None:
++        other = sdecode(other)
+ 
+     # createhome not supported on Windows or Mac
+     if __grains__['kernel'] in ('Darwin', 'Windows'):
+@@ -424,7 +433,7 @@ def present(name,
+ 
+     # the comma is used to separate field in GECOS, thus resulting into
+     # salt adding the end of fullname each time this function is called
+-    for gecos_field in ['fullname', 'roomnumber', 'workphone']:
++    for gecos_field in [fullname, roomnumber, workphone]:
+         if isinstance(gecos_field, string_types) and ',' in gecos_field:
+             ret['comment'] = "Unsupported char ',' in {0}".format(gecos_field)
+             ret['result'] = False
+@@ -482,6 +491,7 @@ def present(name,
+                        roomnumber,
+                        workphone,
+                        homephone,
++                       other,
+                        loginclass,
+                        date,
+                        mindays,
+@@ -611,6 +621,7 @@ def present(name,
+                            roomnumber,
+                            workphone,
+                            homephone,
++                           other,
+                            loginclass,
+                            date,
+                            mindays,
+@@ -656,6 +667,7 @@ def present(name,
+                       'roomnumber': roomnumber,
+                       'workphone': workphone,
+                       'homephone': homephone,
++                      'other': other,
+                       'createhome': createhome,
+                       'nologinit': nologinit,
+                       'loginclass': loginclass}
+diff --git a/tests/unit/modules/test_useradd.py b/tests/unit/modules/test_useradd.py
+index fa30a0df71..e79c78c663 100644
+--- a/tests/unit/modules/test_useradd.py
++++ b/tests/unit/modules/test_useradd.py
+@@ -46,7 +46,8 @@ class UserAddTestCase(TestCase, LoaderModuleMockMixin):
+                           'fullname': 'root',
+                           'roomnumber': '',
+                           'workphone': '',
+-                          'homephone': ''}
++                          'homephone': '',
++                          'other': ''}
+ 
+     @classmethod
+     def tearDownClass(cls):
+@@ -96,7 +97,8 @@ class UserAddTestCase(TestCase, LoaderModuleMockMixin):
+                     'fullname': 'root',
+                     'roomnumber': '',
+                     'workphone': '',
+-                    'homephone': ''}]
++                    'homephone': '',
++                    'other': ''}]
+             with patch('salt.modules.useradd._format_info', MagicMock(return_value=self.mock_pwall)):
+                 self.assertEqual(useradd.getent(), ret)
+ 
+@@ -330,6 +332,36 @@ class UserAddTestCase(TestCase, LoaderModuleMockMixin):
+                 with patch.object(useradd, 'info', mock):
+                     self.assertFalse(useradd.chhomephone('salt', 1))
+ 
++    # 'chother' function tests: 1
++
++    def test_chother(self):
++        '''
++        Test if the user's other GECOS attribute is changed
++        '''
++        mock = MagicMock(return_value=False)
++        with patch.object(useradd, '_get_gecos', mock):
++            self.assertFalse(useradd.chother('salt', 1))
++
++        mock = MagicMock(return_value={'other': 'foobar'})
++        with patch.object(useradd, '_get_gecos', mock):
++            self.assertTrue(useradd.chother('salt', 'foobar'))
++
++        mock = MagicMock(return_value={'other': 'foobar2'})
++        with patch.object(useradd, '_get_gecos', mock):
++            mock = MagicMock(return_value=None)
++            with patch.dict(useradd.__salt__, {'cmd.run': mock}):
++                mock = MagicMock(return_value={'other': 'foobar3'})
++                with patch.object(useradd, 'info', mock):
++                    self.assertFalse(useradd.chother('salt', 'foobar'))
++
++        mock = MagicMock(return_value={'other': 'foobar3'})
++        with patch.object(useradd, '_get_gecos', mock):
++            mock = MagicMock(return_value=None)
++            with patch.dict(useradd.__salt__, {'cmd.run': mock}):
++                mock = MagicMock(return_value={'other': 'foobar3'})
++                with patch.object(useradd, 'info', mock):
++                    self.assertFalse(useradd.chother('salt', 'foobar'))
++
+     # 'info' function tests: 1
+ 
+     @skipIf(HAS_PWD is False, 'The pwd module is not available')
+-- 
+2.12.2
+
+
