@@ -220,6 +220,8 @@ Patch79:        do-not-override-jid-on-returners-only-sending-back-t.patch
 Patch80:        add-all_versions-parameter-to-include-all-installed-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47765
 Patch81:        prevent-zypper-from-parsing-repo-configuration-from-.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
+Patch82:        add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -657,6 +659,7 @@ cp %{S:5} ./.travis.yml
 %patch79 -p1
 %patch80 -p1
 %patch81 -p1
+%patch82 -p1
 
 %build
 %{__python} setup.py --salt-transport=both build
