@@ -312,6 +312,7 @@ Requires:       python-msgpack-python > 0.3
 Requires:       python-psutil
 Requires:       python-requests >= 1.0.0
 Requires:       python-tornado >= 4.2.1
+Requires:       python-backports.ssl_match_hostname
 Requires:       python-yaml
 %if 0%{?suse_version}
 # required for zypper.py
