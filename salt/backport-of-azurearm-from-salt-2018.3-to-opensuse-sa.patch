@@ -1,4 +1,4 @@
-From e41bf24bdf543ec960b297de5354e36d58f97940 Mon Sep 17 00:00:00 2001
+From 83777a9d657a13dbf2aead11f7f26f97ba91c480 Mon Sep 17 00:00:00 2001
 From: ed lane <ed.lane.0@gmail.com>
 Date: Mon, 16 Apr 2018 09:01:13 -0600
 Subject: [PATCH] Backport of AzureARM from Salt 2018.3 to OpenSUSE-Salt
@@ -12,7 +12,7 @@ Subject: [PATCH] Backport of AzureARM from Salt 2018.3 to OpenSUSE-Salt
  salt/utils/crypt.py            | 140 +++++++++
  salt/utils/data.py             | 568 +++++++++++++++++++++++++++++++++
  salt/utils/decorators/jinja.py |  85 +++++
- salt/utils/files.py            | 528 ++++++++++++++++++++++++++++++-
+ salt/utils/files.py            | 526 ++++++++++++++++++++++++++++++-
  salt/utils/msazure.py          |   4 +-
  salt/utils/platform.py         | 158 ++++++++++
  salt/utils/stringutils.py      | 405 ++++++++++++++++++++++++
@@ -20,7 +20,7 @@ Subject: [PATCH] Backport of AzureARM from Salt 2018.3 to OpenSUSE-Salt
  salt/utils/yaml.py             |  10 +
  salt/utils/yamldumper.py       |  74 ++++-
  salt/utils/yamlloader.py       |  79 +++--
- 13 files changed, 2960 insertions(+), 474 deletions(-)
+ 13 files changed, 2959 insertions(+), 473 deletions(-)
  create mode 100644 salt/utils/crypt.py
  create mode 100644 salt/utils/data.py
  create mode 100644 salt/utils/decorators/jinja.py
@@ -3212,7 +3212,7 @@ index 0000000000..7af0f3a7b6
 +
 +jinja_global = JinjaGlobal
 diff --git a/salt/utils/files.py b/salt/utils/files.py
-index 5097f8e6fd..04e33a5679 100644
+index 5097f8e6fd..4f06f2366e 100644
 --- a/salt/utils/files.py
 +++ b/salt/utils/files.py
 @@ -1,4 +1,7 @@
@@ -3345,15 +3345,6 @@ index 5097f8e6fd..04e33a5679 100644
          try:
              fstat = os.stat(dest)
          except OSError:
-@@ -98,7 +146,7 @@ def copyfile(source, dest, backup_mode='', cachedir=''):
-         os.chown(dest, fstat.st_uid, fstat.st_gid)
-         os.chmod(dest, fstat.st_mode)
-     # If SELINUX is available run a restorecon on the file
--    rcon = salt.utils.which('restorecon')
-+    rcon = salt.utils.path.which('restorecon')
-     if rcon:
-         policy = False
-         try:
 @@ -106,7 +154,7 @@ def copyfile(source, dest, backup_mode='', cachedir=''):
          except (ImportError, CommandExecutionError):
              pass
