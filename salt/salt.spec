@@ -114,6 +114,8 @@ Patch26:       add-all_versions-parameter-to-include-all-installed-.patch
 Patch27:       prevent-zypper-from-parsing-repo-configuration-from-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
 Patch28:       add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47908
+Patch29:       align-suse-salt-master.service-limitnofiles-limit-wi.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -600,6 +602,7 @@ cp %{S:5} ./.travis.yml
 %patch26 -p1
 %patch27 -p1
 %patch28 -p1
+%patch29 -p1
 
 %build
 %if 0%{?build_py2}

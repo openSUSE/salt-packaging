@@ -1,0 +1,28 @@
+From 747b1e5d4dae4d182d8d5d8beaaaf3404ee610d0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Thu, 31 May 2018 10:58:16 +0100
+Subject: [PATCH] Align SUSE salt-master.service 'LimitNOFILES' limit
+ with upstream Salt
+
+---
+ pkg/suse/salt-master.service | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pkg/suse/salt-master.service b/pkg/suse/salt-master.service
+index c0ea4606d8..b31c1a1373 100644
+--- a/pkg/suse/salt-master.service
++++ b/pkg/suse/salt-master.service
+@@ -4,7 +4,7 @@ Documentation=man:salt-master(1) file:///usr/share/doc/salt/html/contents.html h
+ After=network.target
+ 
+ [Service]
+-LimitNOFILE=16384
++LimitNOFILE=100000
+ Type=simple
+ ExecStart=/usr/bin/salt-master
+ TasksMax=infinity
+-- 
+2.15.1
+
+
