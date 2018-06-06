@@ -116,6 +116,8 @@ Patch27:       prevent-zypper-from-parsing-repo-configuration-from-.patch
 Patch28:       add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47908
 Patch29:       align-suse-salt-master.service-limitnofiles-limit-wi.patch
+# PATCH-FIX_OPENSUSE bsc#1095507
+Patch30:       fix-deprecation-warning-bsc-1095507.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -603,6 +605,7 @@ cp %{S:5} ./.travis.yml
 %patch27 -p1
 %patch28 -p1
 %patch29 -p1
+%patch30 -p1
 
 %build
 %if 0%{?build_py2}
