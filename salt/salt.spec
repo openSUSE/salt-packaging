@@ -118,6 +118,8 @@ Patch28:       add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
 Patch29:       align-suse-salt-master.service-limitnofiles-limit-wi.patch
 # PATCH-FIX_OPENSUSE bsc#1095507
 Patch30:       fix-deprecation-warning-bsc-1095507.patch
+# PATCH-FIX_OPENSUSE bsc#1057635
+Patch31:       add-environment-variable-to-know-if-yum-is-invoked-f.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -606,6 +608,7 @@ cp %{S:5} ./.travis.yml
 %patch28 -p1
 %patch29 -p1
 %patch30 -p1
+%patch31 -p1
 
 %build
 %if 0%{?build_py2}
