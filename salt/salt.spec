@@ -222,6 +222,8 @@ Patch80:        add-all_versions-parameter-to-include-all-installed-.patch
 Patch81:        prevent-zypper-from-parsing-repo-configuration-from-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
 Patch82:        add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
+# PATCH-FIX_OPENSUSE bsc#1057635
+Patch83:        add-environment-variable-to-know-if-yum-is-invoked-f.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -660,6 +662,7 @@ cp %{S:5} ./.travis.yml
 %patch80 -p1
 %patch81 -p1
 %patch82 -p1
+%patch83 -p1
 
 %build
 %{__python} setup.py --salt-transport=both build
