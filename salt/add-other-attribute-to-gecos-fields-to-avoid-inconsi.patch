@@ -1,4 +1,4 @@
-From ba2c5b66dbefd31d8f4505e92fb122abe3613276 Mon Sep 17 00:00:00 2001
+From df845358b12d80d0315df8960fb6213292ab5bfa Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Wed, 25 Apr 2018 12:55:36 +0100
@@ -121,10 +121,10 @@ index a61ba0e960..fc3c82a8bc 100644
  
  @salt.utils.decorators.path.which('id')
 diff --git a/salt/states/user.py b/salt/states/user.py
-index 691300aa5b..6d34a90652 100644
+index f4ae81dd31..34f5a9d541 100644
 --- a/salt/states/user.py
 +++ b/salt/states/user.py
-@@ -67,6 +67,7 @@ def _changes(name,
+@@ -68,6 +68,7 @@ def _changes(name,
               roomnumber='',
               workphone='',
               homephone='',
@@ -132,7 +132,7 @@ index 691300aa5b..6d34a90652 100644
               loginclass=None,
               date=None,
               mindays=0,
-@@ -167,24 +168,26 @@ def _changes(name,
+@@ -170,24 +171,26 @@ def _changes(name,
  
      # MacOS doesn't have full GECOS support, so check for the "ch" functions
      # and ignore these parameters if these functions do not exist.
@@ -165,7 +165,7 @@ index 691300aa5b..6d34a90652 100644
      # OpenBSD/FreeBSD login class
      if __grains__['kernel'] in ('OpenBSD', 'FreeBSD'):
          if loginclass:
-@@ -214,6 +217,7 @@ def present(name,
+@@ -236,6 +239,7 @@ def present(name,
              roomnumber=None,
              workphone=None,
              homephone=None,
@@ -173,7 +173,7 @@ index 691300aa5b..6d34a90652 100644
              loginclass=None,
              date=None,
              mindays=None,
-@@ -341,7 +345,10 @@ def present(name,
+@@ -377,7 +381,10 @@ def present(name,
  
      homephone
          The user's home phone number (not supported in MacOS)
@@ -185,7 +185,7 @@ index 691300aa5b..6d34a90652 100644
  
      .. versionchanged:: 2014.7.0
         Shadow attribute support added.
-@@ -412,6 +419,8 @@ def present(name,
+@@ -448,6 +455,8 @@ def present(name,
          workphone = sdecode(workphone)
      if homephone is not None:
          homephone = sdecode(homephone)
@@ -194,7 +194,7 @@ index 691300aa5b..6d34a90652 100644
  
      # createhome not supported on Windows or Mac
      if __grains__['kernel'] in ('Darwin', 'Windows'):
-@@ -424,7 +433,7 @@ def present(name,
+@@ -460,7 +469,7 @@ def present(name,
  
      # the comma is used to separate field in GECOS, thus resulting into
      # salt adding the end of fullname each time this function is called
@@ -203,15 +203,7 @@ index 691300aa5b..6d34a90652 100644
          if isinstance(gecos_field, string_types) and ',' in gecos_field:
              ret['comment'] = "Unsupported char ',' in {0}".format(gecos_field)
              ret['result'] = False
-@@ -482,6 +491,7 @@ def present(name,
-                        roomnumber,
-                        workphone,
-                        homephone,
-+                       other,
-                        loginclass,
-                        date,
-                        mindays,
-@@ -611,6 +621,7 @@ def present(name,
+@@ -519,6 +528,7 @@ def present(name,
                             roomnumber,
                             workphone,
                             homephone,
@@ -219,7 +211,15 @@ index 691300aa5b..6d34a90652 100644
                             loginclass,
                             date,
                             mindays,
-@@ -656,6 +667,7 @@ def present(name,
+@@ -654,6 +664,7 @@ def present(name,
+                            roomnumber,
+                            workphone,
+                            homephone,
++                           other,
+                            loginclass,
+                            date,
+                            mindays,
+@@ -705,6 +716,7 @@ def present(name,
                        'roomnumber': roomnumber,
                        'workphone': workphone,
                        'homephone': homephone,
@@ -289,6 +289,6 @@ index fa30a0df71..e79c78c663 100644
  
      @skipIf(HAS_PWD is False, 'The pwd module is not available')
 -- 
-2.12.2
+2.15.1
 
 

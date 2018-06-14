@@ -71,55 +71,38 @@ Patch3:        activate-all-beacons-sources-config-pillar-grains.patch
 Patch4:        avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
 Patch5:        feat-add-grain-for-all-fqdns.patch
 Patch6:        fix-bsc-1065792.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46006
-Patch7:        remove-obsolete-unicode-handling-in-pkg.info_install.patch
-Patch8:        fix-openscap-push.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/45972
-Patch9:        move-log_file-option-to-changeable-defaults.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46416
-Patch10:       fix-cp.push-empty-file.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46575
-Patch11:       fix-decrease-loglevel-when-unable-to-resolve-addr.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46643
-Patch12:       make-it-possible-to-use-login-pull-and-push-from-mod.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46413
-Patch13:       explore-module.run-response-to-catch-the-result-in-d.patch
+Patch7:       fix-decrease-loglevel-when-unable-to-resolve-addr.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46684
-Patch14:       add-saltssh-multi-version-support-across-python-inte.patch
+Patch8:       add-saltssh-multi-version-support-across-python-inte.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46635
-Patch15:       fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
+Patch9:       fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46890
-Patch16:       fall-back-to-pymysql.patch
+Patch10:       fall-back-to-pymysql.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
-Patch17:       strip-trailing-commas-on-linux-user-gecos-fields.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47155
-Patch18:       provide-kwargs-to-pkg_resource.parse_targets-require.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47270
-Patch19:       initialize-__context__-retcode-for-functions-handled.patch
+Patch11:       strip-trailing-commas-on-linux-user-gecos-fields.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47232
-Patch20:       fixed-usage-of-ipaddress.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47497
-Patch21:       extra-filerefs-include-files-even-if-no-refs-in-stat.patch
+Patch12:       fixed-usage-of-ipaddress.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47504
-Patch22:       option-to-merge-current-pillar-with-opts-pillar-duri.patch
+Patch13:       option-to-merge-current-pillar-with-opts-pillar-duri.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47471
-Patch23:       do-not-override-jid-on-returners-only-sending-back-t.patch
+Patch14:       do-not-override-jid-on-returners-only-sending-back-t.patch
 # PATCH-FIX_OPENSUSE bsc#1091371
-Patch24:       enable-passing-a-unix_socket-for-mysql-returners-bsc.patch
+Patch15:       enable-passing-a-unix_socket-for-mysql-returners-bsc.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47211
-Patch25:       fix-for-ec2-rate-limit-failures.patch
+Patch16:       fix-for-ec2-rate-limit-failures.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47638
-Patch26:       add-all_versions-parameter-to-include-all-installed-.patch
+Patch17:       add-all_versions-parameter-to-include-all-installed-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47765
-Patch27:       prevent-zypper-from-parsing-repo-configuration-from-.patch
+Patch18:       prevent-zypper-from-parsing-repo-configuration-from-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
-Patch28:       add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
+Patch19:       add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47908
-Patch29:       align-suse-salt-master.service-limitnofiles-limit-wi.patch
+Patch20:       align-suse-salt-master.service-limitnofiles-limit-wi.patch
 # PATCH-FIX_OPENSUSE bsc#1095507
-Patch30:       fix-deprecation-warning-bsc-1095507.patch
+Patch21:       fix-deprecation-warning-bsc-1095507.patch
 # PATCH-FIX_OPENSUSE bsc#1057635
-Patch31:       add-environment-variable-to-know-if-yum-is-invoked-f.patch
+Patch22:       add-environment-variable-to-know-if-yum-is-invoked-f.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -600,15 +583,6 @@ cp %{S:5} ./.travis.yml
 %patch20 -p1
 %patch21 -p1
 %patch22 -p1
-%patch23 -p1
-%patch24 -p1
-%patch25 -p1
-%patch26 -p1
-%patch27 -p1
-%patch28 -p1
-%patch29 -p1
-%patch30 -p1
-%patch31 -p1
 
 %build
 %if 0%{?build_py2}

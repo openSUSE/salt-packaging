@@ -1,4 +1,4 @@
-From b9cc71639d4e918ef14635124f6991917150de46 Mon Sep 17 00:00:00 2001
+From d023f61989a047bb3ea6a372a4e90f820deba9a1 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Wed, 21 Mar 2018 11:10:23 +0100
 Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
@@ -9,14 +9,14 @@ Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
   * Fix unit test for reversed fqdns return data
 ---
  salt/grains/core.py            | 19 ++++++++++++-------
- tests/unit/grains/test_core.py | 32 ++++++++++++++++++++++++++++++++
- 2 files changed, 44 insertions(+), 7 deletions(-)
+ tests/unit/grains/test_core.py | 22 ++++++++++++++++++++++
+ 2 files changed, 34 insertions(+), 7 deletions(-)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index 17a7d9819a..cd9ba1f29c 100644
+index c166a43d7c..dc472a6c0a 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
-@@ -1900,16 +1900,21 @@ def fqdns():
+@@ -1898,16 +1898,21 @@ def fqdns():
      fqdns = set()
  
      addresses = salt.utils.network.ip_addrs(include_loopback=False,
@@ -46,22 +46,13 @@ index 17a7d9819a..cd9ba1f29c 100644
      grains['fqdns'] = list(fqdns)
      return grains
 diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
-index 47c9cdd35b..c604df6c57 100644
+index 616c62e658..dd7d5b06f8 100644
 --- a/tests/unit/grains/test_core.py
 +++ b/tests/unit/grains/test_core.py
-@@ -784,3 +784,35 @@ SwapTotal:       4789244 kB'''
-                        []}}
-         with patch.object(salt.utils.dns, 'parse_resolv', MagicMock(return_value=resolv_mock)):
-             assert core.dns() == ret
-+
-+    def _run_dns_test(self, resolv_mock, ret):
-+        with patch.object(salt.utils, 'is_windows',
-+                          MagicMock(return_value=False)):
-+            with patch.dict(core.__opts__, {'ipv6': False}):
-+                with patch.object(salt.utils.dns, 'parse_resolv',
-+                                  MagicMock(return_value=resolv_mock)):
-+                    get_dns = core.dns()
-+                    self.assertEqual(get_dns, ret)
+@@ -877,3 +877,25 @@ SwapTotal:       4789244 kB'''
+                     osdata = {'kernel': 'test', }
+                     ret = core._virtual(osdata)
+                     self.assertEqual(ret['virtual'], virt)
 +
 +    @skipIf(not salt.utils.platform.is_linux(), 'System is not Linux')
 +    @patch.object(salt.utils, 'is_windows', MagicMock(return_value=False))
@@ -84,8 +75,7 @@ index 47c9cdd35b..c604df6c57 100644
 +            self.assertIn('fqdns', fqdns)
 +            self.assertEqual(len(fqdns['fqdns']), len(ret['fqdns']))
 +            self.assertEqual(set(fqdns['fqdns']), set(ret['fqdns']))
-+
 -- 
-2.13.6
+2.15.1
 
 
