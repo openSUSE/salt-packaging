@@ -224,6 +224,12 @@ Patch81:        prevent-zypper-from-parsing-repo-configuration-from-.patch
 Patch82:        add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
 # PATCH-FIX_OPENSUSE bsc#1057635
 Patch83:        add-environment-variable-to-know-if-yum-is-invoked-f.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/42541
+Patch84:        bugfix-state-file.line-warning-bsc-1093458-86.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/43955
+Patch85:        enable-with-salt-version-parameter-for-setup.py-scri.patch
+# PATCH-FIX_OPENSUSE
+Patch86:        add-custom-suse-capabilities-as-grains.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -663,9 +669,13 @@ cp %{S:5} ./.travis.yml
 %patch81 -p1
 %patch82 -p1
 %patch83 -p1
+%patch84 -p1
+%patch85 -p1
+%patch86 -p1
 
 %build
-%{__python} setup.py --salt-transport=both build
+%{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
+cp ./build/lib/salt/_version.py ./salt
 
 %if %{with docs} && %{without builddocs}
 # extract docs from the tarball

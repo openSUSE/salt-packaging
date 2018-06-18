@@ -1,0 +1,32 @@
+From 4c8aa9027bfd0897a85ffdac9cdb0ad5a55dcbc1 Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@maryniuk.net>
+Date: Wed, 23 May 2018 16:39:50 +0200
+Subject: [PATCH] Bugfix: state file.line warning (bsc#1093458) (#86)
+
+---
+ salt/states/file.py | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/salt/states/file.py b/salt/states/file.py
+index cc73bf32dd..85ce1d386c 100644
+--- a/salt/states/file.py
++++ b/salt/states/file.py
+@@ -3224,7 +3224,13 @@ def line(name, content, match=None, mode=None, location=None,
+     if not name:
+         return _error(ret, 'Must provide name to file.line')
+ 
+-    managed(name, create=create, user=user, group=group, mode=file_mode)
++    managed(
++        name,
++        create=create,
++        user=user,
++        group=group,
++        mode=file_mode,
++        replace=False)
+ 
+     check_res, check_msg = _check_file(name)
+     if not check_res:
+-- 
+2.17.1
+
+
