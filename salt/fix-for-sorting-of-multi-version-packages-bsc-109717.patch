@@ -1,0 +1,35 @@
+From ba9191b1c60508a8348bc1a9bfca0d06ad1fad34 Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Wed, 13 Jun 2018 17:51:13 +0200
+Subject: [PATCH] Fix for sorting of multi-version packages (bsc#1097174
+ and bsc#1097413)
+
+---
+ salt/modules/rpm.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/salt/modules/rpm.py b/salt/modules/rpm.py
+index 3683234f59..8e71992f81 100644
+--- a/salt/modules/rpm.py
++++ b/salt/modules/rpm.py
+@@ -9,6 +9,7 @@ import logging
+ import os
+ import re
+ import datetime
++from distutils.version import LooseVersion
+ 
+ # Import Salt libs
+ import salt.utils.decorators.path
+@@ -609,7 +610,7 @@ def info(*packages, **kwargs):
+     # pick only latest versions
+     # (in case multiple packages installed, e.g. kernel)
+     ret = dict()
+-    for pkg_data in reversed(sorted(_ret, key=lambda x: x['edition'])):
++    for pkg_data in reversed(sorted(_ret, key=lambda x: LooseVersion(x['edition']))):
+         pkg_name = pkg_data.pop('name')
+         # Filter out GPG public keys packages
+         if pkg_name.startswith('gpg-pubkey'):
+-- 
+2.13.7
+
+

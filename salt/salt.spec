@@ -120,6 +120,10 @@ Patch29:       align-suse-salt-master.service-limitnofiles-limit-wi.patch
 Patch30:       fix-deprecation-warning-bsc-1095507.patch
 # PATCH-FIX_OPENSUSE bsc#1057635
 Patch31:       add-environment-variable-to-know-if-yum-is-invoked-f.patch
+# PATCH-FIX_OPENSUSE bsc#1097174 and bsc#1097413
+Patch32:       fix-for-sorting-of-multi-version-packages-bsc-109717.patch
+# PATCH-FIX_OPENSUSE bsc#1098072
+Patch33:       switching-looseversion-import-to-salt.utils.versions.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -609,6 +613,8 @@ cp %{S:5} ./.travis.yml
 %patch29 -p1
 %patch30 -p1
 %patch31 -p1
+%patch32 -p1
+%patch33 -p1
 
 %build
 %if 0%{?build_py2}
