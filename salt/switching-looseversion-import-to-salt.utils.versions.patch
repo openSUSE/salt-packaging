@@ -1,0 +1,27 @@
+From 3e9dec25173051a1743a7da64cd6176a15874b8d Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Fri, 15 Jun 2018 13:06:16 +0200
+Subject: [PATCH] Switching LooseVersion import to salt.utils.versions
+ (bsc#1098072)
+
+---
+ salt/modules/rpm.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/modules/rpm.py b/salt/modules/rpm.py
+index 8e71992f81..15738b2523 100644
+--- a/salt/modules/rpm.py
++++ b/salt/modules/rpm.py
+@@ -9,7 +9,7 @@ import logging
+ import os
+ import re
+ import datetime
+-from distutils.version import LooseVersion
++from salt.utils.versions import LooseVersion
+ 
+ # Import Salt libs
+ import salt.utils.decorators.path
+-- 
+2.13.7
+
+
