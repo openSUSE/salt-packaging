@@ -128,6 +128,8 @@ Patch33:       switching-looseversion-import-to-salt.utils.versions.patch
 Patch34:       fix-diffing-binary-files-in-file.get_diff-bsc-109839.patch
 # PATCH-FIX_OPENSUSE
 Patch35:        add-custom-suse-capabilities-as-grains.patch
+# PATCH-FIX_OPENSUSE bsc#1072599
+Patch36:        show-recommendations-for-salt-ssh-cross-version-pyth.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -621,6 +623,7 @@ cp %{S:5} ./.travis.yml
 %patch33 -p1
 %patch34 -p1
 %patch35 -p1
+%patch36 -p1
 
 %build
 %if 0%{?build_py2}
