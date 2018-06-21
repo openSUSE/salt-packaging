@@ -124,6 +124,8 @@ Patch31:       add-environment-variable-to-know-if-yum-is-invoked-f.patch
 Patch32:       fix-for-sorting-of-multi-version-packages-bsc-109717.patch
 # PATCH-FIX_OPENSUSE bsc#1098072
 Patch33:       switching-looseversion-import-to-salt.utils.versions.patch
+# PATCH-FIX_OPENSUSE bsc#1098394 https://github.com/saltstack/salt/pull/47061
+Patch34:       fix-diffing-binary-files-in-file.get_diff-bsc-109839.patch 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -615,6 +617,7 @@ cp %{S:5} ./.travis.yml
 %patch31 -p1
 %patch32 -p1
 %patch33 -p1
+%patch34 -p1
 
 %build
 %if 0%{?build_py2}
