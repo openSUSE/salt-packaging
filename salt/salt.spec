@@ -52,7 +52,7 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        2018.3.0
+Version:        2018.3.1
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
@@ -103,6 +103,8 @@ Patch20:       align-suse-salt-master.service-limitnofiles-limit-wi.patch
 Patch21:       fix-deprecation-warning-bsc-1095507.patch
 # PATCH-FIX_OPENSUSE bsc#1057635
 Patch22:       add-environment-variable-to-know-if-yum-is-invoked-f.patch
+# PATCH-FIX_OPENSUSE
+Patch23:        add-custom-suse-capabilities-as-grains.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -583,6 +585,7 @@ cp %{S:5} ./.travis.yml
 %patch20 -p1
 %patch21 -p1
 %patch22 -p1
+%patch23 -p1
 
 %build
 %if 0%{?build_py2}
