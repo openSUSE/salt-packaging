@@ -230,6 +230,8 @@ Patch84:        bugfix-state-file.line-warning-bsc-1093458-86.patch
 Patch85:        enable-with-salt-version-parameter-for-setup.py-scri.patch
 # PATCH-FIX_OPENSUSE
 Patch86:        add-custom-suse-capabilities-as-grains.patch
+# PATCH-FIX_OPENSUSE bsc#1098394 backport of https://github.com/saltstack/salt/pull/47061
+Patch87:        porting-fix-diffing-binary-files-in-file.get_diff-bs.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -672,6 +674,7 @@ cp %{S:5} ./.travis.yml
 %patch84 -p1
 %patch85 -p1
 %patch86 -p1
+%patch87 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
