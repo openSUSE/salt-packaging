@@ -105,6 +105,8 @@ Patch21:       fix-deprecation-warning-bsc-1095507.patch
 Patch22:       add-environment-variable-to-know-if-yum-is-invoked-f.patch
 # PATCH-FIX_OPENSUSE
 Patch23:        add-custom-suse-capabilities-as-grains.patch
+# PATCH-FIX_OPENSUSE bsc#1098394 https://github.com/saltstack/salt/pull/47061
+Patch24:        fix-diffing-binary-files-in-file.get_diff-bsc-109839.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -586,6 +588,7 @@ cp %{S:5} ./.travis.yml
 %patch21 -p1
 %patch22 -p1
 %patch23 -p1
+%patch24 -p1
 
 %build
 %if 0%{?build_py2}
