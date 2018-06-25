@@ -111,6 +111,8 @@ Patch24:        fix-diffing-binary-files-in-file.get_diff-bsc-109839.patch
 Patch25:        show-recommendations-for-salt-ssh-cross-version-pyth.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47405
 Patch26:        fix-unboundlocalerror-in-file.get_diff.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48294
+Patch27:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -595,6 +597,7 @@ cp %{S:5} ./.travis.yml
 %patch24 -p1
 %patch25 -p1
 %patch26 -p1
+%patch27 -p1
 
 %build
 %if 0%{?build_py2}
