@@ -109,6 +109,8 @@ Patch23:        add-custom-suse-capabilities-as-grains.patch
 Patch24:        fix-diffing-binary-files-in-file.get_diff-bsc-109839.patch
 # PATCH-FIX_OPENSUSE bsc#1072599
 Patch25:        show-recommendations-for-salt-ssh-cross-version-pyth.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47405
+Patch26:        fix-unboundlocalerror-in-file.get_diff.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -592,6 +594,7 @@ cp %{S:5} ./.travis.yml
 %patch23 -p1
 %patch24 -p1
 %patch25 -p1
+%patch26 -p1
 
 %build
 %if 0%{?build_py2}
