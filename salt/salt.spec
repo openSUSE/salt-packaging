@@ -132,6 +132,8 @@ Patch35:        add-custom-suse-capabilities-as-grains.patch
 Patch36:        show-recommendations-for-salt-ssh-cross-version-pyth.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47405
 Patch37:        fix-unboundlocalerror-in-file.get_diff.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48294
+Patch38:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -627,6 +629,7 @@ cp %{S:5} ./.travis.yml
 %patch35 -p1
 %patch36 -p1
 %patch37 -p1
+%patch38 -p1
 
 %build
 %if 0%{?build_py2}
