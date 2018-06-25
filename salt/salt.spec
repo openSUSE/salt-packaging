@@ -234,6 +234,8 @@ Patch86:        add-custom-suse-capabilities-as-grains.patch
 Patch87:        porting-fix-diffing-binary-files-in-file.get_diff-bs.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47405
 Patch88:        fix-unboundlocalerror-in-file.get_diff.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48294
+Patch89:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -678,6 +680,7 @@ cp %{S:5} ./.travis.yml
 %patch86 -p1
 %patch87 -p1
 %patch88 -p1
+%patch89 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
