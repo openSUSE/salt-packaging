@@ -1,4 +1,4 @@
-From 14128fc65bf007bbb5b27b3eedec30b7f729bfbd Mon Sep 17 00:00:00 2001
+From 5d12b612b1f7b05a13e7b8da02e50ec471a72187 Mon Sep 17 00:00:00 2001
 From: Michele Bologna <michele.bologna@suse.com>
 Date: Tue, 20 Mar 2018 19:27:36 +0100
 Subject: [PATCH] Fix: decrease loglevel when unable to resolve addr
@@ -54,10 +54,10 @@ This patch changes the log level of the exception to INFO, since the resolve-una
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index 96b7ce2cf2..17a7d9819a 100644
+index 24de3cff6b..c166a43d7c 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
-@@ -1909,7 +1909,7 @@ def fqdns():
+@@ -1907,7 +1907,7 @@ def fqdns():
              fqdns.add(socket.gethostbyaddr(ip)[0])
          except (socket.error, socket.herror,
              socket.gaierror, socket.timeout) as e:
@@ -67,6 +67,6 @@ index 96b7ce2cf2..17a7d9819a 100644
      grains['fqdns'] = list(fqdns)
      return grains
 -- 
-2.16.2
+2.13.7
 
 

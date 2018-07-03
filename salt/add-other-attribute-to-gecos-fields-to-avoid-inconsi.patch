@@ -1,4 +1,4 @@
-From df845358b12d80d0315df8960fb6213292ab5bfa Mon Sep 17 00:00:00 2001
+From cc8d6eaddf59973a94512779853558789b56ca3e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Wed, 25 Apr 2018 12:55:36 +0100
@@ -289,6 +289,6 @@ index fa30a0df71..e79c78c663 100644
  
      @skipIf(HAS_PWD is False, 'The pwd module is not available')
 -- 
-2.15.1
+2.13.7
 
 

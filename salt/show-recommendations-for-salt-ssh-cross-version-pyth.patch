@@ -1,4 +1,4 @@
-From b786f685ccc463a7d8449094d9576edce8d51f3b Mon Sep 17 00:00:00 2001
+From 15e97fd2916176fe850850fe90983ac95a1f8e7b Mon Sep 17 00:00:00 2001
 From: Erik Johnson <palehose@gmail.com>
 Date: Mon, 11 Jun 2018 14:46:58 -0500
 Subject: [PATCH] Show recommendations for salt-ssh cross-version python
@@ -58,6 +58,6 @@ index f1300b5698..8a85cc2480 100644
              (
                  (salt.defaults.exitcodes.EX_THIN_CHECKSUM,),
 -- 
-2.17.1
+2.13.7
 
 

@@ -1,4 +1,4 @@
-From 1282251ca402e2da23df8b376045f565e0961039 Mon Sep 17 00:00:00 2001
+From 23aba97ccbdf9952f6a8107a8d90b40d0d2c41ee Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Mon, 12 Mar 2018 12:01:39 +0100
 Subject: [PATCH] Add SaltSSH multi-version support across Python
@@ -2093,6 +2093,6 @@ index 0000000000..549d48a703
 +        for t_line in ['second-system-effect:2:7', 'solar-interference:2:6']:
 +            assert t_line in out
 -- 
-2.15.1
+2.13.7
 
 

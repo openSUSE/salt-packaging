@@ -1,4 +1,4 @@
-From 1fba2e4e22be5e52af468af701d351723fa6a869 Mon Sep 17 00:00:00 2001
+From 39d9d9fb26f9aff83fce4ce67d5b2a6bd4f60b95 Mon Sep 17 00:00:00 2001
 From: Marcelo Chiaradia <mchiaradia@suse.com>
 Date: Thu, 7 Jun 2018 10:29:41 +0200
 Subject: [PATCH] Add environment variable to know if yum is invoked from
@@ -9,7 +9,7 @@ Subject: [PATCH] Add environment variable to know if yum is invoked from
  1 file changed, 39 insertions(+), 20 deletions(-)
 
 diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
-index 42eedca227..84600ea2ec 100644
+index 9ce4926790..51832bf883 100644
 --- a/salt/modules/yumpkg.py
 +++ b/salt/modules/yumpkg.py
 @@ -452,7 +452,8 @@ def latest_version(*names, **kwargs):
@@ -188,7 +188,7 @@ index 42eedca227..84600ea2ec 100644
      )
  
      g_info = {}
-@@ -3041,7 +3058,8 @@ def download(*packages):
+@@ -3055,7 +3072,8 @@ def download(*packages):
      __salt__['cmd.run'](
          cmd,
          output_loglevel='trace',
@@ -198,7 +198,7 @@ index 42eedca227..84600ea2ec 100644
      )
      ret = {}
      for dld_result in os.listdir(CACHE_DIR):
-@@ -3116,7 +3134,8 @@ def _get_patches(installed_only=False):
+@@ -3130,7 +3148,8 @@ def _get_patches(installed_only=False):
      cmd = [_yum(), '--quiet', 'updateinfo', 'list', 'all']
      ret = __salt__['cmd.run_stdout'](
          cmd,
@@ -209,5 +209,6 @@ index 42eedca227..84600ea2ec 100644
      for line in salt.utils.itertools.split(ret, os.linesep):
          inst, advisory_id, sev, pkg = re.match(r'([i|\s]) ([^\s]+) +([^\s]+) +([^\s]+)',
 -- 
-2.15.1
+2.13.7
+
 

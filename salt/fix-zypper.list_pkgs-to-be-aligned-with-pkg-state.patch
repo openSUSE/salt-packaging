@@ -1,4 +1,4 @@
-From 8d4ca051620f8c225ba7927b2a99bbbc35ca8c8a Mon Sep 17 00:00:00 2001
+From 997edb18b81d73933324b299da36474c24630b42 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Mon, 25 Jun 2018 13:06:40 +0100
@@ -10,9 +10,9 @@ Add unit test coverage for multiple version packages on Zypper
 
 Fix '_find_remove_targets' after aligning Zypper with pkg state
 ---
- salt/modules/zypper.py            |  57 ++++++++++-------
- salt/states/pkg.py                |  21 -------
- tests/unit/modules/test_zypper.py | 100 ++++++++++++++++++++----------
+ salt/modules/zypper.py            |  57 +++++++++++++---------
+ salt/states/pkg.py                |  21 --------
+ tests/unit/modules/test_zypper.py | 100 +++++++++++++++++++++++++-------------
  3 files changed, 102 insertions(+), 76 deletions(-)
 
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
@@ -306,6 +306,6 @@ index 6eccee568b..bb15aca11a 100644
      def test_list_patches(self):
          '''
 -- 
-2.17.1
+2.13.7
 
 

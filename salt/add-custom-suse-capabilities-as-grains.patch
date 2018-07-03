@@ -1,4 +1,4 @@
-From dbc5710d3a4427658898796af9681a6633245072 Mon Sep 17 00:00:00 2001
+From b02aee33a3aa1676cbfdf3a0ed936eef8a40adfe Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Thu, 21 Jun 2018 11:57:57 +0100
@@ -24,6 +24,6 @@ index fff70e9f5b..4fb58674bf 100644
 +        '__suse_reserved_pkg_patches_support': True
 +    }
 -- 
-2.17.1
+2.13.7
 
 

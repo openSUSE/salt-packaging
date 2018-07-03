@@ -1,4 +1,4 @@
-From 5d34d2da30911cb8d4a37f0c14813d5914a70dc4 Mon Sep 17 00:00:00 2001
+From f0f63dc8dd5979b51db71cf759d4350da1078383 Mon Sep 17 00:00:00 2001
 From: Jochen Breuer <jbreuer@suse.de>
 Date: Wed, 13 Jun 2018 17:51:13 +0200
 Subject: [PATCH] Fix for sorting of multi-version packages (bsc#1097174
@@ -30,6 +30,6 @@ index 3683234f59..8e71992f81 100644
          # Filter out GPG public keys packages
          if pkg_name.startswith('gpg-pubkey'):
 -- 
-2.15.1
+2.13.7
 
 

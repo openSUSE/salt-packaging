@@ -1,4 +1,4 @@
-From 23f402210ba8e30d29fc4c1a337b7576109763cc Mon Sep 17 00:00:00 2001
+From 9289e1607ebf6f397c027d4a6edcf35c59bd600c Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Wed, 6 Jun 2018 15:47:45 +0200
 Subject: [PATCH] Fix deprecation warning (bsc#1095507)
@@ -21,6 +21,6 @@ index e4b878eb19..b99e407583 100644
      else:
          code_checksum = "'0'"
 -- 
-2.17.0
+2.13.7
 
 

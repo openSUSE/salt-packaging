@@ -1,4 +1,4 @@
-From 747b1e5d4dae4d182d8d5d8beaaaf3404ee610d0 Mon Sep 17 00:00:00 2001
+From 816c7ec3b72510346deef17deb2990a09ddab03a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Thu, 31 May 2018 10:58:16 +0100
@@ -23,6 +23,6 @@ index c0ea4606d8..b31c1a1373 100644
  ExecStart=/usr/bin/salt-master
  TasksMax=infinity
 -- 
-2.15.1
+2.13.7
 
 

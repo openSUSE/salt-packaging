@@ -1,4 +1,4 @@
-From 2ce04ff289fca64ded514ed0f7f3aff59ba4647e Mon Sep 17 00:00:00 2001
+From d282de5c59e27c17bd5afb207c4eeaa754993368 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Tue, 22 May 2018 12:04:48 +0100
@@ -10,10 +10,10 @@ Subject: [PATCH] Prevent zypper from parsing repo configuration from not
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index 68dd37f1b7..5a54a547c1 100644
+index 06f8335c18..05ba3d86c9 100644
 --- a/salt/modules/zypper.py
 +++ b/salt/modules/zypper.py
-@@ -745,7 +745,7 @@ def _get_configured_repos():
+@@ -862,7 +862,7 @@ def _get_configured_repos():
      '''
  
      repos_cfg = configparser.ConfigParser()
@@ -23,6 +23,6 @@ index 68dd37f1b7..5a54a547c1 100644
      return repos_cfg
  
 -- 
-2.15.1
+2.13.7
 
 

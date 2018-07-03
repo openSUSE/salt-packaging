@@ -1,4 +1,4 @@
-From eb3d935e5f147ed761027667ced11814c27315f2 Mon Sep 17 00:00:00 2001
+From 854ffed98894b8aa8b51973c0ba13fb75093e715 Mon Sep 17 00:00:00 2001
 From: Erik Johnson <palehose@gmail.com>
 Date: Mon, 30 Apr 2018 10:25:40 -0500
 Subject: [PATCH] Fix UnboundLocalError in file.get_diff
@@ -27,6 +27,6 @@ index 95bca7fb1b..1b4b7e0e46 100644
  
  def manage_file(name,
 -- 
-2.17.1
+2.13.7
 
 

@@ -1,4 +1,4 @@
-From f7ba683153e11be401a5971ba029d0a3964b1ecb Mon Sep 17 00:00:00 2001
+From 9e0c0bbc1b48fa7065a9d0f50bd7111789712e2d Mon Sep 17 00:00:00 2001
 From: Maximilian Meister <mmeister@suse.de>
 Date: Thu, 5 Apr 2018 13:23:23 +0200
 Subject: [PATCH] fall back to PyMySQL
@@ -123,7 +123,7 @@ index 9d6aa17987..8b0a942310 100644
              raise
          # reconnect creating new client
 diff --git a/salt/modules/mysql.py b/salt/modules/mysql.py
-index 0625b02a96..8b17e461ea 100644
+index 833a766a97..a5965f3a25 100644
 --- a/salt/modules/mysql.py
 +++ b/salt/modules/mysql.py
 @@ -51,13 +51,14 @@ import salt.utils.stringutils
@@ -299,7 +299,7 @@ index af6698142b..85892cb06c 100644
  
      cursor = conn.cursor()
 diff --git a/tests/unit/pillar/test_mysql.py b/tests/unit/pillar/test_mysql.py
-index 8d49ac24e2..b72988673d 100644
+index a242eac1a1..f6a2d0a44b 100644
 --- a/tests/unit/pillar/test_mysql.py
 +++ b/tests/unit/pillar/test_mysql.py
 @@ -12,7 +12,7 @@ import salt.pillar.mysql as mysql
@@ -312,6 +312,6 @@ index 8d49ac24e2..b72988673d 100644
      maxDiff = None
  
 -- 
-2.13.6
+2.13.7
 
 

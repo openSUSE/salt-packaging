@@ -1,4 +1,4 @@
-From d023f61989a047bb3ea6a372a4e90f820deba9a1 Mon Sep 17 00:00:00 2001
+From 826194be2a036fee80d3ca546822023416ac3a7d Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Wed, 21 Mar 2018 11:10:23 +0100
 Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
@@ -76,6 +76,6 @@ index 616c62e658..dd7d5b06f8 100644
 +            self.assertEqual(len(fqdns['fqdns']), len(ret['fqdns']))
 +            self.assertEqual(set(fqdns['fqdns']), set(ret['fqdns']))
 -- 
-2.15.1
+2.13.7
 
 

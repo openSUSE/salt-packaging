@@ -52,7 +52,7 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        2018.3.1
+Version:        2018.3.2
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0

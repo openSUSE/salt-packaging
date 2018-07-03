@@ -1,4 +1,4 @@
-From f9fb3639bb3c44babd92d9499bdde83a0a81d6ab Mon Sep 17 00:00:00 2001
+From f515f99ee42ffaba30cee2e1941a7e9af9db7453 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Wed, 18 Apr 2018 12:05:35 +0100
@@ -50,6 +50,6 @@ index eb983685bb..fa30a0df71 100644
 +        expected_gecos_fields = 'Testing'
 +        self.assertEqual(useradd._build_gecos(test_gecos), expected_gecos_fields)
 -- 
-2.15.1
+2.13.7
 
 

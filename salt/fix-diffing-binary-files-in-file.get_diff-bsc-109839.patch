@@ -1,4 +1,4 @@
-From d4e7a3706b22ab485cd7777d3d649225e2ac046e Mon Sep 17 00:00:00 2001
+From 7bda1dcd4f14da55abe38b1739b1e46ad0f5213c Mon Sep 17 00:00:00 2001
 From: Erik Johnson <palehose@gmail.com>
 Date: Fri, 13 Apr 2018 11:25:24 -0500
 Subject: [PATCH] Fix diffing binary files in file.get_diff (bsc#1098394)
@@ -22,6 +22,6 @@ index 1b4b7e0e46..95bca7fb1b 100644
  
  def manage_file(name,
 -- 
-2.17.1
+2.13.7
 
 

@@ -1,4 +1,4 @@
-From b0273e150b29fb44d72246918792117b485441de Mon Sep 17 00:00:00 2001
+From 88a99b5beeaa51eaf646eb92d8f546f65f654008 Mon Sep 17 00:00:00 2001
 From: Daniel Wallace <gtmanfred@users.noreply.github.com>
 Date: Wed, 25 Apr 2018 11:13:15 -0500
 Subject: [PATCH] Fix for EC2 Rate Limit Failures
@@ -61,6 +61,6 @@ index 059450e7ca..912f1466ba 100644
  
              log.error(
 -- 
-2.13.6
+2.13.7
 
 

@@ -1,4 +1,4 @@
-From cdfb19b6c2801a7d5a883492a0ccc57c803dcd7f Mon Sep 17 00:00:00 2001
+From d937d1edb837bc084c1eaa320e8433382135e2d9 Mon Sep 17 00:00:00 2001
 From: Maximilian Meister <mmeister@suse.de>
 Date: Thu, 3 May 2018 15:52:23 +0200
 Subject: [PATCH] enable passing a unix_socket for mysql returners
@@ -69,6 +69,6 @@ index 85892cb06c..a286731d5c 100644
              try:
                  __context__['mysql_returner_conn'] = conn
 -- 
-2.13.6
+2.13.7
 
 

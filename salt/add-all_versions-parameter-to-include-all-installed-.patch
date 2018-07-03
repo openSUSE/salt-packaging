@@ -1,4 +1,4 @@
-From 8d3b589b0ac9b5cda98d9ffe25c75d3ee387f898 Mon Sep 17 00:00:00 2001
+From 9de54cf6f7d8d6da4212842fef8c4c658a2a9b9c Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Mon, 14 May 2018 11:33:13 +0100
@@ -86,7 +86,7 @@ index d065f1e2d9..3683234f59 100644
      return ret
  
 diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
-index 9eb27e7701..42eedca227 100644
+index 747142264d..9ce4926790 100644
 --- a/salt/modules/yumpkg.py
 +++ b/salt/modules/yumpkg.py
 @@ -994,31 +994,39 @@ def list_downloaded():
@@ -167,7 +167,7 @@ index 9eb27e7701..42eedca227 100644
          return {}
  
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index 16fc877684..68dd37f1b7 100644
+index 668143bdd9..06f8335c18 100644
 --- a/salt/modules/zypper.py
 +++ b/salt/modules/zypper.py
 @@ -470,28 +470,37 @@ def info_installed(*names, **kwargs):
@@ -218,7 +218,7 @@ index 16fc877684..68dd37f1b7 100644
      return ret
  
  
-@@ -1367,7 +1376,14 @@ def _uninstall(name=None, pkgs=None):
+@@ -1494,7 +1503,14 @@ def _uninstall(name=None, pkgs=None):
          raise CommandExecutionError(exc)
  
      old = list_pkgs()
@@ -234,7 +234,7 @@ index 16fc877684..68dd37f1b7 100644
      if not targets:
          return {}
  
-@@ -1390,6 +1406,32 @@ def _uninstall(name=None, pkgs=None):
+@@ -1517,6 +1533,32 @@ def _uninstall(name=None, pkgs=None):
      return ret
  
  
@@ -268,10 +268,10 @@ index 16fc877684..68dd37f1b7 100644
      '''
      .. versionchanged:: 2015.8.12,2016.3.3,2016.11.0
 diff --git a/salt/states/pkg.py b/salt/states/pkg.py
-index 4c406aa04e..58a5896a6a 100644
+index 2682ee17f9..ed405cb6b5 100644
 --- a/salt/states/pkg.py
 +++ b/salt/states/pkg.py
-@@ -405,6 +405,16 @@ def _find_remove_targets(name=None,
+@@ -415,6 +415,16 @@ def _find_remove_targets(name=None,
  
          if __grains__['os'] == 'FreeBSD' and origin:
              cver = [k for k, v in six.iteritems(cur_pkgs) if v['origin'] == pkgname]
@@ -288,7 +288,7 @@ index 4c406aa04e..58a5896a6a 100644
          else:
              cver = cur_pkgs.get(pkgname, [])
  
-@@ -812,6 +822,17 @@ def _verify_install(desired, new_pkgs, ignore_epoch=False, new_caps=None):
+@@ -844,6 +854,17 @@ def _verify_install(desired, new_pkgs, ignore_epoch=False, new_caps=None):
              cver = new_pkgs.get(pkgname.split('%')[0])
          elif __grains__['os_family'] == 'Debian':
              cver = new_pkgs.get(pkgname.split('=')[0])
@@ -306,7 +306,7 @@ index 4c406aa04e..58a5896a6a 100644
          else:
              cver = new_pkgs.get(pkgname)
              if not cver and pkgname in new_caps:
-@@ -2610,7 +2631,17 @@ def _uninstall(
+@@ -2674,7 +2695,17 @@ def _uninstall(
  
      changes = __salt__['pkg.{0}'.format(action)](name, pkgs=pkgs, version=version, **kwargs)
      new = __salt__['pkg.list_pkgs'](versions_as_list=True, **kwargs)
@@ -326,10 +326,10 @@ index 4c406aa04e..58a5896a6a 100644
          new_removed = __salt__['pkg.list_pkgs'](versions_as_list=True,
                                                  removed=True,
 diff --git a/tests/unit/modules/test_yumpkg.py b/tests/unit/modules/test_yumpkg.py
-index 9b2d39b4dd..74992071a1 100644
+index 28b6e1294c..c73f2582b9 100644
 --- a/tests/unit/modules/test_yumpkg.py
 +++ b/tests/unit/modules/test_yumpkg.py
-@@ -602,3 +602,53 @@ class YumTestCase(TestCase, LoaderModuleMockMixin):
+@@ -601,3 +601,53 @@ class YumTestCase(TestCase, LoaderModuleMockMixin):
                       '--branch=foo', '--exclude=kernel*', 'upgrade'],
                      output_loglevel='trace',
                      python_shell=False)
@@ -445,6 +445,6 @@ index 539a950252..6eccee568b 100644
          '''
          Test return the information of the named package available for the system.
 -- 
-2.15.1
+2.13.7
 
 
