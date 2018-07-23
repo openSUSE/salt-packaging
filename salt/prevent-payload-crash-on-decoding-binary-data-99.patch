@@ -1,0 +1,30 @@
+From 76fc494ea07033a509aa428b2bd5a8cb6a66c716 Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@maryniuk.net>
+Date: Mon, 16 Jul 2018 10:50:14 +0200
+Subject: [PATCH] Prevent payload crash on decoding binary data (#99)
+
+---
+ salt/payload.py | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/salt/payload.py b/salt/payload.py
+index 060905badf..5df6458b86 100644
+--- a/salt/payload.py
++++ b/salt/payload.py
+@@ -141,7 +141,11 @@ class Serial(object):
+                 # Due to this, if we don't need it, don't pass it at all so
+                 # that under Python 2 we can still work with older versions
+                 # of msgpack.
+-                ret = msgpack.loads(msg, use_list=True, ext_hook=ext_type_decoder, encoding=encoding)
++                try:
++                    ret = msgpack.loads(msg, use_list=True, ext_hook=ext_type_decoder, encoding=encoding)
++                except UnicodeDecodeError:
++                    # msg contains binary data
++                    ret = msgpack.loads(msg, use_list=True, ext_hook=ext_type_decoder)
+             else:
+                 ret = msgpack.loads(msg, use_list=True, ext_hook=ext_type_decoder)
+             if six.PY3 and encoding is None and not raw:
+-- 
+2.17.1
+
+

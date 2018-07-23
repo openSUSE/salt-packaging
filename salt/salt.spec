@@ -134,6 +134,14 @@ Patch36:        show-recommendations-for-salt-ssh-cross-version-pyth.patch
 Patch37:        fix-unboundlocalerror-in-file.get_diff.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48294
 Patch38:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47572
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48015
+Patch39:        accounting-for-when-files-in-an-archive-contain-non-.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46966
+Patch40:        prevent-payload-crash-on-decoding-binary-data-99.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46930
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48358
+Patch41:        clean-up-bad-public-key-headers.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -630,6 +638,9 @@ cp %{S:5} ./.travis.yml
 %patch36 -p1
 %patch37 -p1
 %patch38 -p1
+%patch39 -p1
+%patch40 -p1
+%patch41 -p1
 
 %build
 %if 0%{?build_py2}
