@@ -142,6 +142,8 @@ Patch40:        prevent-payload-crash-on-decoding-binary-data-99.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46930
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48358
 Patch41:        clean-up-bad-public-key-headers.patch
+# PATCH-FIX_UPSTREAM
+Patch42:        use-salt.utils.stringutils.is_binary-to-check-if-con.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -641,6 +643,7 @@ cp %{S:5} ./.travis.yml
 %patch39 -p1
 %patch40 -p1
 %patch41 -p1
+%patch42 -p1
 
 %build
 %if 0%{?build_py2}

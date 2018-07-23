@@ -1,0 +1,34 @@
+From f488937c3b8856562d59a6570544b2b3004137d1 Mon Sep 17 00:00:00 2001
+From: Erik Johnson <palehose@gmail.com>
+Date: Thu, 12 Apr 2018 22:16:34 -0500
+Subject: [PATCH] Use salt.utils.stringutils.is_binary to check if
+ contents are binary
+
+Move back to using null byte check for contents
+
+Special check specifically for bytes types
+---
+ salt/states/file.py | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/salt/states/file.py b/salt/states/file.py
+index ab53e80755..9bc2fef819 100644
+--- a/salt/states/file.py
++++ b/salt/states/file.py
+@@ -2263,9 +2263,9 @@ def managed(name,
+                 .format(contents_id)
+             )
+ 
+-        contents_are_binary = \
+-            isinstance(use_contents, six.string_types) and '\0' in use_contents
+-        if contents_are_binary:
++        if isinstance(use_contents, bytes) and b'\0' in use_contents:
++            contents = use_contents
++        elif isinstance(use_contents, six.string_types) and str('\0') in use_contents:
+             contents = use_contents
+         else:
+             validated_contents = _validate_str_list(use_contents)
+-- 
+2.13.7
+
+
