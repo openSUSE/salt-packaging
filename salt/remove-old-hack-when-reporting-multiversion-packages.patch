@@ -1,0 +1,51 @@
+From 11186ce52ae42967c49a6e238659a566e488a6b4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Mon, 23 Jul 2018 16:32:26 +0100
+Subject: [PATCH] Remove old hack when reporting multiversion packages
+
+Fix unit tests for zypper pkg.upgrade
+---
+ salt/modules/zypper.py            | 5 -----
+ tests/unit/modules/test_zypper.py | 8 +++++++-
+ 2 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
+index 4689f84926..695bce4f4e 100644
+--- a/salt/modules/zypper.py
++++ b/salt/modules/zypper.py
+@@ -1480,11 +1480,6 @@ def upgrade(refresh=True,
+     __zypper__(systemd_scope=_systemd_scope()).noraise.call(*cmd_update)
+     _clean_cache()
+     new = list_pkgs()
+-
+-    # Handle packages which report multiple new versions
+-    # (affects only kernel packages at this point)
+-    for pkg in new:
+-        new[pkg] = new[pkg].split(',')[-1]
+     ret = salt.utils.data.compare_dicts(old, new)
+ 
+     if __zypper__.exit_code not in __zypper__.SUCCESS_EXIT_CODES:
+diff --git a/tests/unit/modules/test_zypper.py b/tests/unit/modules/test_zypper.py
+index bb15aca11a..424438c8bf 100644
+--- a/tests/unit/modules/test_zypper.py
++++ b/tests/unit/modules/test_zypper.py
+@@ -429,7 +429,13 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+                     zypper_mock.assert_any_call('update', '--auto-agree-with-licenses')
+ 
+                 with patch('salt.modules.zypper.list_pkgs',
+-                           MagicMock(side_effect=[{"vim": "1.1"}, {"vim": "1.1,1.2"}])):
++                           MagicMock(side_effect=[{"kernel-default": "1.1"}, {"kernel-default": "1.1,1.2"}])):
++                    ret = zypper.upgrade()
++                    self.assertDictEqual(ret, {"kernel-default": {"old": "1.1", "new": "1.1,1.2"}})
++                    zypper_mock.assert_any_call('update', '--auto-agree-with-licenses')
++
++                with patch('salt.modules.zypper.list_pkgs',
++                           MagicMock(side_effect=[{"vim": "1.1"}, {"vim": "1.2"}])):
+                     ret = zypper.upgrade()
+                     self.assertDictEqual(ret, {"vim": {"old": "1.1", "new": "1.2"}})
+                     zypper_mock.assert_any_call('update', '--auto-agree-with-licenses')
+-- 
+2.17.1
+
+
