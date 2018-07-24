@@ -146,6 +146,8 @@ Patch41:        clean-up-bad-public-key-headers.patch
 Patch42:        use-salt.utils.stringutils.is_binary-to-check-if-con.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48712
 Patch43:        remove-old-hack-when-reporting-multiversion-packages.patch
+# PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/101
+Patch44:        fix-46492-file.blockreplace-throws-indexerror.patch 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -647,6 +649,7 @@ cp %{S:5} ./.travis.yml
 %patch41 -p1
 %patch42 -p1
 %patch43 -p1
+%patch44 -p1
 
 %build
 %if 0%{?build_py2}

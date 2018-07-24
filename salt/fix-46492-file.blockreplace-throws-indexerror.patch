@@ -1,0 +1,30 @@
+From b9b3c233800884239f65b9d7f97b37fecf82c2f2 Mon Sep 17 00:00:00 2001
+From: Florian Bergmann <fbergmann@suse.de>
+Date: Thu, 19 Jul 2018 13:53:29 +0200
+Subject: [PATCH] Fix #46492: file.blockreplace throws IndexError.
+
+Also fixes bsc#1101812.
+
+This was discovered to affect SUSE CaaS Platform during a test-upgrade of salt
+to version 2018.3.0: it breaks the update orchestration.
+---
+ salt/modules/file.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/modules/file.py b/salt/modules/file.py
+index 74051064f2..7ce71b495f 100644
+--- a/salt/modules/file.py
++++ b/salt/modules/file.py
+@@ -2560,7 +2560,7 @@ def blockreplace(path,
+ 
+                         # Trim any trailing new lines to avoid unwanted
+                         # additional new lines
+-                        while not split_content[-1]:
++                        while split_content and not split_content[-1]:
+                             split_content.pop()
+ 
+                         # push new block content in file
+-- 
+2.17.1
+
+
