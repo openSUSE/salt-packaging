@@ -118,6 +118,11 @@ Patch27:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
 Patch28:        accounting-for-when-files-in-an-archive-contain-non-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48712
 Patch29:        remove-old-hack-when-reporting-multiversion-packages.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46461
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46928
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46957
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47243
+Patch30:        add-engine-relaying-libvirt-events.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -605,6 +610,7 @@ cp %{S:5} ./.travis.yml
 %patch27 -p1
 %patch28 -p1
 %patch29 -p1
+%patch30 -p1
 
 %build
 %if 0%{?build_py2}
