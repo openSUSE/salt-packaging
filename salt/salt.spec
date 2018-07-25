@@ -148,6 +148,13 @@ Patch42:        use-salt.utils.stringutils.is_binary-to-check-if-con.patch
 Patch43:        remove-old-hack-when-reporting-multiversion-packages.patch
 # PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/101
 Patch44:        fix-46492-file.blockreplace-throws-indexerror.patch 
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46744
+Patch45:        add-missing-dateutils-import-bsc-1099945-96.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46461
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46928
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46957
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47243
+Patch46:        add-engine-relaying-libvirt-events.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -650,6 +657,8 @@ cp %{S:5} ./.travis.yml
 %patch42 -p1
 %patch43 -p1
 %patch44 -p1
+%patch45 -p1
+%patch46 -p1
 
 %build
 %if 0%{?build_py2}
