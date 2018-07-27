@@ -155,6 +155,10 @@ Patch45:        add-missing-dateutils-import-bsc-1099945-96.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46957
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47243
 Patch46:        add-engine-relaying-libvirt-events.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48761
+Patch47:        add-api-log-rotation-on-suse-package.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48781
+Patch48:        avoid-incomprehensive-message-if-crashes.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -659,6 +663,8 @@ cp %{S:5} ./.travis.yml
 %patch44 -p1
 %patch45 -p1
 %patch46 -p1
+%patch47 -p1
+%patch48 -p1
 
 %build
 %if 0%{?build_py2}

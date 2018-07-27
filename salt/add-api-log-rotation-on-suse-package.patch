@@ -1,0 +1,30 @@
+From 700e25307a2067149746cf299e62bb7bc762527b Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Wed, 25 Jul 2018 14:22:07 +0200
+Subject: [PATCH] Add API log rotation on SUSE package
+
+---
+ pkg/suse/salt-common.logrotate | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/pkg/suse/salt-common.logrotate b/pkg/suse/salt-common.logrotate
+index 625670942c..3b3454c8fc 100644
+--- a/pkg/suse/salt-common.logrotate
++++ b/pkg/suse/salt-common.logrotate
+@@ -24,3 +24,12 @@
+ 	compress
+ 	notifempty
+ }
++
++/var/log/salt/api {
++	su salt salt
++	weekly
++	missingok
++	rotate 7
++	compress
++	notifempty
++}
+-- 
+2.17.1
+
+

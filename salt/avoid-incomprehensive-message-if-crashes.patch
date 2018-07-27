@@ -1,0 +1,57 @@
+From 36bf8abe87491c63082aa8f6ee2c18d48c3aaf19 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Thu, 26 Jul 2018 16:42:10 +0100
+Subject: [PATCH] Avoid incomprehensive message if crashes
+
+Check dmidecoder executable on each call to avoid crashing
+
+Fix pylint issues
+---
+ salt/modules/smbios.py | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/salt/modules/smbios.py b/salt/modules/smbios.py
+index c8a0e54a5c..c0b94c2a65 100644
+--- a/salt/modules/smbios.py
++++ b/salt/modules/smbios.py
+@@ -19,6 +19,7 @@ import re
+ 
+ # Import salt libs
+ import salt.utils.path
++from salt.exceptions import CommandExecutionError
+ 
+ # Solve the Chicken and egg problem where grains need to run before any
+ # of the modules are loaded and are generally available for any usage.
+@@ -32,10 +33,16 @@ log = logging.getLogger(__name__)
+ DMIDECODER = salt.utils.path.which_bin(['dmidecode', 'smbios'])
+ 
+ 
++def _refresh_dmidecoder():
++    global DMIDECODER
++    DMIDECODER = salt.utils.path.which_bin(['dmidecode', 'smbios'])
++
++
+ def __virtual__():
+     '''
+     Only work when dmidecode is installed.
+     '''
++    _refresh_dmidecoder()
+     if DMIDECODER is None:
+         log.debug('SMBIOS: neither dmidecode nor smbios found!')
+         return (False, 'The smbios execution module failed to load: neither dmidecode nor smbios in the path.')
+@@ -327,6 +334,10 @@ def _dmidecoder(args=None):
+     '''
+     Call DMIdecode
+     '''
++    _refresh_dmidecoder()
++    if DMIDECODER is None:
++        raise CommandExecutionError('SMBIOS: neither dmidecode nor smbios found!')
++
+     if args is None:
+         return salt.modules.cmdmod._run_quiet(DMIDECODER)
+     else:
+-- 
+2.17.1
+
+
