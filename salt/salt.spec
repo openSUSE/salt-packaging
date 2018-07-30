@@ -1255,7 +1255,8 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %{_mandir}/man1/salt-call.1.gz
 %{_mandir}/man1/spm.1.gz
 %config(noreplace) %{_sysconfdir}/logrotate.d/salt
-%doc LICENSE AUTHORS README.rst HACKING.rst README.SUSE
+%license LICENSE
+%doc AUTHORS README.rst HACKING.rst README.SUSE
 #
 %dir        %attr(0750, root, salt) %{_sysconfdir}/salt
 %dir        %attr(0750, root, salt) %{_sysconfdir}/salt/pki
