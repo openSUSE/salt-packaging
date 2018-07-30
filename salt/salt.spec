@@ -125,6 +125,9 @@ Patch29:        remove-old-hack-when-reporting-multiversion-packages.patch
 Patch30:        add-engine-relaying-libvirt-events.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48781
 Patch31:        avoid-incomprehensive-message-if-crashes.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48765
+Patch32:        fix-mine.get-not-returning-data-workaround-for-48020.patch
+
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -614,6 +617,7 @@ cp %{S:5} ./.travis.yml
 %patch29 -p1
 %patch30 -p1
 %patch31 -p1
+%patch32 -p1
 
 %build
 %if 0%{?build_py2}
