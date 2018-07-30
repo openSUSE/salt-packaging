@@ -159,6 +159,8 @@ Patch46:        add-engine-relaying-libvirt-events.patch
 Patch47:        add-api-log-rotation-on-suse-package.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48781
 Patch48:        avoid-incomprehensive-message-if-crashes.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48765
+Patch49:        fix-mine.get-not-returning-data-workaround-for-48020.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -665,6 +667,7 @@ cp %{S:5} ./.travis.yml
 %patch46 -p1
 %patch47 -p1
 %patch48 -p1
+%patch49 -p1
 
 %build
 %if 0%{?build_py2}
