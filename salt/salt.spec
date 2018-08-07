@@ -1265,8 +1265,12 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %{_mandir}/man1/salt-call.1.gz
 %{_mandir}/man1/spm.1.gz
 %config(noreplace) %{_sysconfdir}/logrotate.d/salt
+%if 0%{?suse_version} < 1500
+%doc LICENSE AUTHORS README.rst HACKING.rst README.SUSE
+%else
 %license LICENSE
 %doc AUTHORS README.rst HACKING.rst README.SUSE
+%endif
 #
 %dir        %attr(0750, root, salt) %{_sysconfdir}/salt
 %dir        %attr(0750, root, salt) %{_sysconfdir}/salt/pki
