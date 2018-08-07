@@ -1,0 +1,27 @@
+From 58913b6801b92bd59374cd53fa48fa74171abb73 Mon Sep 17 00:00:00 2001
+From: Abid Mehmood <amehmood@suse.de>
+Date: Wed, 1 Aug 2018 17:19:11 +0200
+Subject: [PATCH] Decode file contents for python2(bsc#1102013)
+
+---
+ salt/states/file.py | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/salt/states/file.py b/salt/states/file.py
+index e1d247ae4f..db82098a33 100644
+--- a/salt/states/file.py
++++ b/salt/states/file.py
+@@ -1105,8 +1105,7 @@ def _get_template_texts(source_list=None,
+             tmplines = None
+             with salt.utils.files.fopen(rndrd_templ_fn, 'rb') as fp_:
+                 tmplines = fp_.read()
+-                if six.PY3:
+-                    tmplines = tmplines.decode(__salt_system_encoding__)
++                tmplines = tmplines.decode(__salt_system_encoding__)
+                 tmplines = tmplines.splitlines(True)
+             if not tmplines:
+                 msg = 'Failed to read rendered template file {0} ({1})'
+-- 
+2.17.1
+
+

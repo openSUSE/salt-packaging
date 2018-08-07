@@ -1,4 +1,4 @@
-From b88fd19aca7a9dc0a64fa507052a1943ced9fda1 Mon Sep 17 00:00:00 2001
+From f8c0811c3a05ef334eef1943a906fe01b13c1afc Mon Sep 17 00:00:00 2001
 From: Federico Ceratto <federico.ceratto@suse.com>
 Date: Wed, 25 Jul 2018 10:33:09 +0000
 Subject: [PATCH] Fix mine.get not returning data (Workaround for #48020)
@@ -29,6 +29,6 @@ index c3acc6ba90..bb0cbaa589 100644
              if self.opts['key_cache'] and os.path.exists(pki_cache_fn):
                  log.debug('Returning cached minion list')
 -- 
-2.18.0
+2.17.1
 
 
