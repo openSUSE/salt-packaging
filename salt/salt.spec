@@ -161,6 +161,8 @@ Patch47:        add-api-log-rotation-on-suse-package.patch
 Patch48:        avoid-incomprehensive-message-if-crashes.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48765
 Patch49:        fix-mine.get-not-returning-data-workaround-for-48020.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48863
+Patch50:        decode-file-contents-for-python2-bsc-1102013.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -668,6 +670,7 @@ cp %{S:5} ./.travis.yml
 %patch47 -p1
 %patch48 -p1
 %patch49 -p1
+%patch50 -p1
 
 %build
 %if 0%{?build_py2}
