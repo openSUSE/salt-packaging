@@ -131,6 +131,8 @@ Patch32:        fix-mine.get-not-returning-data-workaround-for-48020.patch
 Patch33:        fix-for-sorting-of-multi-version-packages-bsc-109717.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48863
 Patch34:        decode-file-contents-for-python2-bsc-1102013.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49052
+Patch35:        add-support-for-python-3.7.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -624,6 +626,7 @@ cp %{S:5} ./.travis.yml
 %patch32 -p1
 %patch33 -p1
 %patch34 -p1
+%patch35 -p1
 
 %build
 %if 0%{?build_py2}
