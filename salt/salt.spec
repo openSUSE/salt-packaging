@@ -163,6 +163,10 @@ Patch48:        avoid-incomprehensive-message-if-crashes.patch
 Patch49:        fix-mine.get-not-returning-data-workaround-for-48020.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48863
 Patch50:        decode-file-contents-for-python2-bsc-1102013.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47374
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47641
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49052
+Patch51:        python-3.7-support.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -671,6 +675,7 @@ cp %{S:5} ./.travis.yml
 %patch48 -p1
 %patch49 -p1
 %patch50 -p1
+%patch51 -p1
 
 %build
 %if 0%{?build_py2}
