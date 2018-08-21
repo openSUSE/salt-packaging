@@ -133,6 +133,8 @@ Patch33:        fix-for-sorting-of-multi-version-packages-bsc-109717.patch
 Patch34:        decode-file-contents-for-python2-bsc-1102013.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49052
 Patch35:        add-support-for-python-3.7.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48771
+Patch36:        only-do-reverse-dns-lookup-on-ips-for-salt-ssh.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -627,6 +629,7 @@ cp %{S:5} ./.travis.yml
 %patch33 -p1
 %patch34 -p1
 %patch35 -p1
+%patch36 -p1
 
 %build
 %if 0%{?build_py2}

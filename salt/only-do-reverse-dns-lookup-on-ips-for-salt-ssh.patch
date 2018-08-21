@@ -1,0 +1,29 @@
+From f346e83f6d4651a1cdcaad8c995642b55f66ddbc Mon Sep 17 00:00:00 2001
+From: Daniel Wallace <danielwallace@gtmanfred.com>
+Date: Wed, 25 Jul 2018 09:48:29 -0500
+Subject: [PATCH] only do reverse dns lookup on ips for salt-ssh
+
+Fixes #48676
+---
+ salt/client/ssh/__init__.py | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/salt/client/ssh/__init__.py b/salt/client/ssh/__init__.py
+index 8a85cc2480..d6ff0c3479 100644
+--- a/salt/client/ssh/__init__.py
++++ b/salt/client/ssh/__init__.py
+@@ -349,7 +349,9 @@ class SSH(object):
+             return
+ 
+         hostname = self.opts['tgt'].split('@')[-1]
+-        needs_expansion = '*' not in hostname and salt.utils.network.is_reachable_host(hostname)
++        needs_expansion = '*' not in hostname and \
++                          salt.utils.network.is_reachable_host(hostname) and \
++                          salt.utils.network.is_ip(hostname)
+         if needs_expansion:
+             hostname = salt.utils.network.ip_to_host(hostname)
+             if hostname is None:
+-- 
+2.17.1
+
+
