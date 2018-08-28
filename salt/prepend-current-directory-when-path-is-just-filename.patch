@@ -1,0 +1,38 @@
+From 51e73fd8c6d249cc8921e9e7c53cda7b165a08cd Mon Sep 17 00:00:00 2001
+From: Mihai Dinca <mdinca@suse.de>
+Date: Thu, 23 Aug 2018 16:14:36 +0200
+Subject: [PATCH] Prepend current directory when path is just filename
+ (bsc#1095942)
+
+---
+ salt/utils/parsers.py | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/salt/utils/parsers.py b/salt/utils/parsers.py
+index 88ce272fa9..9b39ecf6f1 100644
+--- a/salt/utils/parsers.py
++++ b/salt/utils/parsers.py
+@@ -590,10 +590,19 @@ class LogLevelMixIn(six.with_metaclass(MixInMeta, object)):
+                 )
+             )
+ 
++        def _logfile_callback(option, opt, value, parser, *args, **kwargs):
++            if not os.path.dirname(value):
++                # if the path is only a file name (no parent directory), assume current directory
++                value = os.path.join(os.path.curdir, value)
++            setattr(parser.values, self._logfile_config_setting_name_, value)
++
+         group.add_option(
+             '--log-file',
+             dest=self._logfile_config_setting_name_,
+             default=None,
++            action='callback',
++            type='string',
++            callback=_logfile_callback,
+             help='Log file path. Default: \'{0}\'.'.format(
+                 self._default_logging_logfile_
+             )
+-- 
+2.18.0
+
+

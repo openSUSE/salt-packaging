@@ -169,6 +169,8 @@ Patch50:        decode-file-contents-for-python2-bsc-1102013.patch
 Patch51:        python-3.7-support.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48771
 Patch52:        only-do-reverse-dns-lookup-on-ips-for-salt-ssh.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49277
+Patch53:        prepend-current-directory-when-path-is-just-filename.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -679,6 +681,7 @@ cp %{S:5} ./.travis.yml
 %patch50 -p1
 %patch51 -p1
 %patch52 -p1
+%patch53 -p1
 
 %build
 %if 0%{?build_py2}
