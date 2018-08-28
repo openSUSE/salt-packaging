@@ -236,6 +236,9 @@ Patch87:        porting-fix-diffing-binary-files-in-file.get_diff-bs.patch
 Patch88:        fix-unboundlocalerror-in-file.get_diff.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48294
 Patch89:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49277
+Patch90:        prepend-current-directory-when-path-is-just-filename.patch
+
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -681,6 +684,7 @@ cp %{S:5} ./.travis.yml
 %patch87 -p1
 %patch88 -p1
 %patch89 -p1
+%patch90 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
