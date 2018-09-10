@@ -238,6 +238,10 @@ Patch88:        fix-unboundlocalerror-in-file.get_diff.patch
 Patch89:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49277
 Patch90:        prepend-current-directory-when-path-is-just-filename.patch
+# PATCH-FIX_OPENSUSE bsc#1094960
+Patch91:        backport-46867-string-arg-normalization-bsc-1094960.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49538
+Patch92:        fix-for-suse-expanded-support-detection.patch
 
 
 
@@ -685,6 +689,8 @@ cp %{S:5} ./.travis.yml
 %patch88 -p1
 %patch89 -p1
 %patch90 -p1
+%patch91 -p1
+%patch92 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
