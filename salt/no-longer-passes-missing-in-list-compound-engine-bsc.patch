@@ -1,0 +1,74 @@
+From edb407d39ab1b5dafcbc560829dd3631b46e41e4 Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Thu, 30 Aug 2018 09:44:57 +0200
+Subject: [PATCH] No longer passes missing in list compound engine
+ (bsc#1105334)
+
+Missing targets cause a very odd behaviour in combination with a
+"not" statement and don't seem to be used in every other case.
+
+Having a compound list target like "not L@foominion" would
+cause a return for "foominon" even though it doesn't exist. Returning
+an empty list for "missing" fixes that.
+
+Minor fix for def test_batch_run_grains_targeting
+
+item was never "minion" without a colon, but os_grain was overwritten
+anyway. So this fix does not actually affect the test outcome.
+
+Co-authored-by: Mihai Dinca <Mihai.Dinca@suse.com>
+---
+ salt/utils/minions.py               | 8 ++++++--
+ tests/integration/cli/test_batch.py | 2 +-
+ 2 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/salt/utils/minions.py b/salt/utils/minions.py
+index bb0cbaa589..3a587c693c 100644
+--- a/salt/utils/minions.py
++++ b/salt/utils/minions.py
+@@ -216,7 +216,7 @@ class CkMinions(object):
+         return {'minions': fnmatch.filter(self._pki_minions(), expr),
+                 'missing': []}
+ 
+-    def _check_list_minions(self, expr, greedy):  # pylint: disable=unused-argument
++    def _check_list_minions(self, expr, greedy, ignore_missing=False):  # pylint: disable=unused-argument
+         '''
+         Return the minions found by looking via a list
+         '''
+@@ -224,7 +224,7 @@ class CkMinions(object):
+             expr = [m for m in expr.split(',') if m]
+         minions = self._pki_minions()
+         return {'minions': [x for x in expr if x in minions],
+-                'missing': [x for x in expr if x not in minions]}
++                'missing': [] if ignore_missing else [x for x in expr if x not in minions]}
+ 
+     def _check_pcre_minions(self, expr, greedy):  # pylint: disable=unused-argument
+         '''
+@@ -575,6 +575,10 @@ class CkMinions(object):
+                         engine_args.append(target_info['delimiter'] or ':')
+                     engine_args.append(greedy)
+ 
++                    # ignore missing minions for lists if we exclude them with
++                    # a 'not'
++                    if 'L' == target_info['engine']:
++                        engine_args.append(results and results[-1] == '-')
+                     _results = engine(*engine_args)
+                     results.append(six.text_type(set(_results['minions'])))
+                     missing.extend(_results['missing'])
+diff --git a/tests/integration/cli/test_batch.py b/tests/integration/cli/test_batch.py
+index 1ca8049504..a7acfcc909 100644
+--- a/tests/integration/cli/test_batch.py
++++ b/tests/integration/cli/test_batch.py
+@@ -42,7 +42,7 @@ class BatchTest(ShellCase):
+         min_ret = "Executing run on [{0}]".format(repr('minion'))
+ 
+         for item in self.run_salt('minion grains.get os'):
+-            if item != 'minion':
++            if item != 'minion:':
+                 os_grain = item
+ 
+         os_grain = os_grain.strip()
+-- 
+2.18.0
+
+

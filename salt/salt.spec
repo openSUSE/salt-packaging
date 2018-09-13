@@ -173,6 +173,14 @@ Patch52:        only-do-reverse-dns-lookup-on-ips-for-salt-ssh.patch
 Patch53:        prepend-current-directory-when-path-is-just-filename.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49538
 Patch54:        fix-for-suse-expanded-support-detection.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49063
+Patch55:        integration-of-msi-authentication-with-azurearm-clou.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49508
+Patch56:        x509-fixes-for-remote-signing-106.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49555
+Patch57:        change-stringio-import-in-python2-to-import-the-clas.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49435
+Patch58:        no-longer-passes-missing-in-list-compound-engine-bsc.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -685,6 +693,10 @@ cp %{S:5} ./.travis.yml
 %patch52 -p1
 %patch53 -p1
 %patch54 -p1
+%patch55 -p1
+%patch56 -p1
+%patch57 -p1
+%patch58 -p1
 
 %build
 %if 0%{?build_py2}

@@ -1,4 +1,4 @@
-From ae206dab810ede8494c210ed24cffd4613b6eeb8 Mon Sep 17 00:00:00 2001
+From 8e1264d4002b9e084cb48ce6977c01dbf4687592 Mon Sep 17 00:00:00 2001
 From: Jochen Breuer <jbreuer@suse.de>
 Date: Thu, 6 Sep 2018 17:15:18 +0200
 Subject: [PATCH] Fix for SUSE Expanded Support detection
