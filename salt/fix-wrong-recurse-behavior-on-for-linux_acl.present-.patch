@@ -1,0 +1,175 @@
+From d1708d88434064760f31a03cbf6210a2d350d766 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Thu, 6 Sep 2018 11:17:45 +0100
+Subject: [PATCH] Fix wrong recurse behavior on for linux_acl.present
+ state
+
+Fix typo on variable name
+
+Add unit tests to cover recursive cases of linux_acl states
+
+Fix recursive cases on linux_acl.absent state
+---
+ salt/states/linux_acl.py            | 30 ++++++++++++--
+ tests/unit/states/test_linux_acl.py | 63 ++++++++++++++++++++++++++++-
+ 2 files changed, 88 insertions(+), 5 deletions(-)
+
+diff --git a/salt/states/linux_acl.py b/salt/states/linux_acl.py
+index 982d55840f..38ff1c0830 100644
+--- a/salt/states/linux_acl.py
++++ b/salt/states/linux_acl.py
+@@ -66,7 +66,7 @@ def present(name, acl_type, acl_name='', perms='', recurse=False):
+         ret['result'] = False
+         return ret
+ 
+-    __current_perms = __salt__['acl.getfacl'](name)
++    __current_perms = __salt__['acl.getfacl'](name, recursive=recurse)
+ 
+     if acl_type.startswith(('d:', 'default:')):
+         _acl_type = ':'.join(acl_type.split(':')[1:])
+@@ -97,7 +97,18 @@ def present(name, acl_type, acl_name='', perms='', recurse=False):
+             user = None
+ 
+         if user:
+-            if user[_search_name]['octal'] == sum([_octal.get(i, i) for i in perms]):
++            octal_sum = sum([_octal.get(i, i) for i in perms])
++            need_refresh = False
++            for path in __current_perms:
++                acl_found = False
++                for user_acl in __current_perms[path].get(_acl_type, []):
++                    if _search_name in user_acl and user_acl[_search_name]['octal'] == octal_sum:
++                        acl_found = True
++                        break
++                if not acl_found:
++                    need_refresh = True
++                    break
++            if not need_refresh:
+                 ret['comment'] = 'Permissions are in the desired state'
+             else:
+                 changes = {'new': {'acl_name': acl_name,
+@@ -169,7 +180,7 @@ def absent(name, acl_type, acl_name='', perms='', recurse=False):
+         ret['result'] = False
+         return ret
+ 
+-    __current_perms = __salt__['acl.getfacl'](name)
++    __current_perms = __salt__['acl.getfacl'](name, recursive=recurse)
+ 
+     if acl_type.startswith(('d:', 'default:')):
+         _acl_type = ':'.join(acl_type.split(':')[1:])
+@@ -199,7 +210,18 @@ def absent(name, acl_type, acl_name='', perms='', recurse=False):
+         except (AttributeError, IndexError, StopIteration, KeyError):
+             user = None
+ 
+-        if user:
++        need_refresh = False
++        for path in __current_perms:
++            acl_found = False
++            for user_acl in __current_perms[path].get(_acl_type, []):
++                if _search_name in user_acl:
++                    acl_found = True
++                    break
++            if acl_found:
++                need_refresh = True
++                break
++
++        if user or need_refresh:
+             ret['comment'] = 'Removing permissions'
+ 
+             if __opts__['test']:
+diff --git a/tests/unit/states/test_linux_acl.py b/tests/unit/states/test_linux_acl.py
+index 2b31b45297..41b0b60467 100644
+--- a/tests/unit/states/test_linux_acl.py
++++ b/tests/unit/states/test_linux_acl.py
+@@ -51,6 +51,8 @@ class LinuxAclTestCase(TestCase, LoaderModuleMockMixin):
+                                       {name: {acl_type: [{}]}},
+                                       {name: {acl_type: [{}]}},
+                                       {name: {acl_type: [{}]}},
++                                      {name: {acl_type: [{acl_name: {'octal': 7}}]}, name+"/foo": {acl_type: [{acl_name: {'octal': 'A'}}]}},
++                                      {name: {acl_type: [{acl_name: {'octal': 7}}]}, name+"/foo": {acl_type: [{acl_name: {'octal': 7}}]}},
+                                       {name: {acl_type: ''}}])
+         mock_modfacl = MagicMock(return_value=True)
+ 
+@@ -146,6 +148,41 @@ class LinuxAclTestCase(TestCase, LoaderModuleMockMixin):
+                     self.assertDictEqual(linux_acl.present(name, acl_type,
+                                                            acl_name, perms),
+                                          ret)
++
++            # New - recurse true
++            with patch.dict(linux_acl.__salt__, {'acl.getfacl': mock}):
++                # Update - test=True
++                with patch.dict(linux_acl.__opts__, {'test': True}):
++                    comt = ('Updated permissions will be applied for {0}: 7 -> {1}'
++                            ''.format(acl_name, perms))
++                    ret = {'name': name,
++                           'comment': comt,
++                           'changes': {},
++                           'pchanges': {'new': {'acl_name': acl_name,
++                                                'acl_type': acl_type,
++                                                'perms': perms},
++                                        'old': {'acl_name': acl_name,
++                                                'acl_type': acl_type,
++                                                'perms': '7'}},
++                           'result': None}
++
++                    self.assertDictEqual(linux_acl.present(name, acl_type, acl_name,
++                                                           perms, recurse=False), ret)
++
++            # New - recurse true - nothing to do
++            with patch.dict(linux_acl.__salt__, {'acl.getfacl': mock}):
++                # Update - test=True
++                with patch.dict(linux_acl.__opts__, {'test': True}):
++                    comt = ('Permissions are in the desired state')
++                    ret = {'name': name,
++                           'comment': comt,
++                           'changes': {},
++                           'pchanges': {},
++                           'result': True}
++
++                    self.assertDictEqual(linux_acl.present(name, acl_type, acl_name,
++                                                           perms, recurse=True), ret)
++
+             # No acl type
+             comt = ('ACL Type does not exist')
+             ret = {'name': name, 'comment': comt, 'result': False,
+@@ -153,7 +190,7 @@ class LinuxAclTestCase(TestCase, LoaderModuleMockMixin):
+             self.assertDictEqual(linux_acl.present(name, acl_type, acl_name,
+                                                    perms), ret)
+ 
+-    # 'absent' function tests: 1
++    # 'absent' function tests: 2
+ 
+     def test_absent(self):
+         '''
+@@ -180,3 +217,27 @@ class LinuxAclTestCase(TestCase, LoaderModuleMockMixin):
+             comt = ('ACL Type does not exist')
+             ret.update({'comment': comt, 'result': False})
+             self.assertDictEqual(linux_acl.absent(name, acl_type, acl_name, perms), ret)
++
++
++    def test_absent_recursive(self):
++        '''
++        Test to ensure a Linux ACL does not exist
++        '''
++        name = '/root'
++        acl_type = 'users'
++        acl_name = 'damian'
++        perms = 'rwx'
++
++        ret = {'name': name,
++               'result': None,
++               'comment': '',
++               'changes': {}}
++
++        mock = MagicMock(side_effect=[
++            {name: {acl_type: [{acl_name: {'octal': 7}}]}, name+"/foo": {acl_type: [{acl_name: {'octal': 'A'}}]}}
++        ])
++        with patch.dict(linux_acl.__salt__, {'acl.getfacl': mock}):
++            with patch.dict(linux_acl.__opts__, {'test': True}):
++                comt = ('Removing permissions')
++                ret.update({'comment': comt})
++                self.assertDictEqual(linux_acl.absent(name, acl_type, acl_name, perms, recurse=True), ret)
+-- 
+2.17.1
+
+

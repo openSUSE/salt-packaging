@@ -183,6 +183,8 @@ Patch57:        change-stringio-import-in-python2-to-import-the-clas.patch
 Patch58:        no-longer-passes-missing-in-list-compound-engine-bsc.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49497
 Patch59:        x509-fixes-111.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49532
+Patch60:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -700,6 +702,7 @@ cp %{S:5} ./.travis.yml
 %patch57 -p1
 %patch58 -p1
 %patch59 -p1
+%patch60 -p1
 
 %build
 %if 0%{?build_py2}
