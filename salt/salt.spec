@@ -135,6 +135,20 @@ Patch34:        decode-file-contents-for-python2-bsc-1102013.patch
 Patch35:        add-support-for-python-3.7.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48771
 Patch36:        only-do-reverse-dns-lookup-on-ips-for-salt-ssh.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49277
+Patch37:        prepend-current-directory-when-path-is-just-filename.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49063
+Patch38:        integration-of-msi-authentication-with-azurearm-clou.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49538
+Patch39:        fix-for-suse-expanded-support-detection.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49508
+Patch40:        x509-fixes-for-remote-signing-106.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49555
+Patch41:        change-stringio-import-in-python2-to-import-the-clas.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48812
+Patch42:        use-adler32-algorithm-to-compute-string-checksums.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49497
+Patch43:        x509-fixes-111.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -630,6 +644,13 @@ cp %{S:5} ./.travis.yml
 %patch34 -p1
 %patch35 -p1
 %patch36 -p1
+%patch37 -p1
+%patch38 -p1
+%patch39 -p1
+%patch40 -p1
+%patch41 -p1
+%patch42 -p1
+%patch43 -p1
 
 %build
 %if 0%{?build_py2}
