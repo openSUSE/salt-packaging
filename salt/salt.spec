@@ -242,6 +242,8 @@ Patch90:        prepend-current-directory-when-path-is-just-filename.patch
 Patch91:        backport-46867-string-arg-normalization-bsc-1094960.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49538
 Patch92:        fix-for-suse-expanded-support-detection.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49532
+Patch93:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
 
 
 
@@ -691,6 +693,7 @@ cp %{S:5} ./.travis.yml
 %patch90 -p1
 %patch91 -p1
 %patch92 -p1
+%patch93 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
