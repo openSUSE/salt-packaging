@@ -1,0 +1,111 @@
+From ff2f473b1f4f6b1e482d10d7c3b733f6edf86c1e Mon Sep 17 00:00:00 2001
+From: Erik Johnson <palehose@gmail.com>
+Date: Mon, 16 Apr 2018 11:19:08 -0500
+Subject: [PATCH] yamlloader: Properly handle colons in inline dicts
+
+PyYAML's scanner is not written to handle Python's unicode literal
+strings, since they are not part of the YAML spec. With all strings
+loaded in the YAML context now being unicode types, this causes errors
+when scanning the document to construct the next node. The unicode
+string literal is misidentified as a plain scalar and any colons within
+it are interpreted as delimiting a mapping node. Since no whitespace appears
+after the colon, this causes scanning error.
+
+To fix it, we check for this scanning error and reset the scanner's
+position and check if the first char is the "u" prefix. If so, and if
+the following char is a quote, then we attempt to scan for a string
+literal instead.
+
+Also adds Test for plain scalars.
+---
+ salt/utils/yamlloader.py            | 41 +++++++++++++++++++++++++++++
+ tests/unit/utils/test_yamlloader.py | 23 ++++++++++++++++
+ 2 files changed, 64 insertions(+)
+
+diff --git a/salt/utils/yamlloader.py b/salt/utils/yamlloader.py
+index 16e30d1836..73c081860d 100644
+--- a/salt/utils/yamlloader.py
++++ b/salt/utils/yamlloader.py
+@@ -127,6 +127,47 @@ class SaltYamlSafeLoader(yaml.SafeLoader, object):
+         value = self.construct_scalar(node)
+         return salt.utils.stringutils.to_unicode(value)
+ 
++    def fetch_plain(self):
++        '''
++        Handle unicode literal strings which appear inline in the YAML
++        '''
++        orig_line = self.line
++        orig_column = self.column
++        orig_pointer = self.pointer
++        try:
++            return super(SaltYamlSafeLoader, self).fetch_plain()
++        except yaml.scanner.ScannerError as exc:
++            problem_line = self.line
++            problem_column = self.column
++            problem_pointer = self.pointer
++            if exc.problem == "found unexpected ':'":
++                # Reset to prior position
++                self.line = orig_line
++                self.column = orig_column
++                self.pointer = orig_pointer
++                if self.peek(0) == 'u':
++                    # Might be a unicode literal string, check for 2nd char and
++                    # call the appropriate fetch func if it's a quote
++                    quote_char = self.peek(1)
++                    if quote_char in ("'", '"'):
++                        # Skip the "u" prefix by advancing the column and
++                        # pointer by 1
++                        self.column += 1
++                        self.pointer += 1
++                        if quote_char == '\'':
++                            return self.fetch_single()
++                        else:
++                            return self.fetch_double()
++                    else:
++                        # This wasn't a unicode literal string, so the caught
++                        # exception was correct. Restore the old position and
++                        # then raise the caught exception.
++                        self.line = problem_line
++                        self.column = problem_column
++                        self.pointer = problem_pointer
++            # Raise the caught exception
++            raise exc
++
+     def flatten_mapping(self, node):
+         merge = []
+         index = 0
+diff --git a/tests/unit/utils/test_yamlloader.py b/tests/unit/utils/test_yamlloader.py
+index 48f81b462e..aa25ec472c 100644
+--- a/tests/unit/utils/test_yamlloader.py
++++ b/tests/unit/utils/test_yamlloader.py
+@@ -149,3 +149,26 @@ class YamlLoaderTestCase(TestCase):
+                   b: {'a': u'\\u0414'}''')),
+             {'foo': {'a': u'\u0414', 'b': {'a': u'\u0414'}}}
+         )
++
++    def test_yaml_with_colon_in_inline_dict(self):
++        '''
++        Test proper loading of unicode literal strings in inline dicts
++        '''
++        self.assert_matches(
++            self.render_yaml(textwrap.dedent('''\
++                foo:
++                  b: {u'c': u'https://foo.com'}''')),
++            {'foo': {'b': {'c': 'https://foo.com'}}}
++        )
++
++    def test_yaml_with_plain_scalars(self):
++        '''
++        Test that plain (i.e. unqoted) string and non-string scalars are
++        properly handled
++        '''
++        self.assert_matches(
++            self.render_yaml(textwrap.dedent('''\
++                foo:
++                  b: {foo: bar, one: 1, list: [1, two, 3]}''')),
++            {'foo': {'b': {'foo': 'bar', 'one': 1, 'list': [1, 'two', 3]}}}
++        )
+-- 
+2.18.0
+
+

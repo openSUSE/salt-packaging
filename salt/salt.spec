@@ -185,6 +185,8 @@ Patch58:        no-longer-passes-missing-in-list-compound-engine-bsc.patch
 Patch59:        x509-fixes-111.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49532
 Patch60:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47104
+Patch61:        yamlloader-properly-handle-colons-in-inline-dicts.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -703,6 +705,7 @@ cp %{S:5} ./.travis.yml
 %patch58 -p1
 %patch59 -p1
 %patch60 -p1
+%patch61 -p1
 
 %build
 %if 0%{?build_py2}
