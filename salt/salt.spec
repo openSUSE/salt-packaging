@@ -65,44 +65,44 @@ Source3:        html.tar.bz2
 Source4:        update-documentation.sh
 Source5:        travis.yml
 
-Patch1:        run-salt-master-as-dedicated-salt-user.patch
-Patch2:        run-salt-api-as-user-salt-bsc-1064520.patch
-Patch3:        activate-all-beacons-sources-config-pillar-grains.patch
-Patch4:        avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
-Patch5:        feat-add-grain-for-all-fqdns.patch
-Patch6:        fix-bsc-1065792.patch
+Patch1:         run-salt-master-as-dedicated-salt-user.patch
+Patch2:         run-salt-api-as-user-salt-bsc-1064520.patch
+Patch3:         activate-all-beacons-sources-config-pillar-grains.patch
+Patch4:         avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
+Patch5:         feat-add-grain-for-all-fqdns.patch
+Patch6:         fix-bsc-1065792.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46575
-Patch7:       fix-decrease-loglevel-when-unable-to-resolve-addr.patch
+Patch7:         fix-decrease-loglevel-when-unable-to-resolve-addr.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46684
-Patch8:       add-saltssh-multi-version-support-across-python-inte.patch
+Patch8:         add-saltssh-multi-version-support-across-python-inte.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46635
-Patch9:       fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
+Patch9:         fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46890
-Patch10:       fall-back-to-pymysql.patch
+Patch10:        fall-back-to-pymysql.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
-Patch11:       strip-trailing-commas-on-linux-user-gecos-fields.patch
+Patch11:        strip-trailing-commas-on-linux-user-gecos-fields.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47232
-Patch12:       fixed-usage-of-ipaddress.patch
+Patch12:        fixed-usage-of-ipaddress.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47504
-Patch13:       option-to-merge-current-pillar-with-opts-pillar-duri.patch
+Patch13:        option-to-merge-current-pillar-with-opts-pillar-duri.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47471
-Patch14:       do-not-override-jid-on-returners-only-sending-back-t.patch
+Patch14:        do-not-override-jid-on-returners-only-sending-back-t.patch
 # PATCH-FIX_OPENSUSE bsc#1091371
-Patch15:       enable-passing-a-unix_socket-for-mysql-returners-bsc.patch
+Patch15:        enable-passing-a-unix_socket-for-mysql-returners-bsc.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47211
-Patch16:       fix-for-ec2-rate-limit-failures.patch
+Patch16:        fix-for-ec2-rate-limit-failures.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47638
-Patch17:       add-all_versions-parameter-to-include-all-installed-.patch
+Patch17:        add-all_versions-parameter-to-include-all-installed-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47765
-Patch18:       prevent-zypper-from-parsing-repo-configuration-from-.patch
+Patch18:        prevent-zypper-from-parsing-repo-configuration-from-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
-Patch19:       add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
+Patch19:        add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47908
-Patch20:       align-suse-salt-master.service-limitnofiles-limit-wi.patch
+Patch20:        align-suse-salt-master.service-limitnofiles-limit-wi.patch
 # PATCH-FIX_OPENSUSE bsc#1095507
-Patch21:       fix-deprecation-warning-bsc-1095507.patch
+Patch21:        fix-deprecation-warning-bsc-1095507.patch
 # PATCH-FIX_OPENSUSE bsc#1057635
-Patch22:       add-environment-variable-to-know-if-yum-is-invoked-f.patch
+Patch22:        add-environment-variable-to-know-if-yum-is-invoked-f.patch
 # PATCH-FIX_OPENSUSE
 Patch23:        add-custom-suse-capabilities-as-grains.patch
 # PATCH-FIX_OPENSUSE bsc#1098394 https://github.com/saltstack/salt/pull/47061
@@ -180,12 +180,12 @@ Requires:       logrotate
 Requires:       procps
 
 %if 0%{?suse_version} >= 1500
-Requires:  	iproute2
+Requires:      iproute2
 %else
 %if 0%{?suse_version}
-Requires:  	net-tools
+Requires:      net-tools
 %else
-Requires:  	iproute
+Requires:      iproute
 %endif
 %endif
 
