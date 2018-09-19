@@ -160,7 +160,7 @@ BuildRequires:  logrotate
 BuildRequires:  fdupes
 %endif
 
-Requires: %{pythonX}-%{name} = %{version}-%{release}
+Requires:       %{pythonX}-%{name} = %{version}-%{release}
 
 Requires(pre):  %{_sbindir}/groupadd
 Requires(pre):  %{_sbindir}/useradd
@@ -180,12 +180,12 @@ Requires:       logrotate
 Requires:       procps
 
 %if 0%{?suse_version} >= 1500
-Requires:      iproute2
+Requires:       iproute2
 %else
 %if 0%{?suse_version}
-Requires:      net-tools
+Requires:       net-tools
 %else
-Requires:      iproute
+Requires:       iproute
 %endif
 %endif
 
