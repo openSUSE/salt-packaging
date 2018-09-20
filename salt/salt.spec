@@ -189,6 +189,8 @@ Patch60:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
 Patch61:        yamlloader-properly-handle-colons-in-inline-dicts.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49605
 Patch62:        support-use-of-gce-instance-credentials-109.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49722
+Patch63:        fix-index-error-when-running-on-python-3.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -709,6 +711,7 @@ cp %{S:5} ./.travis.yml
 %patch60 -p1
 %patch61 -p1
 %patch62 -p1
+%patch63 -p1
 
 %build
 %if 0%{?build_py2}
