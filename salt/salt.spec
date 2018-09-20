@@ -151,6 +151,8 @@ Patch42:        use-adler32-algorithm-to-compute-string-checksums.patch
 Patch43:        x509-fixes-111.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49605
 Patch44:        support-use-of-gce-instance-credentials-109.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49722
+Patch45:        fix-index-error-when-running-on-python-3.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -654,6 +656,7 @@ cp %{S:5} ./.travis.yml
 %patch42 -p1
 %patch43 -p1
 %patch44 -p1
+%patch45 -p1
 
 %build
 %if 0%{?build_py2}
