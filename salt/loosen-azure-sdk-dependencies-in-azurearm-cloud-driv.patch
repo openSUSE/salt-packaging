@@ -1,0 +1,62 @@
+From f8b83b9277348190276f5aaa769c05ec2e90b0c6 Mon Sep 17 00:00:00 2001
+From: Joachim Gleissner <jgleissner@suse.com>
+Date: Tue, 18 Sep 2018 15:07:13 +0200
+Subject: [PATCH] loosen azure sdk dependencies in azurearm cloud driver
+
+Remove dependency to azure-cli, which is not used at all.
+Use azure-storage-sdk as fallback if multiapi version is not available.
+
+remove unused import from azurearm driver
+---
+ salt/cloud/clouds/azurearm.py | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/salt/cloud/clouds/azurearm.py b/salt/cloud/clouds/azurearm.py
+index 794af1fc88..9ac85bc76b 100644
+--- a/salt/cloud/clouds/azurearm.py
++++ b/salt/cloud/clouds/azurearm.py
+@@ -67,13 +67,13 @@ import logging
+ import pprint
+ import base64
+ import collections
++import pkgutil
+ import salt.cache
+ import salt.config as config
+ import salt.utils.cloud
+ import salt.utils.data
+ import salt.utils.files
+ import salt.utils.yaml
+-from salt.utils.versions import LooseVersion
+ from salt.ext import six
+ import salt.version
+ from salt.exceptions import (
+@@ -124,9 +124,12 @@ try:
+     from azure.mgmt.storage import StorageManagementClient
+     from azure.mgmt.web import WebSiteManagementClient
+     from msrestazure.azure_exceptions import CloudError
+-    from azure.multiapi.storage.v2016_05_31 import CloudStorageAccount
+-    from azure.cli import core
+-    HAS_LIBS = LooseVersion(core.__version__) >= LooseVersion("2.0.12")
++    if pkgutil.find_loader('azure.multiapi'):
++        # use multiapi version if available
++        from azure.multiapi.storage.v2016_05_31 import CloudStorageAccount
++    else:
++        from azure.storage import CloudStorageAccount
++    HAS_LIBS = True
+ except ImportError:
+     pass
+ # pylint: enable=wrong-import-position,wrong-import-order
+@@ -159,8 +162,7 @@ def __virtual__():
+             False,
+             'The following dependencies are required to use the AzureARM driver: '
+             'Microsoft Azure SDK for Python >= 2.0rc5, '
+-            'Microsoft Azure Storage SDK for Python >= 0.32, '
+-            'Microsoft Azure CLI >= 2.0.12'
++            'Microsoft Azure Storage SDK for Python >= 0.32'
+         )
+ 
+     global cache  # pylint: disable=global-statement,invalid-name
+-- 
+2.17.1
+
+

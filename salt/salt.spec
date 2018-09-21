@@ -191,6 +191,8 @@ Patch61:        yamlloader-properly-handle-colons-in-inline-dicts.patch
 Patch62:        support-use-of-gce-instance-credentials-109.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49722
 Patch63:        fix-index-error-when-running-on-python-3.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49696
+Patch64:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -712,6 +714,7 @@ cp %{S:5} ./.travis.yml
 %patch61 -p1
 %patch62 -p1
 %patch63 -p1
+%patch64 -p1
 
 %build
 %if 0%{?build_py2}
