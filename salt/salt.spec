@@ -153,6 +153,8 @@ Patch43:        x509-fixes-111.patch
 Patch44:        support-use-of-gce-instance-credentials-109.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49722
 Patch45:        fix-index-error-when-running-on-python-3.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49696
+Patch46:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -657,6 +659,7 @@ cp %{S:5} ./.travis.yml
 %patch43 -p1
 %patch44 -p1
 %patch45 -p1
+%patch46 -p1
 
 %build
 %if 0%{?build_py2}
