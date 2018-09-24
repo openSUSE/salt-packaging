@@ -1,0 +1,73 @@
+From ab4ad2b862eae89b22075cbbe83e4b124280a81e Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Fri, 21 Sep 2018 17:31:39 +0200
+Subject: [PATCH] Do not load pip state if there is no 3rd party
+ dependencies
+
+Safe import 3rd party dependency
+---
+ salt/modules/pip.py      | 12 ++++++++++--
+ salt/states/pip_state.py |  9 +++++----
+ 2 files changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/salt/modules/pip.py b/salt/modules/pip.py
+index d94086e941..58a51b27f5 100644
+--- a/salt/modules/pip.py
++++ b/salt/modules/pip.py
+@@ -79,7 +79,10 @@ from __future__ import absolute_import, print_function, unicode_literals
+ # Import python libs
+ import logging
+ import os
+-import pkg_resources
++try:
++    import pkg_resources
++except ImportError:
++    pkg_resources = None
+ import re
+ import shutil
+ import sys
+@@ -116,7 +119,12 @@ def __virtual__():
+     entire filesystem.  If it's not installed in a conventional location, the
+     user is required to provide the location of pip each time it is used.
+     '''
+-    return 'pip'
++    if pkg_resources is None:
++        ret = False, 'Package dependency "pkg_resource" is missing'
++    else:
++        ret = 'pip'
++
++    return ret
+ 
+ 
+ def _get_pip_bin(bin_env):
+diff --git a/salt/states/pip_state.py b/salt/states/pip_state.py
+index 3c8500f71a..976c8be237 100644
+--- a/salt/states/pip_state.py
++++ b/salt/states/pip_state.py
+@@ -23,7 +23,10 @@ requisite to a pkg.installed state for the package which provides pip
+ from __future__ import absolute_import, print_function, unicode_literals
+ import re
+ import logging
+-import pkg_resources
++try:
++    import pkg_resources
++except ImportError:
++    pkg_resources = None
+ 
+ # Import salt libs
+ import salt.utils.versions
+@@ -67,9 +70,7 @@ def __virtual__():
+     '''
+     Only load if the pip module is available in __salt__
+     '''
+-    if 'pip.list' in __salt__:
+-        return __virtualname__
+-    return False
++    return 'pip.list' in __salt__ and __virtualname__ or False
+ 
+ 
+ def _find_key(prefix, pip_list):
+-- 
+2.19.0
+
+
