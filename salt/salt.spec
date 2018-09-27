@@ -157,6 +157,8 @@ Patch45:        fix-index-error-when-running-on-python-3.patch
 Patch46:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49737
 Patch47:        do-not-load-pip-state-if-there-is-no-3rd-party-depen.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49806
+Patch48:        update-error-list-for-zypper.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -663,6 +665,7 @@ cp %{S:5} ./.travis.yml
 %patch45 -p1
 %patch46 -p1
 %patch47 -p1
+%patch48 -p1
 
 %build
 %if 0%{?build_py2}
