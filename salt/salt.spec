@@ -159,6 +159,8 @@ Patch46:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
 Patch47:        do-not-load-pip-state-if-there-is-no-3rd-party-depen.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49806
 Patch48:        update-error-list-for-zypper.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49815
+Patch49:        fix-ipv6-scope-bsc-1108557.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -666,6 +668,7 @@ cp %{S:5} ./.travis.yml
 %patch46 -p1
 %patch47 -p1
 %patch48 -p1
+%patch49 -p1
 
 %build
 %if 0%{?build_py2}
