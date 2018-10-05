@@ -201,6 +201,8 @@ Patch66:        update-error-list-for-zypper.patch
 Patch67:        fix-ipv6-scope-bsc-1108557.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49908
 Patch68:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49480
+Patch69:        early-feature-support-config.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -727,6 +729,7 @@ cp %{S:5} ./.travis.yml
 %patch66 -p1
 %patch67 -p1
 %patch68 -p1
+%patch69 -p1
 
 %build
 %if 0%{?build_py2}
@@ -1363,6 +1366,7 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %defattr(-,root,root,-)
 %{_bindir}/spm
 %{_bindir}/salt-call
+%{_bindir}/salt-support
 %{_bindir}/salt-unity
 %{_mandir}/man1/salt-unity.1.gz
 %{_mandir}/man1/salt-call.1.gz
