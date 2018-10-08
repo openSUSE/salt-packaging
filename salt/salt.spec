@@ -163,6 +163,8 @@ Patch48:        update-error-list-for-zypper.patch
 Patch49:        fix-ipv6-scope-bsc-1108557.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49480
 Patch50:        early-feature-support-config.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49085
+Patch51:        fix-async-call-to-process-manager.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -672,6 +674,7 @@ cp %{S:5} ./.travis.yml
 %patch48 -p1
 %patch49 -p1
 %patch50 -p1
+%patch51 -p1
 
 %build
 %if 0%{?build_py2}
