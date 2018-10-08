@@ -203,6 +203,8 @@ Patch67:        fix-ipv6-scope-bsc-1108557.patch
 Patch68:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49480
 Patch69:        early-feature-support-config.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49085
+Patch70:        fix-async-call-to-process-manager.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -730,6 +732,7 @@ cp %{S:5} ./.travis.yml
 %patch67 -p1
 %patch68 -p1
 %patch69 -p1
+%patch70 -p1
 
 %build
 %if 0%{?build_py2}
