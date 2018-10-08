@@ -161,6 +161,8 @@ Patch47:        do-not-load-pip-state-if-there-is-no-3rd-party-depen.patch
 Patch48:        update-error-list-for-zypper.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49815
 Patch49:        fix-ipv6-scope-bsc-1108557.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49480
+Patch50:        early-feature-support-config.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -669,6 +671,7 @@ cp %{S:5} ./.travis.yml
 %patch47 -p1
 %patch48 -p1
 %patch49 -p1
+%patch50 -p1
 
 %build
 %if 0%{?build_py2}
