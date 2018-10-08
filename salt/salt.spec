@@ -1311,6 +1311,7 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %defattr(-,root,root,-)
 %{_bindir}/spm
 %{_bindir}/salt-call
+%{_bindir}/salt-support
 %{_bindir}/salt-unity
 %{_mandir}/man1/salt-unity.1.gz
 %{_mandir}/man1/salt-call.1.gz
