@@ -207,6 +207,10 @@ Patch69:        early-feature-support-config.patch
 Patch70:        fix-async-call-to-process-manager.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49936
 Patch71:        make-profiles-a-package.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49930
+Patch72:        get-os_family-for-rpm-distros-from-the-rpm-macros.-u.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49946
+Patch73:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -736,6 +740,8 @@ cp %{S:5} ./.travis.yml
 %patch69 -p1
 %patch70 -p1
 %patch71 -p1
+%patch72 -p1
+%patch73 -p1
 
 %build
 %if 0%{?build_py2}

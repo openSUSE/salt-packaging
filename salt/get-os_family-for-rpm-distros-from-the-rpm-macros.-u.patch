@@ -1,0 +1,64 @@
+From 5ecfc35df2a636e37a9978422b67b35ff29719e7 Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Mon, 8 Oct 2018 12:48:24 +0200
+Subject: [PATCH] Get os_family for RPM distros from the RPM macros.
+ (U#49930)
+
+Strip and stringify the return for the osarch
+
+Fix imports
+---
+ salt/grains/core.py   | 7 ++++---
+ salt/utils/pkg/rpm.py | 3 ++-
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index c9b3a4e394..5ad9efea17 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -46,6 +46,7 @@ import salt.utils.files
+ import salt.utils.network
+ import salt.utils.path
+ import salt.utils.platform
++import salt.utils.pkg.rpm
+ from salt.ext import six
+ from salt.ext.six.moves import range
+ 
+@@ -1775,9 +1776,9 @@ def os_data():
+     # architecture.
+     if grains.get('os_family') == 'Debian':
+         osarch = __salt__['cmd.run']('dpkg --print-architecture').strip()
+-    elif grains.get('os_family') == 'RedHat':
+-        osarch = __salt__['cmd.run']('rpm --eval %{_host_cpu}').strip()
+-    elif grains.get('os_family') == 'NILinuxRT':
++    elif grains.get('os_family') in ['RedHat', 'Suse']:
++        osarch = salt.utils.pkg.rpm.get_osarch()
++    elif grains.get('os_family') in ('NILinuxRT', 'Poky'):
+         archinfo = {}
+         for line in __salt__['cmd.run']('opkg print-architecture').splitlines():
+             if line.startswith('arch'):
+diff --git a/salt/utils/pkg/rpm.py b/salt/utils/pkg/rpm.py
+index a8f4cd44db..c3e4629a1a 100644
+--- a/salt/utils/pkg/rpm.py
++++ b/salt/utils/pkg/rpm.py
+@@ -9,6 +9,7 @@ import collections
+ import datetime
+ import logging
+ import subprocess
++import salt.utils.stringutils
+ 
+ # Import 3rd-party libs
+ from salt.ext import six
+@@ -48,7 +49,7 @@ def get_osarch():
+         close_fds=True,
+         stdout=subprocess.PIPE,
+         stderr=subprocess.PIPE).communicate()[0]
+-    return ret or 'unknown'
++    return salt.utils.stringutils.to_str(ret).strip() or 'unknown'
+ 
+ 
+ def check_32(arch, osarch=None):
+-- 
+2.19.0
+
+
