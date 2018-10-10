@@ -205,6 +205,8 @@ Patch68:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
 Patch69:        early-feature-support-config.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49085
 Patch70:        fix-async-call-to-process-manager.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49936
+Patch71:        make-profiles-a-package.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -733,6 +735,7 @@ cp %{S:5} ./.travis.yml
 %patch68 -p1
 %patch69 -p1
 %patch70 -p1
+%patch71 -p1
 
 %build
 %if 0%{?build_py2}
