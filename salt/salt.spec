@@ -169,6 +169,10 @@ Patch51:        fix-async-call-to-process-manager.patch
 Patch52:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49936
 Patch53:        make-profiles-a-package.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49930
+Patch54:        get-os_family-for-rpm-distros-from-the-rpm-macros.-u.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49946
+Patch55:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -681,6 +685,8 @@ cp %{S:5} ./.travis.yml
 %patch51 -p1
 %patch52 -p1
 %patch53 -p1
+%patch54 -p1
+%patch55 -p1
 
 %build
 %if 0%{?build_py2}

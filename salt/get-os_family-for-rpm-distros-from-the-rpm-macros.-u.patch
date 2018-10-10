@@ -1,0 +1,40 @@
+From 3831b9748113812c8ea889529e9fbd457f456ea5 Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Mon, 8 Oct 2018 12:48:24 +0200
+Subject: [PATCH] Get os_family for RPM distros from the RPM macros.
+ (U#49930)
+
+---
+ salt/grains/core.py | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index 6aaf38096d..80eebd1c05 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -49,6 +49,8 @@ import salt.utils.path
+ import salt.utils.platform
+ import salt.utils.stringutils
+ import salt.utils.versions
++import salt.utils.pkg.rpm
++
+ from salt.ext import six
+ from salt.ext.six.moves import range
+ 
+@@ -1776,9 +1778,9 @@ def os_data():
+     # architecture.
+     if grains.get('os_family') == 'Debian':
+         osarch = __salt__['cmd.run']('dpkg --print-architecture').strip()
+-    elif grains.get('os_family') == 'RedHat':
+-        osarch = __salt__['cmd.run']('rpm --eval %{_host_cpu}').strip()
+-    elif grains.get('os_family') == 'NILinuxRT':
++    elif grains.get('os_family') in ['RedHat', 'Suse']:
++        osarch = salt.utils.pkg.rpm.get_osarch()
++    elif grains.get('os_family') in ('NILinuxRT', 'Poky'):
+         archinfo = {}
+         for line in __salt__['cmd.run']('opkg print-architecture').splitlines():
+             if line.startswith('arch'):
+-- 
+2.19.0
+
+
