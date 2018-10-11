@@ -211,6 +211,8 @@ Patch71:        make-profiles-a-package.patch
 Patch72:        get-os_family-for-rpm-distros-from-the-rpm-macros.-u.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49946
 Patch73:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
+# PATCH_FIX_OPENSUSE: Failed patch merger fix
+Patch74:        fix-unit-test-for-grains-core.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -742,6 +744,7 @@ cp %{S:5} ./.travis.yml
 %patch71 -p1
 %patch72 -p1
 %patch73 -p1
+%patch74 -p1
 
 %build
 %if 0%{?build_py2}
