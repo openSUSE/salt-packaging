@@ -778,6 +778,15 @@ install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_pre
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_rejected
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/minion
 
+# Install salt-support profiles
+%if 0%{?build_py2}
+install -Dpm 0640 salt/cli/support/profiles/*  %{buildroot}%{python_sitelib}/salt/cli/support/profiles
+%endif
+%if 0%{?build_py3}
+install -Dpm 0640 salt/cli/support/profiles/* %{buildroot}%{python3_sitelib}/salt/cli/support/profiles
+%endif
+
+
 ## Install Zypper plugins only on SUSE machines
 %if 0%{?suse_version}
 install -Dd -m 0750 %{buildroot}%{_prefix}/lib/zypp/plugins/commit
