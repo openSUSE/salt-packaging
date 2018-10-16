@@ -213,6 +213,9 @@ Patch72:        get-os_family-for-rpm-distros-from-the-rpm-macros.-u.patch
 Patch73:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
 # PATCH_FIX_OPENSUSE: Failed patch merger fix
 Patch74:        fix-unit-test-for-grains-core.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50049
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50072
+Patch75:        preserving-signature-in-module.run-state-u-50049.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -745,6 +748,7 @@ cp %{S:5} ./.travis.yml
 %patch72 -p1
 %patch73 -p1
 %patch74 -p1
+%patch75 -p1
 
 %build
 %if 0%{?build_py2}
