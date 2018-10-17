@@ -216,6 +216,8 @@ Patch74:        fix-unit-test-for-grains-core.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50049
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50072
 Patch75:        preserving-signature-in-module.run-state-u-50049.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50095
+Patch76:        support-config-non-root-permission-issues-fixes-u-50.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -749,6 +751,7 @@ cp %{S:5} ./.travis.yml
 %patch73 -p1
 %patch74 -p1
 %patch75 -p1
+%patch76 -p1
 
 %build
 %if 0%{?build_py2}
