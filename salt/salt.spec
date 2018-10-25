@@ -220,6 +220,9 @@ Patch75:        preserving-signature-in-module.run-state-u-50049.patch
 Patch76:        support-config-non-root-permission-issues-fixes-u-50.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50018
 Patch77:        add-multi-file-support-and-globbing-to-the-filetree-.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49761
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50201
+Patch78:        fixes-cve-2018-15750-cve-2018-15751.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -755,6 +758,7 @@ cp %{S:5} ./.travis.yml
 %patch75 -p1
 %patch76 -p1
 %patch77 -p1
+%patch78 -p1
 
 %build
 %if 0%{?build_py2}
