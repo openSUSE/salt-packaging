@@ -1,4 +1,4 @@
-From 50c21bbd85ade1bda8149ef32462bf4e64facf13 Mon Sep 17 00:00:00 2001
+From 1fd12a337214d94338fbc9fb9e190f750f140e88 Mon Sep 17 00:00:00 2001
 From: Silvio Moioli <smoioli@suse.de>
 Date: Thu, 13 Jul 2017 15:59:01 +0200
 Subject: [PATCH] list_pkgs: add parameter for returned attribute
@@ -12,11 +12,11 @@ yumpkg.list_pkgs:
 ---
  salt/modules/pkg_resource.py      |  41 +++++++
  salt/modules/yumpkg.py            | 101 ++++++++++++----
- salt/modules/zypper.py            |  95 +++++++++++----
+ salt/modules/zypper.py            | 100 +++++++++++-----
  salt/utils/pkg/rpm.py             |  24 ++--
  tests/unit/modules/test_yumpkg.py | 190 ++++++++++++++++++++++++++++++
  tests/unit/modules/zypper_test.py | 105 +++++++++++++----
- 6 files changed, 480 insertions(+), 76 deletions(-)
+ 6 files changed, 480 insertions(+), 81 deletions(-)
  create mode 100644 tests/unit/modules/test_yumpkg.py
 
 diff --git a/salt/modules/pkg_resource.py b/salt/modules/pkg_resource.py
@@ -248,7 +248,7 @@ index 97a29fef90..20a6484c26 100644
      ret = salt.utils.compare_dicts(old, new)
  
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index 7345e3deb9..4498373e9a 100644
+index 7345e3deb9..d225b8cfef 100644
 --- a/salt/modules/zypper.py
 +++ b/salt/modules/zypper.py
 @@ -14,7 +14,6 @@ Package support for openSUSE via the zypper package manager
@@ -402,18 +402,18 @@ index 7345e3deb9..4498373e9a 100644
      downgrades = []
      if fromrepo:
          fromrepoopt = ['--force', '--force-resolution', '--from', fromrepo]
-@@ -1074,13 +1120,12 @@ def install(name=None,
+@@ -1074,13 +1120,7 @@ def install(name=None,
          __zypper__(no_repo_failure=ignore_repo_failure).call(*cmd)
  
      __context__.pop('pkg.list_pkgs', None)
 -    new = list_pkgs() if not downloadonly else list_downloaded()
-+    new = list_pkgs(attr=diff_attr) if not downloadonly else list_downloaded()
- 
-     # Handle packages which report multiple new versions
-     # (affects only kernel packages at this point)
-     for pkg in new:
-         new[pkg] = new[pkg].split(',')[-1]
 -
+-    # Handle packages which report multiple new versions
+-    # (affects only kernel packages at this point)
+-    for pkg in new:
+-        new[pkg] = new[pkg].split(',')[-1]
+-
++    new = list_pkgs(attr=diff_attr) if not downloadonly else list_downloaded()
      ret = salt.utils.compare_dicts(old, new)
  
      if errors:
