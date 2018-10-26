@@ -210,16 +210,14 @@ Patch74:        porting-fix-diffing-binary-files-in-file.get_diff-bs.patch
 Patch75:        fix-unboundlocalerror-in-file.get_diff.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48294
 Patch76:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
-# PATCH-FIX_OPENSUSE bsc#1087342
-Patch77:        salt-cloud-azurearm-2018.3-backport-fixes-88.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49277
-Patch78:        prepend-current-directory-when-path-is-just-filename.patch
+Patch77:        prepend-current-directory-when-path-is-just-filename.patch
 # PATCH-FIX_OPENSUSE bsc#1094960
-Patch79:        backport-46867-string-arg-normalization-bsc-1094960.patch
+Patch78:        backport-46867-string-arg-normalization-bsc-1094960.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49538
-Patch80:        fix-for-suse-expanded-support-detection.patch
+Patch79:        fix-for-suse-expanded-support-detection.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49532
-Patch81:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
+Patch80:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
 
 
 
@@ -656,7 +654,6 @@ cp %{S:5} ./.travis.yml
 %patch78 -p1
 %patch79 -p1
 %patch80 -p1
-%patch81 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
