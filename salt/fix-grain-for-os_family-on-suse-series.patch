@@ -1,16 +1,16 @@
-From 067ef07513d86093fd5373ac62a4d5eb39bcc5b4 Mon Sep 17 00:00:00 2001
+From db460c5b39d5a4ac6ee9620fbad47cb0dd1e328d Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Tue, 16 May 2017 14:42:07 +0200
 Subject: [PATCH] Fix grain for os_family on SUSE series
 
 ---
- doc/topics/spm/spm_formula.rst       | 2 +-
- salt/modules/apache.py               | 2 +-
- salt/modules/inspectlib/collector.py | 6 +++---
- salt/modules/iptables.py             | 2 +-
- salt/modules/localemod.py            | 6 +++---
- tests/integration/modules/pkg.py     | 2 +-
- 6 files changed, 10 insertions(+), 10 deletions(-)
+ doc/topics/spm/spm_formula.rst       |  2 +-
+ salt/modules/apache.py               |  2 +-
+ salt/modules/inspectlib/collector.py |  6 +++---
+ salt/modules/iptables.py             |  2 +-
+ salt/modules/localemod.py            | 13 ++++++++++++-
+ tests/integration/modules/pkg.py     |  2 +-
+ 6 files changed, 19 insertions(+), 8 deletions(-)
 
 diff --git a/doc/topics/spm/spm_formula.rst b/doc/topics/spm/spm_formula.rst
 index 2493527a22..aa53098e2e 100644
@@ -26,7 +26,7 @@ index 2493527a22..aa53098e2e 100644
      release: 2
      summary: Formula for installing Apache
 diff --git a/salt/modules/apache.py b/salt/modules/apache.py
-index ad502df530..5d2261175a 100644
+index 18bdab2726..2d7a79339c 100644
 --- a/salt/modules/apache.py
 +++ b/salt/modules/apache.py
 @@ -52,7 +52,7 @@ def _detect_os():
@@ -83,28 +83,35 @@ index 322553d285..b1823e891a 100644
          return '/etc/sysconfig/scripts/SuSEfirewall2-custom'
      else:
 diff --git a/salt/modules/localemod.py b/salt/modules/localemod.py
-index 0bb8690fcc..b805cd429f 100644
+index ce83265544..e8eaf54573 100644
 --- a/salt/modules/localemod.py
 +++ b/salt/modules/localemod.py
-@@ -132,7 +132,7 @@ def get_locale():
+@@ -135,6 +135,8 @@ def get_locale():
          return params.get('LANG', '')
      elif 'RedHat' in __grains__['os_family']:
          cmd = 'grep "^LANG=" /etc/sysconfig/i18n'
--    elif 'SUSE' in __grains__['os_family']:
 +    elif 'Suse' in __grains__['os_family']:
-         cmd = 'grep "^RC_LANG" /etc/sysconfig/language'
++        cmd = 'grep "^RC_LANG" /etc/sysconfig/language'
      elif 'Debian' in __grains__['os_family']:
          # this block only applies to Debian without systemd
-@@ -172,7 +172,7 @@ def set_locale(locale):
+         cmd = 'grep "^LANG=" /etc/default/locale'
+@@ -183,6 +185,15 @@ def set_locale(locale):
              'LANG="{0}"'.format(locale),
              append_if_not_found=True
          )
--    elif 'SUSE' in __grains__['os_family']:
 +    elif 'Suse' in __grains__['os_family']:
-         if not __salt__['file.file_exists']('/etc/sysconfig/language'):
-             __salt__['file.touch']('/etc/sysconfig/language')
-         __salt__['file.replace'](
-@@ -261,7 +261,7 @@ def gen_locale(locale, **kwargs):
++        if not __salt__['file.file_exists']('/etc/sysconfig/language'):
++            __salt__['file.touch']('/etc/sysconfig/language')
++        __salt__['file.replace'](
++            '/etc/sysconfig/language',
++            '^RC_LANG=.*',
++            'RC_LANG="{0}"'.format(locale),
++            append_if_not_found=True
++        )
+     elif 'Debian' in __grains__['os_family']:
+         # this block only applies to Debian without systemd
+         update_locale = salt.utils.which('update-locale')
+@@ -263,7 +274,7 @@ def gen_locale(locale, **kwargs):
      on_debian = __grains__.get('os') == 'Debian'
      on_ubuntu = __grains__.get('os') == 'Ubuntu'
      on_gentoo = __grains__.get('os_family') == 'Gentoo'
@@ -114,19 +121,19 @@ index 0bb8690fcc..b805cd429f 100644
  
      if on_solaris:  # all locales are pre-generated
 diff --git a/tests/integration/modules/pkg.py b/tests/integration/modules/pkg.py
-index d00d93bd6e..7dd7f1330c 100644
+index b24b32cb14..cdda2e0957 100644
 --- a/tests/integration/modules/pkg.py
 +++ b/tests/integration/modules/pkg.py
-@@ -235,7 +235,7 @@ class PkgModuleTest(integration.ModuleCase,
+@@ -244,7 +244,7 @@ class PkgModuleTest(integration.ModuleCase,
              keys = ret.keys()
              self.assertIn('rpm', keys)
-             self.assertIn('yum', keys)
+             self.assertIn('bash', keys)
 -        elif os_family == 'SUSE':
 +        elif os_family == 'Suse':
              ret = self.run_function(func, ['less', 'zypper'])
              keys = ret.keys()
              self.assertIn('less', keys)
 -- 
-2.13.6
+2.17.1
 
 

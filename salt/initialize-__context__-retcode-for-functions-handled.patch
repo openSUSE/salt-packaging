@@ -1,4 +1,4 @@
-From 9084d662781f9c0944804ba087e652c2ddb730bf Mon Sep 17 00:00:00 2001
+From ed75274af3ea20427784a18adf7c9965cf521c4a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Tue, 24 Apr 2018 13:50:49 +0100
@@ -10,18 +10,18 @@ Subject: [PATCH] Initialize __context__ retcode for functions handled
  1 file changed, 1 insertion(+)
 
 diff --git a/salt/utils/schedule.py b/salt/utils/schedule.py
-index 2d9b1b5990..b2b7a8a108 100644
+index 31e3c1aaf1..afed632a39 100644
 --- a/salt/utils/schedule.py
 +++ b/salt/utils/schedule.py
-@@ -842,6 +842,7 @@ class Schedule(object):
-                 for key, val in six.iteritems(ret):
-                     kwargs['__pub_{0}'.format(key)] = copy.deepcopy(val)
+@@ -848,6 +848,7 @@ class Schedule(object):
+                     if key is not 'kwargs':
+                         kwargs['__pub_{0}'.format(key)] = copy.deepcopy(val)
  
 +            self.functions.pack['__context__']['retcode'] = 0
              ret['return'] = self.functions[func](*args, **kwargs)
  
-             data_returner = data.get('returner', None)
+             # runners do not provide retcode
 -- 
-2.15.1
+2.17.1
 
 

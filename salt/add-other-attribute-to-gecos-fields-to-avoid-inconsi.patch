@@ -1,4 +1,4 @@
-From b56f726dc2e88e114bc17078a09027d9071ddda0 Mon Sep 17 00:00:00 2001
+From 8106c49f90590e605a32efae5b48d05f7e1914a1 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Wed, 25 Apr 2018 12:55:36 +0100
@@ -13,15 +13,15 @@ Do make comparisons in a single line
 
 Add 'other' as valid kwargs for 'user.add' method
 ---
- salt/modules/useradd.py            |  39 +++-
- salt/states/user.py                |  28 ++-
- tests/unit/modules/test_useradd.py | 445 +++++++++++++++++++++++++++++++++++++
+ salt/modules/useradd.py            |  39 ++-
+ salt/states/user.py                |  28 +-
+ tests/unit/modules/test_useradd.py | 445 +++++++++++++++++++++++++++++
  tests/unit/modules/useradd_test.py |  36 ++-
  4 files changed, 528 insertions(+), 20 deletions(-)
  create mode 100644 tests/unit/modules/test_useradd.py
 
 diff --git a/salt/modules/useradd.py b/salt/modules/useradd.py
-index 2fa3b2d7e2..9e71296d85 100644
+index d414f54b11..c723bb9bd3 100644
 --- a/salt/modules/useradd.py
 +++ b/salt/modules/useradd.py
 @@ -52,17 +52,18 @@ def _get_gecos(name):
@@ -122,7 +122,7 @@ index 2fa3b2d7e2..9e71296d85 100644
  
  @decorators.which('id')
 diff --git a/salt/states/user.py b/salt/states/user.py
-index 48f0563ffb..4bc73e69ba 100644
+index 0c0fc1c774..c63c5bc699 100644
 --- a/salt/states/user.py
 +++ b/salt/states/user.py
 @@ -66,6 +66,7 @@ def _changes(name,
@@ -131,9 +131,9 @@ index 48f0563ffb..4bc73e69ba 100644
               homephone='',
 +             other='',
               loginclass=None,
-              date=0,
+              date=None,
               mindays=0,
-@@ -164,24 +165,26 @@ def _changes(name,
+@@ -166,24 +167,26 @@ def _changes(name,
  
      # MacOS doesn't have full GECOS support, so check for the "ch" functions
      # and ignore these parameters if these functions do not exist.
@@ -166,7 +166,7 @@ index 48f0563ffb..4bc73e69ba 100644
      # OpenBSD/FreeBSD login class
      if __grains__['kernel'] in ('OpenBSD', 'FreeBSD'):
          if loginclass:
-@@ -211,6 +214,7 @@ def present(name,
+@@ -213,6 +216,7 @@ def present(name,
              roomnumber=None,
              workphone=None,
              homephone=None,
@@ -174,7 +174,7 @@ index 48f0563ffb..4bc73e69ba 100644
              loginclass=None,
              date=None,
              mindays=None,
-@@ -330,7 +334,10 @@ def present(name,
+@@ -332,7 +336,10 @@ def present(name,
  
      homephone
          The user's home phone number (not supported in MacOS)
@@ -186,7 +186,7 @@ index 48f0563ffb..4bc73e69ba 100644
  
      .. versionchanged:: 2014.7.0
         Shadow attribute support added.
-@@ -403,6 +410,8 @@ def present(name,
+@@ -405,6 +412,8 @@ def present(name,
          workphone = sdecode(workphone)
      if homephone is not None:
          homephone = sdecode(homephone)
@@ -195,7 +195,7 @@ index 48f0563ffb..4bc73e69ba 100644
  
      ret = {'name': name,
             'changes': {},
-@@ -411,7 +420,7 @@ def present(name,
+@@ -413,7 +422,7 @@ def present(name,
  
      # the comma is used to separate field in GECOS, thus resulting into
      # salt adding the end of fullname each time this function is called
@@ -204,7 +204,7 @@ index 48f0563ffb..4bc73e69ba 100644
          if isinstance(gecos_field, string_types) and ',' in gecos_field:
              ret['comment'] = "Unsupported char ',' in {0}".format(gecos_field)
              ret['result'] = False
-@@ -468,6 +477,7 @@ def present(name,
+@@ -467,6 +476,7 @@ def present(name,
                         roomnumber,
                         workphone,
                         homephone,
@@ -212,7 +212,7 @@ index 48f0563ffb..4bc73e69ba 100644
                         loginclass,
                         date,
                         mindays,
-@@ -591,6 +601,7 @@ def present(name,
+@@ -596,6 +606,7 @@ def present(name,
                             roomnumber,
                             workphone,
                             homephone,
@@ -220,7 +220,7 @@ index 48f0563ffb..4bc73e69ba 100644
                             loginclass,
                             date,
                             mindays,
-@@ -636,6 +647,7 @@ def present(name,
+@@ -641,6 +652,7 @@ def present(name,
                        'roomnumber': roomnumber,
                        'workphone': workphone,
                        'homephone': homephone,
@@ -741,6 +741,6 @@ index 077e8f4239..dbe600f0c0 100644
  
      def test_info(self):
 -- 
-2.12.2
+2.17.1
 
 

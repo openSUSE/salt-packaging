@@ -1,4 +1,4 @@
-From bcf3a1b791c4ca9b75a5bb8767a09202f9d0912b Mon Sep 17 00:00:00 2001
+From 50c21bbd85ade1bda8149ef32462bf4e64facf13 Mon Sep 17 00:00:00 2001
 From: Silvio Moioli <smoioli@suse.de>
 Date: Thu, 13 Jul 2017 15:59:01 +0200
 Subject: [PATCH] list_pkgs: add parameter for returned attribute
@@ -10,17 +10,17 @@ zypper.list_pkgs:
 yumpkg.list_pkgs:
   * It adds a new optional parameter to list_pkg, originally added to the the zypper module via PR #42310, to yumpkg providing the same functionality and interface to the yum package manager.
 ---
- salt/modules/pkg_resource.py      |  41 ++++++++
- salt/modules/yumpkg.py            | 102 +++++++++++++++-----
- salt/modules/zypper.py            |  94 ++++++++++++++-----
- salt/utils/pkg/rpm.py             |  22 +++--
- tests/unit/modules/test_yumpkg.py | 190 ++++++++++++++++++++++++++++++++++++++
- tests/unit/modules/zypper_test.py | 105 ++++++++++++++++-----
- 6 files changed, 481 insertions(+), 73 deletions(-)
+ salt/modules/pkg_resource.py      |  41 +++++++
+ salt/modules/yumpkg.py            | 101 ++++++++++++----
+ salt/modules/zypper.py            |  95 +++++++++++----
+ salt/utils/pkg/rpm.py             |  24 ++--
+ tests/unit/modules/test_yumpkg.py | 190 ++++++++++++++++++++++++++++++
+ tests/unit/modules/zypper_test.py | 105 +++++++++++++----
+ 6 files changed, 480 insertions(+), 76 deletions(-)
  create mode 100644 tests/unit/modules/test_yumpkg.py
 
 diff --git a/salt/modules/pkg_resource.py b/salt/modules/pkg_resource.py
-index ad0f0ffc76..c8cb82ca20 100644
+index 928dccae7d..248eef8505 100644
 --- a/salt/modules/pkg_resource.py
 +++ b/salt/modules/pkg_resource.py
 @@ -5,6 +5,7 @@ Resources needed by pkg providers
@@ -31,7 +31,7 @@ index ad0f0ffc76..c8cb82ca20 100644
  import fnmatch
  import logging
  import os
-@@ -298,3 +299,43 @@ def check_extra_requirements(pkgname, pkgver):
+@@ -306,3 +307,43 @@ def check_extra_requirements(pkgname, pkgver):
          return __salt__['pkg.check_extra_requirements'](pkgname, pkgver)
  
      return True
@@ -76,7 +76,7 @@ index ad0f0ffc76..c8cb82ca20 100644
 +        full_version += '-{0}'.format(release)
 +    return full_version
 diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
-index 690d0c4e3a..556a3b5c31 100644
+index 97a29fef90..20a6484c26 100644
 --- a/salt/modules/yumpkg.py
 +++ b/salt/modules/yumpkg.py
 @@ -17,7 +17,6 @@ Support for YUM/DNF
@@ -87,7 +87,7 @@ index 690d0c4e3a..556a3b5c31 100644
  import datetime
  import fnmatch
  import itertools
-@@ -567,15 +566,35 @@ def version_cmp(pkg1, pkg2, ignore_epoch=False):
+@@ -595,15 +594,35 @@ def version_cmp(pkg1, pkg2, ignore_epoch=False):
  
  def list_pkgs(versions_as_list=False, **kwargs):
      '''
@@ -125,7 +125,7 @@ index 690d0c4e3a..556a3b5c31 100644
      '''
      versions_as_list = salt.utils.is_true(versions_as_list)
      # not yet implemented or not applicable
-@@ -583,17 +602,14 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -611,17 +630,14 @@ def list_pkgs(versions_as_list=False, **kwargs):
              for x in ('removed', 'purge_desired')]):
          return {}
  
@@ -147,7 +147,7 @@ index 690d0c4e3a..556a3b5c31 100644
      output = __salt__['cmd.run'](cmd,
                                   python_shell=False,
                                   output_loglevel='trace')
-@@ -603,15 +619,25 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -631,15 +647,25 @@ def list_pkgs(versions_as_list=False, **kwargs):
              osarch=__grains__['osarch']
          )
          if pkginfo is not None:
@@ -182,7 +182,7 @@ index 690d0c4e3a..556a3b5c31 100644
  
  
  def list_repo_pkgs(*args, **kwargs):
-@@ -1079,11 +1105,42 @@ def install(name=None,
+@@ -1114,11 +1140,42 @@ def install(name=None,
  
          .. versionadded:: 2014.7.0
  
@@ -225,13 +225,12 @@ index 690d0c4e3a..556a3b5c31 100644
      '''
      repo_arg = _get_repo_options(**kwargs)
      exclude_arg = _get_excludes_option(**kwargs)
-@@ -1112,10 +1169,11 @@ def install(name=None,
+@@ -1148,10 +1205,10 @@ def install(name=None,
              log.warning('"version" parameter will be ignored for multiple '
                          'package targets')
  
--    old = list_pkgs(versions_as_list=False) if not downloadonly else list_downloaded()
+-
 +    diff_attr = kwargs.get("diff_attr")
-+    old = list_pkgs(versions_as_list=False, attr=diff_attr) if not downloadonly else list_downloaded()
      # Use of __context__ means no duplicate work here, just accessing
      # information already in __context__ from the previous call to list_pkgs()
 -    old_as_list = list_pkgs(versions_as_list=True) if not downloadonly else list_downloaded()
@@ -239,7 +238,7 @@ index 690d0c4e3a..556a3b5c31 100644
  
      to_install = []
      to_downgrade = []
-@@ -1398,7 +1456,7 @@ def install(name=None,
+@@ -1436,7 +1493,7 @@ def install(name=None,
                  errors.append(out['stdout'])
  
      __context__.pop('pkg.list_pkgs', None)
@@ -249,7 +248,7 @@ index 690d0c4e3a..556a3b5c31 100644
      ret = salt.utils.compare_dicts(old, new)
  
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index 58eb45a948..2299d66dbc 100644
+index 7345e3deb9..4498373e9a 100644
 --- a/salt/modules/zypper.py
 +++ b/salt/modules/zypper.py
 @@ -14,7 +14,6 @@ Package support for openSUSE via the zypper package manager
@@ -260,7 +259,7 @@ index 58eb45a948..2299d66dbc 100644
  import fnmatch
  import logging
  import re
-@@ -586,8 +585,8 @@ def version_cmp(ver1, ver2, ignore_epoch=False):
+@@ -587,8 +586,8 @@ def version_cmp(ver1, ver2, ignore_epoch=False):
  
  def list_pkgs(versions_as_list=False, **kwargs):
      '''
@@ -271,7 +270,7 @@ index 58eb45a948..2299d66dbc 100644
  
          {'<package_name>': '<version>[,<version>...]'}
  
-@@ -596,6 +595,19 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -597,6 +596,19 @@ def list_pkgs(versions_as_list=False, **kwargs):
  
          {'<package_name>': ['<version>', '<version>']}
  
@@ -291,7 +290,7 @@ index 58eb45a948..2299d66dbc 100644
      removed:
          not supported
  
-@@ -607,6 +619,7 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -608,6 +620,7 @@ def list_pkgs(versions_as_list=False, **kwargs):
      .. code-block:: bash
  
          salt '*' pkg.list_pkgs
@@ -299,7 +298,7 @@ index 58eb45a948..2299d66dbc 100644
      '''
      versions_as_list = salt.utils.is_true(versions_as_list)
      # not yet implemented or not applicable
-@@ -614,30 +627,30 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -615,30 +628,30 @@ def list_pkgs(versions_as_list=False, **kwargs):
              for x in ('removed', 'purge_desired')]):
          return {}
  
@@ -349,7 +348,7 @@ index 58eb45a948..2299d66dbc 100644
  
  
  def _get_configured_repos():
-@@ -986,11 +999,43 @@ def install(name=None,
+@@ -989,11 +1002,43 @@ def install(name=None,
          Zypper returns error code 106 if one of the repositories are not available for various reasons.
          In case to set strict check, this parameter needs to be set to True. Default: False.
  
@@ -393,7 +392,7 @@ index 58eb45a948..2299d66dbc 100644
      '''
      if refresh:
          refresh_db()
-@@ -1041,7 +1086,8 @@ def install(name=None,
+@@ -1036,7 +1081,8 @@ def install(name=None,
      else:
          targets = pkg_params
  
@@ -403,17 +402,23 @@ index 58eb45a948..2299d66dbc 100644
      downgrades = []
      if fromrepo:
          fromrepoopt = ['--force', '--force-resolution', '--from', fromrepo]
-@@ -1079,7 +1125,7 @@ def install(name=None,
+@@ -1074,13 +1120,12 @@ def install(name=None,
          __zypper__(no_repo_failure=ignore_repo_failure).call(*cmd)
  
      __context__.pop('pkg.list_pkgs', None)
 -    new = list_pkgs() if not downloadonly else list_downloaded()
 +    new = list_pkgs(attr=diff_attr) if not downloadonly else list_downloaded()
+ 
+     # Handle packages which report multiple new versions
+     # (affects only kernel packages at this point)
+     for pkg in new:
+         new[pkg] = new[pkg].split(',')[-1]
+-
      ret = salt.utils.compare_dicts(old, new)
  
      if errors:
 diff --git a/salt/utils/pkg/rpm.py b/salt/utils/pkg/rpm.py
-index 9c01d5b8b8..fab4ca787b 100644
+index 7608b32969..3c4495a3fa 100644
 --- a/salt/utils/pkg/rpm.py
 +++ b/salt/utils/pkg/rpm.py
 @@ -6,6 +6,7 @@ Common functions for working with RPM packages
@@ -424,7 +429,7 @@ index 9c01d5b8b8..fab4ca787b 100644
  import logging
  
  # Import salt libs
-@@ -32,7 +33,7 @@ ARCHES = ARCHES_64 + ARCHES_32 + ARCHES_PPC + ARCHES_S390 + \
+@@ -36,7 +37,7 @@ ARCHES = ARCHES_64 + ARCHES_32 + ARCHES_PPC + ARCHES_S390 + \
      ARCHES_ALPHA + ARCHES_ARM + ARCHES_SH
  
  # EPOCHNUM can't be used until RHEL5 is EOL as it is not present
@@ -433,7 +438,7 @@ index 9c01d5b8b8..fab4ca787b 100644
  
  
  def get_osarch():
-@@ -57,15 +58,17 @@ def check_32(arch, osarch=None):
+@@ -61,15 +62,17 @@ def check_32(arch, osarch=None):
      return all(x in ARCHES_32 for x in (osarch, arch))
  
  
@@ -454,7 +459,7 @@ index 9c01d5b8b8..fab4ca787b 100644
  
  
  def resolve_name(name, arch, osarch=None):
-@@ -87,7 +90,7 @@ def parse_pkginfo(line, osarch=None):
+@@ -91,7 +94,7 @@ def parse_pkginfo(line, osarch=None):
      pkginfo namedtuple.
      '''
      try:
@@ -463,11 +468,13 @@ index 9c01d5b8b8..fab4ca787b 100644
      # Handle unpack errors (should never happen with the queryformat we are
      # using, but can't hurt to be careful).
      except ValueError:
-@@ -99,4 +102,11 @@ def parse_pkginfo(line, osarch=None):
+@@ -102,9 +105,14 @@ def parse_pkginfo(line, osarch=None):
+         version += '-{0}'.format(release)
      if epoch not in ('(none)', '0'):
          version = ':'.join((epoch, version))
- 
+-
 -    return pkginfo(name, version, arch, repoid)
+-
 +    if install_time not in ('(none)', '0'):
 +        install_date = datetime.datetime.utcfromtimestamp(int(install_time)).isoformat() + "Z"
 +        install_date_time_t = int(install_time)
@@ -476,6 +483,9 @@ index 9c01d5b8b8..fab4ca787b 100644
 +        install_date_time_t = None
 +
 +    return pkginfo(name, version, arch, repoid, install_date, install_date_time_t)
+ 
+ def combine_comments(comments):
+     '''
 diff --git a/tests/unit/modules/test_yumpkg.py b/tests/unit/modules/test_yumpkg.py
 new file mode 100644
 index 0000000000..574fec1bfe
@@ -673,7 +683,7 @@ index 0000000000..574fec1bfe
 +                self.assertTrue(pkgs.get(pkg_name))
 +                self.assertEqual(pkgs[pkg_name], [pkg_attr])
 diff --git a/tests/unit/modules/zypper_test.py b/tests/unit/modules/zypper_test.py
-index c9d44d102c..be09d16f47 100644
+index 8d93aeb93b..8b784ba21a 100644
 --- a/tests/unit/modules/zypper_test.py
 +++ b/tests/unit/modules/zypper_test.py
 @@ -22,6 +22,7 @@ from salttesting.mock import (
@@ -684,7 +694,7 @@ index c9d44d102c..be09d16f47 100644
  from salt.exceptions import CommandExecutionError
  from salt.ext.six.moves import configparser
  import salt.ext.six as six
-@@ -437,30 +438,92 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -462,30 +463,92 @@ Repository 'DUMMY' not found by its alias, number, or URI.
          :return:
          '''
          def _add_data(data, key, value):
@@ -799,6 +809,6 @@ index c9d44d102c..be09d16f47 100644
      def test_list_patches(self):
          '''
 -- 
-2.13.6
+2.17.1
 
 

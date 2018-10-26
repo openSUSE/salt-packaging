@@ -1,4 +1,4 @@
-From 0750fe5c8592381cbfadc08b2cc00bd1e6ffe523 Mon Sep 17 00:00:00 2001
+From 2d47e6428b1f250d923d7b94c669cb043d9da040 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Wed, 10 Jan 2018 11:59:33 +0000
@@ -17,15 +17,15 @@ Refactor to prevent logical bug when gid is 0
 
 Fix integration tests for 'user.present' state.
 ---
- salt/states/user.py              |  7 ++++++-
- tests/integration/states/user.py | 41 +++++++++++++++++++++++++++-------------
+ salt/states/user.py              |  7 +++++-
+ tests/integration/states/user.py | 41 ++++++++++++++++++++++----------
  2 files changed, 34 insertions(+), 14 deletions(-)
 
 diff --git a/salt/states/user.py b/salt/states/user.py
-index 57623b2e94..48f0563ffb 100644
+index c03d089518..0c0fc1c774 100644
 --- a/salt/states/user.py
 +++ b/salt/states/user.py
-@@ -237,7 +237,8 @@ def present(name,
+@@ -239,7 +239,8 @@ def present(name,
  
      gid_from_name
          If True, the default group id will be set to the id of the group with
@@ -35,7 +35,7 @@ index 57623b2e94..48f0563ffb 100644
  
      groups
          A list of groups to assign the user to, pass a list object. If a group
-@@ -443,6 +444,10 @@ def present(name,
+@@ -445,6 +446,10 @@ def present(name,
  
      if gid_from_name:
          gid = __salt__['file.group_to_gid'](name)
@@ -44,8 +44,8 @@ index 57623b2e94..48f0563ffb 100644
 +            ret['result'] = False
 +            return ret
  
-     if empty_password:
-         __salt__['shadow.del_password'](name)
+     changes = _changes(name,
+                        uid,
 diff --git a/tests/integration/states/user.py b/tests/integration/states/user.py
 index 22ed655a00..7fd91d3406 100644
 --- a/tests/integration/states/user.py
@@ -115,6 +115,6 @@ index 22ed655a00..7fd91d3406 100644
          ret = self.run_state('user.absent', name='salt_test')
          self.assertSaltTrueReturn(ret)
 -- 
-2.13.6
+2.17.1
 
 

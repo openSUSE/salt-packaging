@@ -1,4 +1,4 @@
-From 8e463a5105c9157e2691f7b8cd206fee4631bfe6 Mon Sep 17 00:00:00 2001
+From d42778b94f1a2adb85838944cd6ac3451ed525c6 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Wed, 21 Mar 2018 11:10:23 +0100
 Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
@@ -13,10 +13,10 @@ Subject: [PATCH] Fix for [Errno 0] Resolver Error 0 (no error)
  2 files changed, 26 insertions(+), 19 deletions(-)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index c6984f471c..496beec14c 100644
+index 56d1b92bce..ed900c7c89 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
-@@ -1682,16 +1682,21 @@ def fqdns():
+@@ -1679,16 +1679,21 @@ def fqdns():
      fqdns = set()
  
      addresses = salt.utils.network.ip_addrs(include_loopback=False,
@@ -46,23 +46,20 @@ index c6984f471c..496beec14c 100644
      grains['fqdns'] = list(fqdns)
      return grains
 diff --git a/tests/unit/grains/core_test.py b/tests/unit/grains/core_test.py
-index d339561816..e99d804266 100644
+index 8010c76d26..498390014d 100644
 --- a/tests/unit/grains/core_test.py
 +++ b/tests/unit/grains/core_test.py
-@@ -461,25 +461,27 @@ PATCHLEVEL = 3
-         self.assertEqual(os_grains.get('osmajorrelease'), os_release_map['osmajorrelease'])
+@@ -616,22 +616,24 @@ PATCHLEVEL = 3
+                     get_dns = core.dns()
+                     self.assertEqual(get_dns, ret)
  
-     @skipIf(not salt.utils.is_linux(), 'System is not Linux')
 +    @patch.object(salt.utils, 'is_windows', MagicMock(return_value=False))
 +    @patch('salt.utils.network.ip_addrs', MagicMock(return_value=['1.2.3.4', '5.6.7.8']))
 +    @patch('salt.utils.network.ip_addrs6',
 +           MagicMock(return_value=['fe80::a8b2:93ff:fe00:0', 'fe80::a8b2:93ff:dead:beef']))
 +    @patch('salt.utils.network.socket.getfqdn', MagicMock(side_effect=lambda v: v))  # Just pass-through
+     @skipIf(not salt.utils.is_linux(), 'System is not Linux')
      def test_fqdns_return(self):
-         '''
-         test the return for a dns grain. test for issue:
-         https://github.com/saltstack/salt/issues/41230
-         '''
          reverse_resolv_mock = [('foo.bar.baz', [], ['1.2.3.4']),
 -        ('rinzler.evil-corp.com', [], ['5.6.7.8']),
 -        ('foo.bar.baz', [], ['fe80::a8b2:93ff:fe00:0']),
@@ -90,6 +87,6 @@ index d339561816..e99d804266 100644
  if __name__ == '__main__':
      from integration import run_tests
 -- 
-2.13.6
+2.17.1
 
 

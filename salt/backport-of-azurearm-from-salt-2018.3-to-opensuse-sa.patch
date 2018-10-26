@@ -1,4 +1,4 @@
-From 83777a9d657a13dbf2aead11f7f26f97ba91c480 Mon Sep 17 00:00:00 2001
+From 0ff917ace8c1a29b307da8c51d0c58b79840386c Mon Sep 17 00:00:00 2001
 From: ed lane <ed.lane.0@gmail.com>
 Date: Mon, 16 Apr 2018 09:01:13 -0600
 Subject: [PATCH] Backport of AzureARM from Salt 2018.3 to OpenSUSE-Salt
@@ -7,30 +7,29 @@ Subject: [PATCH] Backport of AzureARM from Salt 2018.3 to OpenSUSE-Salt
 * patches applied from azurearm-backport-from-2018.3-to-2016.11.4
 * fix Python 2.6 incompatible syntax
 ---
- salt/cloud/clouds/azurearm.py  | 396 +++++++++++++++++------
- salt/utils/cloud.py            | 694 +++++++++++++++++++++--------------------
- salt/utils/crypt.py            | 140 +++++++++
- salt/utils/data.py             | 568 +++++++++++++++++++++++++++++++++
+ salt/cloud/clouds/azurearm.py  | 385 ++++++++++++++------
+ salt/utils/cloud.py            | 632 +++++++++++++++++----------------
+ salt/utils/crypt.py            | 140 ++++++++
+ salt/utils/data.py             | 568 +++++++++++++++++++++++++++++
  salt/utils/decorators/jinja.py |  85 +++++
- salt/utils/files.py            | 526 ++++++++++++++++++++++++++++++-
+ salt/utils/files.py            | 512 +++++++++++++++++++++++++-
  salt/utils/msazure.py          |   4 +-
- salt/utils/platform.py         | 158 ++++++++++
- salt/utils/stringutils.py      | 405 ++++++++++++++++++++++++
- salt/utils/versions.py         | 293 +++++++++++++++++
+ salt/utils/platform.py         | 158 +++++++++
+ salt/utils/stringutils.py      | 405 +++++++++++++++++++++
+ salt/utils/versions.py         | 231 +++++++++++-
  salt/utils/yaml.py             |  10 +
- salt/utils/yamldumper.py       |  74 ++++-
- salt/utils/yamlloader.py       |  79 +++--
- 13 files changed, 2959 insertions(+), 473 deletions(-)
+ salt/utils/yamldumper.py       |  74 +++-
+ salt/utils/yamlloader.py       |  75 +++-
+ 13 files changed, 2833 insertions(+), 446 deletions(-)
  create mode 100644 salt/utils/crypt.py
  create mode 100644 salt/utils/data.py
  create mode 100644 salt/utils/decorators/jinja.py
  create mode 100644 salt/utils/platform.py
  create mode 100644 salt/utils/stringutils.py
- create mode 100644 salt/utils/versions.py
  create mode 100644 salt/utils/yaml.py
 
 diff --git a/salt/cloud/clouds/azurearm.py b/salt/cloud/clouds/azurearm.py
-index fcec348ab5..05038e501b 100644
+index 33744fa4f6..05038e501b 100644
 --- a/salt/cloud/clouds/azurearm.py
 +++ b/salt/cloud/clouds/azurearm.py
 @@ -10,23 +10,44 @@ The Azure cloud module is used to control access to Microsoft Azure
@@ -474,15 +473,20 @@ index fcec348ab5..05038e501b 100644
          ret[subnet.name]['resource_group'] = kwargs['resource_group']
      return ret
  
-@@ -658,11 +759,18 @@ def show_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -658,16 +759,17 @@ def show_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
      data['ip_configurations'] = {}
      for ip_ in iface.ip_configurations:
          data['ip_configurations'][ip_.name] = make_safe(ip_)
--        pubip = netconn.public_ip_addresses.get(
--            kwargs['resource_group'],
--            ip_.name,
--        )
--        data['ip_configurations'][ip_.name]['public_ip_address']['ip_address'] = pubip.ip_address
+-        try:
+-            pubip = netconn.public_ip_addresses.get(
+-                kwargs['resource_group'],
+-                ip_.name,
+-            )
+-            data['ip_configurations'][ip_.name]['public_ip_address']['ip_address'] = pubip.ip_address
+-        except Exception as exc:
+-            log.warning('There was a cloud error: {0}'.format(exc))
+-            log.warning('{0}'.format(type(exc)))
+-            continue
 +        if ip_.public_ip_address is not None:
 +            try:
 +                pubip = netconn.public_ip_addresses.get(
@@ -494,11 +498,10 @@ index fcec348ab5..05038e501b 100644
 +                log.warning('There was a cloud error: {0}'.format(exc))
 +                log.warning('{0}'.format(type(exc)))
 +                continue
-+
+ 
      return data
  
- 
-@@ -712,6 +820,9 @@ def list_interfaces(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -718,6 +820,9 @@ def list_interfaces(call=None, kwargs=None):  # pylint: disable=unused-argument
          kwargs = {}
  
      if kwargs.get('resource_group') is None:
@@ -508,7 +511,7 @@ index fcec348ab5..05038e501b 100644
          kwargs['resource_group'] = config.get_cloud_config_value(
              'resource_group', {}, __opts__, search_global=True,
              default=config.get_cloud_config_value(
-@@ -728,7 +839,7 @@ def list_interfaces(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -734,7 +839,7 @@ def list_interfaces(call=None, kwargs=None):  # pylint: disable=unused-argument
          loop_fun=make_safe,
          expire=config.get_cloud_config_value(
              'expire_interface_cache', get_configured_provider(),
@@ -517,7 +520,7 @@ index fcec348ab5..05038e501b 100644
          ),
          resource_group_name=kwargs['resource_group']
      )
-@@ -766,6 +877,17 @@ def create_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -772,6 +877,17 @@ def create_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
      if kwargs.get('iface_name') is None:
          kwargs['iface_name'] = '{0}-iface0'.format(vm_['name'])
  
@@ -535,37 +538,21 @@ index fcec348ab5..05038e501b 100644
      subnet_obj = netconn.subnets.get(
          resource_group_name=kwargs['network_resource_group'],
          virtual_network_name=kwargs['network'],
-@@ -774,6 +896,13 @@ def create_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
- 
-     ip_kwargs = {}
-     ip_configurations = None
-+
-+    if 'private_ip_address' in kwargs.keys():
-+        ip_kwargs['private_ip_address'] = kwargs['private_ip_address']
-+        ip_kwargs['private_ip_allocation_method'] = IPAllocationMethod.static
-+    else:
-+        ip_kwargs['private_ip_allocation_method'] = IPAllocationMethod.dynamic
-+
-     if bool(kwargs.get('public_ip')) is True:
-         pub_ip_name = '{0}-ip'.format(kwargs['iface_name'])
-         poller = netconn.public_ip_addresses.create_or_update(
-@@ -799,7 +928,7 @@ def create_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -812,6 +928,7 @@ def create_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
                      ip_configurations = [
                          NetworkInterfaceIPConfiguration(
                              name='{0}-ip'.format(kwargs['iface_name']),
--                            private_ip_allocation_method='Dynamic',
 +                            load_balancer_backend_address_pools=backend_pools,
                              subnet=subnet_obj,
                              **ip_kwargs
                          )
-@@ -816,14 +945,35 @@ def create_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -828,14 +945,35 @@ def create_interface(call=None, kwargs=None):  # pylint: disable=unused-argument
          ip_configurations = [
              NetworkInterfaceIPConfiguration(
                  name='{0}-ip'.format(kwargs['iface_name']),
--                private_ip_allocation_method='Dynamic',
 +                load_balancer_backend_address_pools=backend_pools,
                  subnet=subnet_obj,
-+                **ip_kwargs
+                 **ip_kwargs
              )
          ]
  
@@ -595,7 +582,7 @@ index fcec348ab5..05038e501b 100644
      )
  
      poller = netconn.network_interfaces.create_or_update(
-@@ -867,6 +1017,16 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -879,6 +1017,16 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
              'name', vm_, __opts__, search_global=True
          )
  
@@ -612,7 +599,7 @@ index fcec348ab5..05038e501b 100644
      os_kwargs = {}
      userdata = None
      userdata_file = config.get_cloud_config_value(
-@@ -878,7 +1038,7 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -890,7 +1038,7 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
          )
      else:
          if os.path.exists(userdata_file):
@@ -621,7 +608,7 @@ index fcec348ab5..05038e501b 100644
                  userdata = fh_.read()
  
      userdata = salt.utils.cloud.userdata_template(__opts__, vm_, userdata)
-@@ -924,6 +1084,19 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -936,6 +1084,19 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
      for volume in volumes:
          if isinstance(volume, six.string_types):
              volume = {'name': volume}
@@ -641,15 +628,7 @@ index fcec348ab5..05038e501b 100644
          # Use the size keyword to set a size, but you can use either the new
          # azure name (disk_size_gb) or the old (logical_disk_size_in_gb)
          # instead. If none are set, the disk has size 100GB.
-@@ -1006,6 +1179,7 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
-                 ),
-                 os_type=os_type,
-                 image=source_image,
-+                disk_size_gb=vm_.get('os_disk_size_gb', 30)
-             ),
-             data_disks=data_disks,
-             image_reference=img_ref,
-@@ -1021,6 +1195,16 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -1034,6 +1195,16 @@ def request_instance(call=None, kwargs=None):  # pylint: disable=unused-argument
                  NetworkInterfaceReference(vm_['iface_id']),
              ],
          ),
@@ -666,7 +645,7 @@ index fcec348ab5..05038e501b 100644
      )
  
      poller = compconn.virtual_machines.create_or_update(
-@@ -1052,20 +1236,11 @@ def create(vm_):
+@@ -1065,20 +1236,11 @@ def create(vm_):
      except AttributeError:
          pass
  
@@ -688,7 +667,7 @@ index fcec348ab5..05038e501b 100644
          sock_dir=__opts__['sock_dir'],
          transport=__opts__['transport']
      )
-@@ -1078,8 +1253,8 @@ def create(vm_):
+@@ -1091,8 +1253,8 @@ def create(vm_):
      def _query_ip_address():
          data = request_instance(kwargs=vm_)
          ifaces = data['network_profile']['network_interfaces']
@@ -699,18 +678,7 @@ index fcec348ab5..05038e501b 100644
  
          if vm_.get('public_ip') is True:
              hostname = ifaces[iface]['ip_configurations'][ip_name]['public_ip_address']
-@@ -1109,7 +1284,9 @@ def create(vm_):
-         finally:
-             raise SaltCloudSystemExit(str(exc))
- 
--    hostname = _query_ip_address()
-+    # calling _query_ip_address() causes Salt to attempt to build the VM again.
-+    #hostname = _query_ip_address()
-+    hostname = data
- 
-     if not hostname or not isinstance(hostname, six.string_types):
-         log.error('Failed to get a value for the hostname.')
-@@ -1139,11 +1316,7 @@ def create(vm_):
+@@ -1154,11 +1316,7 @@ def create(vm_):
          'event',
          'created instance',
          'salt/cloud/{0}/created'.format(vm_['name']),
@@ -723,7 +691,7 @@ index fcec348ab5..05038e501b 100644
          sock_dir=__opts__['sock_dir'],
          transport=__opts__['transport']
      )
-@@ -1168,6 +1341,15 @@ def destroy(name, conn=None, call=None, kwargs=None):  # pylint: disable=unused-
+@@ -1183,6 +1341,15 @@ def destroy(name, conn=None, call=None, kwargs=None):  # pylint: disable=unused-
              '-a or --action.'
          )
  
@@ -739,7 +707,7 @@ index fcec348ab5..05038e501b 100644
      global compconn  # pylint: disable=global-statement,invalid-name
      if not compconn:
          compconn = get_conn()
-@@ -1261,6 +1443,15 @@ def destroy(name, conn=None, call=None, kwargs=None):  # pylint: disable=unused-
+@@ -1276,6 +1443,15 @@ def destroy(name, conn=None, call=None, kwargs=None):  # pylint: disable=unused-
                  )
              )
  
@@ -755,7 +723,7 @@ index fcec348ab5..05038e501b 100644
      return ret
  
  
-@@ -1268,7 +1459,7 @@ def make_safe(data):
+@@ -1283,7 +1459,7 @@ def make_safe(data):
      '''
      Turn object data into something serializable
      '''
@@ -764,7 +732,7 @@ index fcec348ab5..05038e501b 100644
  
  
  def create_security_group(call=None, kwargs=None):  # pylint: disable=unused-argument
-@@ -1509,10 +1700,15 @@ def pages_to_list(items):
+@@ -1524,10 +1700,15 @@ def pages_to_list(items):
      while True:
          try:
              page = items.next()  # pylint: disable=incompatible-py3-code
@@ -782,7 +750,7 @@ index fcec348ab5..05038e501b 100644
      return objs
  
  
-@@ -1542,7 +1738,7 @@ def list_containers(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -1557,7 +1738,7 @@ def list_containers(call=None, kwargs=None):  # pylint: disable=unused-argument
      if not storconn:
          storconn = get_conn(StorageManagementClient)
  
@@ -791,7 +759,7 @@ index fcec348ab5..05038e501b 100644
          config.get_cloud_config_value(
              'storage_account',
              get_configured_provider(), __opts__, search_global=False
-@@ -1583,7 +1779,7 @@ def list_blobs(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -1598,7 +1779,7 @@ def list_blobs(call=None, kwargs=None):  # pylint: disable=unused-argument
              'A container must be specified'
          )
  
@@ -800,7 +768,7 @@ index fcec348ab5..05038e501b 100644
          config.get_cloud_config_value(
              'storage_account',
              get_configured_provider(), __opts__, search_global=False
-@@ -1623,7 +1819,7 @@ def delete_blob(call=None, kwargs=None):  # pylint: disable=unused-argument
+@@ -1638,7 +1819,7 @@ def delete_blob(call=None, kwargs=None):  # pylint: disable=unused-argument
              'A blob must be specified'
          )
  
@@ -810,7 +778,7 @@ index fcec348ab5..05038e501b 100644
              'storage_account',
              get_configured_provider(), __opts__, search_global=False
 diff --git a/salt/utils/cloud.py b/salt/utils/cloud.py
-index 0485a7476a..0d59aaf7db 100644
+index 069533558d..07dbc49bed 100644
 --- a/salt/utils/cloud.py
 +++ b/salt/utils/cloud.py
 @@ -4,10 +4,9 @@ Utility functions for salt.cloud
@@ -984,19 +952,7 @@ index 0485a7476a..0d59aaf7db 100644
      deploy_config = salt.config.get_cloud_config_value(
          'deploy',
          vm_, opts, default=False)
-@@ -311,6 +319,11 @@ def bootstrap(vm_, opts):
-             }
-         }
- 
-+    if vm_.get('driver') == 'saltify':
-+        saltify_driver = True
-+    else:
-+        saltify_driver = False
-+
-     key_filename = salt.config.get_cloud_config_value(
-         'key_filename', vm_, opts, search_global=False,
-         default=salt.config.get_cloud_config_value(
-@@ -346,7 +359,7 @@ def bootstrap(vm_, opts):
+@@ -351,7 +359,7 @@ def bootstrap(vm_, opts):
  
      ret = {}
  
@@ -1005,7 +961,7 @@ index 0485a7476a..0d59aaf7db 100644
      deploy_script_code = os_script(
          salt.config.get_cloud_config_value(
              'os', vm_, opts, default='bootstrap-salt'
-@@ -363,7 +376,7 @@ def bootstrap(vm_, opts):
+@@ -368,7 +376,7 @@ def bootstrap(vm_, opts):
  
      # If we haven't generated any keys yet, do so now.
      if 'pub_key' not in vm_ and 'priv_key' not in vm_:
@@ -1014,7 +970,7 @@ index 0485a7476a..0d59aaf7db 100644
  
          vm_['priv_key'], vm_['pub_key'] = gen_keys(
              salt.config.get_cloud_config_value(
-@@ -390,13 +403,14 @@ def bootstrap(vm_, opts):
+@@ -395,13 +403,14 @@ def bootstrap(vm_, opts):
  
      # NOTE: deploy_kwargs is also used to pass inline_script variable content
      #       to run_inline_script function
@@ -1031,7 +987,7 @@ index 0485a7476a..0d59aaf7db 100644
          'username': ssh_username,
          'script': deploy_script_code,
          'inline_script': inline_script_config,
-@@ -405,10 +419,7 @@ def bootstrap(vm_, opts):
+@@ -410,10 +419,7 @@ def bootstrap(vm_, opts):
          'tmp_dir': salt.config.get_cloud_config_value(
              'tmp_dir', vm_, opts, default='/tmp/.saltcloud'
          ),
@@ -1043,7 +999,7 @@ index 0485a7476a..0d59aaf7db 100644
          'start_action': opts['start_action'],
          'parallel': opts['parallel'],
          'sock_dir': opts['sock_dir'],
-@@ -438,6 +449,9 @@ def bootstrap(vm_, opts):
+@@ -443,6 +449,9 @@ def bootstrap(vm_, opts):
              'script_env', vm_, opts
          ),
          'minion_conf': minion_conf,
@@ -1053,7 +1009,7 @@ index 0485a7476a..0d59aaf7db 100644
          'preseed_minion_keys': vm_.get('preseed_minion_keys', None),
          'display_ssh_output': salt.config.get_cloud_config_value(
              'display_ssh_output', vm_, opts, default=True
-@@ -451,9 +465,17 @@ def bootstrap(vm_, opts):
+@@ -456,9 +465,17 @@ def bootstrap(vm_, opts):
          'maxtries': salt.config.get_cloud_config_value(
              'wait_for_passwd_maxtries', vm_, opts, default=15
          ),
@@ -1072,7 +1028,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      # forward any info about possible ssh gateway to deploy script
      # as some providers need also a 'gateway' configuration
-@@ -465,7 +487,7 @@ def bootstrap(vm_, opts):
+@@ -470,7 +487,7 @@ def bootstrap(vm_, opts):
          deploy_kwargs['make_master'] = True
          deploy_kwargs['master_pub'] = vm_['master_pub']
          deploy_kwargs['master_pem'] = vm_['master_pem']
@@ -1081,17 +1037,7 @@ index 0485a7476a..0d59aaf7db 100644
          deploy_kwargs['master_conf'] = master_conf
  
          if master_conf.get('syndic_master', None):
-@@ -475,6 +497,9 @@ def bootstrap(vm_, opts):
-         'make_minion', vm_, opts, default=True
-     )
- 
-+    if saltify_driver:
-+        deploy_kwargs['wait_for_passwd_maxtries'] = 0  # No need to wait/retry with Saltify
-+
-     win_installer = salt.config.get_cloud_config_value(
-         'win_installer', vm_, opts
-     )
-@@ -483,7 +508,7 @@ def bootstrap(vm_, opts):
+@@ -491,7 +508,7 @@ def bootstrap(vm_, opts):
              'smb_port', vm_, opts, default=445
          )
          deploy_kwargs['win_installer'] = win_installer
@@ -1100,7 +1046,7 @@ index 0485a7476a..0d59aaf7db 100644
          deploy_kwargs['master'] = minion['master']
          deploy_kwargs['username'] = salt.config.get_cloud_config_value(
              'win_username', vm_, opts, default='Administrator'
-@@ -499,6 +524,14 @@ def bootstrap(vm_, opts):
+@@ -507,6 +524,12 @@ def bootstrap(vm_, opts):
          deploy_kwargs['winrm_port'] = salt.config.get_cloud_config_value(
              'winrm_port', vm_, opts, default=5986
          )
@@ -1110,12 +1056,10 @@ index 0485a7476a..0d59aaf7db 100644
 +        deploy_kwargs['winrm_verify_ssl'] = salt.config.get_cloud_config_value(
 +            'winrm_verify_ssl', vm_, opts, default=True
 +        )
-+        if saltify_driver:
-+            deploy_kwargs['port_timeout'] = 1  # No need to wait/retry with Saltify
+         if saltify_driver:
+             deploy_kwargs['port_timeout'] = 1  # No need to wait/retry with Saltify
  
-     # Store what was used to the deploy the VM
-     event_kwargs = copy.deepcopy(deploy_kwargs)
-@@ -524,7 +557,7 @@ def bootstrap(vm_, opts):
+@@ -534,7 +557,7 @@ def bootstrap(vm_, opts):
      if inline_script_config and deploy_config is False:
          inline_script_deployed = run_inline_script(**inline_script_kwargs)
          if inline_script_deployed is not False:
@@ -1124,7 +1068,7 @@ index 0485a7476a..0d59aaf7db 100644
          ret['deployed'] = False
          return ret
      else:
-@@ -536,16 +569,16 @@ def bootstrap(vm_, opts):
+@@ -546,16 +569,16 @@ def bootstrap(vm_, opts):
          if inline_script_config:
              inline_script_deployed = run_inline_script(**inline_script_kwargs)
              if inline_script_deployed is not False:
@@ -1144,7 +1088,7 @@ index 0485a7476a..0d59aaf7db 100644
      return {
          'Error': {
              'Not Deployed': 'Failed to start Salt on host {0}'.format(
-@@ -591,7 +624,7 @@ def wait_for_fun(fun, timeout=900, **kwargs):
+@@ -601,7 +624,7 @@ def wait_for_fun(fun, timeout=900, **kwargs):
      Wait until a function finishes, or times out
      '''
      start = time.time()
@@ -1153,7 +1097,7 @@ index 0485a7476a..0d59aaf7db 100644
      trycount = 0
      while True:
          trycount += 1
-@@ -600,15 +633,11 @@ def wait_for_fun(fun, timeout=900, **kwargs):
+@@ -610,15 +633,11 @@ def wait_for_fun(fun, timeout=900, **kwargs):
              if not isinstance(response, bool):
                  return response
          except Exception as exc:
@@ -1172,7 +1116,7 @@ index 0485a7476a..0d59aaf7db 100644
              return False
  
  
-@@ -635,17 +664,12 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
+@@ -645,17 +664,12 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
          test_ssh_host = ssh_gateway
          test_ssh_port = ssh_gateway_port
          log.debug(
@@ -1194,7 +1138,7 @@ index 0485a7476a..0d59aaf7db 100644
      trycount = 0
      while True:
          trycount += 1
-@@ -665,33 +689,19 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
+@@ -675,33 +689,19 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
              sock.close()
              break
          except socket.error as exc:
@@ -1235,7 +1179,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      # Now we need to test the host via the gateway.
      # We will use netcat on the gateway to test the port
-@@ -730,7 +740,7 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
+@@ -740,7 +740,7 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
          ' '.join(ssh_args), gateway['ssh_gateway_user'], ssh_gateway,
          ssh_gateway_port, pipes.quote(command)
      )
@@ -1244,7 +1188,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      kwargs = {'display_ssh_output': False,
                'password': gateway.get('ssh_gateway_password', None)}
-@@ -748,7 +758,7 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
+@@ -758,7 +758,7 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
                  gateway_retries -= 1
                  log.error(
                      'Gateway usage seems to be broken, '
@@ -1253,7 +1197,7 @@ index 0485a7476a..0d59aaf7db 100644
              if not gateway_retries:
                  raise SaltCloudExecutionFailure(
                      'SSH gateway is reachable but we can not login')
-@@ -761,14 +771,12 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
+@@ -771,14 +771,12 @@ def wait_for_port(host, port=22, timeout=900, gateway=None):
                  return True
          time.sleep(1)
          if time.time() - start > timeout:
@@ -1272,7 +1216,7 @@ index 0485a7476a..0d59aaf7db 100644
          )
  
  
-@@ -778,10 +786,8 @@ def wait_for_winexesvc(host, port, username, password, timeout=900):
+@@ -788,10 +786,8 @@ def wait_for_winexesvc(host, port, username, password, timeout=900):
      '''
      start = time.time()
      log.debug(
@@ -1285,37 +1229,8 @@ index 0485a7476a..0d59aaf7db 100644
      )
      creds = "-U '{0}%{1}' //{2}".format(
          username,
-@@ -805,60 +811,62 @@ def wait_for_winexesvc(host, port, username, password, timeout=900):
-             if ret_code == 0:
-                 log.debug('winexe connected...')
-                 return True
--            log.debug('Return code was {0}'.format(ret_code))
--            time.sleep(1)
-+            log.debug('Return code was %s', ret_code)
-         except socket.error as exc:
--            log.debug('Caught exception in wait_for_winexesvc: {0}'.format(exc))
--            time.sleep(1)
--            if time.time() - start > timeout:
--                log.error('winexe connection timed out: {0}'.format(timeout))
--                return False
--            log.debug(
--                'Retrying winexe connection to host {0} on port {1} '
--                '(try {2})'.format(
--                    host,
--                    port,
--                    try_count
--                )
--            )
-+            log.debug('Caught exception in wait_for_winexesvc: %s', exc)
-+
-+        if time.time() - start > timeout:
-+            log.error('winexe connection timed out: %s', timeout)
-+            return False
-+        log.debug(
-+            'Retrying winexe connection to host %s on port %s (try %s)',
-+            host, port, try_count
-+        )
-+        time.sleep(1)
+@@ -833,24 +829,32 @@ def wait_for_winexesvc(host, port, username, password, timeout=900):
+         time.sleep(1)
  
  
 -def wait_for_winrm(host, port, username, password, timeout=900):
@@ -1353,36 +1268,7 @@ index 0485a7476a..0d59aaf7db 100644
              r = s.run_cmd('sc query winrm')
              if r.status_code == 0:
                  log.debug('WinRM session connected...')
-                 return s
--            log.debug('Return code was {0}'.format(r.status_code))
--            time.sleep(1)
-+            log.debug('Return code was %s', r.status_code)
-         except WinRMTransportError as exc:
--            log.debug('Caught exception in wait_for_winrm: {0}'.format(exc))
--            if time.time() - start > timeout:
--                log.error('WinRM connection timed out: {0}'.format(timeout))
--                return None
--            log.debug(
--                'Retrying WinRM connection to host {0} on port {1} '
--                '(try {2})'.format(
--                    host, port, trycount
--                )
--            )
--            time.sleep(1)
-+            log.debug('Caught exception in wait_for_winrm: %s', exc)
-+
-+        if time.time() - start > timeout:
-+            log.error('WinRM connection timed out: %s', timeout)
-+            return None
-+        log.debug(
-+            'Retrying WinRM connection to host %s on port %s (try %s)',
-+            host, port, trycount
-+        )
-+        time.sleep(1)
- 
- 
- def validate_windows_cred(host,
-@@ -879,7 +887,7 @@ def validate_windows_cred(host,
+@@ -889,7 +893,7 @@ def validate_windows_cred(host,
          host
      )
  
@@ -1391,7 +1277,7 @@ index 0485a7476a..0d59aaf7db 100644
          ret_code = win_cmd(
              cmd,
              logging_command=logging_cmd
-@@ -923,16 +931,15 @@ def wait_for_passwd(host, port=22, ssh_timeout=15, username='root',
+@@ -933,16 +937,15 @@ def wait_for_passwd(host, port=22, ssh_timeout=15, username='root',
                          )
                      )
                  kwargs['key_filename'] = key_filename
@@ -1411,7 +1297,7 @@ index 0485a7476a..0d59aaf7db 100644
              )
  
              status = root_cmd('date', tty=False, sudo=False, **kwargs)
-@@ -942,11 +949,7 @@ def wait_for_passwd(host, port=22, ssh_timeout=15, username='root',
+@@ -952,11 +955,7 @@ def wait_for_passwd(host, port=22, ssh_timeout=15, username='root',
                      time.sleep(trysleep)
                      continue
  
@@ -1424,7 +1310,7 @@ index 0485a7476a..0d59aaf7db 100644
                  return False
              if connectfail is False:
                  return True
-@@ -984,6 +987,8 @@ def deploy_windows(host,
+@@ -994,6 +993,8 @@ def deploy_windows(host,
                     master_sign_pub_file=None,
                     use_winrm=False,
                     winrm_port=5986,
@@ -1433,7 +1319,7 @@ index 0485a7476a..0d59aaf7db 100644
                     **kwargs):
      '''
      Copy the install files to a remote Windows box, and execute them
-@@ -996,8 +1001,8 @@ def deploy_windows(host,
+@@ -1006,8 +1007,8 @@ def deploy_windows(host,
          return False
  
      starttime = time.mktime(time.localtime())
@@ -1444,7 +1330,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      port_available = wait_for_port(host=host, port=port, timeout=port_timeout * 60)
  
-@@ -1009,8 +1014,9 @@ def deploy_windows(host,
+@@ -1019,8 +1020,9 @@ def deploy_windows(host,
  
      if HAS_WINRM and use_winrm:
          winrm_session = wait_for_winrm(host=host, port=winrm_port,
@@ -1456,7 +1342,7 @@ index 0485a7476a..0d59aaf7db 100644
          if winrm_session is not None:
              service_available = True
      else:
-@@ -1019,12 +1025,8 @@ def deploy_windows(host,
+@@ -1029,12 +1031,8 @@ def deploy_windows(host,
                                                 timeout=port_timeout * 60)
  
      if port_available and service_available:
@@ -1471,7 +1357,7 @@ index 0485a7476a..0d59aaf7db 100644
          newtimeout = timeout - (time.mktime(time.localtime()) - starttime)
  
          smb_conn = salt.utils.smb.get_conn(host, username, password)
-@@ -1056,12 +1058,12 @@ def deploy_windows(host,
+@@ -1066,12 +1064,12 @@ def deploy_windows(host,
  
          if master_sign_pub_file:
              # Read master-sign.pub file
@@ -1487,7 +1373,7 @@ index 0485a7476a..0d59aaf7db 100644
  
          # Copy over win_installer
          # win_installer refers to a file such as:
-@@ -1070,7 +1072,7 @@ def deploy_windows(host,
+@@ -1080,7 +1078,7 @@ def deploy_windows(host,
          comps = win_installer.split('/')
          local_path = '/'.join(comps[:-1])
          installer = comps[-1]
@@ -1496,7 +1382,7 @@ index 0485a7476a..0d59aaf7db 100644
              smb_conn.putFile('C$', 'salttemp/{0}'.format(installer), inst_fh.read)
  
          if use_winrm:
-@@ -1129,8 +1131,11 @@ def deploy_windows(host,
+@@ -1139,8 +1137,11 @@ def deploy_windows(host,
          # Delete C:\salttmp\ and installer file
          # Unless keep_tmp is True
          if not keep_tmp:
@@ -1510,7 +1396,7 @@ index 0485a7476a..0d59aaf7db 100644
          # Shell out to winexe to ensure salt-minion service started
          if use_winrm:
              winrm_cmd(winrm_session, 'sc', ['stop', 'salt-minion'])
-@@ -1201,20 +1206,26 @@ def deploy_script(host,
+@@ -1211,20 +1212,26 @@ def deploy_script(host,
                    sudo_password=None,
                    sudo=False,
                    tty=None,
@@ -1539,7 +1425,7 @@ index 0485a7476a..0d59aaf7db 100644
      if key_filename is not None and not os.path.isfile(key_filename):
          raise SaltCloudConfigError(
              'The defined key_filename \'{0}\' does not exist'.format(
-@@ -1226,14 +1237,16 @@ def deploy_script(host,
+@@ -1236,14 +1243,16 @@ def deploy_script(host,
      if 'gateway' in kwargs:
          gateway = kwargs['gateway']
  
@@ -1560,7 +1446,7 @@ index 0485a7476a..0d59aaf7db 100644
          if wait_for_passwd(host, port=port, username=username,
                             password=password, key_filename=key_filename,
                             ssh_timeout=ssh_timeout,
-@@ -1241,11 +1254,7 @@ def deploy_script(host,
+@@ -1251,11 +1260,7 @@ def deploy_script(host,
                             gateway=gateway, known_hosts_file=known_hosts_file,
                             maxtries=maxtries, hard_timeout=hard_timeout):
  
@@ -1573,7 +1459,7 @@ index 0485a7476a..0d59aaf7db 100644
              ssh_kwargs = {
                  'hostname': host,
                  'port': port,
-@@ -1260,7 +1269,7 @@ def deploy_script(host,
+@@ -1270,7 +1275,7 @@ def deploy_script(host,
                  ssh_kwargs['ssh_gateway_key'] = gateway['ssh_gateway_key']
                  ssh_kwargs['ssh_gateway_user'] = gateway['ssh_gateway_user']
              if key_filename:
@@ -1582,7 +1468,7 @@ index 0485a7476a..0d59aaf7db 100644
                  ssh_kwargs['key_filename'] = key_filename
              elif password and kwargs.get('has_ssh_agent', False) is False:
                  ssh_kwargs['password'] = password
-@@ -1299,10 +1308,9 @@ def deploy_script(host,
+@@ -1309,10 +1314,9 @@ def deploy_script(host,
                  remote_file = file_map[map_item]
                  if not os.path.exists(map_item):
                      log.error(
@@ -1596,7 +1482,7 @@ index 0485a7476a..0d59aaf7db 100644
                      )
                      file_map_fail.append({local_file: remote_file})
                      continue
-@@ -1360,6 +1368,8 @@ def deploy_script(host,
+@@ -1370,6 +1374,8 @@ def deploy_script(host,
                          salt_config_to_yaml(minion_grains),
                          ssh_kwargs
                      )
@@ -1605,7 +1491,7 @@ index 0485a7476a..0d59aaf7db 100644
                  ssh_file(
                      opts,
                      '{0}/minion'.format(tmp_dir),
-@@ -1443,6 +1453,15 @@ def deploy_script(host,
+@@ -1453,6 +1459,15 @@ def deploy_script(host,
                              'Can\'t set ownership for {0}'.format(
                                  preseed_minion_keys_tempdir))
  
@@ -1621,7 +1507,7 @@ index 0485a7476a..0d59aaf7db 100644
              # The actual deploy script
              if script:
                  # got strange escaping issues with sudoer, going onto a
-@@ -1456,7 +1475,8 @@ def deploy_script(host,
+@@ -1466,7 +1481,8 @@ def deploy_script(host,
                      raise SaltCloudSystemExit(
                          'Can\'t set perms on {0}/deploy.sh'.format(tmp_dir))
  
@@ -1631,7 +1517,7 @@ index 0485a7476a..0d59aaf7db 100644
              queue = None
              process = None
              # Consider this code experimental. It causes Salt Cloud to wait
-@@ -1477,6 +1497,8 @@ def deploy_script(host,
+@@ -1487,6 +1503,8 @@ def deploy_script(host,
              if script:
                  if 'bootstrap-salt' in script:
                      deploy_command += ' -c \'{0}\''.format(tmp_dir)
@@ -1640,7 +1526,7 @@ index 0485a7476a..0d59aaf7db 100644
                      if make_syndic is True:
                          deploy_command += ' -S'
                      if make_master is True:
-@@ -1529,13 +1551,13 @@ def deploy_script(host,
+@@ -1539,13 +1557,13 @@ def deploy_script(host,
                              deploy_command
                          )
                      )
@@ -1656,7 +1542,7 @@ index 0485a7476a..0d59aaf7db 100644
                      if script_env:
                          root_cmd(
                              'rm -f \'{0}/environ-deploy-wrapper.sh\''.format(
-@@ -1543,51 +1565,45 @@ def deploy_script(host,
+@@ -1553,51 +1571,45 @@ def deploy_script(host,
                              ),
                              tty, sudo, **ssh_kwargs
                          )
@@ -1718,7 +1604,7 @@ index 0485a7476a..0d59aaf7db 100644
  
                  # Remove pre-seed keys directory
                  if preseed_minion_keys is not None:
-@@ -1596,9 +1612,7 @@ def deploy_script(host,
+@@ -1606,9 +1618,7 @@ def deploy_script(host,
                              preseed_minion_keys_tempdir
                          ), tty, sudo, **ssh_kwargs
                      )
@@ -1729,7 +1615,7 @@ index 0485a7476a..0d59aaf7db 100644
  
              if start_action and not parallel:
                  queuereturn = queue.get()
-@@ -1610,19 +1624,14 @@ def deploy_script(host,
+@@ -1620,19 +1630,14 @@ def deploy_script(host,
                      # )
                      # for line in output:
                      #    print(line)
@@ -1752,7 +1638,7 @@ index 0485a7476a..0d59aaf7db 100644
                      )
              # Fire deploy action
              fire_event(
-@@ -1674,12 +1683,12 @@ def run_inline_script(host,
+@@ -1684,12 +1689,12 @@ def run_inline_script(host,
          gateway = kwargs['gateway']
  
      starttime = time.mktime(time.localtime())
@@ -1767,7 +1653,7 @@ index 0485a7476a..0d59aaf7db 100644
          newtimeout = timeout - (time.mktime(time.localtime()) - starttime)
          if wait_for_passwd(host, port=port, username=username,
                             password=password, key_filename=key_filename,
-@@ -1687,11 +1696,7 @@ def run_inline_script(host,
+@@ -1697,11 +1702,7 @@ def run_inline_script(host,
                             display_ssh_output=display_ssh_output,
                             gateway=gateway, known_hosts_file=known_hosts_file):
  
@@ -1780,7 +1666,7 @@ index 0485a7476a..0d59aaf7db 100644
              newtimeout = timeout - (time.mktime(time.localtime()) - starttime)
              ssh_kwargs = {
                  'hostname': host,
-@@ -1707,7 +1712,7 @@ def run_inline_script(host,
+@@ -1717,7 +1718,7 @@ def run_inline_script(host,
                  ssh_kwargs['ssh_gateway_key'] = gateway['ssh_gateway_key']
                  ssh_kwargs['ssh_gateway_user'] = gateway['ssh_gateway_user']
              if key_filename:
@@ -1789,7 +1675,7 @@ index 0485a7476a..0d59aaf7db 100644
                  ssh_kwargs['key_filename'] = key_filename
              elif password and 'has_ssh_agent' in kwargs and kwargs['has_ssh_agent'] is False:
                  ssh_kwargs['password'] = password
-@@ -1718,26 +1723,53 @@ def run_inline_script(host,
+@@ -1728,26 +1729,53 @@ def run_inline_script(host,
                          allow_failure=True, **ssh_kwargs) and inline_script:
                  log.debug('Found inline script to execute.')
                  for cmd_line in inline_script:
@@ -1822,7 +1708,7 @@ index 0485a7476a..0d59aaf7db 100644
 +    ret = {}
 +    keys = []
 +    use_defaults = True
- 
++
 +    for ktag in __opts__.get('filter_events', {}):
 +        if tag != ktag:
 +            continue
@@ -1846,7 +1732,7 @@ index 0485a7476a..0d59aaf7db 100644
 +
 +    return ret
 +
-+
+ 
 +def fire_event(key, msg, tag, sock_dir, args=None, transport='zeromq'):
 +    '''
 +    Fire deploy action
@@ -1854,7 +1740,7 @@ index 0485a7476a..0d59aaf7db 100644
      event = salt.utils.event.get_event(
          'master',
          sock_dir,
-@@ -1765,7 +1797,7 @@ def _exec_ssh_cmd(cmd, error_msg=None, allow_failure=False, **kwargs):
+@@ -1775,7 +1803,7 @@ def _exec_ssh_cmd(cmd, error_msg=None, allow_failure=False, **kwargs):
      password_retries = kwargs.get('password_retries', 3)
      try:
          stdout, stderr = None, None
@@ -1863,16 +1749,7 @@ index 0485a7476a..0d59aaf7db 100644
              cmd,
              shell=True,
              log_stdout=True,
-@@ -1782,7 +1814,7 @@ def _exec_ssh_cmd(cmd, error_msg=None, allow_failure=False, **kwargs):
-                 if ('key_filename' in kwargs and kwargs['key_filename']
-                     and SSH_PASSWORD_PROMP_SUDO_RE.search(stdout)
-                 ):
--                    proc.sendline(kwargs['sudo_password', None])
-+                    proc.sendline(kwargs['sudo_password'])
-                 # elif authenticating via password and haven't exhausted our
-                 # password_retires
-                 elif (
-@@ -1805,9 +1837,9 @@ def _exec_ssh_cmd(cmd, error_msg=None, allow_failure=False, **kwargs):
+@@ -1815,9 +1843,9 @@ def _exec_ssh_cmd(cmd, error_msg=None, allow_failure=False, **kwargs):
                  )
              )
          return proc.exitstatus
@@ -1884,7 +1761,7 @@ index 0485a7476a..0d59aaf7db 100644
      finally:
          proc.close(terminate=True, kill=True)
      # Signal an error
-@@ -1831,7 +1863,7 @@ def scp_file(dest_path, contents=None, kwargs=None, local_file=None):
+@@ -1841,7 +1869,7 @@ def scp_file(dest_path, contents=None, kwargs=None, local_file=None):
                      if exc.errno != errno.EBADF:
                          raise exc
  
@@ -1893,7 +1770,7 @@ index 0485a7476a..0d59aaf7db 100644
  
          ssh_args = [
              # Don't add new hosts to the host key database
-@@ -1917,7 +1949,7 @@ def scp_file(dest_path, contents=None, kwargs=None, local_file=None):
+@@ -1927,7 +1955,7 @@ def scp_file(dest_path, contents=None, kwargs=None, local_file=None):
              )
          )
  
@@ -1902,7 +1779,7 @@ index 0485a7476a..0d59aaf7db 100644
          retcode = _exec_ssh_cmd(cmd,
                                  error_msg='Failed to upload file \'{0}\': {1}\n{2}',
                                  password_retries=3,
-@@ -1956,7 +1988,7 @@ def sftp_file(dest_path, contents=None, kwargs=None, local_file=None):
+@@ -1966,7 +1994,7 @@ def sftp_file(dest_path, contents=None, kwargs=None, local_file=None):
          if contents is not None:
              try:
                  tmpfd, file_to_upload = tempfile.mkstemp()
@@ -1911,7 +1788,7 @@ index 0485a7476a..0d59aaf7db 100644
                      os.write(tmpfd, contents.encode(__salt_system_encoding__))
                  else:
                      os.write(tmpfd, contents)
-@@ -1972,7 +2004,7 @@ def sftp_file(dest_path, contents=None, kwargs=None, local_file=None):
+@@ -1982,7 +2010,7 @@ def sftp_file(dest_path, contents=None, kwargs=None, local_file=None):
              if os.path.isdir(local_file):
                  put_args = ['-r']
  
@@ -1920,7 +1797,7 @@ index 0485a7476a..0d59aaf7db 100644
  
          ssh_args = [
              # Don't add new hosts to the host key database
-@@ -2047,7 +2079,7 @@ def sftp_file(dest_path, contents=None, kwargs=None, local_file=None):
+@@ -2057,7 +2085,7 @@ def sftp_file(dest_path, contents=None, kwargs=None, local_file=None):
          cmd = 'echo "put {0} {1} {2}" | sftp {3} {4[username]}@{5}'.format(
              ' '.join(put_args), file_to_upload, dest_path, ' '.join(ssh_args), kwargs, ipaddr
          )
@@ -1929,7 +1806,7 @@ index 0485a7476a..0d59aaf7db 100644
          retcode = _exec_ssh_cmd(cmd,
                                  error_msg='Failed to upload file \'{0}\': {1}\n{2}',
                                  password_retries=3,
-@@ -2093,13 +2125,7 @@ def win_cmd(command, **kwargs):
+@@ -2103,13 +2131,7 @@ def win_cmd(command, **kwargs):
          proc.communicate()
          return proc.returncode
      except Exception as err:
@@ -1944,7 +1821,7 @@ index 0485a7476a..0d59aaf7db 100644
      # Signal an error
      return 1
  
-@@ -2108,9 +2134,7 @@ def winrm_cmd(session, command, flags, **kwargs):
+@@ -2118,9 +2140,7 @@ def winrm_cmd(session, command, flags, **kwargs):
      '''
      Wrapper for commands to be run against Windows boxes using WinRM.
      '''
@@ -1955,7 +1832,7 @@ index 0485a7476a..0d59aaf7db 100644
      r = session.run_cmd(command, flags)
      return r.status_code
  
-@@ -2130,7 +2154,7 @@ def root_cmd(command, tty, sudo, allow_failure=False, **kwargs):
+@@ -2140,7 +2160,7 @@ def root_cmd(command, tty, sudo, allow_failure=False, **kwargs):
              logging_command = 'sudo -S "XXX-REDACTED-XXX" {0}'.format(command)
              command = 'sudo -S {0}'.format(command)
  
@@ -1964,7 +1841,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      ssh_args = []
  
-@@ -2201,9 +2225,8 @@ def root_cmd(command, tty, sudo, allow_failure=False, **kwargs):
+@@ -2211,9 +2231,8 @@ def root_cmd(command, tty, sudo, allow_failure=False, **kwargs):
              )
          ])
          log.info(
@@ -1976,7 +1853,7 @@ index 0485a7476a..0d59aaf7db 100644
          )
  
      if 'port' in kwargs:
-@@ -2221,7 +2244,7 @@ def root_cmd(command, tty, sudo, allow_failure=False, **kwargs):
+@@ -2231,7 +2250,7 @@ def root_cmd(command, tty, sudo, allow_failure=False, **kwargs):
          logging_command = 'timeout {0} {1}'.format(hard_timeout, logging_command)
          cmd = 'timeout {0} {1}'.format(hard_timeout, cmd)
  
@@ -1985,7 +1862,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      retcode = _exec_ssh_cmd(cmd, allow_failure=allow_failure, **kwargs)
      return retcode
-@@ -2235,11 +2258,7 @@ def check_auth(name, sock_dir=None, queue=None, timeout=300):
+@@ -2245,11 +2264,7 @@ def check_auth(name, sock_dir=None, queue=None, timeout=300):
      event = salt.utils.event.SaltEvent('master', sock_dir, listen=True)
      starttime = time.mktime(time.localtime())
      newtimeout = timeout
@@ -1998,7 +1875,7 @@ index 0485a7476a..0d59aaf7db 100644
      while newtimeout > 0:
          newtimeout = timeout - (time.mktime(time.localtime()) - starttime)
          ret = event.get_event(full=True)
-@@ -2248,7 +2267,7 @@ def check_auth(name, sock_dir=None, queue=None, timeout=300):
+@@ -2258,7 +2273,7 @@ def check_auth(name, sock_dir=None, queue=None, timeout=300):
          if ret['tag'] == 'minion_start' and ret['data']['id'] == name:
              queue.put(name)
              newtimeout = 0
@@ -2007,7 +1884,7 @@ index 0485a7476a..0d59aaf7db 100644
  
  
  def ip_to_int(ip):
-@@ -2318,14 +2337,11 @@ def remove_sshkey(host, known_hosts=None):
+@@ -2328,14 +2343,11 @@ def remove_sshkey(host, known_hosts=None):
  
      if known_hosts is not None:
          log.debug(
@@ -2025,7 +1902,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      cmd = 'ssh-keygen -R {0}'.format(host)
      subprocess.call(cmd, shell=True)
-@@ -2368,18 +2384,14 @@ def wait_for_ip(update_callback,
+@@ -2378,18 +2390,14 @@ def wait_for_ip(update_callback,
      duration = timeout
      while True:
          log.debug(
@@ -2047,7 +1924,7 @@ index 0485a7476a..0d59aaf7db 100644
              )
              max_failures -= 1
              if max_failures <= 0:
-@@ -2405,7 +2417,7 @@ def wait_for_ip(update_callback,
+@@ -2415,7 +2423,7 @@ def wait_for_ip(update_callback,
              if interval > timeout:
                  interval = timeout + 1
              log.info('Interval multiplier in effect; interval is '
@@ -2056,7 +1933,7 @@ index 0485a7476a..0d59aaf7db 100644
  
  
  def list_nodes_select(nodes, selection, call=None):
-@@ -2430,7 +2442,7 @@ def list_nodes_select(nodes, selection, call=None):
+@@ -2440,7 +2448,7 @@ def list_nodes_select(nodes, selection, call=None):
          pairs = {}
          data = nodes[node]
          for key in data:
@@ -2065,7 +1942,7 @@ index 0485a7476a..0d59aaf7db 100644
                  value = data[key]
                  pairs[key] = value
          ret[node] = pairs
-@@ -2446,19 +2458,19 @@ def lock_file(filename, interval=.5, timeout=15):
+@@ -2456,19 +2464,19 @@ def lock_file(filename, interval=.5, timeout=15):
      Note that these locks are only recognized by Salt Cloud, and not other
      programs or platforms.
      '''
@@ -2088,7 +1965,7 @@ index 0485a7476a..0d59aaf7db 100644
          pass
  
  
-@@ -2469,12 +2481,12 @@ def unlock_file(filename):
+@@ -2479,12 +2487,12 @@ def unlock_file(filename):
      Note that these locks are only recognized by Salt Cloud, and not other
      programs or platforms.
      '''
@@ -2103,7 +1980,7 @@ index 0485a7476a..0d59aaf7db 100644
  
  
  def cachedir_index_add(minion_id, profile, driver, provider, base=None):
-@@ -2497,8 +2509,9 @@ def cachedir_index_add(minion_id, profile, driver, provider, base=None):
+@@ -2507,8 +2515,9 @@ def cachedir_index_add(minion_id, profile, driver, provider, base=None):
      lock_file(index_file)
  
      if os.path.exists(index_file):
@@ -2115,7 +1992,7 @@ index 0485a7476a..0d59aaf7db 100644
      else:
          index = {}
  
-@@ -2513,8 +2526,9 @@ def cachedir_index_add(minion_id, profile, driver, provider, base=None):
+@@ -2523,8 +2532,9 @@ def cachedir_index_add(minion_id, profile, driver, provider, base=None):
          }
      })
  
@@ -2127,7 +2004,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      unlock_file(index_file)
  
-@@ -2529,16 +2543,18 @@ def cachedir_index_del(minion_id, base=None):
+@@ -2539,16 +2549,18 @@ def cachedir_index_del(minion_id, base=None):
      lock_file(index_file)
  
      if os.path.exists(index_file):
@@ -2150,7 +2027,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      unlock_file(index_file)
  
-@@ -2582,7 +2598,7 @@ def request_minion_cachedir(
+@@ -2592,7 +2604,7 @@ def request_minion_cachedir(
          base = __opts__['cachedir']
  
      if not fingerprint and pubkey is not None:
@@ -2159,7 +2036,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      init_cachedir(base)
  
-@@ -2594,8 +2610,9 @@ def request_minion_cachedir(
+@@ -2604,8 +2616,9 @@ def request_minion_cachedir(
  
      fname = '{0}.p'.format(minion_id)
      path = os.path.join(base, 'requested', fname)
@@ -2171,7 +2048,7 @@ index 0485a7476a..0d59aaf7db 100644
  
  
  def change_minion_cachedir(
-@@ -2626,13 +2643,13 @@ def change_minion_cachedir(
+@@ -2636,13 +2649,13 @@ def change_minion_cachedir(
      fname = '{0}.p'.format(minion_id)
      path = os.path.join(base, cachedir, fname)
  
@@ -2189,7 +2066,7 @@ index 0485a7476a..0d59aaf7db 100644
  
  
  def activate_minion_cachedir(minion_id, base=None):
-@@ -2669,21 +2686,23 @@ def delete_minion_cachedir(minion_id, provider, opts, base=None):
+@@ -2679,21 +2692,23 @@ def delete_minion_cachedir(minion_id, provider, opts, base=None):
      fname = '{0}.p'.format(minion_id)
      for cachedir in 'requested', 'active':
          path = os.path.join(base, cachedir, driver, provider, fname)
@@ -2216,7 +2093,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      minions = {}
      # First, get a list of all drivers in use
-@@ -2698,12 +2717,13 @@ def list_cache_nodes_full(opts, provider=None, base=None):
+@@ -2708,12 +2723,13 @@ def list_cache_nodes_full(opts, provider=None, base=None):
              minions[driver][prov] = {}
              min_dir = os.path.join(prov_dir, prov)
              # Get a list of all nodes per provider
@@ -2234,7 +2111,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      return minions
  
-@@ -2713,8 +2733,13 @@ def cache_nodes_ip(opts, base=None):
+@@ -2723,8 +2739,13 @@ def cache_nodes_ip(opts, base=None):
      Retrieve a list of all nodes from Salt Cloud cache, and any associated IP
      addresses. Returns a dict.
      '''
@@ -2249,7 +2126,7 @@ index 0485a7476a..0d59aaf7db 100644
  
      minions = list_cache_nodes_full(opts, base=base)
  
-@@ -2759,8 +2784,8 @@ def update_bootstrap(config, url=None):
+@@ -2769,8 +2790,8 @@ def update_bootstrap(config, url=None):
          else:
              script_name = os.path.basename(url)
      elif os.path.exists(url):
@@ -2260,7 +2137,7 @@ index 0485a7476a..0d59aaf7db 100644
          script_name = os.path.basename(url)
      # in last case, assuming we got a script content
      else:
-@@ -2832,28 +2857,20 @@ def update_bootstrap(config, url=None):
+@@ -2842,28 +2863,20 @@ def update_bootstrap(config, url=None):
              try:
                  os.makedirs(entry)
              except (OSError, IOError) as err:
@@ -2294,7 +2171,7 @@ index 0485a7476a..0d59aaf7db 100644
              continue
  
      return {'Success': {'Files updated': finished_full}}
-@@ -2881,8 +2898,9 @@ def cache_node_list(nodes, provider, opts):
+@@ -2891,8 +2904,9 @@ def cache_node_list(nodes, provider, opts):
      for node in nodes:
          diff_node_cache(prov_dir, node, nodes[node], opts)
          path = os.path.join(prov_dir, '{0}.p'.format(node))
@@ -2306,7 +2183,7 @@ index 0485a7476a..0d59aaf7db 100644
  
  
  def cache_node(node, provider, opts):
-@@ -2906,8 +2924,9 @@ def cache_node(node, provider, opts):
+@@ -2916,8 +2930,9 @@ def cache_node(node, provider, opts):
      if not os.path.exists(prov_dir):
          os.makedirs(prov_dir)
      path = os.path.join(prov_dir, '{0}.p'.format(node['name']))
@@ -2318,7 +2195,7 @@ index 0485a7476a..0d59aaf7db 100644
  
  
  def missing_node_cache(prov_dir, node_list, provider, opts):
-@@ -2980,17 +2999,17 @@ def diff_node_cache(prov_dir, node, new_data, opts):
+@@ -2990,17 +3005,17 @@ def diff_node_cache(prov_dir, node, new_data, opts):
          )
          return
  
@@ -2340,7 +2217,7 @@ index 0485a7476a..0d59aaf7db 100644
      if diff != 0:
          fire_event(
              'event',
-@@ -3108,7 +3127,7 @@ def store_password_in_keyring(credential_id, username, password=None):
+@@ -3118,7 +3133,7 @@ def store_password_in_keyring(credential_id, username, password=None):
          try:
              _save_password_in_keyring(credential_id, username, password)
          except keyring.errors.PasswordSetError as exc:
@@ -2349,7 +2226,7 @@ index 0485a7476a..0d59aaf7db 100644
      except ImportError:
          log.error('Tried to store password in keyring, but no keyring module is installed')
          return False
-@@ -3145,9 +3164,10 @@ def run_func_until_ret_arg(fun, kwargs, fun_call=None,
+@@ -3155,9 +3170,10 @@ def run_func_until_ret_arg(fun, kwargs, fun_call=None,
                      for k, v in six.iteritems(d0):
                          r_set[k] = v
          status = _unwrap_dict(r_set, argument_being_watched)
@@ -2363,7 +2240,7 @@ index 0485a7476a..0d59aaf7db 100644
          time.sleep(5)
  
      return True
-@@ -3189,22 +3209,16 @@ def check_key_path_and_mode(provider, key_path):
+@@ -3199,22 +3215,16 @@ def check_key_path_and_mode(provider, key_path):
      '''
      if not os.path.exists(key_path):
          log.error(
@@ -2392,7 +2269,7 @@ index 0485a7476a..0d59aaf7db 100644
          )
          return False
  
-@@ -3254,6 +3268,6 @@ def userdata_template(opts, vm_, userdata):
+@@ -3264,6 +3274,6 @@ def userdata_template(opts, vm_, userdata):
                      'Templated userdata resulted in non-string result (%s), '
                      'converting to string', templated
                  )
@@ -3212,7 +3089,7 @@ index 0000000000..7af0f3a7b6
 +
 +jinja_global = JinjaGlobal
 diff --git a/salt/utils/files.py b/salt/utils/files.py
-index 5097f8e6fd..4f06f2366e 100644
+index 2589854c6b..1068ba97ee 100644
 --- a/salt/utils/files.py
 +++ b/salt/utils/files.py
 @@ -1,4 +1,7 @@
@@ -3274,8 +3151,8 @@ index 5097f8e6fd..4f06f2366e 100644
 +HASHES_REVMAP = dict([(y, x) for x, y in six.iteritems(HASHES)])
  
  
- def guess_archive_type(name):
-@@ -31,7 +59,9 @@ def guess_archive_type(name):
+ def __clean_tmp(tmp):
+@@ -41,7 +69,9 @@ def guess_archive_type(name):
      Guess an archive type (tar, zip, or rar) by its file extension
      '''
      name = name.lower()
@@ -3286,7 +3163,7 @@ index 5097f8e6fd..4f06f2366e 100644
                     'tar.lzma', 'tlz'):
          if name.endswith('.' + ending):
              return 'tar'
-@@ -41,6 +71,24 @@ def guess_archive_type(name):
+@@ -51,6 +81,24 @@ def guess_archive_type(name):
      return None
  
  
@@ -3311,7 +3188,7 @@ index 5097f8e6fd..4f06f2366e 100644
  def recursive_copy(source, dest):
      '''
      Recursively copy the source directory to the destination,
-@@ -49,7 +97,7 @@ def recursive_copy(source, dest):
+@@ -59,7 +107,7 @@ def recursive_copy(source, dest):
      (identical to cp -r on a unix machine)
      '''
      for root, _, files in os.walk(source):
@@ -3320,7 +3197,7 @@ index 5097f8e6fd..4f06f2366e 100644
          target_directory = os.path.join(dest, path_from_source)
          if not os.path.exists(target_directory):
              os.makedirs(target_directory)
-@@ -74,21 +122,21 @@ def copyfile(source, dest, backup_mode='', cachedir=''):
+@@ -84,21 +132,21 @@ def copyfile(source, dest, backup_mode='', cachedir=''):
          )
      bname = os.path.basename(dest)
      dname = os.path.dirname(os.path.abspath(dest))
@@ -3345,7 +3222,7 @@ index 5097f8e6fd..4f06f2366e 100644
          try:
              fstat = os.stat(dest)
          except OSError:
-@@ -106,7 +154,7 @@ def copyfile(source, dest, backup_mode='', cachedir=''):
+@@ -124,7 +172,7 @@ def copyfile(source, dest, backup_mode='', cachedir=''):
          except (ImportError, CommandExecutionError):
              pass
          if policy == 'Enforcing':
@@ -3354,26 +3231,19 @@ index 5097f8e6fd..4f06f2366e 100644
                  cmd = [rcon, dest]
                  subprocess.call(cmd, stdout=dev_null, stderr=dev_null)
      if os.path.isfile(tgt):
-@@ -234,3 +282,463 @@ def wait_lock(path, lock_fn=None, timeout=5, sleep=0.1, time_start=None):
-         if obtained_lock:
-             os.remove(lock_fn)
-             log.trace('Write lock for %s (%s) released', path, lock_fn)
-+
-+
-+@contextlib.contextmanager
-+def set_umask(mask):
-+    '''
-+    Temporarily set the umask and restore once the contextmanager exits
-+    '''
+@@ -256,7 +304,7 @@ def set_umask(mask):
+     '''
+     Temporarily set the umask and restore once the contextmanager exits
+     '''
+-    if salt.utils.is_windows():
 +    if salt.utils.platform.is_windows():
-+        # Don't attempt on Windows
-+        yield
-+    else:
-+        try:
-+            orig_mask = os.umask(mask)
-+            yield
-+        finally:
-+            os.umask(orig_mask)
+         # Don't attempt on Windows
+         yield
+     else:
+@@ -265,3 +313,447 @@ def set_umask(mask):
+             yield
+         finally:
+             os.umask(orig_mask)
 +
 +
 +def fopen(*args, **kwargs):
@@ -4416,86 +4286,40 @@ index 0000000000..9b6d285791
 +                    raise
 +        break
 diff --git a/salt/utils/versions.py b/salt/utils/versions.py
-new file mode 100644
-index 0000000000..e51ae40b75
---- /dev/null
+index f1533a84ee..e51ae40b75 100644
+--- a/salt/utils/versions.py
 +++ b/salt/utils/versions.py
-@@ -0,0 +1,293 @@
-+# -*- coding: utf-8 -*-
-+'''
-+    :copyright: Copyright 2017 by the SaltStack Team, see AUTHORS for more details.
-+    :license: Apache 2.0, see LICENSE for more details.
-+
-+
-+    salt.utils.versions
-+    ~~~~~~~~~~~~~~~~~~~
-+
-+    Version parsing based on distutils.version which works under python 3
-+    because on python 3 you can no longer compare strings against integers.
-+'''
-+
+@@ -11,14 +11,25 @@
+     because on python 3 you can no longer compare strings against integers.
+ '''
+ 
+-# Import python libs
 +# Import Python libs
-+from __future__ import absolute_import
+ from __future__ import absolute_import
 +import logging
 +import numbers
 +import sys
 +import warnings
 +# pylint: disable=blacklisted-module
-+from distutils.version import StrictVersion as _StrictVersion
-+from distutils.version import LooseVersion as _LooseVersion
+ from distutils.version import StrictVersion as _StrictVersion
+ from distutils.version import LooseVersion as _LooseVersion
 +# pylint: enable=blacklisted-module
 +
 +# Import Salt libs
 +import salt.version
-+
-+# Import 3rd-party libs
-+from salt.ext import six
-+
+ 
+ # Import 3rd-party libs
+ from salt.ext import six
+ 
 +log = logging.getLogger(__name__)
 +
-+
-+class StrictVersion(_StrictVersion):
-+    def parse(self, vstring):
-+        _StrictVersion.parse(self, vstring)
-+
-+    def _cmp(self, other):
-+        if isinstance(other, six.string_types):
-+            other = StrictVersion(other)
-+        return _StrictVersion._cmp(self, other)
-+
-+
-+class LooseVersion(_LooseVersion):
-+
-+    def parse(self, vstring):
-+        _LooseVersion.parse(self, vstring)
-+
-+        if six.PY3:
-+            # Convert every part of the version to string in order to be able to compare
-+            self._str_version = [
-+                str(vp).zfill(8) if isinstance(vp, int) else vp for vp in self.version]
-+
-+    if six.PY3:
-+        def _cmp(self, other):
-+            if isinstance(other, six.string_types):
-+                other = LooseVersion(other)
-+
-+            string_in_version = False
-+            for part in self.version + other.version:
-+                if not isinstance(part, int):
-+                    string_in_version = True
-+                    break
-+
-+            if string_in_version is False:
-+                return _LooseVersion._cmp(self, other)
-+
-+            # If we reached this far, it means at least a part of the version contains a string
-+            # In python 3, strings and integers are not comparable
-+            if self._str_version == other._str_version:
-+                return 0
-+            if self._str_version < other._str_version:
-+                return -1
-+            if self._str_version > other._str_version:
-+                return 1
+ 
+ class StrictVersion(_StrictVersion):
+     def parse(self, vstring):
+@@ -62,3 +73,221 @@ class LooseVersion(_LooseVersion):
+                 return -1
+             if self._str_version > other._str_version:
+                 return 1
 +
 +
 +def warn_until(version,
@@ -4844,7 +4668,7 @@ index 8f8742cf14..ae43154bf2 100644
 +        kwargs['allow_unicode'] = True
 +    return yaml.dump(data, stream, Dumper=SafeOrderedDumper, **kwargs)
 diff --git a/salt/utils/yamlloader.py b/salt/utils/yamlloader.py
-index a51d1f1f25..16e30d1836 100644
+index 7beb94b767..16e30d1836 100644
 --- a/salt/utils/yamlloader.py
 +++ b/salt/utils/yamlloader.py
 @@ -1,10 +1,14 @@
@@ -4896,15 +4720,13 @@ index a51d1f1f25..16e30d1836 100644
 -                u'tag:yaml.org,2002:omap',
 +                'tag:yaml.org,2002:omap',
                  type(self).construct_yaml_map)
--            self.add_constructor(
--                u'tag:yaml.org,2002:python/unicode',
--                type(self).construct_unicode)
-+        self.add_constructor(
+         self.add_constructor(
+-            u'tag:yaml.org,2002:python/unicode',
 +            'tag:yaml.org,2002:str',
 +            type(self).construct_yaml_str)
 +        self.add_constructor(
 +            'tag:yaml.org,2002:python/unicode',
-+            type(self).construct_unicode)
+             type(self).construct_unicode)
 +        self.add_constructor(
 +            'tag:yaml.org,2002:timestamp',
 +            type(self).construct_scalar)
@@ -4996,6 +4818,6 @@ index a51d1f1f25..16e30d1836 100644
 +    '''
 +    return yaml.load(stream, Loader=Loader)
 -- 
-2.13.6
+2.17.1
 
 

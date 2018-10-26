@@ -1,4 +1,4 @@
-From 2c5837efa3d5f30279cd6e3fc4b277994e639a82 Mon Sep 17 00:00:00 2001
+From 961288bc58795933d250fc13f21c10b66d4a7e36 Mon Sep 17 00:00:00 2001
 From: Ch3LL <megan.wilhite@gmail.com>
 Date: Mon, 31 Jul 2017 11:50:21 -0400
 Subject: [PATCH] Add clean_id function to salt.utils.verify.py
@@ -8,10 +8,10 @@ Subject: [PATCH] Add clean_id function to salt.utils.verify.py
  1 file changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/salt/utils/verify.py b/salt/utils/verify.py
-index 5e320c3b59..db513ba675 100644
+index 45581f02ce..3d606fe135 100644
 --- a/salt/utils/verify.py
 +++ b/salt/utils/verify.py
-@@ -481,12 +481,21 @@ def clean_path(root, path, subdir=False):
+@@ -481,6 +481,15 @@ def clean_path(root, path, subdir=False):
      return ''
  
  
@@ -27,14 +27,16 @@ index 5e320c3b59..db513ba675 100644
  def valid_id(opts, id_):
      '''
      Returns if the passed id is valid
-     '''
+@@ -488,7 +497,7 @@ def valid_id(opts, id_):
      try:
+         if any(x in id_ for x in ('/', '\\', '\0')):
+             return False
 -        return bool(clean_path(opts['pki_dir'], id_))
 +        return bool(clean_path(opts['pki_dir'], id_)) and clean_id(id_)
-     except (AttributeError, KeyError) as e:
+     except (AttributeError, KeyError, TypeError):
          return False
  
 -- 
-2.13.6
+2.17.1
 
 

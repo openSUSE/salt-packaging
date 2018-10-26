@@ -1,4 +1,4 @@
-From 74d8e2bbf033f69c941549e277b881039bf3cfe2 Mon Sep 17 00:00:00 2001
+From 087080c12f9cb422527971dd8bb5b3205dc91da0 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Tue, 29 May 2018 16:33:01 +0200
 Subject: [PATCH] Backport #46867 string arg normalization (bsc#1094960)
@@ -66,7 +66,7 @@ index b321f22477..a367fdb943 100644
          if extra is not None:
              for key in extra:
 diff --git a/salt/modules/cp.py b/salt/modules/cp.py
-index 7a3bd3344d..7a66b89c35 100644
+index 3f3fe1a989..d4000655e9 100644
 --- a/salt/modules/cp.py
 +++ b/salt/modules/cp.py
 @@ -4,7 +4,7 @@ Minion side functions for salt-cp
@@ -75,14 +75,14 @@ index 7a3bd3344d..7a66b89c35 100644
  # Import python libs
 -from __future__ import absolute_import
 +from __future__ import absolute_import, unicode_literals
+ import base64
+ import errno
  import os
- import logging
- import fnmatch
 diff --git a/salt/modules/file.py b/salt/modules/file.py
-index e6d80c9c3a..ebc3358389 100644
+index 9186de9166..8e45c5166d 100644
 --- a/salt/modules/file.py
 +++ b/salt/modules/file.py
-@@ -3528,7 +3528,7 @@ def source_list(source, source_hash, saltenv):
+@@ -3545,7 +3545,7 @@ def source_list(source, source_hash, saltenv):
  
          salt '*' file.source_list salt://http/httpd.conf '{hash_type: 'md5', 'hsum': <md5sum>}' base
      '''
@@ -92,6 +92,6 @@ index e6d80c9c3a..ebc3358389 100644
          return __context__[contextkey]
  
 -- 
-2.18.0
+2.17.1
 
 

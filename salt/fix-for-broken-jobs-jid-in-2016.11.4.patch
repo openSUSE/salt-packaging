@@ -1,4 +1,4 @@
-From 0176e1d9bee31e659b1988d7236a555cf1aaf8e8 Mon Sep 17 00:00:00 2001
+From 2b72dad30117fa48997690097301d23f6fa779ce Mon Sep 17 00:00:00 2001
 From: senthilkumar-e <senthilkumar.eswaren@gmail.com>
 Date: Wed, 26 Apr 2017 11:22:12 +0530
 Subject: [PATCH] Fix for broken /jobs/<jid> in 2016.11.4
@@ -11,18 +11,18 @@ Fixing the pylint issue
  1 file changed, 1 insertion(+)
 
 diff --git a/salt/runner.py b/salt/runner.py
-index a1f61938eb..f495a4a128 100644
+index 0eedec55b7..1557edbae4 100644
 --- a/salt/runner.py
 +++ b/salt/runner.py
 @@ -74,6 +74,7 @@ class RunnerClient(mixins.SyncClientMixin, mixins.AsyncClientMixin, object):
  
-         reserved_kwargs = dict([(i, low.pop(i)) for i in [
+         eauth_creds = dict([(i, low.pop(i)) for i in [
              'username', 'password', 'eauth', 'token', 'client', 'user', 'key',
 +            '__current_eauth_groups', '__current_eauth_user',
          ] if i in low])
  
-         # Run name=value args through parse_input. We don't need to run kwargs
+         # Separate the new-style args/kwargs.
 -- 
-2.13.6
+2.17.1
 
 

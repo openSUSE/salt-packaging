@@ -1,4 +1,4 @@
-From 54e1bafbf4a7d7274d41747464bb16bf0226398a Mon Sep 17 00:00:00 2001
+From 682370355bac62938d0fd3812a6bfa5b7a957306 Mon Sep 17 00:00:00 2001
 From: Michele Bologna <michele.bologna@suse.com>
 Date: Thu, 14 Dec 2017 18:20:02 +0100
 Subject: [PATCH] Feat: add grain for all FQDNs
@@ -17,14 +17,14 @@ https://github.com/saltstack/salt/pull/45060
 ---
  salt/grains/core.py                 | 27 +++++++++++++++++++++++++++
  tests/integration/modules/grains.py |  1 +
- tests/unit/grains/core_test.py      | 23 +++++++++++++++++++++++
- 3 files changed, 51 insertions(+)
+ tests/unit/grains/core_test.py      | 19 +++++++++++++++++++
+ 3 files changed, 47 insertions(+)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index a577c7c9d8..a039aaffba 100644
+index f5ee390c53..f6cda56ba5 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
-@@ -1670,6 +1670,33 @@ def append_domain():
+@@ -1667,6 +1667,33 @@ def append_domain():
      return grain
  
  
@@ -71,27 +71,23 @@ index 848a111720..ce0f037817 100644
              'groupname',
              'host',
 diff --git a/tests/unit/grains/core_test.py b/tests/unit/grains/core_test.py
-index 7f5430c233..c60bf373d6 100644
+index 51bb609a3b..6f55324b97 100644
 --- a/tests/unit/grains/core_test.py
 +++ b/tests/unit/grains/core_test.py
-@@ -7,6 +7,7 @@
- from __future__ import absolute_import
+@@ -8,6 +8,7 @@ from __future__ import absolute_import
+ import logging
  import os
  import platform
 +import socket
  
  # Import Salt Testing Libs
  from salttesting import TestCase, skipIf
-@@ -459,6 +460,28 @@ PATCHLEVEL = 3
-         self.assertListEqual(list(os_grains.get('osrelease_info')), os_release_map['osrelease_info'])
-         self.assertEqual(os_grains.get('osmajorrelease'), os_release_map['osmajorrelease'])
+@@ -615,6 +616,24 @@ PATCHLEVEL = 3
+                     get_dns = core.dns()
+                     self.assertEqual(get_dns, ret)
  
 +    @skipIf(not salt.utils.is_linux(), 'System is not Linux')
 +    def test_fqdns_return(self):
-+        '''
-+        test the return for a dns grain. test for issue:
-+        https://github.com/saltstack/salt/issues/41230
-+        '''
 +        reverse_resolv_mock = [('foo.bar.baz', [], ['1.2.3.4']),
 +        ('rinzler.evil-corp.com', [], ['5.6.7.8']),
 +        ('foo.bar.baz', [], ['fe80::a8b2:93ff:fe00:0']),
@@ -112,6 +108,6 @@ index 7f5430c233..c60bf373d6 100644
  if __name__ == '__main__':
      from integration import run_tests
 -- 
-2.13.6
+2.17.1
 
 

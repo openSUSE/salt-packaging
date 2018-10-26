@@ -1,4 +1,4 @@
-From 0110970e1b6e79d39f89ad3de003522343662c5b Mon Sep 17 00:00:00 2001
+From 6eb79667bab17c02d4d8383186cc1b03d5982ecc Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Mon, 25 Jun 2018 13:06:40 +0100
@@ -16,18 +16,18 @@ Fix '_find_remove_targets' after aligning Zypper with pkg state
  3 files changed, 89 insertions(+), 60 deletions(-)
 
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index 33d5a72332..d812312b84 100644
+index a5de847937..bdf6f2036c 100644
 --- a/salt/modules/zypper.py
 +++ b/salt/modules/zypper.py
-@@ -35,6 +35,7 @@ from xml.parsers.expat import ExpatError
- 
+@@ -36,6 +36,7 @@ from xml.parsers.expat import ExpatError
  # Import salt libs
  import salt.utils
+ import salt.utils.pkg
 +import salt.utils.pkg.rpm
  import salt.utils.systemd
  from salt.exceptions import (
      CommandExecutionError, MinionError)
-@@ -644,24 +645,44 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -645,24 +646,44 @@ def list_pkgs(versions_as_list=False, **kwargs):
      contextkey = 'pkg.list_pkgs'
  
      if contextkey not in __context__:
@@ -87,10 +87,10 @@ index 33d5a72332..d812312b84 100644
      return __salt__['pkg_resource.format_pkg_list'](
          __context__[contextkey],
 diff --git a/salt/states/pkg.py b/salt/states/pkg.py
-index 1aadae80cb..3eb8d4b597 100644
+index 090d34b25b..1982605cb1 100644
 --- a/salt/states/pkg.py
 +++ b/salt/states/pkg.py
-@@ -417,16 +417,6 @@ def _find_remove_targets(name=None,
+@@ -410,16 +410,6 @@ def _find_remove_targets(name=None,
  
          if __grains__['os'] == 'FreeBSD' and origin:
              cver = [k for k, v in six.iteritems(cur_pkgs) if v['origin'] == pkgname]
@@ -107,7 +107,7 @@ index 1aadae80cb..3eb8d4b597 100644
          else:
              cver = cur_pkgs.get(pkgname, [])
  
-@@ -777,17 +767,6 @@ def _verify_install(desired, new_pkgs, ignore_epoch=False):
+@@ -813,17 +803,6 @@ def _verify_install(desired, new_pkgs, ignore_epoch=False):
              cver = [k for k, v in six.iteritems(new_pkgs) if v['origin'] == pkgname]
          elif __grains__['os_family'] == 'Debian':
              cver = new_pkgs.get(pkgname.split('=')[0])
@@ -126,10 +126,10 @@ index 1aadae80cb..3eb8d4b597 100644
              cver = new_pkgs.get(pkgname)
  
 diff --git a/tests/unit/modules/zypper_test.py b/tests/unit/modules/zypper_test.py
-index a0d136a9c1..5fb76de66b 100644
+index a0b437ff86..8b216672df 100644
 --- a/tests/unit/modules/zypper_test.py
 +++ b/tests/unit/modules/zypper_test.py
-@@ -61,12 +61,17 @@ zypper.rpm = None
+@@ -63,12 +63,17 @@ zypper.rpm = None
  
  
  RPM_OUT = [
@@ -153,7 +153,7 @@ index a0d136a9c1..5fb76de66b 100644
  ]
  
  
-@@ -496,6 +501,7 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -521,6 +526,7 @@ Repository 'DUMMY' not found by its alias, number, or URI.
              self.assertTrue(zypper.upgrade_available('vim'))
  
      @patch.dict(zypper.__salt__, {'cmd.run': MagicMock(return_value=os.linesep.join(RPM_OUT))})
@@ -161,7 +161,7 @@ index a0d136a9c1..5fb76de66b 100644
      @patch.dict(zypper.__salt__, {'pkg_resource.add_pkg': _add_data})
      @patch.dict(zypper.__salt__, {'pkg_resource.format_pkg_list': pkg_resource.format_pkg_list})
      @patch.dict(zypper.__salt__, {'pkg_resource.stringify': MagicMock()})
-@@ -506,17 +512,21 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -531,17 +537,21 @@ Repository 'DUMMY' not found by its alias, number, or URI.
          :return:
          '''
          pkgs = zypper.list_pkgs(versions_as_list=True)
@@ -190,7 +190,7 @@ index a0d136a9c1..5fb76de66b 100644
      @patch.dict(zypper.__salt__, {'pkg_resource.add_pkg': _add_data})
      @patch.dict(zypper.__salt__, {'pkg_resource.format_pkg_list': pkg_resource.format_pkg_list})
      @patch.dict(zypper.__salt__, {'pkg_resource.stringify': MagicMock()})
-@@ -527,45 +537,64 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -552,45 +562,64 @@ Repository 'DUMMY' not found by its alias, number, or URI.
          :return:
          '''
          pkgs = zypper.list_pkgs(attr=['epoch', 'release', 'arch', 'install_date_time_t'])

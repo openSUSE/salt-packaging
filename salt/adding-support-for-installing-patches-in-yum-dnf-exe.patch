@@ -1,4 +1,4 @@
-From c90ef290a20688ad4e54a9f2ec5a7dfac8f84ce6 Mon Sep 17 00:00:00 2001
+From a82897ed9f830485df611f4b5c0592b163f88ee9 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Tue, 21 Mar 2017 11:10:06 +0000
@@ -48,19 +48,19 @@ Adding more unit tests for Zypper module
 Pylint fix
 ---
  salt/modules/pkg_resource.py               |   9 +
- salt/modules/yumpkg.py                     | 108 +++++++-
- salt/modules/zypper.py                     |  91 ++++++-
- salt/states/pkg.py                         | 420 +++++++++++++++++++++++++++++
+ salt/modules/yumpkg.py                     | 118 +++++-
+ salt/modules/zypper.py                     |  91 ++++-
+ salt/states/pkg.py                         | 420 +++++++++++++++++++++
  tests/unit/modules/zypp/zypper-patches.xml |  10 +
- tests/unit/modules/zypper_test.py          | 119 ++++++++
- 6 files changed, 751 insertions(+), 6 deletions(-)
+ tests/unit/modules/zypper_test.py          | 119 ++++++
+ 6 files changed, 761 insertions(+), 6 deletions(-)
  create mode 100644 tests/unit/modules/zypp/zypper-patches.xml
 
 diff --git a/salt/modules/pkg_resource.py b/salt/modules/pkg_resource.py
-index 1df9307d0b..ad0f0ffc76 100644
+index 9657853c38..928dccae7d 100644
 --- a/salt/modules/pkg_resource.py
 +++ b/salt/modules/pkg_resource.py
-@@ -119,6 +119,15 @@ def parse_targets(name=None,
+@@ -121,6 +121,15 @@ def parse_targets(name=None,
          log.error('Only one of "pkgs" and "sources" can be used.')
          return None, None
  
@@ -74,10 +74,10 @@ index 1df9307d0b..ad0f0ffc76 100644
 +            return [name], 'advisory'
 +
      elif pkgs:
-         pkgs = _repack_pkgs(pkgs, normalize=normalize)
-         if not pkgs:
+         if version is not None:
+             log.warning('\'version\' argument will be ignored for multiple '
 diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
-index d67bbe0531..f6777d770f 100644
+index a763d468d1..be69320fe8 100644
 --- a/salt/modules/yumpkg.py
 +++ b/salt/modules/yumpkg.py
 @@ -19,6 +19,7 @@ from __future__ import absolute_import
@@ -88,7 +88,7 @@ index d67bbe0531..f6777d770f 100644
  import itertools
  import logging
  import os
-@@ -800,6 +801,27 @@ def list_upgrades(refresh=True, **kwargs):
+@@ -828,6 +829,27 @@ def list_upgrades(refresh=True, **kwargs):
  list_updates = salt.utils.alias_function(list_upgrades, 'list_updates')
  
  
@@ -116,12 +116,22 @@ index d67bbe0531..f6777d770f 100644
  def info_installed(*names):
      '''
      .. versionadded:: 2015.8.1
-@@ -1082,10 +1104,10 @@ def install(name=None,
-             log.warning('"version" parameter will be ignored for multiple '
-                         'package targets')
+@@ -1108,10 +1130,20 @@ def install(name=None,
+     if pkg_params is None or len(pkg_params) == 0:
+         return {}
  
 -    old = list_pkgs(versions_as_list=False)
 +    old = list_pkgs(versions_as_list=False) if not downloadonly else list_downloaded()
++    version_num = kwargs.get('version')
++    if version_num:
++        if pkgs is None and sources is None:
++            # Allow "version" to work for single package target
++            pkg_params = {name: version_num}
++        else:
++            log.warning('"version" parameter will be ignored for multiple '
++                        'package targets')
++
++
      # Use of __context__ means no duplicate work here, just accessing
      # information already in __context__ from the previous call to list_pkgs()
 -    old_as_list = list_pkgs(versions_as_list=True)
@@ -129,7 +139,7 @@ index d67bbe0531..f6777d770f 100644
  
      to_install = []
      to_downgrade = []
-@@ -1108,6 +1130,16 @@ def install(name=None,
+@@ -1134,6 +1166,16 @@ def install(name=None,
  
      if pkg_type == 'repository':
          pkg_params_items = six.iteritems(pkg_params)
@@ -146,7 +156,7 @@ index d67bbe0531..f6777d770f 100644
      else:
          pkg_params_items = []
          for pkg_source in pkg_params:
-@@ -1131,6 +1163,9 @@ def install(name=None,
+@@ -1157,6 +1199,9 @@ def install(name=None,
      for pkg_item_list in pkg_params_items:
          if pkg_type == 'repository':
              pkgname, version_num = pkg_item_list
@@ -156,7 +166,7 @@ index d67bbe0531..f6777d770f 100644
          else:
              try:
                  pkgname, pkgpath, version_num = pkg_item_list
-@@ -1145,6 +1180,8 @@ def install(name=None,
+@@ -1171,6 +1216,8 @@ def install(name=None,
                      to_reinstall.append((pkgname, pkgname))
                  else:
                      to_install.append((pkgname, pkgname))
@@ -165,7 +175,7 @@ index d67bbe0531..f6777d770f 100644
              else:
                  to_install.append((pkgname, pkgpath))
          else:
-@@ -1291,6 +1328,8 @@ def install(name=None,
+@@ -1319,6 +1366,8 @@ def install(name=None,
      targets = []
      with _temporarily_unhold(to_install, targets):
          if targets:
@@ -174,7 +184,7 @@ index d67bbe0531..f6777d770f 100644
              cmd = []
              if salt.utils.systemd.has_scope(__context__) \
                  and __salt__['config.get']('systemd.scope', True):
-@@ -1299,7 +1338,7 @@ def install(name=None,
+@@ -1327,7 +1376,7 @@ def install(name=None,
              if _yum() == 'dnf':
                  cmd.extend(['--best', '--allowerasing'])
              _add_common_args(cmd)
@@ -183,7 +193,7 @@ index d67bbe0531..f6777d770f 100644
              cmd.extend(targets)
              out = __salt__['cmd.run_all'](
                  cmd,
-@@ -1351,7 +1390,7 @@ def install(name=None,
+@@ -1379,7 +1428,7 @@ def install(name=None,
                  errors.append(out['stdout'])
  
      __context__.pop('pkg.list_pkgs', None)
@@ -192,7 +202,7 @@ index d67bbe0531..f6777d770f 100644
  
      ret = salt.utils.compare_dicts(old, new)
  
-@@ -2757,3 +2796,64 @@ def diff(*paths):
+@@ -2789,3 +2838,64 @@ def diff(*paths):
                      local_pkgs[pkg]['path'], path) or 'Unchanged'
  
      return ret
@@ -258,7 +268,7 @@ index d67bbe0531..f6777d770f 100644
 +    '''
 +    return _get_patches(installed_only=True)
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index e845e3ff4d..60591fa71f 100644
+index 97f0954ee3..50ddd57ec7 100644
 --- a/salt/modules/zypper.py
 +++ b/salt/modules/zypper.py
 @@ -15,6 +15,7 @@ Package support for openSUSE via the zypper package manager
@@ -269,7 +279,7 @@ index e845e3ff4d..60591fa71f 100644
  import logging
  import re
  import os
-@@ -1029,10 +1030,18 @@ def install(name=None,
+@@ -1024,10 +1025,18 @@ def install(name=None,
              for problem in problems:
                  log.error(problem)
              return {}
@@ -289,7 +299,7 @@ index e845e3ff4d..60591fa71f 100644
      downgrades = []
      if fromrepo:
          fromrepoopt = ['--force', '--force-resolution', '--from', fromrepo]
-@@ -1050,6 +1059,8 @@ def install(name=None,
+@@ -1045,6 +1054,8 @@ def install(name=None,
          cmd_install.extend(fromrepoopt)
  
      errors = []
@@ -298,16 +308,16 @@ index e845e3ff4d..60591fa71f 100644
  
      # Split the targets into batches of 500 packages each, so that
      # the maximal length of the command line is not broken
-@@ -1068,7 +1079,7 @@ def install(name=None,
+@@ -1063,7 +1074,7 @@ def install(name=None,
          __zypper__(no_repo_failure=ignore_repo_failure).call(*cmd)
  
      __context__.pop('pkg.list_pkgs', None)
 -    new = list_pkgs()
 +    new = list_pkgs() if not downloadonly else list_downloaded()
-     ret = salt.utils.compare_dicts(old, new)
  
-     if errors:
-@@ -1771,6 +1782,28 @@ def download(*packages, **kwargs):
+     # Handle packages which report multiple new versions
+     # (affects only kernel packages at this point)
+@@ -1777,6 +1788,28 @@ def download(*packages, **kwargs):
      )
  
  
@@ -336,7 +346,7 @@ index e845e3ff4d..60591fa71f 100644
  def diff(*paths):
      '''
      Return a formatted diff between current files and original in a package.
-@@ -1808,3 +1841,57 @@ def diff(*paths):
+@@ -1814,3 +1847,57 @@ def diff(*paths):
                  ) or 'Unchanged'
  
      return ret
@@ -395,10 +405,10 @@ index e845e3ff4d..60591fa71f 100644
 +    '''
 +    return _get_patches(installed_only=True)
 diff --git a/salt/states/pkg.py b/salt/states/pkg.py
-index b9b6df1362..6629630023 100644
+index fe2a67a057..aa3cf7b92d 100644
 --- a/salt/states/pkg.py
 +++ b/salt/states/pkg.py
-@@ -213,6 +213,171 @@ def _find_unpurge_targets(desired):
+@@ -206,6 +206,171 @@ def _find_unpurge_targets(desired):
      ]
  
  
@@ -570,7 +580,7 @@ index b9b6df1362..6629630023 100644
  def _find_remove_targets(name=None,
                           version=None,
                           pkgs=None,
-@@ -1700,6 +1865,261 @@ def installed(
+@@ -1689,6 +1854,261 @@ def installed(
      return ret
  
  
@@ -849,10 +859,10 @@ index 0000000000..20886345b7
 +  </search-result>
 +</stream>
 diff --git a/tests/unit/modules/zypper_test.py b/tests/unit/modules/zypper_test.py
-index c29d12c2aa..39bd2e73e8 100644
+index 621fa600c4..7bbfd6c39e 100644
 --- a/tests/unit/modules/zypper_test.py
 +++ b/tests/unit/modules/zypper_test.py
-@@ -462,6 +462,48 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -487,6 +487,48 @@ Repository 'DUMMY' not found by its alias, number, or URI.
                              self.assertTrue(pkgs.get(pkg_name))
                              self.assertEqual(pkgs[pkg_name], pkg_version)
  
@@ -901,7 +911,7 @@ index c29d12c2aa..39bd2e73e8 100644
      def test_download(self):
          '''
          Test package download
-@@ -487,6 +529,83 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -512,6 +554,83 @@ Repository 'DUMMY' not found by its alias, number, or URI.
                  test_out['_error'] = "The following package(s) failed to download: foo"
                  self.assertEqual(zypper.download("nmap", "foo"), test_out)
  
@@ -986,6 +996,6 @@ index c29d12c2aa..39bd2e73e8 100644
          '''
          Test package removal
 -- 
-2.13.6
+2.17.1
 
 

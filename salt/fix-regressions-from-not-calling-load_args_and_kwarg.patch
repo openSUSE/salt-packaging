@@ -1,4 +1,4 @@
-From 7afcd073eb9f083ef023226df0820472244e4b9f Mon Sep 17 00:00:00 2001
+From debf3dbc40afd880a1d2a3372448f8e12287403c Mon Sep 17 00:00:00 2001
 From: Seth House <seth@eseth.com>
 Date: Thu, 15 Jun 2017 16:29:26 -0600
 Subject: [PATCH] Fix regressions from not calling load_args_and_kwargs
@@ -18,106 +18,22 @@ Restore sending __current_eauth_* through to the function
 I had forgotten this was originally added in #32133 specifically so that
 it would be availble to the called function.
 ---
- salt/runner.py                     | 33 ++++++++++++++++++------------
- salt/runners/test.py               | 12 +++++++++++
- tests/integration/client/runner.py | 11 ++++++++++
- 3 files changed, 43 insertions(+), 13 deletions(-)
+ salt/runner.py | 1 -
+ 1 file changed, 1 deletion(-)
 
 diff --git a/salt/runner.py b/salt/runner.py
-index f495a4a128..0eedec55b7 100644
+index 1557edbae4..0eedec55b7 100644
 --- a/salt/runner.py
 +++ b/salt/runner.py
-@@ -72,24 +72,31 @@ class RunnerClient(mixins.SyncClientMixin, mixins.AsyncClientMixin, object):
-         fun = low.pop('fun')
-         verify_fun(self.functions, fun)
+@@ -74,7 +74,6 @@ class RunnerClient(mixins.SyncClientMixin, mixins.AsyncClientMixin, object):
  
--        reserved_kwargs = dict([(i, low.pop(i)) for i in [
-+        eauth_creds = dict([(i, low.pop(i)) for i in [
+         eauth_creds = dict([(i, low.pop(i)) for i in [
              'username', 'password', 'eauth', 'token', 'client', 'user', 'key',
 -            '__current_eauth_groups', '__current_eauth_user',
          ] if i in low])
  
--        # Run name=value args through parse_input. We don't need to run kwargs
--        # through because there is no way to send name=value strings in the low
--        # dict other than by including an `arg` array.
--        arg, kwarg = salt.utils.args.parse_input(
--                low.pop('arg', []), condition=False)
--        kwarg.update(low.pop('kwarg', {}))
--
--        # If anything hasn't been pop()'ed out of low by this point it must be
--        # an old-style kwarg.
--        kwarg.update(low)
-+        # Separate the new-style args/kwargs.
-+        pre_arg = low.pop('arg', [])
-+        pre_kwarg = low.pop('kwarg', {})
-+        # Anything not pop'ed from low should hopefully be an old-style kwarg.
-+        low['__kwarg__'] = True
-+        pre_kwarg.update(low)
-+
-+        # Normalize old- & new-style args in a format suitable for
-+        # load_args_and_kwargs
-+        old_new_normalized_input = []
-+        old_new_normalized_input.extend(pre_arg)
-+        old_new_normalized_input.append(pre_kwarg)
-+
-+        arg, kwarg = salt.minion.load_args_and_kwargs(
-+            self.functions[fun],
-+            old_new_normalized_input,
-+            self.opts,
-+            ignore_invalid=True)
- 
-         return dict(fun=fun, kwarg={'kwarg': kwarg, 'arg': arg},
--                **reserved_kwargs)
-+                **eauth_creds)
- 
-     def cmd_async(self, low):
-         '''
-diff --git a/salt/runners/test.py b/salt/runners/test.py
-index 235dd0573f..5cb26ea932 100644
---- a/salt/runners/test.py
-+++ b/salt/runners/test.py
-@@ -37,6 +37,18 @@ def raw_arg(*args, **kwargs):
-     return ret
- 
- 
-+def metasyntactic(locality='us'):
-+    '''
-+    Return common metasyntactic variables for the given locality
-+    '''
-+    lookup = {
-+        'us': ['foo', 'bar', 'baz', 'qux', 'quux', 'quuz', 'corge', 'grault',
-+            'garply', 'waldo', 'fred', 'plugh', 'xyzzy', 'thud'],
-+        'uk': ['wibble', 'wobble', 'wubble', 'flob'],
-+    }
-+    return lookup.get(locality, None)
-+
-+
- def stdout_print():
-     '''
-     Print 'foo' and return 'bar'
-diff --git a/tests/integration/client/runner.py b/tests/integration/client/runner.py
-index 97530bcea3..111b79d9b1 100644
---- a/tests/integration/client/runner.py
-+++ b/tests/integration/client/runner.py
-@@ -126,6 +126,17 @@ class RunnerModuleTest(integration.TestCase, integration.AdaptedConfigurationTes
-             },
-         })
- 
-+    def test_invalid_kwargs_are_ignored(self):
-+        low = {
-+            'client': 'runner',
-+            'fun': 'test.metasyntactic',
-+            'thiskwargisbad': 'justpretendimnothere',
-+        }
-+        low.update(self.eauth_creds)
-+
-+        ret = self.runner.cmd_sync(low)
-+        self.assertEqual(ret[0], 'foo')
-+
- 
- if __name__ == '__main__':
-     from integration import run_tests
+         # Separate the new-style args/kwargs.
 -- 
-2.17.0
+2.17.1
 
 

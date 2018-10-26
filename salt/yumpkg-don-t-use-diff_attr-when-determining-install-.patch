@@ -1,4 +1,4 @@
-From 889cba3e987e528f7e38dbe8b034c3352a39f107 Mon Sep 17 00:00:00 2001
+From 2dbe1b96d6ef60f8010c7f5c443c753aa89fdf9b Mon Sep 17 00:00:00 2001
 From: Erik Johnson <palehose@gmail.com>
 Date: Thu, 4 Jan 2018 16:10:18 -0600
 Subject: [PATCH] yumpkg: don't use diff_attr when determining
@@ -12,15 +12,15 @@ zypper's list_pkgs func so that it will accept a comma-separated list as
 well as a Python list, and makes a DRY tweak so that we're only
 returning and formatting the return data in one place in the function.
 ---
- salt/modules/yumpkg.py | 83 ++++++++++++++++++++++++++++----------------------
- salt/modules/zypper.py | 45 +++++++++++++++------------
- 2 files changed, 73 insertions(+), 55 deletions(-)
+ salt/modules/yumpkg.py | 85 ++++++++++++++++++++++++------------------
+ salt/modules/zypper.py | 45 ++++++++++++----------
+ 2 files changed, 74 insertions(+), 56 deletions(-)
 
 diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
-index 556a3b5c31..8a0d22e062 100644
+index 20a6484c26..f5110d650d 100644
 --- a/salt/modules/yumpkg.py
 +++ b/salt/modules/yumpkg.py
-@@ -594,6 +594,7 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -622,6 +622,7 @@ def list_pkgs(versions_as_list=False, **kwargs):
      .. code-block:: bash
  
          salt '*' pkg.list_pkgs
@@ -28,7 +28,7 @@ index 556a3b5c31..8a0d22e062 100644
          salt '*' pkg.list_pkgs attr='["version", "arch"]'
      '''
      versions_as_list = salt.utils.is_true(versions_as_list)
-@@ -602,42 +603,52 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -630,42 +631,52 @@ def list_pkgs(versions_as_list=False, **kwargs):
              for x in ('removed', 'purge_desired')]):
          return {}
  
@@ -115,13 +115,21 @@ index 556a3b5c31..8a0d22e062 100644
  
  
  def list_repo_pkgs(*args, **kwargs):
-@@ -1169,11 +1180,11 @@ def install(name=None,
+@@ -1195,7 +1206,6 @@ def install(name=None,
+     if pkg_params is None or len(pkg_params) == 0:
+         return {}
+ 
+-    old = list_pkgs(versions_as_list=False) if not downloadonly else list_downloaded()
+     version_num = kwargs.get('version')
+     if version_num:
+         if pkgs is None and sources is None:
+@@ -1205,10 +1215,11 @@ def install(name=None,
              log.warning('"version" parameter will be ignored for multiple '
                          'package targets')
  
 -    diff_attr = kwargs.get("diff_attr")
 +    diff_attr = kwargs.get('diff_attr')
-     old = list_pkgs(versions_as_list=False, attr=diff_attr) if not downloadonly else list_downloaded()
++    old = list_pkgs(versions_as_list=False, attr=diff_attr) if not downloadonly else list_downloaded()
      # Use of __context__ means no duplicate work here, just accessing
      # information already in __context__ from the previous call to list_pkgs()
 -    old_as_list = list_pkgs(versions_as_list=True, attr=diff_attr) if not downloadonly else list_downloaded()
@@ -130,10 +138,10 @@ index 556a3b5c31..8a0d22e062 100644
      to_install = []
      to_downgrade = []
 diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index 63e219987a..77cb9d9fbb 100644
+index be95322309..eab509fd5f 100644
 --- a/salt/modules/zypper.py
 +++ b/salt/modules/zypper.py
-@@ -619,6 +619,7 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -620,6 +620,7 @@ def list_pkgs(versions_as_list=False, **kwargs):
      .. code-block:: bash
  
          salt '*' pkg.list_pkgs
@@ -141,7 +149,7 @@ index 63e219987a..77cb9d9fbb 100644
          salt '*' pkg.list_pkgs attr='["version", "arch"]'
      '''
      versions_as_list = salt.utils.is_true(versions_as_list)
-@@ -627,30 +628,36 @@ def list_pkgs(versions_as_list=False, **kwargs):
+@@ -628,30 +629,36 @@ def list_pkgs(versions_as_list=False, **kwargs):
              for x in ('removed', 'purge_desired')]):
          return {}
  
@@ -198,6 +206,6 @@ index 63e219987a..77cb9d9fbb 100644
  
  def _get_configured_repos():
 -- 
-2.13.6
+2.17.1
 
 

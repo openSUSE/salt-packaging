@@ -1,4 +1,4 @@
-From c603efb2db2ea9a972dfcc8120d26b21583bbd5b Mon Sep 17 00:00:00 2001
+From 074e3bf7fe9fa267bdbe50067f2c733c220ed7e3 Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Thu, 1 Feb 2018 10:32:36 +0100
 Subject: [PATCH] Fix state files with unicode (bsc#1074227)
@@ -10,7 +10,7 @@ Subject: [PATCH] Fix state files with unicode (bsc#1074227)
  3 files changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/salt/fileserver/roots.py b/salt/fileserver/roots.py
-index 3f203afce3..fb64d2f089 100644
+index f2a5c10955..387c672307 100644
 --- a/salt/fileserver/roots.py
 +++ b/salt/fileserver/roots.py
 @@ -335,7 +335,7 @@ def _file_lists(load, form):
@@ -23,10 +23,10 @@ index 3f203afce3..fb64d2f089 100644
                  is_link = os.path.islink(abs_path)
                  log.trace(
 diff --git a/salt/modules/file.py b/salt/modules/file.py
-index 1dcde9bd24..144c57d634 100644
+index ec2c46832d..300858d1ce 100644
 --- a/salt/modules/file.py
 +++ b/salt/modules/file.py
-@@ -4729,7 +4729,7 @@ def manage_file(name,
+@@ -4760,7 +4760,7 @@ def manage_file(name,
                  contents = os.linesep.join(
                      _splitlines_preserving_trailing_newline(contents))
              with salt.utils.fopen(tmp, 'w') as tmp_:
@@ -35,7 +35,7 @@ index 1dcde9bd24..144c57d634 100644
  
              # Compare contents of files to know if we need to replace
              with salt.utils.fopen(tmp, 'r') as src:
-@@ -4915,7 +4915,7 @@ def manage_file(name,
+@@ -4946,7 +4946,7 @@ def manage_file(name,
                  contents = os.linesep.join(
                      _splitlines_preserving_trailing_newline(contents))
              with salt.utils.fopen(tmp, 'w') as tmp_:
@@ -45,19 +45,19 @@ index 1dcde9bd24..144c57d634 100644
              salt.utils.files.copyfile(tmp,
                                  name,
 diff --git a/salt/state.py b/salt/state.py
-index 42d7e3be19..fd00b8d0a3 100644
+index e49afe31f2..9515d6ea2d 100644
 --- a/salt/state.py
 +++ b/salt/state.py
-@@ -1290,6 +1290,8 @@ class State(object):
+@@ -1307,6 +1307,8 @@ class State(object):
                          continue
                      if isinstance(arg, dict):
                          for key, val in six.iteritems(arg):
 +                            if isinstance(val, unicode):
 +                                val = val.encode('utf8')
                              if key == 'names':
-                                 names.update(val)
-                             elif key == 'state':
+                                 for _name in val:
+                                     if _name not in names:
 -- 
-2.13.6
+2.17.1
 
 

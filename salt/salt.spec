@@ -36,14 +36,14 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        2016.11.4
+Version:        2016.11.10
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
 Group:          System/Management
 Url:            http://saltstack.org/
 # Git: https://github.com/openSUSE/salt.git
-Source0:        https://pypi.python.org/packages/88/3c/77de1e461882708a5a247bbc22f5b3df8a34affe69755ea9540473c9852a/salt-2016.11.4.tar.gz
+Source0:        https://pypi.python.org/packages/a9/0a/31908d158c055248d5b5b22e66863eb98167aecad71edda92b58b223db7b/salt-2016.11.10.tar.gz
 Source1:        README.SUSE
 Source2:        salt-tmpfiles.d
 Source3:        html.tar.bz2
@@ -96,154 +96,130 @@ Patch18:        adding-support-for-installing-patches-in-yum-dnf-exe.patch
 Patch19:        search-the-entire-cache_dir-because-storage-paths-ch.patch
 # PATCH-FIX_OPENSUSE
 Patch20:        fixing-beacons.list-integration-test-failure.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/40817
-Patch21:        add-unit-test-for-skip-false-values-from-preferred_i.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/40852
-Patch22:        use-correct-grain-constants-for-timezone.patch
 # PATCH-FIX_OPENSUSE (upstream coming soon)
-Patch23:        fix-grain-for-os_family-on-suse-series.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/41269
-Patch24:        bugfix-unable-to-use-127-as-hostname.patch
+Patch21:        fix-grain-for-os_family-on-suse-series.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/41336
-Patch25:        fix-setting-language-on-suse-systems.patch
-Patch26:        fix-os_family-case-in-unittest.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/41235
-Patch27:        rest_cherrypy-remove-sleep-call.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/40905
-Patch28:        fixed-issue-with-parsing-of-master-minion-returns-wh.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/41533
-Patch29:        clean-up-change-attribute-from-interface-dict.patch
+Patch22:        fix-setting-language-on-suse-systems.patch
+Patch23:        fix-os_family-case-in-unittest.patch
 # PATCH-FIX_OPENSUSE
-Patch30:        fix-format-error-bsc-1043111.patch
+Patch24:        fix-format-error-bsc-1043111.patch
 # PATCH-FIX_OPENSUSE (only applied for RHEL6 and SLES11)
-Patch31:        adding-salt-minion-watchdog-for-sysv-systems-rhel6-a.patch
+Patch25:        adding-salt-minion-watchdog-for-sysv-systems-rhel6-a.patch
 # PATCH-FIX_OPENSUSE (only applied for RHEL6 and SLES11)
-Patch32:        enables-salt-minion-watchdog-on-init.d-script-for-sy.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/42339
-Patch33:        bugfix-jobs-scheduled-to-run-at-a-future-time-stay-p.patch
+Patch26:        enables-salt-minion-watchdog-on-init.d-script-for-sy.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/42944
-Patch34:        add-clean_id-function-to-salt.utils.verify.py.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/42986
-Patch35:        notify-systemd-synchronously-bsc-1053376.patch
+Patch27:        add-clean_id-function-to-salt.utils.verify.py.patch
 # PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/37
-Patch36:        revert-we-don-t-have-python-systemd-so-notify-can-t-.patch
+Patch28:        revert-we-don-t-have-python-systemd-so-notify-can-t-.patch
 # PATCH-FIX_OPENSUSE https://bugzilla.suse.com/1051948
-Patch37:        introducing-the-kubernetes-module.patch
+Patch29:        introducing-the-kubernetes-module.patch
 # PATCH-FIX_OPENSUSE https://bugzilla.suse.com/1052264
-Patch38:        list_pkgs-add-parameter-for-returned-attribute-selec.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/43441
-Patch39:        use-home-to-get-the-user-home-directory-instead-usin.patch
+Patch30:        list_pkgs-add-parameter-for-returned-attribute-selec.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/43366
 #                    https://github.com/saltstack/salt/pull/43646/
-Patch40:        catching-error-when-pidfile-cannot-be-deleted.patch
+Patch31:        catching-error-when-pidfile-cannot-be-deleted.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/43235
 #                    https://github.com/saltstack/salt/pull/43724/
-Patch41:        fix-for-delete_deployment-in-kubernetes-module.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/43663
-Patch42:        multiprocessing-minion-option-documentation-fixes.patch
+Patch32:        fix-for-delete_deployment-in-kubernetes-module.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/43669
-Patch43:        introduce-process_count_max-minion-configuration-par.patch
+Patch33:        introduce-process_count_max-minion-configuration-par.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/commit/0976f8f7131975a1ae29b2724069a301a870a46d
 #                    Missed follow-up commit
-Patch44:        escape-the-os.sep.patch
+Patch34:        escape-the-os.sep.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/44005
-Patch45:        bugfix-always-return-a-string-list-on-unknown-job-ta.patch
+Patch35:        bugfix-always-return-a-string-list-on-unknown-job-ta.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/44011
-Patch46:        security-fixes-cve-2017-14695-and-cve-2017-14696.patch
+Patch36:        security-fixes-cve-2017-14695-and-cve-2017-14696.patch
 # PATCH-FIX_OPENSUSE bsc#1060230
-Patch47:        activate-all-beacons-sources-config-pillar-grains.patch
+Patch37:        activate-all-beacons-sources-config-pillar-grains.patch
 # PATCH-FIX_OPENSUSE bsc#1041993
-Patch48:        removes-beacon-configuration-deprecation-warning-48.patch
+Patch38:        removes-beacon-configuration-deprecation-warning-48.patch
 # PATCH-FIX_OPENSUSE bsc#1068446
-Patch49:        bugfix-the-logic-according-to-the-exact-described-pu.patch
+Patch39:        bugfix-the-logic-according-to-the-exact-described-pu.patch
 # PATCH-FIX_OPENSUSE
-Patch50:        avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
+Patch40:        avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
 # PATCH-FIX_OPENSUSE bsc#1071322
-Patch51:        older-logrotate-need-su-directive.patch
+Patch41:        older-logrotate-need-su-directive.patch
 # PATCH-FIX_OPENSUSE bsc#1065792
-Patch52:        fix-bsc-1065792.patch
+Patch42:        fix-bsc-1065792.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/45060
-Patch53:        feat-add-grain-for-all-fqdns.patch
+Patch43:        feat-add-grain-for-all-fqdns.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/44991
-Patch54:        split-only-strings-if-they-are-such.patch
+Patch44:        split-only-strings-if-they-are-such.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/40894
-Patch55:        fix-for-broken-jobs-jid-in-2016.11.4.patch
+Patch45:        fix-for-broken-jobs-jid-in-2016.11.4.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/45365
-Patch56:        return-error-when-gid_from_name-and-group-does-not-e.patch
+Patch46:        return-error-when-gid_from_name-and-group-does-not-e.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/38675
-Patch57:        setvcpus-setmem-fix-return-value-parsing-issue-when-.patch
+Patch47:        setvcpus-setmem-fix-return-value-parsing-issue-when-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/41795
-Patch58:        bugfix-use-utc-date.patch
+Patch48:        bugfix-use-utc-date.patch
 # PATCH-FIX_OPENSUSE
-Patch59:        allow-running-tests-on-python-2.6-systems.patch
+Patch49:        allow-running-tests-on-python-2.6-systems.patch
 # PATCH-FIX_OPENSUSE bsc#1068566
-Patch60:        yumpkg-don-t-use-diff_attr-when-determining-install-.patch
+Patch50:        yumpkg-don-t-use-diff_attr-when-determining-install-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/43039
-Patch61:        catch-importerror-for-kubernetes.client-import.patch
+Patch51:        catch-importerror-for-kubernetes.client-import.patch
 # PATCH-FIX_OPENSUSE bsc#1074227
-Patch62:        fix-state-files-with-unicode-bsc-1074227.patch
+Patch52:        fix-state-files-with-unicode-bsc-1074227.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46104
-Patch63:        suppress-missing-fields-typeerror-exception-by-m2cry.patch
+Patch53:        suppress-missing-fields-typeerror-exception-by-m2cry.patch
 # PATCH-FIX_OPENSUSE https://github.com/saltstack/salt/pull/46104
-Patch64:        fix-x509-unit-test-to-run-on-2016.11.4-version.patch
+Patch54:        fix-x509-unit-test-to-run-on-2016.11.4-version.patch
 # PATCH-FIX_OPENSUSE https://github.com/saltstack/salt/pull/46413
-Patch65:        explore-module.run-response-to-catch-the-result-in-d.patch
+Patch55:        explore-module.run-response-to-catch-the-result-in-d.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46575
-Patch66:        fix-decrease-loglevel-when-unable-to-resolve-addr.patch
-# PATCH-FIX_OPENSUSE bsc#1079398
-Patch67:        revert-fix-augeas-module-so-shlex-doesn-t-strip-quot.patch
+Patch56:        fix-decrease-loglevel-when-unable-to-resolve-addr.patch
 # PATCH-FIX_OPENSUSE bsc#1085635
-Patch68:        make-module-result-usable-in-states-module.run-bsc-1.patch
+Patch57:        make-module-result-usable-in-states-module.run-bsc-1.patch
 # PATCH-FIX_OPENSUSE bsc#1088423
-Patch69:        disable-cron-logging-only-on-sles11-systems-not-on-r.patch
+Patch58:        disable-cron-logging-only-on-sles11-systems-not-on-r.patch
 # PATCH-FIX_OPENSUSE bsc#1090271
-Patch70:        add-rsyslog-rule-to-avoid-salt-minion-watcher-cron-l.patch
+Patch59:        add-rsyslog-rule-to-avoid-salt-minion-watcher-cron-l.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46635
-Patch71:        fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
+Patch60:        fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/41786
-Patch72:        fix-regressions-from-not-calling-load_args_and_kwarg.patch
+Patch61:        fix-regressions-from-not-calling-load_args_and_kwarg.patch
 # PATCH-FIX_OPENSUSE bsc#1087342
-Patch73:        backport-of-azurearm-from-salt-2018.3-to-opensuse-sa.patch
+Patch62:        backport-of-azurearm-from-salt-2018.3-to-opensuse-sa.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
-Patch74:        strip-trailing-commas-on-linux-user-gecos-fields.patch
+Patch63:        strip-trailing-commas-on-linux-user-gecos-fields.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47270
-Patch75:        initialize-__context__-retcode-for-functions-handled.patch
+Patch64:        initialize-__context__-retcode-for-functions-handled.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47232
-Patch76:        fixed-usage-of-ipaddress.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/42798
-Patch77:        update-return-data-before-calling-returners.patch
+Patch65:        fixed-usage-of-ipaddress.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47211
-Patch78:        fix-for-ec2-rate-limit-failures.patch
+Patch66:        fix-for-ec2-rate-limit-failures.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47471
-Patch79:        do-not-override-jid-on-returners-only-sending-back-t.patch
+Patch67:        do-not-override-jid-on-returners-only-sending-back-t.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47638
-Patch80:        add-all_versions-parameter-to-include-all-installed-.patch
+Patch68:        add-all_versions-parameter-to-include-all-installed-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47765
-Patch81:        prevent-zypper-from-parsing-repo-configuration-from-.patch
+Patch69:        prevent-zypper-from-parsing-repo-configuration-from-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
-Patch82:        add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
+Patch70:        add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
 # PATCH-FIX_OPENSUSE bsc#1057635
-Patch83:        add-environment-variable-to-know-if-yum-is-invoked-f.patch
+Patch71:        add-environment-variable-to-know-if-yum-is-invoked-f.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/42541
-Patch84:        bugfix-state-file.line-warning-bsc-1093458-86.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/43955
-Patch85:        enable-with-salt-version-parameter-for-setup.py-scri.patch
+Patch72:        bugfix-state-file.line-warning-bsc-1093458-86.patch
 # PATCH-FIX_OPENSUSE
-Patch86:        add-custom-suse-capabilities-as-grains.patch
+Patch73:        add-custom-suse-capabilities-as-grains.patch
 # PATCH-FIX_OPENSUSE bsc#1098394 backport of https://github.com/saltstack/salt/pull/47061
-Patch87:        porting-fix-diffing-binary-files-in-file.get_diff-bs.patch
+Patch74:        porting-fix-diffing-binary-files-in-file.get_diff-bs.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47405
-Patch88:        fix-unboundlocalerror-in-file.get_diff.patch
+Patch75:        fix-unboundlocalerror-in-file.get_diff.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48294
-Patch89:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
+Patch76:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
+# PATCH-FIX_OPENSUSE bsc#1087342
+Patch77:        salt-cloud-azurearm-2018.3-backport-fixes-88.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49277
-Patch90:        prepend-current-directory-when-path-is-just-filename.patch
+Patch78:        prepend-current-directory-when-path-is-just-filename.patch
 # PATCH-FIX_OPENSUSE bsc#1094960
-Patch91:        backport-46867-string-arg-normalization-bsc-1094960.patch
+Patch79:        backport-46867-string-arg-normalization-bsc-1094960.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49538
-Patch92:        fix-for-suse-expanded-support-detection.patch
+Patch80:        fix-for-suse-expanded-support-detection.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49532
-Patch93:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
+Patch81:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
 
 
 
@@ -620,22 +596,21 @@ cp %{S:5} ./.travis.yml
 %patch22 -p1
 %patch23 -p1
 %patch24 -p1
+%if 0%{?rhel} == 6 || 0%{?suse_version} == 1110
 %patch25 -p1
 %patch26 -p1
+%patch40 -p1
+%endif
+%if 0%{?rhel} == 6
+%patch58 -p1
+%patch59 -p1
+%endif
 %patch27 -p1
 %patch28 -p1
 %patch29 -p1
 %patch30 -p1
-
-%if 0%{?rhel} == 6 || 0%{?suse_version} == 1110
 %patch31 -p1
 %patch32 -p1
-%patch50 -p1
-%endif 
-%if 0%{?rhel} == 6
-%patch69 -p1
-%patch70 -p1
-%endif 
 %patch33 -p1
 %patch34 -p1
 %patch35 -p1
@@ -643,7 +618,6 @@ cp %{S:5} ./.travis.yml
 %patch37 -p1
 %patch38 -p1
 %patch39 -p1
-%patch40 -p1
 %patch41 -p1
 %patch42 -p1
 %patch43 -p1
@@ -653,6 +627,7 @@ cp %{S:5} ./.travis.yml
 %patch47 -p1
 %patch48 -p1
 %patch49 -p1
+%patch50 -p1
 %patch51 -p1
 %patch52 -p1
 %patch53 -p1
@@ -660,8 +635,6 @@ cp %{S:5} ./.travis.yml
 %patch55 -p1
 %patch56 -p1
 %patch57 -p1
-%patch58 -p1
-%patch59 -p1
 %patch60 -p1
 %patch61 -p1
 %patch62 -p1
@@ -671,6 +644,8 @@ cp %{S:5} ./.travis.yml
 %patch66 -p1
 %patch67 -p1
 %patch68 -p1
+%patch69 -p1
+%patch70 -p1
 %patch71 -p1
 %patch72 -p1
 %patch73 -p1
@@ -682,18 +657,6 @@ cp %{S:5} ./.travis.yml
 %patch79 -p1
 %patch80 -p1
 %patch81 -p1
-%patch82 -p1
-%patch83 -p1
-%patch84 -p1
-%patch85 -p1
-%patch86 -p1
-%patch87 -p1
-%patch88 -p1
-%patch89 -p1
-%patch90 -p1
-%patch91 -p1
-%patch92 -p1
-%patch93 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
