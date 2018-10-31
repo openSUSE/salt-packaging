@@ -225,6 +225,8 @@ Patch77:        add-multi-file-support-and-globbing-to-the-filetree-.patch
 Patch78:        fixes-cve-2018-15750-cve-2018-15751.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48491
 Patch79:        improved-handling-of-ldap-group-id.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48901
+Patch80:        fixing-issue-when-a-valid-token-is-generated-even-wh.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -762,6 +764,7 @@ cp %{S:5} ./.travis.yml
 %patch77 -p1
 %patch78 -p1
 %patch79 -p1
+%patch80 -p1
 
 %build
 %if 0%{?build_py2}
