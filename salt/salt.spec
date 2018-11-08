@@ -189,6 +189,8 @@ Patch60:        fixes-cve-2018-15750-cve-2018-15751.patch
 Patch61:        improved-handling-of-ldap-group-id.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48901
 Patch62:        fixing-issue-when-a-valid-token-is-generated-even-wh.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50417
+Patch63:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -710,6 +712,7 @@ cp %{S:5} ./.travis.yml
 %patch60 -p1
 %patch61 -p1
 %patch62 -p1
+%patch63 -p1
 
 %build
 %if 0%{?build_py2}
