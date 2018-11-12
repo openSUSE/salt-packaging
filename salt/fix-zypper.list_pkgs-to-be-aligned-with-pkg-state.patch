@@ -1,4 +1,4 @@
-From 997edb18b81d73933324b299da36474c24630b42 Mon Sep 17 00:00:00 2001
+From d94321e0c728819da2d24a01877ae2084829ecf3 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Mon, 25 Jun 2018 13:06:40 +0100
@@ -10,102 +10,14 @@ Add unit test coverage for multiple version packages on Zypper
 
 Fix '_find_remove_targets' after aligning Zypper with pkg state
 ---
- salt/modules/zypper.py            |  57 +++++++++++++---------
- salt/states/pkg.py                |  21 --------
- tests/unit/modules/test_zypper.py | 100 +++++++++++++++++++++++++-------------
- 3 files changed, 102 insertions(+), 76 deletions(-)
+ salt/states/pkg.py | 21 ---------------------
+ 1 file changed, 21 deletions(-)
 
-diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
-index 05ba3d86c9..4689f84926 100644
---- a/salt/modules/zypper.py
-+++ b/salt/modules/zypper.py
-@@ -38,6 +38,7 @@ import salt.utils.files
- import salt.utils.functools
- import salt.utils.path
- import salt.utils.pkg
-+import salt.utils.pkg.rpm
- import salt.utils.stringutils
- import salt.utils.systemd
- from salt.utils.versions import LooseVersion
-@@ -714,24 +715,44 @@ def list_pkgs(versions_as_list=False, **kwargs):
-     contextkey = 'pkg.list_pkgs'
- 
-     if contextkey not in __context__:
--
--        cmd = ['rpm', '-qa', '--queryformat', (
--            "%{NAME}_|-%{VERSION}_|-%{RELEASE}_|-%{ARCH}_|-"
--            "%|EPOCH?{%{EPOCH}}:{}|_|-%{INSTALLTIME}\\n")]
-         ret = {}
--        for line in __salt__['cmd.run'](cmd, output_loglevel='trace', python_shell=False).splitlines():
--            name, pkgver, rel, arch, epoch, install_time = line.split('_|-')
--            install_date = datetime.datetime.utcfromtimestamp(int(install_time)).isoformat() + "Z"
--            install_date_time_t = int(install_time)
--
--            all_attr = {'epoch': epoch, 'version': pkgver, 'release': rel, 'arch': arch,
--                        'install_date': install_date, 'install_date_time_t': install_date_time_t}
--            __salt__['pkg_resource.add_pkg'](ret, name, all_attr)
-+        cmd = ['rpm', '-qa', '--queryformat',
-+               salt.utils.pkg.rpm.QUERYFORMAT.replace('%{REPOID}', '(none)') + '\n']
-+        output = __salt__['cmd.run'](cmd,
-+                                     python_shell=False,
-+                                     output_loglevel='trace')
-+        for line in output.splitlines():
-+            pkginfo = salt.utils.pkg.rpm.parse_pkginfo(
-+                line,
-+                osarch=__grains__['osarch']
-+            )
-+            if pkginfo is not None:
-+                # see rpm version string rules available at https://goo.gl/UGKPNd
-+                pkgver = pkginfo.version
-+                epoch = ''
-+                release = ''
-+                if ':' in pkgver:
-+                    epoch, pkgver = pkgver.split(":", 1)
-+                if '-' in pkgver:
-+                    pkgver, release = pkgver.split("-", 1)
-+                all_attr = {
-+                    'epoch': epoch,
-+                    'version': pkgver,
-+                    'release': release,
-+                    'arch': pkginfo.arch,
-+                    'install_date': pkginfo.install_date,
-+                    'install_date_time_t': pkginfo.install_date_time_t
-+                }
-+                __salt__['pkg_resource.add_pkg'](ret, pkginfo.name, all_attr)
- 
-+        _ret = {}
-         for pkgname in ret:
--            ret[pkgname] = sorted(ret[pkgname], key=lambda d: d['version'])
-+            # Filter out GPG public keys packages
-+            if pkgname.startswith('gpg-pubkey'):
-+                continue
-+            _ret[pkgname] = sorted(ret[pkgname], key=lambda d: d['version'])
- 
--        __context__[contextkey] = ret
-+        __context__[contextkey] = _ret
- 
-     return __salt__['pkg_resource.format_pkg_list'](
-         __context__[contextkey],
-@@ -1350,14 +1371,6 @@ def install(name=None,
- 
-     _clean_cache()
-     new = list_pkgs(attr=diff_attr) if not downloadonly else list_downloaded()
--
--    # Handle packages which report multiple new versions
--    # (affects only kernel packages at this point)
--    for pkg_name in new:
--        pkg_data = new[pkg_name]
--        if isinstance(pkg_data, six.string_types):
--            new[pkg_name] = pkg_data.split(',')[-1]
--
-     ret = salt.utils.data.compare_dicts(old, new)
- 
-     if errors:
 diff --git a/salt/states/pkg.py b/salt/states/pkg.py
-index ed405cb6b5..aad87e3278 100644
+index fdde4a2610..a8b4acdfea 100644
 --- a/salt/states/pkg.py
 +++ b/salt/states/pkg.py
-@@ -415,16 +415,6 @@ def _find_remove_targets(name=None,
+@@ -455,16 +455,6 @@ def _find_remove_targets(name=None,
  
          if __grains__['os'] == 'FreeBSD' and origin:
              cver = [k for k, v in six.iteritems(cur_pkgs) if v['origin'] == pkgname]
@@ -122,7 +34,7 @@ index ed405cb6b5..aad87e3278 100644
          else:
              cver = cur_pkgs.get(pkgname, [])
  
-@@ -854,17 +844,6 @@ def _verify_install(desired, new_pkgs, ignore_epoch=False, new_caps=None):
+@@ -871,17 +861,6 @@ def _verify_install(desired, new_pkgs, ignore_epoch=False, new_caps=None):
              cver = new_pkgs.get(pkgname.split('%')[0])
          elif __grains__['os_family'] == 'Debian':
              cver = new_pkgs.get(pkgname.split('=')[0])
@@ -140,172 +52,7 @@ index ed405cb6b5..aad87e3278 100644
          else:
              cver = new_pkgs.get(pkgname)
              if not cver and pkgname in new_caps:
-diff --git a/tests/unit/modules/test_zypper.py b/tests/unit/modules/test_zypper.py
-index 6eccee568b..bb15aca11a 100644
---- a/tests/unit/modules/test_zypper.py
-+++ b/tests/unit/modules/test_zypper.py
-@@ -475,7 +475,7 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
-                     with patch('salt.modules.zypper.list_pkgs', MagicMock(side_effect=[
-                         {"kernel-default": "3.12.49-11.1"}, {"kernel-default": "3.12.49-11.1,3.12.51-60.20.2"}])):
-                         ret = zypper.install('kernel-default', '--auto-agree-with-licenses')
--                        self.assertDictEqual(ret, {"kernel-default": {"old": "3.12.49-11.1", "new": "3.12.51-60.20.2"}})
-+                        self.assertDictEqual(ret, {"kernel-default": {"old": "3.12.49-11.1", "new": "3.12.49-11.1,3.12.51-60.20.2"}})
- 
-     def test_upgrade_failure(self):
-         '''
-@@ -540,27 +540,36 @@ Repository 'DUMMY' not found by its alias, number, or URI.
-             data.setdefault(key, []).append(value)
- 
-         rpm_out = [
--            'protobuf-java_|-2.6.1_|-3.1.develHead_|-noarch_|-_|-1499257756',
--            'yast2-ftp-server_|-3.1.8_|-8.1_|-x86_64_|-_|-1499257798',
--            'jose4j_|-0.4.4_|-2.1.develHead_|-noarch_|-_|-1499257756',
--            'apache-commons-cli_|-1.2_|-1.233_|-noarch_|-_|-1498636510',
--            'jakarta-commons-discovery_|-0.4_|-129.686_|-noarch_|-_|-1498636511',
--            'susemanager-build-keys-web_|-12.0_|-5.1.develHead_|-noarch_|-_|-1498636510',
-+            'protobuf-java_|-(none)_|-2.6.1_|-3.1.develHead_|-noarch_|-(none)_|-1499257756',
-+            'yast2-ftp-server_|-(none)_|-3.1.8_|-8.1_|-x86_64_|-(none)_|-1499257798',
-+            'jose4j_|-(none)_|-0.4.4_|-2.1.develHead_|-noarch_|-(none)_|-1499257756',
-+            'apache-commons-cli_|-(none)_|-1.2_|-1.233_|-noarch_|-(none)_|-1498636510',
-+            'jakarta-commons-discovery_|-(none)_|-0.4_|-129.686_|-noarch_|-(none)_|-1498636511',
-+            'susemanager-build-keys-web_|-(none)_|-12.0_|-5.1.develHead_|-noarch_|-(none)_|-1498636510',
-+            'gpg-pubkey_|-(none)_|-39db7c82_|-5847eb1f_|-(none)_|-(none)_|-1519203802',
-+            'gpg-pubkey_|-(none)_|-8a7c64f9_|-5aaa93ca_|-(none)_|-(none)_|-1529925595',
-+            'kernel-default_|-(none)_|-4.4.138_|-94.39.1_|-x86_64_|-(none)_|-1529936067',
-+            'kernel-default_|-(none)_|-4.4.73_|-5.1_|-x86_64_|-(none)_|-1503572639',
-+            'perseus-dummy_|-(none)_|-1.1_|-1.1_|-i586_|-(none)_|-1529936062',
-         ]
--        with patch.dict(zypper.__salt__, {'cmd.run': MagicMock(return_value=os.linesep.join(rpm_out))}), \
-+        with patch.dict(zypper.__grains__, {'osarch': 'x86_64'}), \
-+             patch.dict(zypper.__salt__, {'cmd.run': MagicMock(return_value=os.linesep.join(rpm_out))}), \
-              patch.dict(zypper.__salt__, {'pkg_resource.add_pkg': _add_data}), \
-              patch.dict(zypper.__salt__, {'pkg_resource.format_pkg_list': pkg_resource.format_pkg_list}), \
-              patch.dict(zypper.__salt__, {'pkg_resource.stringify': MagicMock()}):
-             pkgs = zypper.list_pkgs(versions_as_list=True)
-+            self.assertFalse(pkgs.get('gpg-pubkey', False))
-             for pkg_name, pkg_version in {
--                'jakarta-commons-discovery': '0.4-129.686',
--                'yast2-ftp-server': '3.1.8-8.1',
--                'protobuf-java': '2.6.1-3.1.develHead',
--                'susemanager-build-keys-web': '12.0-5.1.develHead',
--                'apache-commons-cli': '1.2-1.233',
--                'jose4j': '0.4.4-2.1.develHead'}.items():
-+                'jakarta-commons-discovery': ['0.4-129.686'],
-+                'yast2-ftp-server': ['3.1.8-8.1'],
-+                'protobuf-java': ['2.6.1-3.1.develHead'],
-+                'susemanager-build-keys-web': ['12.0-5.1.develHead'],
-+                'apache-commons-cli': ['1.2-1.233'],
-+                'kernel-default': ['4.4.138-94.39.1', '4.4.73-5.1'],
-+                'perseus-dummy.i586': ['1.1-1.1'],
-+                'jose4j': ['0.4.4-2.1.develHead']}.items():
-                 self.assertTrue(pkgs.get(pkg_name))
--                self.assertEqual(pkgs[pkg_name], [pkg_version])
-+                self.assertEqual(pkgs[pkg_name], pkg_version)
- 
-     def test_list_pkgs_with_attr(self):
-         '''
-@@ -572,57 +581,82 @@ Repository 'DUMMY' not found by its alias, number, or URI.
-             data.setdefault(key, []).append(value)
- 
-         rpm_out = [
--            'protobuf-java_|-2.6.1_|-3.1.develHead_|-noarch_|-_|-1499257756',
--            'yast2-ftp-server_|-3.1.8_|-8.1_|-x86_64_|-_|-1499257798',
--            'jose4j_|-0.4.4_|-2.1.develHead_|-noarch_|-_|-1499257756',
--            'apache-commons-cli_|-1.2_|-1.233_|-noarch_|-_|-1498636510',
--            'jakarta-commons-discovery_|-0.4_|-129.686_|-noarch_|-_|-1498636511',
--            'susemanager-build-keys-web_|-12.0_|-5.1.develHead_|-noarch_|-_|-1498636510',
-+            'protobuf-java_|-(none)_|-2.6.1_|-3.1.develHead_|-noarch_|-(none)_|-1499257756',
-+            'yast2-ftp-server_|-(none)_|-3.1.8_|-8.1_|-x86_64_|-(none)_|-1499257798',
-+            'jose4j_|-(none)_|-0.4.4_|-2.1.develHead_|-noarch_|-(none)_|-1499257756',
-+            'apache-commons-cli_|-(none)_|-1.2_|-1.233_|-noarch_|-(none)_|-1498636510',
-+            'jakarta-commons-discovery_|-(none)_|-0.4_|-129.686_|-noarch_|-(none)_|-1498636511',
-+            'susemanager-build-keys-web_|-(none)_|-12.0_|-5.1.develHead_|-noarch_|-(none)_|-1498636510',
-+            'gpg-pubkey_|-(none)_|-39db7c82_|-5847eb1f_|-(none)_|-(none)_|-1519203802',
-+            'gpg-pubkey_|-(none)_|-8a7c64f9_|-5aaa93ca_|-(none)_|-(none)_|-1529925595',
-+            'kernel-default_|-(none)_|-4.4.138_|-94.39.1_|-x86_64_|-(none)_|-1529936067',
-+            'kernel-default_|-(none)_|-4.4.73_|-5.1_|-x86_64_|-(none)_|-1503572639',
-+            'perseus-dummy_|-(none)_|-1.1_|-1.1_|-i586_|-(none)_|-1529936062',
-         ]
-         with patch.dict(zypper.__salt__, {'cmd.run': MagicMock(return_value=os.linesep.join(rpm_out))}), \
-+             patch.dict(zypper.__grains__, {'osarch': 'x86_64'}), \
-              patch.dict(zypper.__salt__, {'pkg_resource.add_pkg': _add_data}), \
-              patch.dict(zypper.__salt__, {'pkg_resource.format_pkg_list': pkg_resource.format_pkg_list}), \
-              patch.dict(zypper.__salt__, {'pkg_resource.stringify': MagicMock()}):
-             pkgs = zypper.list_pkgs(attr=['epoch', 'release', 'arch', 'install_date_time_t'])
-+            self.assertFalse(pkgs.get('gpg-pubkey', False))
-             for pkg_name, pkg_attr in {
--                'jakarta-commons-discovery': {
-+                'jakarta-commons-discovery': [{
-                     'version': '0.4',
-                     'release': '129.686',
-                     'arch': 'noarch',
-                     'install_date_time_t': 1498636511,
--                },
--                'yast2-ftp-server': {
-+                }],
-+                'yast2-ftp-server': [{
-                     'version': '3.1.8',
-                     'release': '8.1',
-                     'arch': 'x86_64',
-                     'install_date_time_t': 1499257798,
--                },
--                'protobuf-java': {
-+                }],
-+                'protobuf-java': [{
-                     'version': '2.6.1',
-                     'release': '3.1.develHead',
-                     'install_date_time_t': 1499257756,
-                     'arch': 'noarch',
--                },
--                'susemanager-build-keys-web': {
-+                }],
-+                'susemanager-build-keys-web': [{
-                     'version': '12.0',
-                     'release': '5.1.develHead',
-                     'arch': 'noarch',
-                     'install_date_time_t': 1498636510,
--                },
--                'apache-commons-cli': {
-+                }],
-+                'apache-commons-cli': [{
-                     'version': '1.2',
-                     'release': '1.233',
-                     'arch': 'noarch',
-                     'install_date_time_t': 1498636510,
-+                }],
-+                'kernel-default': [{
-+                    'version': '4.4.138',
-+                    'release': '94.39.1',
-+                    'arch': 'x86_64',
-+                    'install_date_time_t': 1529936067
-                 },
--                'jose4j': {
-+                {
-+                    'version': '4.4.73',
-+                    'release': '5.1',
-+                    'arch': 'x86_64',
-+                    'install_date_time_t': 1503572639,
-+                }],
-+                'perseus-dummy.i586': [{
-+                    'version': '1.1',
-+                    'release': '1.1',
-+                    'arch': 'i586',
-+                    'install_date_time_t': 1529936062,
-+                }],
-+                'jose4j': [{
-                     'arch': 'noarch',
-                     'version': '0.4.4',
-                     'release': '2.1.develHead',
-                     'install_date_time_t': 1499257756,
--                }}.items():
-+                }]}.items():
-                 self.assertTrue(pkgs.get(pkg_name))
--                self.assertEqual(pkgs[pkg_name], [pkg_attr])
-+                self.assertEqual(pkgs[pkg_name], pkg_attr)
- 
-     def test_list_patches(self):
-         '''
 -- 
-2.13.7
+2.17.1
 
 

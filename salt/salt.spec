@@ -52,7 +52,7 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        2018.3.2
+Version:        2018.11.0
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
@@ -69,128 +69,56 @@ Patch1:         run-salt-master-as-dedicated-salt-user.patch
 Patch2:         run-salt-api-as-user-salt-bsc-1064520.patch
 Patch3:         activate-all-beacons-sources-config-pillar-grains.patch
 Patch4:         avoid-excessive-syslogging-by-watchdog-cronjob-58.patch
-Patch5:         feat-add-grain-for-all-fqdns.patch
-Patch6:         fix-bsc-1065792.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46575
-Patch7:         fix-decrease-loglevel-when-unable-to-resolve-addr.patch
+Patch5:         fix-bsc-1065792.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46684
-Patch8:         add-saltssh-multi-version-support-across-python-inte.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46635
-Patch9:         fix-for-errno-0-resolver-error-0-no-error-bsc-108758.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46890
-Patch10:        fall-back-to-pymysql.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
-Patch11:        strip-trailing-commas-on-linux-user-gecos-fields.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47232
-Patch12:        fixed-usage-of-ipaddress.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47504
-Patch13:        option-to-merge-current-pillar-with-opts-pillar-duri.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47471
-Patch14:        do-not-override-jid-on-returners-only-sending-back-t.patch
+Patch6:         add-saltssh-multi-version-support-across-python-inte.patch
 # PATCH-FIX_OPENSUSE bsc#1091371
-Patch15:        enable-passing-a-unix_socket-for-mysql-returners-bsc.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47211
-Patch16:        fix-for-ec2-rate-limit-failures.patch
+Patch7:        enable-passing-a-unix_socket-for-mysql-returners-bsc.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47638
-Patch17:        add-all_versions-parameter-to-include-all-installed-.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47765
-Patch18:        prevent-zypper-from-parsing-repo-configuration-from-.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47149
-Patch19:        add-other-attribute-to-gecos-fields-to-avoid-inconsi.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47908
-Patch20:        align-suse-salt-master.service-limitnofiles-limit-wi.patch
-# PATCH-FIX_OPENSUSE bsc#1095507
-Patch21:        fix-deprecation-warning-bsc-1095507.patch
+Patch8:        add-all_versions-parameter-to-include-all-installed-.patch
 # PATCH-FIX_OPENSUSE bsc#1057635
-Patch22:        add-environment-variable-to-know-if-yum-is-invoked-f.patch
+Patch9:        add-environment-variable-to-know-if-yum-is-invoked-f.patch
 # PATCH-FIX_OPENSUSE
-Patch23:        add-custom-suse-capabilities-as-grains.patch
-# PATCH-FIX_OPENSUSE bsc#1098394 https://github.com/saltstack/salt/pull/47061
-Patch24:        fix-diffing-binary-files-in-file.get_diff-bsc-109839.patch
-# PATCH-FIX_OPENSUSE bsc#1072599
-Patch25:        show-recommendations-for-salt-ssh-cross-version-pyth.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47405
-Patch26:        fix-unboundlocalerror-in-file.get_diff.patch
+Patch10:        add-custom-suse-capabilities-as-grains.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48294
-Patch27:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47572
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48015
-Patch28:        accounting-for-when-files-in-an-archive-contain-non-.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48712
-Patch29:        remove-old-hack-when-reporting-multiversion-packages.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46461
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46928
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46957
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47243
-Patch30:        add-engine-relaying-libvirt-events.patch
+Patch11:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48781
-Patch31:        avoid-incomprehensive-message-if-crashes.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48765
-Patch32:        fix-mine.get-not-returning-data-workaround-for-48020.patch
-# PATCH-FIX_OPENSUSE bsc#1097174 and bsc#1097413
-Patch33:        fix-for-sorting-of-multi-version-packages-bsc-109717.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48863
-Patch34:        decode-file-contents-for-python2-bsc-1102013.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49052
-Patch35:        add-support-for-python-3.7.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48771
-Patch36:        only-do-reverse-dns-lookup-on-ips-for-salt-ssh.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49277
-Patch37:        prepend-current-directory-when-path-is-just-filename.patch
+Patch12:        avoid-incomprehensive-message-if-crashes.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49063
-Patch38:        integration-of-msi-authentication-with-azurearm-clou.patch
+Patch13:        integration-of-msi-authentication-with-azurearm-clou.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49538
-Patch39:        fix-for-suse-expanded-support-detection.patch
+Patch14:        fix-for-suse-expanded-support-detection.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49508
-Patch40:        x509-fixes-for-remote-signing-106.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49555
-Patch41:        change-stringio-import-in-python2-to-import-the-clas.patch
+Patch15:        x509-fixes-for-remote-signing-106.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48812
-Patch42:        use-adler32-algorithm-to-compute-string-checksums.patch
+Patch16:        use-adler32-algorithm-to-compute-string-checksums.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49497
-Patch43:        x509-fixes-111.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49605
-Patch44:        support-use-of-gce-instance-credentials-109.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49722
-Patch45:        fix-index-error-when-running-on-python-3.patch
+Patch17:        x509-fixes-111.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49696
-Patch46:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
+Patch18:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49737
-Patch47:        do-not-load-pip-state-if-there-is-no-3rd-party-depen.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49806
-Patch48:        update-error-list-for-zypper.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49815
-Patch49:        fix-ipv6-scope-bsc-1108557.patch
+Patch19:        do-not-load-pip-state-if-there-is-no-3rd-party-depen.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49480
-Patch50:        early-feature-support-config.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49085
-Patch51:        fix-async-call-to-process-manager.patch
+Patch20:        early-feature-support-config.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49908
-Patch52:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
+Patch21:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49936
-Patch53:        make-profiles-a-package.patch
+Patch22:        make-profiles-a-package.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49930
-Patch54:        get-os_family-for-rpm-distros-from-the-rpm-macros.-u.patch
+Patch23:        get-os_family-for-rpm-distros-from-the-rpm-macros.-u.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49946
-Patch55:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
+Patch24:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
 # PATCH-FIX_OPENSUSE: Fix unit test for grains core
-Patch56:        fix-unit-test-for-grains-core.patch
+Patch25:        fix-unit-test-for-grains-core.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50049
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50072
-Patch57:        preserving-signature-in-module.run-state-u-50049.patch
+Patch26:        preserving-signature-in-module.run-state-u-50049.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50095
-Patch58:        support-config-non-root-permission-issues-fixes-u-50.patch
+Patch27:        support-config-non-root-permission-issues-fixes-u-50.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50018
-Patch59:        add-multi-file-support-and-globbing-to-the-filetree-.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49761
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50201
-Patch60:        fixes-cve-2018-15750-cve-2018-15751.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48491
-Patch61:        improved-handling-of-ldap-group-id.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48901
-Patch62:        fixing-issue-when-a-valid-token-is-generated-even-wh.patch
+Patch28:        add-multi-file-support-and-globbing-to-the-filetree-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50417
-Patch63:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
+Patch29:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -679,40 +607,6 @@ cp %{S:5} ./.travis.yml
 %patch27 -p1
 %patch28 -p1
 %patch29 -p1
-%patch30 -p1
-%patch31 -p1
-%patch32 -p1
-%patch33 -p1
-%patch34 -p1
-%patch35 -p1
-%patch36 -p1
-%patch37 -p1
-%patch38 -p1
-%patch39 -p1
-%patch40 -p1
-%patch41 -p1
-%patch42 -p1
-%patch43 -p1
-%patch44 -p1
-%patch45 -p1
-%patch46 -p1
-%patch47 -p1
-%patch48 -p1
-%patch49 -p1
-%patch50 -p1
-%patch51 -p1
-%patch52 -p1
-%patch53 -p1
-%patch54 -p1
-%patch55 -p1
-%patch56 -p1
-%patch57 -p1
-%patch58 -p1
-%patch59 -p1
-%patch60 -p1
-%patch61 -p1
-%patch62 -p1
-%patch63 -p1
 
 %build
 %if 0%{?build_py2}

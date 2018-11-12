@@ -1,4 +1,4 @@
-From 6276eb2cd3f2b396c13118a111998230477cc65a Mon Sep 17 00:00:00 2001
+From 9dfd63ee699e71e94a320ccac638cbb6f97c3f1d Mon Sep 17 00:00:00 2001
 From: Florian Bergmann <bergmannf@users.noreply.github.com>
 Date: Tue, 11 Sep 2018 14:02:55 +0200
 Subject: [PATCH] X509 fixes for remote signing (#106)
@@ -17,14 +17,13 @@ in the functions.
 At least log the occurring errors to debug and trace.
 ---
  salt/modules/x509.py | 10 +++++-----
- salt/states/x509.py  |  2 +-
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/salt/modules/x509.py b/salt/modules/x509.py
-index 15de06e200..9901bc5bd9 100644
+index 865413ccf0..8d8943f347 100644
 --- a/salt/modules/x509.py
 +++ b/salt/modules/x509.py
-@@ -658,7 +658,7 @@ def read_crl(crl):
+@@ -671,7 +671,7 @@ def read_crl(crl):
      text = get_pem_entry(text, pem_type='X509 CRL')
  
      crltempfile = tempfile.NamedTemporaryFile()
@@ -33,7 +32,7 @@ index 15de06e200..9901bc5bd9 100644
      crltempfile.flush()
      crlparsed = _parse_openssl_crl(crltempfile.name)
      crltempfile.close()
-@@ -1368,9 +1368,9 @@ def create_certificate(
+@@ -1378,9 +1378,9 @@ def create_certificate(
                  pem_type='CERTIFICATE REQUEST').replace('\n', '')
          if 'public_key' in kwargs:
              # Strip newlines to make passing through as cli functions easier
@@ -45,7 +44,7 @@ index 15de06e200..9901bc5bd9 100644
  
          # Remove system entries in kwargs
          # Including listen_in and preqreuired because they are not included
-@@ -1766,13 +1766,13 @@ def verify_crl(crl, cert):
+@@ -1781,13 +1781,13 @@ def verify_crl(crl, cert):
      crltext = _text_or_file(crl)
      crltext = get_pem_entry(crltext, pem_type='X509 CRL')
      crltempfile = tempfile.NamedTemporaryFile()
@@ -61,20 +60,7 @@ index 15de06e200..9901bc5bd9 100644
      certtempfile.flush()
  
      cmd = ('openssl crl -noout -in {0} -CAfile {1}'.format(
-diff --git a/salt/states/x509.py b/salt/states/x509.py
-index 832f74168c..7bb941f393 100644
---- a/salt/states/x509.py
-+++ b/salt/states/x509.py
-@@ -545,7 +545,7 @@ def certificate_managed(name,
-             if not private_ret['result']:
-                 return private_ret
- 
--    file_args['contents'] += certificate
-+    file_args['contents'] += salt.utils.stringutils.to_str(certificate)
- 
-     if not append_certs:
-         append_certs = []
 -- 
-2.19.0
+2.17.1
 
 
