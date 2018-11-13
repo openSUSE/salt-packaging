@@ -1,4 +1,4 @@
-From 7279df969397244e466112d65ce856e1a2eba54a Mon Sep 17 00:00:00 2001
+From 25f3b5fa04c556c3a46ee35a93e905f74c583329 Mon Sep 17 00:00:00 2001
 From: Marcelo Chiaradia <mchiaradia@suse.com>
 Date: Thu, 7 Jun 2018 10:29:41 +0200
 Subject: [PATCH] Add environment variable to know if yum is invoked from
@@ -9,15 +9,15 @@ Subject: [PATCH] Add environment variable to know if yum is invoked from
  1 file changed, 15 insertions(+), 7 deletions(-)
 
 diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
-index 3b2cb0aa29..d3ba791bc9 100644
+index 3b2cb0aa29..61b5ba10e7 100644
 --- a/salt/modules/yumpkg.py
 +++ b/salt/modules/yumpkg.py
 @@ -154,9 +154,11 @@ def _call_yum(args, **kwargs):
      '''
      Call yum/dnf.
      '''
-+	env = salt.utils.environment.get_module_environment(globals())
-+	env['SALT_RUNNING'] = '1'
++    env = salt.utils.environment.get_module_environment(globals())
++    env['SALT_RUNNING'] = '1'
      params = {'output_loglevel': 'trace',
                'python_shell': False,
 -              'env': salt.utils.environment.get_module_environment(globals())}
