@@ -74,52 +74,48 @@ Patch5:         fix-bsc-1065792.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46684
 Patch6:         add-saltssh-multi-version-support-across-python-inte.patch
 # PATCH-FIX_OPENSUSE bsc#1091371
-Patch7:        enable-passing-a-unix_socket-for-mysql-returners-bsc.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47638
-Patch8:        add-all_versions-parameter-to-include-all-installed-.patch
+Patch7:         enable-passing-a-unix_socket-for-mysql-returners-bsc.patch
 # PATCH-FIX_OPENSUSE bsc#1057635
-Patch9:        add-environment-variable-to-know-if-yum-is-invoked-f.patch
+Patch8:         add-environment-variable-to-know-if-yum-is-invoked-f.patch
 # PATCH-FIX_OPENSUSE
-Patch10:        add-custom-suse-capabilities-as-grains.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48294
-Patch11:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
+Patch9:         add-custom-suse-capabilities-as-grains.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48781
-Patch12:        avoid-incomprehensive-message-if-crashes.patch
+Patch10:        avoid-incomprehensive-message-if-crashes.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49063
-Patch13:        integration-of-msi-authentication-with-azurearm-clou.patch
+Patch11:        integration-of-msi-authentication-with-azurearm-clou.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49538
-Patch14:        fix-for-suse-expanded-support-detection.patch
+Patch12:        fix-for-suse-expanded-support-detection.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49508
-Patch15:        x509-fixes-for-remote-signing-106.patch
+Patch13:        x509-fixes-for-remote-signing-106.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48812
-Patch16:        use-adler32-algorithm-to-compute-string-checksums.patch
+Patch14:        use-adler32-algorithm-to-compute-string-checksums.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49497
-Patch17:        x509-fixes-111.patch
+Patch15:        x509-fixes-111.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49696
-Patch18:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
+Patch16:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49737
-Patch19:        do-not-load-pip-state-if-there-is-no-3rd-party-depen.patch
+Patch17:        do-not-load-pip-state-if-there-is-no-3rd-party-depen.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49480
-Patch20:        early-feature-support-config.patch
+Patch18:        early-feature-support-config.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49908
-Patch21:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
+Patch19:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49936
-Patch22:        make-profiles-a-package.patch
+Patch20:        make-profiles-a-package.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49930
-Patch23:        get-os_family-for-rpm-distros-from-the-rpm-macros.-u.patch
+Patch21:        get-os_family-for-rpm-distros-from-the-rpm-macros.-u.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49946
-Patch24:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
+Patch22:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
 # PATCH-FIX_OPENSUSE: Fix unit test for grains core
-Patch25:        fix-unit-test-for-grains-core.patch
+Patch23:        fix-unit-test-for-grains-core.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50049
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50072
-Patch26:        preserving-signature-in-module.run-state-u-50049.patch
+Patch24:        preserving-signature-in-module.run-state-u-50049.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50095
-Patch27:        support-config-non-root-permission-issues-fixes-u-50.patch
+Patch25:        support-config-non-root-permission-issues-fixes-u-50.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50018
-Patch28:        add-multi-file-support-and-globbing-to-the-filetree-.patch
+Patch26:        add-multi-file-support-and-globbing-to-the-filetree-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50417
-Patch29:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
+Patch27:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -606,8 +602,6 @@ cp %{S:5} ./.travis.yml
 %patch25 -p1
 %patch26 -p1
 %patch27 -p1
-%patch28 -p1
-%patch29 -p1
 
 %build
 %if 0%{?build_py2}
