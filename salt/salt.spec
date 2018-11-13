@@ -58,7 +58,8 @@ Summary:        A parallel remote execution system
 License:        Apache-2.0
 Group:          System/Management
 Url:            http://saltstack.org/
-Source:         https://github.com/saltstack/salt/archive/v%{version}.tar.gz
+#Source:         https://github.com/saltstack/salt/archive/v%{version}.tar.gz
+Source:         fluorine.tar.gz
 Source1:        README.SUSE
 Source2:        salt-tmpfiles.d
 Source3:        html.tar.bz2
@@ -575,7 +576,7 @@ Zsh command line completion support for %{name}.
 
 %prep
 # %setup -q -n salt-%{version}
-%setup -q -n salt-%{version}
+%setup -q -n salt-fluorine
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
 %patch1 -p1
