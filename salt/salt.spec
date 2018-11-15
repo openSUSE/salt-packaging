@@ -191,6 +191,8 @@ Patch61:        improved-handling-of-ldap-group-id.patch
 Patch62:        fixing-issue-when-a-valid-token-is-generated-even-wh.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50417
 Patch63:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50523
+Patch64:        get-os_arch-also-without-rpm-package-installed.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -713,6 +715,7 @@ cp %{S:5} ./.travis.yml
 %patch61 -p1
 %patch62 -p1
 %patch63 -p1
+%patch64 -p1
 
 %build
 %if 0%{?build_py2}
