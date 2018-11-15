@@ -1,0 +1,143 @@
+From 16342f2c5a95e55e06d4697ea6cd8ba930a26dd3 Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Wed, 14 Nov 2018 17:36:23 +0100
+Subject: [PATCH] Get os_arch also without RPM package installed
+
+backport pkg.rpm test
+
+Add pkg.rpm unit test case
+
+Fix docstring
+
+Add UT for getting OS architecture fallback, when no RPM found (initrd, e.g.)
+
+Add UT for OS architecture detection on fallback, when no CPU arch can be determined
+
+Add UT for OS arch detection when no CPU arch or machine can be determined
+
+Remove unsupported testcase
+---
+ salt/utils/pkg/rpm.py        | 18 ++++++---
+ tests/unit/utils/test_pkg.py | 72 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 84 insertions(+), 6 deletions(-)
+ create mode 100644 tests/unit/utils/test_pkg.py
+
+diff --git a/salt/utils/pkg/rpm.py b/salt/utils/pkg/rpm.py
+index c3e4629a1a..a88e8440f6 100644
+--- a/salt/utils/pkg/rpm.py
++++ b/salt/utils/pkg/rpm.py
+@@ -9,7 +9,9 @@ import collections
+ import datetime
+ import logging
+ import subprocess
++import platform
+ import salt.utils.stringutils
++import salt.utils.path
+ 
+ # Import 3rd-party libs
+ from salt.ext import six
+@@ -43,12 +45,16 @@ def get_osarch():
+     '''
+     Get the os architecture using rpm --eval
+     '''
+-    ret = subprocess.Popen(
+-        'rpm --eval "%{_host_cpu}"',
+-        shell=True,
+-        close_fds=True,
+-        stdout=subprocess.PIPE,
+-        stderr=subprocess.PIPE).communicate()[0]
++    if salt.utils.path.which('rpm'):
++        ret = subprocess.Popen(
++            'rpm --eval "%{_host_cpu}"',
++            shell=True,
++            close_fds=True,
++            stdout=subprocess.PIPE,
++            stderr=subprocess.PIPE).communicate()[0]
++    else:
++        ret = ''.join(list(filter(None, platform.uname()[-2:]))[-1:])
++
+     return salt.utils.stringutils.to_str(ret).strip() or 'unknown'
+ 
+ 
+diff --git a/tests/unit/utils/test_pkg.py b/tests/unit/utils/test_pkg.py
+new file mode 100644
+index 0000000000..361e0bf92f
+--- /dev/null
++++ b/tests/unit/utils/test_pkg.py
+@@ -0,0 +1,72 @@
++# -*- coding: utf-8 -*-
++
++from __future__ import absolute_import, unicode_literals, print_function
++
++from tests.support.unit import TestCase, skipIf
++from tests.support.mock import Mock, MagicMock, patch, NO_MOCK, NO_MOCK_REASON
++import salt.utils.pkg
++from salt.utils.pkg import rpm
++
++try:
++    import pytest
++except ImportError:
++    pytest = None
++
++
++@skipIf(NO_MOCK, NO_MOCK_REASON)
++@skipIf(pytest is None, 'PyTest is missing')
++class PkgRPMTestCase(TestCase):
++    '''
++    Test case for pkg.rpm utils
++    '''
++
++    @patch('salt.utils.path.which', MagicMock(return_value=True))
++    def test_get_osarch_by_rpm(self):
++        '''
++        Get os_arch if RPM package is installed.
++        :return:
++        '''
++        subprocess_mock = MagicMock()
++        subprocess_mock.Popen = MagicMock()
++        subprocess_mock.Popen().communicate = MagicMock(return_value=['Z80'])
++        with patch('salt.utils.pkg.rpm.subprocess', subprocess_mock):
++            assert rpm.get_osarch() == 'Z80'
++        assert subprocess_mock.Popen.call_count == 2  # One within the mock
++        assert subprocess_mock.Popen.call_args[1]['close_fds']
++        assert subprocess_mock.Popen.call_args[1]['shell']
++        assert len(subprocess_mock.Popen.call_args_list) == 2
++        assert subprocess_mock.Popen.call_args[0][0] == 'rpm --eval "%{_host_cpu}"'
++
++    @patch('salt.utils.path.which', MagicMock(return_value=False))
++    @patch('salt.utils.pkg.rpm.subprocess', MagicMock(return_value=False))
++    @patch('salt.utils.pkg.rpm.platform.uname', MagicMock(
++        return_value=('Sinclair BASIC', 'motophone', '1982 Sinclair Research Ltd', '1.0', 'ZX81', 'Z80')))
++    def test_get_osarch_by_platform(self):
++        '''
++        Get os_arch if RPM package is not installed (inird image, for example).
++        :return:
++        '''
++        assert rpm.get_osarch() == 'Z80'
++
++    @patch('salt.utils.path.which', MagicMock(return_value=False))
++    @patch('salt.utils.pkg.rpm.subprocess', MagicMock(return_value=False))
++    @patch('salt.utils.pkg.rpm.platform.uname', MagicMock(
++        return_value=('Sinclair BASIC', 'motophone', '1982 Sinclair Research Ltd', '1.0', 'ZX81', '')))
++    def test_get_osarch_by_platform_no_cpu_arch(self):
++        '''
++        Get os_arch if RPM package is not installed (inird image, for example) but cpu arch cannot be determined.
++        :return:
++        '''
++        assert rpm.get_osarch() == 'ZX81'
++
++    @patch('salt.utils.path.which', MagicMock(return_value=False))
++    @patch('salt.utils.pkg.rpm.subprocess', MagicMock(return_value=False))
++    @patch('salt.utils.pkg.rpm.platform.uname', MagicMock(
++        return_value=('Sinclair BASIC', 'motophone', '1982 Sinclair Research Ltd', '1.0', '', '')))
++    def test_get_osarch_by_platform_no_cpu_arch_no_machine(self):
++        '''
++        Get os_arch if RPM package is not installed (inird image, for example)
++        where both cpu arch and machine cannot be determined.
++        :return:
++        '''
++        assert rpm.get_osarch() == 'unknown'
+-- 
+2.19.1
+
+

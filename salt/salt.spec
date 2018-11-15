@@ -231,6 +231,8 @@ Patch80:        fixing-issue-when-a-valid-token-is-generated-even-wh.patch
 Patch81:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
 # PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/113
 Patch82:        fix-crontab-module-file-attributes-option-missing-bs.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50523
+Patch83:        get-os_arch-also-without-rpm-package-installed.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -771,6 +773,7 @@ cp %{S:5} ./.travis.yml
 %patch80 -p1
 %patch81 -p1
 %patch82 -p1
+%patch83 -p1
 
 %build
 %if 0%{?build_py2}
