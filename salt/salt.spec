@@ -227,12 +227,13 @@ Patch78:        fixes-cve-2018-15750-cve-2018-15751.patch
 Patch79:        improved-handling-of-ldap-group-id.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48901
 Patch80:        fixing-issue-when-a-valid-token-is-generated-even-wh.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50417
-Patch81:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
-# PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/113
-Patch82:        fix-crontab-module-file-attributes-option-missing-bs.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50523
-Patch83:        get-os_arch-also-without-rpm-package-installed.patch
+Patch81:        get-os_arch-also-without-rpm-package-installed.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50417
+Patch82:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
+# PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/113
+Patch83:        fix-crontab-module-file-attributes-option-missing-bs.patch
+
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
