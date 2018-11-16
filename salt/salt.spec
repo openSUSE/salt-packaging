@@ -233,6 +233,8 @@ Patch81:        get-os_arch-also-without-rpm-package-installed.patch
 Patch82:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
 # PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/113
 Patch83:        fix-crontab-module-file-attributes-option-missing-bs.patch
+# PATCH-FIX_UPSTREAM https://github.com/openSUSE/salt/pull/50392
+Patch84:        make-aptpkg.list_repos-compatible-on-enabled-disable.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -775,6 +777,7 @@ cp %{S:5} ./.travis.yml
 %patch81 -p1
 %patch82 -p1
 %patch83 -p1
+%patch84 -p1
 
 %build
 %if 0%{?build_py2}
