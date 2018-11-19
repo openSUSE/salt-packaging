@@ -218,6 +218,8 @@ Patch78:        backport-46867-string-arg-normalization-bsc-1094960.patch
 Patch79:        fix-for-suse-expanded-support-detection.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49532
 Patch80:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50563
+Patch81:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
 
 
 
@@ -654,6 +656,7 @@ cp %{S:5} ./.travis.yml
 %patch78 -p1
 %patch79 -p1
 %patch80 -p1
+%patch81 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
