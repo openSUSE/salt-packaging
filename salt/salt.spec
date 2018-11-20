@@ -195,6 +195,8 @@ Patch63:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
 Patch64:        get-os_arch-also-without-rpm-package-installed.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50392
 Patch65:        make-aptpkg.list_repos-compatible-on-enabled-disable.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50453
+Patch66:        debian-info_installed-compatibility-50453.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -719,6 +721,7 @@ cp %{S:5} ./.travis.yml
 %patch63 -p1
 %patch64 -p1
 %patch65 -p1
+%patch66 -p1
 
 %build
 %if 0%{?build_py2}
