@@ -1,4 +1,4 @@
-From d6054f56d6e67f585accac324621629dc41c6505 Mon Sep 17 00:00:00 2001
+From 9b2473001dcf25c53dff469d3ffb38113e0402eb Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Tue, 20 Nov 2018 16:06:31 +0100
 Subject: [PATCH] Debian info_installed compatibility (#50453)
@@ -47,15 +47,13 @@ Lintfix: too many empty lines
 
 Adjust architecture getter according to the lowpkg info
 
-# Conflicts:
-#	salt/modules/dpkg.py
-#	tests/unit/modules/test_aptpkg.py
+Fix wrong Git merge: missing function signature
 ---
  salt/modules/aptpkg.py            |  20 +++-
- salt/modules/dpkg.py              |  91 ++++++++++++--
+ salt/modules/dpkg.py              |  93 +++++++++++++--
  tests/unit/modules/test_aptpkg.py | 189 +++++++++++++++++-------------
  tests/unit/modules/test_dpkg.py   |  69 +++++++++++
- 4 files changed, 273 insertions(+), 96 deletions(-)
+ 4 files changed, 274 insertions(+), 97 deletions(-)
 
 diff --git a/salt/modules/aptpkg.py b/salt/modules/aptpkg.py
 index 90b99c44b9..dc27903230 100644
@@ -107,7 +105,7 @@ index 90b99c44b9..dc27903230 100644
      return ret
  
 diff --git a/salt/modules/dpkg.py b/salt/modules/dpkg.py
-index 03be5f821a..f736234ea4 100644
+index 03be5f821a..26ca5dcf5a 100644
 --- a/salt/modules/dpkg.py
 +++ b/salt/modules/dpkg.py
 @@ -252,6 +252,38 @@ def file_dict(*packages):
@@ -176,7 +174,14 @@ index 03be5f821a..f736234ea4 100644
          pkg_data['description'] = pkg_descr.split(":", 1)[-1]
          ret.append(pkg_data)
  
-@@ -341,13 +378,26 @@ def _get_pkg_install_time(pkg):
+@@ -335,19 +372,32 @@ def _get_pkg_license(pkg):
+     return ", ".join(sorted(licenses))
+ 
+ 
+-def _get_pkg_install_time(pkg):
++def _get_pkg_install_time(pkg, arch):
+     '''
+     Return package install time, based on the /var/lib/dpkg/info/<package>.list
  
      :return:
      '''
