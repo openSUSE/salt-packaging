@@ -1,0 +1,71 @@
+From 22eeb09d7fbfa078906f4637b48b04f70cb059fc Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Thu, 29 Nov 2018 23:32:52 +0100
+Subject: [PATCH] Handle anycast ipv6 addresses
+
+Add IPv6 anycast UT
+---
+ salt/modules/network.py            | 12 ++++++++++++
+ tests/unit/modules/test_network.py | 18 ++++++++++++++++++
+ 2 files changed, 30 insertions(+)
+
+diff --git a/salt/modules/network.py b/salt/modules/network.py
+index 60f586f6bc..7bf8cd336f 100644
+--- a/salt/modules/network.py
++++ b/salt/modules/network.py
+@@ -562,6 +562,18 @@ def _ip_route_linux():
+                 'netmask': '',
+                 'flags': 'U',
+                 'interface': ip_interface})
++        elif comps[0] == "anycast":
++            ip_interface = ''
++            if comps[1] == "dev":
++                ip_interface = comps[2]
++
++            ret.append({
++                'addr_family': 'inet6',
++                'destination': comps[1],
++                'gateway': '::',
++                'netmask': '',
++                'flags': 'U',
++                'interface': ip_interface})
+         else:
+             address_mask = convert_cidr(comps[0])
+             ip_interface = ''
+diff --git a/tests/unit/modules/test_network.py b/tests/unit/modules/test_network.py
+index 50fa629276..0db31ca54b 100644
+--- a/tests/unit/modules/test_network.py
++++ b/tests/unit/modules/test_network.py
+@@ -25,6 +25,7 @@ import salt.utils.path
+ import salt.modules.network as network
+ from salt.exceptions import CommandExecutionError
+ from salt._compat import ipaddress
++from salt.ext import six
+ 
+ 
+ @skipIf(NO_MOCK, NO_MOCK_REASON)
+@@ -357,3 +358,20 @@ class NetworkTestCase(TestCase, LoaderModuleMockMixin):
+ 
+             with patch.dict(network.__grains__, {'kernel': 'Linux'}):
+                 self.assertListEqual(network.default_route('inet'), [])
++
++    ipv6_route_data = '''
++anycast ff00::/8 dev wlan0  table local  metric 256  pref medium
++unreachable default dev lo  table unspec  proto kernel  metric 4294967295  error -101 pref medium
++'''
++    @patch('salt.modules.network.__salt__', {'cmd.run': MagicMock(side_effect=['', ipv6_route_data.strip()])})
++    def test_ip_route_linux(self):
++        '''
++        test ip_route_linux
++
++        :return:
++        '''
++        out = network._ip_route_linux()[0]
++        for k, v in six.iteritems({'destination': 'ff00::/8', 'gateway': '::', 'netmask': '',
++                                   'addr_family': 'inet6', 'flags': 'U', 'interface': ''}):
++            assert k in out
++            assert out[k] == v
+-- 
+2.19.1
+
+
