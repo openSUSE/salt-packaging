@@ -1,0 +1,33 @@
+From 70fb5f16f023711dc8db83952d72faa783efdba1 Mon Sep 17 00:00:00 2001
+From: rallytime <nicole@saltstack.com>
+Date: Fri, 13 Jul 2018 12:42:46 -0400
+Subject: [PATCH] Don't error on retcode 0 in
+ libcrypto.OPENSSL_init_crypto call
+
+Fixes #46884
+---
+ salt/utils/rsax931.py | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/salt/utils/rsax931.py b/salt/utils/rsax931.py
+index 168c02734b..6bfef41bd3 100644
+--- a/salt/utils/rsax931.py
++++ b/salt/utils/rsax931.py
+@@ -71,10 +71,9 @@ def _init_libcrypto():
+     libcrypto.RSA_public_decrypt.argtypes = (c_int, c_char_p, c_char_p, c_void_p, c_int)
+ 
+     try:
+-        if libcrypto.OPENSSL_init_crypto(OPENSSL_INIT_NO_LOAD_CONFIG |
+-                                         OPENSSL_INIT_ADD_ALL_CIPHERS |
+-                                         OPENSSL_INIT_ADD_ALL_DIGESTS, None) != 1:
+-            raise OSError("Failed to initialize OpenSSL library (OPENSSL_init_crypto failed)")
++        libcrypto.OPENSSL_init_crypto(OPENSSL_INIT_NO_LOAD_CONFIG |
++                                      OPENSSL_INIT_ADD_ALL_CIPHERS |
++                                      OPENSSL_INIT_ADD_ALL_DIGESTS, None)
+     except AttributeError:
+         # Support for OpenSSL < 1.1 (OPENSSL_API_COMPAT < 0x10100000L)
+         libcrypto.OPENSSL_no_config()
+-- 
+2.19.2
+
+

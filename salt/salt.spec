@@ -240,6 +240,8 @@ Patch85:        debian-info_installed-compatibility-50453.patch
 # PATCH-FIX_OPENSUSE (bsc#1114474)
 # NOTE: TEMPORARY FIX
 Patch86:        handle-anycast-ipv6-addresses.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48580
+Patch87:        don-t-error-on-retcode-0-in-libcrypto.openssl_init_c.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -784,6 +786,7 @@ cp %{S:5} ./.travis.yml
 %patch84 -p1
 %patch85 -p1
 %patch86 -p1
+%patch87 -p1
 
 %build
 %if 0%{?build_py2}
