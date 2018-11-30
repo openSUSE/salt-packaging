@@ -197,6 +197,8 @@ Patch64:        get-os_arch-also-without-rpm-package-installed.patch
 Patch65:        make-aptpkg.list_repos-compatible-on-enabled-disable.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50453
 Patch66:        debian-info_installed-compatibility-50453.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48580
+Patch67:        don-t-error-on-retcode-0-in-libcrypto.openssl_init_c.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -722,6 +724,7 @@ cp %{S:5} ./.travis.yml
 %patch64 -p1
 %patch65 -p1
 %patch66 -p1
+%patch67 -p1
 
 %build
 %if 0%{?build_py2}
