@@ -1,0 +1,1858 @@
+From 42036632c0fa04ab84d52399d6e3b99e5db87db3 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Tue, 4 Dec 2018 15:31:11 +0000
+Subject: [PATCH] Fix latin1 encoding problems on file module
+ (bsc#1116837)
+
+Add to_str option to decode funcs
+
+This allows for the string to be forced to a str type instead of
+unicode on PY2.
+
+ldapmod.py/ldap3.py: Force modlist for search/modify/etc. to be str types
+
+Add get_diff to salt.utils.stringutils
+
+Make to_unicode/to_str/to_bytes helpers attempt latin-1
+
+Also allow for multiple encodings to be passed
+
+Use new get_diff helper in file module
+
+Use BASE_FILES instead of redundant STATE_DIR
+
+Add integration test for latin-1 file diffs
+
+PY3 scoping fix
+
+In PY3 the caught exceptions now drop out of scope when leaving the for
+loop.
+
+Add unit test for latin-1 fallback, multi-encoding
+
+Skip pylint false-positives
+
+Fix incorrect use of __salt__ when __utils__ is needed
+
+Add stringutils.get_diff to mocks
+
+Only try latin-1 from get_diff instead of by default
+
+Fix to_unicode test
+
+Since latin-1 is not being automatically decoded, we need to explicitly
+pass it on the test.
+
+Fix use of with_tempfile decorator
+
+Add ability to run a shell command to depends decorator
+
+This adds the ability to suppress loading of a function based on the
+retcode of a command.
+
+Fix rst formatting
+
+Ignore all docstrings in runtests_decorators.py
+
+Remove unnecessary docstrings
+
+Update test to reflect docstring changes
+
+line function refactored to work on list
+
+Revert "line function refactored to work on list"
+
+This reverts commit a4969fc280ed4a04348b1f9bb3d594acd9a79286.
+
+_get_line_indent renamed to _set_line_indent
+
+_regex_to_static refactored to work on lists
+
+line function refactored to work on list
+
+Added _set_line_eol and _get_eol functions
+
+Setting end of line
+
+Make tests green
+
+test_line_insert_end fixed
+
+/sr.* pattern should raise exception
+
+file.line function refactored
+
+Make integration green. Added test for mode ensure insert before first line
+
+Fixed file permissions
+
+Removed regex compilation
+
+Comprehensions converting to unicode replaced by salt.utils.data.decode_list
+
+Empty match on delete or replace not causing IndexError exception
+
+List comprehension replaced
+
+Added comments
+---
+ salt/modules/file.py                          | 224 +++++++++---------
+ salt/modules/ldap3.py                         |  17 +-
+ salt/modules/ldapmod.py                       |   3 +-
+ salt/modules/win_file.py                      |  14 +-
+ salt/utils/data.py                            |  73 +++---
+ salt/utils/decorators/__init__.py             |  97 +++++++-
+ salt/utils/stringutils.py                     | 124 +++++++---
+ .../file/base/_modules/runtests_decorators.py |  78 +++---
+ .../file/base/_modules/runtests_helpers.py    |   1 +
+ .../integration/files/file/base/exit_code.sh  |   3 +
+ .../files/file/base/issue-48777/new.html      |   5 +
+ .../files/file/base/issue-48777/old.html      |   4 +
+ tests/integration/modules/test_decorators.py  |  35 ++-
+ tests/integration/states/test_file.py         |  49 ++--
+ tests/support/paths.py                        |   2 +
+ tests/unit/modules/test_file.py               | 101 +++++++-
+ tests/unit/utils/test_data.py                 |  98 +++++++-
+ tests/unit/utils/test_stringutils.py          |  14 ++
+ 18 files changed, 683 insertions(+), 259 deletions(-)
+ create mode 100644 tests/integration/files/file/base/exit_code.sh
+ create mode 100644 tests/integration/files/file/base/issue-48777/new.html
+ create mode 100644 tests/integration/files/file/base/issue-48777/old.html
+
+diff --git a/salt/modules/file.py b/salt/modules/file.py
+index 7ce71b495f..6bb35f528d 100644
+--- a/salt/modules/file.py
++++ b/salt/modules/file.py
+@@ -12,7 +12,6 @@ from __future__ import absolute_import, print_function, unicode_literals
+ 
+ # Import python libs
+ import datetime
+-import difflib
+ import errno
+ import fileinput
+ import fnmatch
+@@ -61,6 +60,7 @@ import salt.utils.stringutils
+ import salt.utils.templates
+ import salt.utils.url
+ import salt.utils.user
++import salt.utils.data
+ from salt.exceptions import CommandExecutionError, MinionError, SaltInvocationError, get_error_message as _get_error_message
+ from salt.utils.files import HASHES, HASHES_REVMAP
+ 
+@@ -1558,7 +1558,7 @@ def comment_line(path,
+         check_perms(path, None, pre_user, pre_group, pre_mode)
+ 
+     # Return a diff using the two dictionaries
+-    return ''.join(difflib.unified_diff(orig_file, new_file))
++    return __utils__['stringutils.get_diff'](orig_file, new_file)
+ 
+ 
+ def _get_flags(flags):
+@@ -1710,18 +1710,19 @@ def _regex_to_static(src, regex):
+         return None
+ 
+     try:
+-        src = re.search(regex, src, re.M)
++        compiled = re.compile(regex, re.DOTALL)
++        src = [line for line in src if compiled.search(line) or line.count(regex)]
+     except Exception as ex:
+         raise CommandExecutionError("{0}: '{1}'".format(_get_error_message(ex), regex))
+ 
+-    return src and src.group().rstrip('\r') or regex
++    return src and src or []
+ 
+ 
+-def _assert_occurrence(src, probe, target, amount=1):
++def _assert_occurrence(probe, target, amount=1):
+     '''
+     Raise an exception, if there are different amount of specified occurrences in src.
+     '''
+-    occ = src.count(probe)
++    occ = len(probe)
+     if occ > amount:
+         msg = 'more than'
+     elif occ < amount:
+@@ -1737,7 +1738,7 @@ def _assert_occurrence(src, probe, target, amount=1):
+     return occ
+ 
+ 
+-def _get_line_indent(src, line, indent):
++def _set_line_indent(src, line, indent):
+     '''
+     Indent the line with the source line.
+     '''
+@@ -1750,7 +1751,36 @@ def _get_line_indent(src, line, indent):
+             break
+         idt.append(c)
+ 
+-    return ''.join(idt) + line.strip()
++    return ''.join(idt) + line.lstrip()
++
++
++def _get_eol(line):
++    match = re.search('((?<!\r)\n|\r(?!\n)|\r\n)$', line)
++    return match and match.group() or ''
++
++
++def _set_line_eol(src, line):
++    '''
++    Add line ending
++    '''
++    line_ending = _get_eol(src) or os.linesep
++    return line.rstrip() + line_ending
++
++
++def _insert_line_before(idx, body, content, indent):
++    if not idx or (idx and _starts_till(body[idx - 1], content) < 0):
++        cnd = _set_line_indent(body[idx], content, indent)
++        body.insert(idx, cnd)
++    return body
++
++
++def _insert_line_after(idx, body, content, indent):
++    # No duplicates or append, if "after" is the last line
++    next_line = idx + 1 < len(body) and body[idx + 1] or None
++    if next_line is None or _starts_till(next_line, content) < 0:
++        cnd = _set_line_indent(body[idx], content, indent)
++        body.insert(idx + 1, cnd)
++    return body
+ 
+ 
+ def line(path, content=None, match=None, mode=None, location=None,
+@@ -1881,132 +1911,110 @@ def line(path, content=None, match=None, mode=None, location=None,
+         match = content
+ 
+     with salt.utils.files.fopen(path, mode='r') as fp_:
+-        body = salt.utils.stringutils.to_unicode(fp_.read())
+-    body_before = hashlib.sha256(salt.utils.stringutils.to_bytes(body)).hexdigest()
++        body = salt.utils.data.decode_list(fp_.readlines())
++    body_before = hashlib.sha256(salt.utils.stringutils.to_bytes(''.join(body))).hexdigest()
++    # Add empty line at the end if last line ends with eol.
++    # Allows simpler code
++    if body and _get_eol(body[-1]):
++        body.append('')
++
+     after = _regex_to_static(body, after)
+     before = _regex_to_static(body, before)
+     match = _regex_to_static(body, match)
+ 
+     if os.stat(path).st_size == 0 and mode in ('delete', 'replace'):
+         log.warning('Cannot find text to {0}. File \'{1}\' is empty.'.format(mode, path))
+-        body = ''
+-    elif mode == 'delete':
+-        body = os.linesep.join([line for line in body.split(os.linesep) if line.find(match) < 0])
+-    elif mode == 'replace':
+-        body = os.linesep.join([(_get_line_indent(file_line, content, indent)
+-                                if (file_line.find(match) > -1 and not file_line == content) else file_line)
+-                                for file_line in body.split(os.linesep)])
++        body = []
++    elif mode == 'delete' and match:
++        body = [line for line in body if line != match[0]]
++    elif mode == 'replace' and match:
++        idx = body.index(match[0])
++        file_line = body.pop(idx)
++        body.insert(idx, _set_line_indent(file_line, content, indent))
+     elif mode == 'insert':
+         if not location and not before and not after:
+             raise CommandExecutionError('On insert must be defined either "location" or "before/after" conditions.')
+ 
+         if not location:
+             if before and after:
+-                _assert_occurrence(body, before, 'before')
+-                _assert_occurrence(body, after, 'after')
++                _assert_occurrence(before, 'before')
++                _assert_occurrence(after, 'after')
++
+                 out = []
+-                lines = body.split(os.linesep)
+                 in_range = False
+-                for line in lines:
+-                    if line.find(after) > -1:
++                for line in body:
++                    if line == after[0]:
+                         in_range = True
+-                    elif line.find(before) > -1 and in_range:
+-                        out.append(_get_line_indent(line, content, indent))
++                    elif line == before[0] and in_range:
++                        cnd = _set_line_indent(line, content, indent)
++                        out.append(cnd)
+                     out.append(line)
+-                body = os.linesep.join(out)
++                body = out
+ 
+             if before and not after:
+-                _assert_occurrence(body, before, 'before')
+-                out = []
+-                lines = body.split(os.linesep)
+-                for idx in range(len(lines)):
+-                    _line = lines[idx]
+-                    if _line.find(before) > -1:
+-                        cnd = _get_line_indent(_line, content, indent)
+-                        if not idx or (idx and _starts_till(lines[idx - 1], cnd) < 0):  # Job for replace instead
+-                            out.append(cnd)
+-                    out.append(_line)
+-                body = os.linesep.join(out)
++                _assert_occurrence(before, 'before')
++
++                idx = body.index(before[0])
++                body = _insert_line_before(idx, body, content, indent)
+ 
+             elif after and not before:
+-                _assert_occurrence(body, after, 'after')
+-                out = []
+-                lines = body.split(os.linesep)
+-                for idx, _line in enumerate(lines):
+-                    out.append(_line)
+-                    cnd = _get_line_indent(_line, content, indent)
+-                    # No duplicates or append, if "after" is the last line
+-                    if (_line.find(after) > -1 and
+-                            (lines[((idx + 1) < len(lines)) and idx + 1 or idx].strip() != cnd or
+-                             idx + 1 == len(lines))):
+-                        out.append(cnd)
+-                body = os.linesep.join(out)
++                _assert_occurrence(after, 'after')
++
++                idx = body.index(after[0])
++                body = _insert_line_after(idx, body, content, indent)
+ 
+         else:
+             if location == 'start':
+-                body = os.linesep.join((content, body))
++                if body:
++                    body.insert(0, _set_line_eol(body[0], content))
++                else:
++                    body.append(content + os.linesep)
+             elif location == 'end':
+-                body = os.linesep.join((body, _get_line_indent(body[-1], content, indent) if body else content))
++                body.append(_set_line_indent(body[-1], content, indent) if body else content)
+ 
+     elif mode == 'ensure':
+-        after = after and after.strip()
+-        before = before and before.strip()
+ 
+         if before and after:
+-            _assert_occurrence(body, before, 'before')
+-            _assert_occurrence(body, after, 'after')
++            _assert_occurrence(before, 'before')
++            _assert_occurrence(after, 'after')
+ 
+-            is_there = bool(body.count(content))
++            is_there = bool([l for l in body if l.count(content)])
+             if not is_there:
+-                out = []
+-                body = body.split(os.linesep)
+-                for idx, line in enumerate(body):
+-                    out.append(line)
+-                    if line.find(content) > -1:
+-                        is_there = True
+-                    if not is_there:
+-                        if idx < (len(body) - 1) and line.find(after) > -1 and body[idx + 1].find(before) > -1:
+-                            out.append(content)
+-                        elif line.find(after) > -1:
+-                            raise CommandExecutionError('Found more than one line between '
+-                                                        'boundaries "before" and "after".')
+-                body = os.linesep.join(out)
++                idx = body.index(after[0])
++                if idx < (len(body) - 1) and body[idx + 1] == before[0]:
++                    cnd = _set_line_indent(body[idx], content, indent)
++                    body.insert(idx + 1, cnd)
++                else:
++                    raise CommandExecutionError('Found more than one line between '
++                                                'boundaries "before" and "after".')
+ 
+         elif before and not after:
+-            _assert_occurrence(body, before, 'before')
+-            body = body.split(os.linesep)
+-            out = []
+-            for idx in range(len(body)):
+-                if body[idx].find(before) > -1:
+-                    prev = (idx > 0 and idx or 1) - 1
+-                    out.append(_get_line_indent(body[idx], content, indent))
+-                    if _starts_till(out[prev], content) > -1:
+-                        del out[prev]
+-                out.append(body[idx])
+-            body = os.linesep.join(out)
++            _assert_occurrence(before, 'before')
++
++            idx = body.index(before[0])
++            body = _insert_line_before(idx, body, content, indent)
+ 
+         elif not before and after:
+-            _assert_occurrence(body, after, 'after')
+-            body = body.split(os.linesep)
+-            skip = None
+-            out = []
+-            for idx in range(len(body)):
+-                if skip != body[idx]:
+-                    out.append(body[idx])
+-
+-                if body[idx].find(after) > -1:
+-                    next_line = idx + 1 < len(body) and body[idx + 1] or None
+-                    if next_line is not None and _starts_till(next_line, content) > -1:
+-                        skip = next_line
+-                    out.append(_get_line_indent(body[idx], content, indent))
+-            body = os.linesep.join(out)
++            _assert_occurrence(after, 'after')
++
++            idx = body.index(after[0])
++            body = _insert_line_after(idx, body, content, indent)
+ 
+         else:
+             raise CommandExecutionError("Wrong conditions? "
+                                         "Unable to ensure line without knowing "
+                                         "where to put it before and/or after.")
+ 
+-    changed = body_before != hashlib.sha256(salt.utils.stringutils.to_bytes(body)).hexdigest()
++    if body:
++        for idx, line in enumerate(body):
++            if not _get_eol(line) and idx+1 < len(body):
++                prev = idx and idx-1 or 1
++                body[idx] = _set_line_eol(body[prev], line)
++        # We do not need empty line at the end anymore
++        if '' == body[-1]:
++            body.pop()
++
++    changed = body_before != hashlib.sha256(salt.utils.stringutils.to_bytes(''.join(body))).hexdigest()
+ 
+     if backup and changed and __opts__['test'] is False:
+         try:
+@@ -2020,20 +2028,15 @@ def line(path, content=None, match=None, mode=None, location=None,
+     if changed:
+         if show_changes:
+             with salt.utils.files.fopen(path, 'r') as fp_:
+-                path_content = [salt.utils.stringutils.to_unicode(x)
+-                                for x in fp_.read().splitlines(True)]
+-            changes_diff = ''.join(difflib.unified_diff(
+-                path_content,
+-                [salt.utils.stringutils.to_unicode(x)
+-                 for x in body.splitlines(True)]
+-            ))
++                path_content = salt.utils.data.decode_list(fp_.read().splitlines(True))
++            changes_diff = __utils__['stringutils.get_diff'](path_content, body)
+         if __opts__['test'] is False:
+             fh_ = None
+             try:
+                 # Make sure we match the file mode from salt.utils.files.fopen
+                 mode = 'wb' if six.PY2 and salt.utils.platform.is_windows() else 'w'
+                 fh_ = salt.utils.atomicfile.atomic_open(path, mode)
+-                fh_.write(body)
++                fh_.write(''.join(body))
+             finally:
+                 if fh_:
+                     fh_.close()
+@@ -2407,18 +2410,15 @@ def replace(path,
+     if not dry_run and not salt.utils.platform.is_windows():
+         check_perms(path, None, pre_user, pre_group, pre_mode)
+ 
+-    def get_changes():
+-        orig_file_as_str = [salt.utils.stringutils.to_unicode(x) for x in orig_file]
+-        new_file_as_str = [salt.utils.stringutils.to_unicode(x) for x in new_file]
+-        return ''.join(difflib.unified_diff(orig_file_as_str, new_file_as_str))
++    differences = __utils__['stringutils.get_diff'](orig_file, new_file)
+ 
+     if show_changes:
+-        return get_changes()
++        return differences
+ 
+     # We may have found a regex line match but don't need to change the line
+     # (for situations where the pattern also matches the repl). Revert the
+     # has_changes flag to False if the final result is unchanged.
+-    if not get_changes():
++    if not differences:
+         has_changes = False
+ 
+     return has_changes
+@@ -2619,7 +2619,7 @@ def blockreplace(path,
+             )
+ 
+     if done:
+-        diff = ''.join(difflib.unified_diff(orig_file, new_file))
++        diff = __utils__['stringutils.get_diff'](orig_file, new_file)
+         has_changes = diff is not ''
+         if has_changes and not dry_run:
+             # changes detected
+@@ -4938,11 +4938,7 @@ def get_diff(file1,
+             else:
+                 if show_filenames:
+                     args.extend(files)
+-                ret = ''.join(
+-                    difflib.unified_diff(
+-                        *salt.utils.data.decode(args)
+-                    )
+-                )
++                ret = __utils__['stringutils.get_diff'](*args)
+         return ret
+     return ''
+ 
+diff --git a/salt/modules/ldap3.py b/salt/modules/ldap3.py
+index 0e44135152..8c937f766f 100644
+--- a/salt/modules/ldap3.py
++++ b/salt/modules/ldap3.py
+@@ -12,6 +12,8 @@ This is an alternative to the ``ldap`` interface provided by the
+ '''
+ 
+ from __future__ import absolute_import, print_function, unicode_literals
++import logging
++import sys
+ 
+ available_backends = set()
+ try:
+@@ -22,9 +24,9 @@ try:
+     available_backends.add('ldap')
+ except ImportError:
+     pass
+-import logging
++
++import salt.utils.data
+ from salt.ext import six
+-import sys
+ 
+ log = logging.getLogger(__name__)
+ 
+@@ -407,7 +409,10 @@ def add(connect_spec, dn, attributes):
+     if 'unicodePwd' in attributes:
+         attributes['unicodePwd'] = [_format_unicode_password(x) for x in attributes['unicodePwd']]
+ 
+-    modlist = ldap.modlist.addModlist(attributes)
++    modlist = salt.utils.data.decode(
++        ldap.modlist.addModlist(attributes),
++        to_str=True
++    )
+     try:
+         l.c.add_s(dn, modlist)
+     except ldap.LDAPError as e:
+@@ -507,6 +512,7 @@ def modify(connect_spec, dn, directives):
+             modlist[idx] = (mod[0], mod[1],
+                 [_format_unicode_password(x) for x in mod[2]])
+ 
++    modlist = salt.utils.data.decode(modlist, to_str=True)
+     try:
+         l.c.modify_s(dn, modlist)
+     except ldap.LDAPError as e:
+@@ -573,7 +579,10 @@ def change(connect_spec, dn, before, after):
+     if 'unicodePwd' in after:
+         after['unicodePwd'] = [_format_unicode_password(x) for x in after['unicodePwd']]
+ 
+-    modlist = ldap.modlist.modifyModlist(before, after)
++    modlist = salt.utils.data.decode(
++        ldap.modlist.modifyModlist(before, after),
++        to_str=True
++    )
+     try:
+         l.c.modify_s(dn, modlist)
+     except ldap.LDAPError as e:
+diff --git a/salt/modules/ldapmod.py b/salt/modules/ldapmod.py
+index a167fe4feb..abc1460f15 100644
+--- a/salt/modules/ldapmod.py
++++ b/salt/modules/ldapmod.py
+@@ -46,6 +46,7 @@ import logging
+ import time
+ 
+ # Import Salt libs
++import salt.utils.data
+ from salt.ext import six
+ from salt.exceptions import CommandExecutionError
+ 
+@@ -140,7 +141,7 @@ def search(filter,      # pylint: disable=C0103
+     if attrs == '':  # Allow command line 'return all' attr override
+         attrs = None
+     elif attrs is None:
+-        attrs = _config('attrs')
++        attrs = salt.utils.data.decode(_config('attrs'), to_str=True)
+     _ldap = _connect(**kwargs)
+     start = time.time()
+     log.debug(
+diff --git a/salt/modules/win_file.py b/salt/modules/win_file.py
+index 8eb8ddd60c..7fd3a5d0ff 100644
+--- a/salt/modules/win_file.py
++++ b/salt/modules/win_file.py
+@@ -58,8 +58,9 @@ from salt.modules.file import (check_hash,  # pylint: disable=W0611
+         RE_FLAG_TABLE, blockreplace, prepend, seek_read, seek_write, rename,
+         lstat, path_exists_glob, write, pardir, join, HASHES, HASHES_REVMAP,
+         comment, uncomment, _add_flags, comment_line, _regex_to_static,
+-        _get_line_indent, apply_template_on_contents, dirname, basename,
+-        list_backups_dir, _assert_occurrence, _starts_till)
++        _set_line_indent, apply_template_on_contents, dirname, basename,
++        list_backups_dir, _assert_occurrence, _starts_till, _set_line_eol, _get_eol,
++        _insert_line_after, _insert_line_before)
+ from salt.modules.file import normpath as normpath_
+ 
+ from salt.utils.functools import namespaced_function as _namespaced_function
+@@ -116,8 +117,9 @@ def __virtual__():
+             global blockreplace, prepend, seek_read, seek_write, rename, lstat
+             global write, pardir, join, _add_flags, apply_template_on_contents
+             global path_exists_glob, comment, uncomment, _mkstemp_copy
+-            global _regex_to_static, _get_line_indent, dirname, basename
++            global _regex_to_static, _set_line_indent, dirname, basename
+             global list_backups_dir, normpath_, _assert_occurrence, _starts_till
++            global _insert_line_before, _insert_line_after, _set_line_eol, _get_eol
+ 
+             replace = _namespaced_function(replace, globals())
+             search = _namespaced_function(search, globals())
+@@ -172,7 +174,11 @@ def __virtual__():
+             uncomment = _namespaced_function(uncomment, globals())
+             comment_line = _namespaced_function(comment_line, globals())
+             _regex_to_static = _namespaced_function(_regex_to_static, globals())
+-            _get_line_indent = _namespaced_function(_get_line_indent, globals())
++            _set_line_indent = _namespaced_function(_set_line_indent, globals())
++            _set_line_eol = _namespaced_function(_set_line_eol, globals())
++            _get_eol = _namespaced_function(_get_eol, globals())
++            _insert_line_after = _namespaced_function(_insert_line_after, globals())
++            _insert_line_before = _namespaced_function(_insert_line_before, globals())
+             _mkstemp_copy = _namespaced_function(_mkstemp_copy, globals())
+             _add_flags = _namespaced_function(_add_flags, globals())
+             apply_template_on_contents = _namespaced_function(apply_template_on_contents, globals())
+diff --git a/salt/utils/data.py b/salt/utils/data.py
+index 2dcca51be8..d8607382e3 100644
+--- a/salt/utils/data.py
++++ b/salt/utils/data.py
+@@ -68,9 +68,12 @@ def compare_lists(old=None, new=None):
+ 
+ 
+ def decode(data, encoding=None, errors='strict', keep=False,
+-           normalize=False, preserve_dict_class=False, preserve_tuples=False):
++           normalize=False, preserve_dict_class=False, preserve_tuples=False,
++           to_str=False):
+     '''
+-    Generic function which will decode whichever type is passed, if necessary
++    Generic function which will decode whichever type is passed, if necessary.
++    Optionally use to_str=True to ensure strings are str types and not unicode
++    on Python 2.
+ 
+     If `strict` is True, and `keep` is False, and we fail to decode, a
+     UnicodeDecodeError will be raised. Passing `keep` as True allows for the
+@@ -94,22 +97,24 @@ def decode(data, encoding=None, errors='strict', keep=False,
+     for the base character, and one for the breve mark). Normalizing allows for
+     a more reliable test case.
+     '''
++    _decode_func = salt.utils.stringutils.to_unicode \
++        if not to_str \
++        else salt.utils.stringutils.to_str
+     if isinstance(data, collections.Mapping):
+         return decode_dict(data, encoding, errors, keep, normalize,
+-                           preserve_dict_class, preserve_tuples)
++                           preserve_dict_class, preserve_tuples, to_str)
+     elif isinstance(data, list):
+         return decode_list(data, encoding, errors, keep, normalize,
+-                           preserve_dict_class, preserve_tuples)
++                           preserve_dict_class, preserve_tuples, to_str)
+     elif isinstance(data, tuple):
+         return decode_tuple(data, encoding, errors, keep, normalize,
+-                            preserve_dict_class) \
++                            preserve_dict_class, to_str) \
+             if preserve_tuples \
+             else decode_list(data, encoding, errors, keep, normalize,
+-                             preserve_dict_class, preserve_tuples)
++                             preserve_dict_class, preserve_tuples, to_str)
+     else:
+         try:
+-            data = salt.utils.stringutils.to_unicode(
+-                data, encoding, errors, normalize)
++            data = _decode_func(data, encoding, errors, normalize)
+         except TypeError:
+             # to_unicode raises a TypeError when input is not a
+             # string/bytestring/bytearray. This is expected and simply means we
+@@ -123,23 +128,26 @@ def decode(data, encoding=None, errors='strict', keep=False,
+ 
+ def decode_dict(data, encoding=None, errors='strict', keep=False,
+                 normalize=False, preserve_dict_class=False,
+-                preserve_tuples=False):
++                preserve_tuples=False, to_str=False):
+     '''
+-    Decode all string values to Unicode
++    Decode all string values to Unicode. Optionally use to_str=True to ensure
++    strings are str types and not unicode on Python 2.
+     '''
++    _decode_func = salt.utils.stringutils.to_unicode \
++        if not to_str \
++        else salt.utils.stringutils.to_str
+     # Make sure we preserve OrderedDicts
+     rv = data.__class__() if preserve_dict_class else {}
+     for key, value in six.iteritems(data):
+         if isinstance(key, tuple):
+             key = decode_tuple(key, encoding, errors, keep, normalize,
+-                               preserve_dict_class) \
++                               preserve_dict_class, to_str) \
+                 if preserve_tuples \
+                 else decode_list(key, encoding, errors, keep, normalize,
+-                                 preserve_dict_class, preserve_tuples)
++                                 preserve_dict_class, preserve_tuples, to_str)
+         else:
+             try:
+-                key = salt.utils.stringutils.to_unicode(
+-                    key, encoding, errors, normalize)
++                key = _decode_func(key, encoding, errors, normalize)
+             except TypeError:
+                 # to_unicode raises a TypeError when input is not a
+                 # string/bytestring/bytearray. This is expected and simply
+@@ -151,20 +159,19 @@ def decode_dict(data, encoding=None, errors='strict', keep=False,
+ 
+         if isinstance(value, list):
+             value = decode_list(value, encoding, errors, keep, normalize,
+-                                preserve_dict_class, preserve_tuples)
++                                preserve_dict_class, preserve_tuples, to_str)
+         elif isinstance(value, tuple):
+             value = decode_tuple(value, encoding, errors, keep, normalize,
+-                                 preserve_dict_class) \
++                                 preserve_dict_class, to_str) \
+                 if preserve_tuples \
+                 else decode_list(value, encoding, errors, keep, normalize,
+-                                 preserve_dict_class, preserve_tuples)
++                                 preserve_dict_class, preserve_tuples, to_str)
+         elif isinstance(value, collections.Mapping):
+             value = decode_dict(value, encoding, errors, keep, normalize,
+-                                preserve_dict_class, preserve_tuples)
++                                preserve_dict_class, preserve_tuples, to_str)
+         else:
+             try:
+-                value = salt.utils.stringutils.to_unicode(
+-                    value, encoding, errors, normalize)
++                value = _decode_func(value, encoding, errors, normalize)
+             except TypeError:
+                 # to_unicode raises a TypeError when input is not a
+                 # string/bytestring/bytearray. This is expected and simply
+@@ -180,28 +187,31 @@ def decode_dict(data, encoding=None, errors='strict', keep=False,
+ 
+ def decode_list(data, encoding=None, errors='strict', keep=False,
+                 normalize=False, preserve_dict_class=False,
+-                preserve_tuples=False):
++                preserve_tuples=False, to_str=False):
+     '''
+-    Decode all string values to Unicode
++    Decode all string values to Unicode. Optionally use to_str=True to ensure
++    strings are str types and not unicode on Python 2.
+     '''
++    _decode_func = salt.utils.stringutils.to_unicode \
++        if not to_str \
++        else salt.utils.stringutils.to_str
+     rv = []
+     for item in data:
+         if isinstance(item, list):
+             item = decode_list(item, encoding, errors, keep, normalize,
+-                               preserve_dict_class, preserve_tuples)
++                               preserve_dict_class, preserve_tuples, to_str)
+         elif isinstance(item, tuple):
+             item = decode_tuple(item, encoding, errors, keep, normalize,
+-                                preserve_dict_class) \
++                                preserve_dict_class, to_str) \
+                 if preserve_tuples \
+                 else decode_list(item, encoding, errors, keep, normalize,
+-                                 preserve_dict_class, preserve_tuples)
++                                 preserve_dict_class, preserve_tuples, to_str)
+         elif isinstance(item, collections.Mapping):
+             item = decode_dict(item, encoding, errors, keep, normalize,
+-                               preserve_dict_class, preserve_tuples)
++                               preserve_dict_class, preserve_tuples, to_str)
+         else:
+             try:
+-                item = salt.utils.stringutils.to_unicode(
+-                    item, encoding, errors, normalize)
++                item = _decode_func(item, encoding, errors, normalize)
+             except TypeError:
+                 # to_unicode raises a TypeError when input is not a
+                 # string/bytestring/bytearray. This is expected and simply
+@@ -216,13 +226,14 @@ def decode_list(data, encoding=None, errors='strict', keep=False,
+ 
+ 
+ def decode_tuple(data, encoding=None, errors='strict', keep=False,
+-                 normalize=False, preserve_dict_class=False):
++                 normalize=False, preserve_dict_class=False, to_str=False):
+     '''
+-    Decode all string values to Unicode
++    Decode all string values to Unicode. Optionally use to_str=True to ensure
++    strings are str types and not unicode on Python 2.
+     '''
+     return tuple(
+         decode_list(data, encoding, errors, keep, normalize,
+-                    preserve_dict_class, True)
++                    preserve_dict_class, True, to_str)
+     )
+ 
+ 
+diff --git a/salt/utils/decorators/__init__.py b/salt/utils/decorators/__init__.py
+index 81d1812833..411ca719d8 100644
+--- a/salt/utils/decorators/__init__.py
++++ b/salt/utils/decorators/__init__.py
+@@ -5,8 +5,10 @@ Helpful decorators for module writing
+ 
+ # Import python libs
+ from __future__ import absolute_import, print_function, unicode_literals
++import errno
+ import inspect
+ import logging
++import subprocess
+ import sys
+ import time
+ from functools import wraps
+@@ -28,7 +30,7 @@ class Depends(object):
+     '''
+     This decorator will check the module when it is loaded and check that the
+     dependencies passed in are in the globals of the module. If not, it will
+-    cause the function to be unloaded (or replaced)
++    cause the function to be unloaded (or replaced).
+     '''
+     # kind -> Dependency -> list of things that depend on it
+     dependency_dict = defaultdict(lambda: defaultdict(dict))
+@@ -40,6 +42,8 @@ class Depends(object):
+ 
+         An example use of this would be:
+ 
++        .. code-block:: python
++
+             @depends('modulename')
+             def test():
+                 return 'foo'
+@@ -49,14 +53,36 @@ class Depends(object):
+             @depends('modulename', fallback_function=function)
+             def test():
+                 return 'foo'
+-        '''
+ 
++        .. code-block:: python
++
++        This can also be done with the retcode of a command, using the
++        ``retcode`` argument:
++
++            @depends('/opt/bin/check_cmd', retcode=0)
++            def test():
++                return 'foo'
++
++        It is also possible to check for any nonzero retcode using the
++        ``nonzero_retcode`` argument:
++
++            @depends('/opt/bin/check_cmd', nonzero_retcode=True)
++            def test():
++                return 'foo'
++
++        .. note::
++            The command must be formatted as a string, not a list of args.
++            Additionally, I/O redirection and other shell-specific syntax are
++            not supported since this uses shell=False when calling
++            subprocess.Popen().
++
++        '''
+         log.trace(
+-            'Depends decorator instantiated with dep list of %s',
+-            dependencies
++            'Depends decorator instantiated with dep list of %s and kwargs %s',
++            dependencies, kwargs
+         )
+         self.dependencies = dependencies
+-        self.fallback_function = kwargs.get('fallback_function')
++        self.params = kwargs
+ 
+     def __call__(self, function):
+         '''
+@@ -74,15 +100,30 @@ class Depends(object):
+             _, kind, mod_name = frame.f_globals['__name__'].rsplit('.', 2)
+             fun_name = function.__name__
+             for dep in self.dependencies:
+-                self.dependency_dict[kind][dep][(mod_name, fun_name)] = \
+-                        (frame, self.fallback_function)
++                self.dependency_dict[kind][dep][(mod_name, fun_name)] = (frame, self.params)
+         except Exception as exc:
+-            log.error(
++            log.exception(
+                 'Exception encountered when attempting to inspect frame in '
+-                'dependency decorator: %s', exc
++                'dependency decorator'
+             )
+         return function
+ 
++    @staticmethod
++    def run_command(dependency, mod_name, func_name):
++        full_name = '{0}.{1}'.format(mod_name, func_name)
++        log.trace('Running \'%s\' for \'%s\'', dependency, full_name)
++        import salt.utils.args
++        args = salt.utils.args.shlex_split(dependency)
++        proc = subprocess.Popen(args,
++                                shell=False,
++                                stdout=subprocess.PIPE,
++                                stderr=subprocess.STDOUT)
++        output = proc.communicate()[0]
++        retcode = proc.returncode
++        log.trace('Output from \'%s\': %s', dependency, output)
++        log.trace('Retcode from \'%s\': %d', dependency, retcode)
++        return retcode
++
+     @classmethod
+     def enforce_dependencies(cls, functions, kind):
+         '''
+@@ -92,24 +133,53 @@ class Depends(object):
+         are missing dependencies.
+         '''
+         for dependency, dependent_dict in six.iteritems(cls.dependency_dict[kind]):
+-            for (mod_name, func_name), (frame, fallback_function) in six.iteritems(dependent_dict):
++            for (mod_name, func_name), (frame, params) in six.iteritems(dependent_dict):
++                if 'retcode' in params or 'nonzero_retcode' in params:
++                    try:
++                        retcode = cls.run_command(dependency, mod_name, func_name)
++                    except OSError as exc:
++                        if exc.errno == errno.ENOENT:
++                            log.trace(
++                                'Failed to run command %s, %s not found',
++                                dependency, exc.filename
++                            )
++                        else:
++                            log.trace(
++                                'Failed to run command \'%s\': %s', dependency, exc
++                            )
++                        retcode = -1
++
++                    if 'retcode' in params:
++                        if params['retcode'] == retcode:
++                            continue
++
++                    elif 'nonzero_retcode' in params:
++                        if params['nonzero_retcode']:
++                            if retcode != 0:
++                                continue
++                        else:
++                            if retcode == 0:
++                                continue
++
+                 # check if dependency is loaded
+-                if dependency is True:
++                elif dependency is True:
+                     log.trace(
+                         'Dependency for %s.%s exists, not unloading',
+                         mod_name, func_name
+                     )
+                     continue
++
+                 # check if you have the dependency
+-                if dependency in frame.f_globals \
++                elif dependency in frame.f_globals \
+                         or dependency in frame.f_locals:
+                     log.trace(
+                         'Dependency (%s) already loaded inside %s, skipping',
+                         dependency, mod_name
+                     )
+                     continue
++
+                 log.trace(
+-                    'Unloading %s.%s because dependency (%s) is not imported',
++                    'Unloading %s.%s because dependency (%s) is not met',
+                     mod_name, func_name, dependency
+                 )
+                 # if not, unload the function
+@@ -126,6 +196,7 @@ class Depends(object):
+                         continue
+ 
+                     try:
++                        fallback_function = params.get('fallback_function')
+                         if fallback_function is not None:
+                             functions[mod_key] = fallback_function
+                         else:
+diff --git a/salt/utils/stringutils.py b/salt/utils/stringutils.py
+index df056f6459..93c2a58e04 100644
+--- a/salt/utils/stringutils.py
++++ b/salt/utils/stringutils.py
+@@ -6,6 +6,7 @@ Functions for manipulating or otherwise processing strings
+ # Import Python libs
+ from __future__ import absolute_import, print_function, unicode_literals
+ import base64
++import difflib
+ import errno
+ import fnmatch
+ import logging
+@@ -31,56 +32,89 @@ def to_bytes(s, encoding=None, errors='strict'):
+     Given bytes, bytearray, str, or unicode (python 2), return bytes (str for
+     python 2)
+     '''
++    if encoding is None:
++        # Try utf-8 first, and fall back to detected encoding
++        encoding = ('utf-8', __salt_system_encoding__)
++    if not isinstance(encoding, (tuple, list)):
++        encoding = (encoding,)
++
++    if not encoding:
++        raise ValueError('encoding cannot be empty')
++
++    exc = None
+     if six.PY3:
+         if isinstance(s, bytes):
+             return s
+         if isinstance(s, bytearray):
+             return bytes(s)
+         if isinstance(s, six.string_types):
+-            if encoding:
+-                return s.encode(encoding, errors)
+-            else:
++            for enc in encoding:
+                 try:
+-                    return s.encode(__salt_system_encoding__, errors)
+-                except UnicodeEncodeError:
+-                    # Fall back to UTF-8
+-                    return s.encode('utf-8', errors)
++                    return s.encode(enc, errors)
++                except UnicodeEncodeError as err:
++                    exc = err
++                    continue
++            # The only way we get this far is if a UnicodeEncodeError was
++            # raised, otherwise we would have already returned (or raised some
++            # other exception).
++            raise exc  # pylint: disable=raising-bad-type
+         raise TypeError('expected bytes, bytearray, or str')
+     else:
+         return to_str(s, encoding, errors)
+ 
+ 
+-def to_str(s, encoding=None, errors='strict'):
++def to_str(s, encoding=None, errors='strict', normalize=False):
+     '''
+     Given str, bytes, bytearray, or unicode (py2), return str
+     '''
++    def _normalize(s):
++        try:
++            return unicodedata.normalize('NFC', s) if normalize else s
++        except TypeError:
++            return s
++
++    if encoding is None:
++        # Try utf-8 first, and fall back to detected encoding
++        encoding = ('utf-8', __salt_system_encoding__)
++    if not isinstance(encoding, (tuple, list)):
++        encoding = (encoding,)
++
++    if not encoding:
++        raise ValueError('encoding cannot be empty')
++
+     # This shouldn't be six.string_types because if we're on PY2 and we already
+     # have a string, we should just return it.
+     if isinstance(s, str):
+-        return s
++        return _normalize(s)
++
++    exc = None
+     if six.PY3:
+         if isinstance(s, (bytes, bytearray)):
+-            if encoding:
+-                return s.decode(encoding, errors)
+-            else:
++            for enc in encoding:
+                 try:
+-                    return s.decode(__salt_system_encoding__, errors)
+-                except UnicodeDecodeError:
+-                    # Fall back to UTF-8
+-                    return s.decode('utf-8', errors)
++                    return _normalize(s.decode(enc, errors))
++                except UnicodeDecodeError as err:
++                    exc = err
++                    continue
++            # The only way we get this far is if a UnicodeDecodeError was
++            # raised, otherwise we would have already returned (or raised some
++            # other exception).
++            raise exc  # pylint: disable=raising-bad-type
+         raise TypeError('expected str, bytes, or bytearray not {}'.format(type(s)))
+     else:
+         if isinstance(s, bytearray):
+             return str(s)  # future lint: disable=blacklisted-function
+         if isinstance(s, unicode):  # pylint: disable=incompatible-py3-code,undefined-variable
+-            if encoding:
+-                return s.encode(encoding, errors)
+-            else:
++            for enc in encoding:
+                 try:
+-                    return s.encode(__salt_system_encoding__, errors)
+-                except UnicodeEncodeError:
+-                    # Fall back to UTF-8
+-                    return s.encode('utf-8', errors)
++                    return _normalize(s).encode(enc, errors)
++                except UnicodeEncodeError as err:
++                    exc = err
++                    continue
++            # The only way we get this far is if a UnicodeDecodeError was
++            # raised, otherwise we would have already returned (or raised some
++            # other exception).
++            raise exc  # pylint: disable=raising-bad-type
+         raise TypeError('expected str, bytearray, or unicode')
+ 
+ 
+@@ -91,6 +125,16 @@ def to_unicode(s, encoding=None, errors='strict', normalize=False):
+     def _normalize(s):
+         return unicodedata.normalize('NFC', s) if normalize else s
+ 
++    if encoding is None:
++        # Try utf-8 first, and fall back to detected encoding
++        encoding = ('utf-8', __salt_system_encoding__)
++    if not isinstance(encoding, (tuple, list)):
++        encoding = (encoding,)
++
++    if not encoding:
++        raise ValueError('encoding cannot be empty')
++
++    exc = None
+     if six.PY3:
+         if isinstance(s, str):
+             return _normalize(s)
+@@ -104,14 +148,16 @@ def to_unicode(s, encoding=None, errors='strict', normalize=False):
+         if isinstance(s, unicode):  # pylint: disable=incompatible-py3-code
+             return _normalize(s)
+         elif isinstance(s, (str, bytearray)):
+-            if encoding:
+-                return _normalize(s.decode(encoding, errors))
+-            else:
++            for enc in encoding:
+                 try:
+-                    return _normalize(s.decode(__salt_system_encoding__, errors))
+-                except UnicodeDecodeError:
+-                    # Fall back to UTF-8
+-                    return _normalize(s.decode('utf-8', errors))
++                    return _normalize(s.decode(enc, errors))
++                except UnicodeDecodeError as err:
++                    exc = err
++                    continue
++            # The only way we get this far is if a UnicodeDecodeError was
++            # raised, otherwise we would have already returned (or raised some
++            # other exception).
++            raise exc  # pylint: disable=raising-bad-type
+         raise TypeError('expected str or bytearray')
+ 
+ 
+@@ -469,3 +515,21 @@ def get_context(template, line, num_lines=5, marker=None):
+         buf[error_line_in_context] += marker
+ 
+     return '---\n{0}\n---'.format('\n'.join(buf))
++
++
++def get_diff(a, b, *args, **kwargs):
++    '''
++    Perform diff on two iterables containing lines from two files, and return
++    the diff as as string. Lines are normalized to str types to avoid issues
++    with unicode on PY2.
++    '''
++    encoding = ('utf-8', 'latin-1', __salt_system_encoding__)
++    # Late import to avoid circular import
++    import salt.utils.data
++    return ''.join(
++        difflib.unified_diff(
++            salt.utils.data.decode_list(a, encoding=encoding),
++            salt.utils.data.decode_list(b, encoding=encoding),
++            *args, **kwargs
++        )
++    )
+diff --git a/tests/integration/files/file/base/_modules/runtests_decorators.py b/tests/integration/files/file/base/_modules/runtests_decorators.py
+index 512d0b7014..047d474b19 100644
+--- a/tests/integration/files/file/base/_modules/runtests_decorators.py
++++ b/tests/integration/files/file/base/_modules/runtests_decorators.py
+@@ -2,57 +2,40 @@
+ 
+ # Import Python libs
+ from __future__ import absolute_import
++import os
+ import time
+ 
+ # Import Salt libs
+ import salt.utils.decorators
++from tests.support.paths import BASE_FILES
+ 
++EXIT_CODE_SH = os.path.join(BASE_FILES, 'exit_code.sh')
+ 
+-def _fallbackfunc():
+-    '''
+-    CLI Example:
+ 
+-    .. code-block:: bash
+-    '''
++def _exit_code(code):
++    return '/usr/bin/env sh {0} {1}'.format(EXIT_CODE_SH, code)
++
++
++def _fallbackfunc():
+     return False, 'fallback'
+ 
+ 
+ def working_function():
+-    '''
+-    CLI Example:
+-
+-    .. code-block:: bash
+-    '''
+     return True
+ 
+ 
+ @salt.utils.decorators.depends(True)
+ def booldependsTrue():
+-    '''
+-    CLI Example:
+-
+-    .. code-block:: bash
+-    '''
+     return True
+ 
+ 
+ @salt.utils.decorators.depends(False)
+ def booldependsFalse():
+-    '''
+-    CLI Example:
+-
+-    .. code-block:: bash
+-    '''
+     return True
+ 
+ 
+ @salt.utils.decorators.depends('time')
+ def depends():
+-    '''
+-    CLI Example:
+-
+-    .. code-block:: bash
+-    '''
+     ret = {'ret': True,
+            'time': time.time()}
+     return ret
+@@ -60,21 +43,11 @@ def depends():
+ 
+ @salt.utils.decorators.depends('time123')
+ def missing_depends():
+-    '''
+-    CLI Example:
+-
+-    .. code-block:: bash
+-    '''
+     return True
+ 
+ 
+ @salt.utils.decorators.depends('time', fallback_function=_fallbackfunc)
+ def depends_will_not_fallback():
+-    '''
+-    CLI Example:
+-
+-    .. code-block:: bash
+-    '''
+     ret = {'ret': True,
+            'time': time.time()}
+     return ret
+@@ -82,11 +55,36 @@ def depends_will_not_fallback():
+ 
+ @salt.utils.decorators.depends('time123', fallback_function=_fallbackfunc)
+ def missing_depends_will_fallback():
+-    '''
+-    CLI Example:
+-
+-    .. code-block:: bash
+-    '''
+     ret = {'ret': True,
+            'time': time.time()}
+     return ret
++
++
++@salt.utils.decorators.depends(_exit_code(42), retcode=42)
++def command_success_retcode():
++    return True
++
++
++@salt.utils.decorators.depends(_exit_code(42), retcode=0)
++def command_failure_retcode():
++    return True
++
++
++@salt.utils.decorators.depends(_exit_code(42), nonzero_retcode=True)
++def command_success_nonzero_retcode_true():
++    return True
++
++
++@salt.utils.decorators.depends(_exit_code(0), nonzero_retcode=True)
++def command_failure_nonzero_retcode_true():
++    return True
++
++
++@salt.utils.decorators.depends(_exit_code(0), nonzero_retcode=False)
++def command_success_nonzero_retcode_false():
++    return True
++
++
++@salt.utils.decorators.depends(_exit_code(42), nonzero_retcode=False)
++def command_failure_nonzero_retcode_false():
++    return True
+diff --git a/tests/integration/files/file/base/_modules/runtests_helpers.py b/tests/integration/files/file/base/_modules/runtests_helpers.py
+index 84ec92e044..954e7ae935 100644
+--- a/tests/integration/files/file/base/_modules/runtests_helpers.py
++++ b/tests/integration/files/file/base/_modules/runtests_helpers.py
+@@ -89,6 +89,7 @@ def get_invalid_docs():
+         'vsphere.wraps',
+     )
+     allow_failure_glob = (
++        'runtests_decorators.*',
+         'runtests_helpers.*',
+         'vsphere.*',
+     )
+diff --git a/tests/integration/files/file/base/exit_code.sh b/tests/integration/files/file/base/exit_code.sh
+new file mode 100644
+index 0000000000..d18f243129
+--- /dev/null
++++ b/tests/integration/files/file/base/exit_code.sh
+@@ -0,0 +1,3 @@
++test -n "$1" || exit -127
++
++exit $1
+diff --git a/tests/integration/files/file/base/issue-48777/new.html b/tests/integration/files/file/base/issue-48777/new.html
+new file mode 100644
+index 0000000000..2d5c1ae744
+--- /dev/null
++++ b/tests/integration/files/file/base/issue-48777/new.html
+@@ -0,0 +1,5 @@
++<html>
++<body>
++r�ksm�rg�s
++</body>
++</html>
+diff --git a/tests/integration/files/file/base/issue-48777/old.html b/tests/integration/files/file/base/issue-48777/old.html
+new file mode 100644
+index 0000000000..7879e1ce9f
+--- /dev/null
++++ b/tests/integration/files/file/base/issue-48777/old.html
+@@ -0,0 +1,4 @@
++<html>
++<body>
++</body>
++</html>
+diff --git a/tests/integration/modules/test_decorators.py b/tests/integration/modules/test_decorators.py
+index f869f87ec2..64ae3b5af1 100644
+--- a/tests/integration/modules/test_decorators.py
++++ b/tests/integration/modules/test_decorators.py
+@@ -23,7 +23,7 @@ class DecoratorTest(ModuleCase):
+ 
+     def test_missing_depends(self):
+         self.assertEqual(
+-                {'runtests_decorators.missing_depends_will_fallback': '\n    CLI Example:\n\n    ',
++                {'runtests_decorators.missing_depends_will_fallback': None,
+                  'runtests_decorators.missing_depends': "'runtests_decorators.missing_depends' is not available."},
+                 self.run_function('runtests_decorators.missing_depends'
+                     )
+@@ -57,3 +57,36 @@ class DecoratorTest(ModuleCase):
+                     'runtests_decorators.missing_depends_will_fallback'
+                     )
+                 )
++
++    def test_command_success_retcode(self):
++        ret = self.run_function('runtests_decorators.command_success_retcode')
++        self.assertIs(ret, True)
++
++    def test_command_failure_retcode(self):
++        ret = self.run_function('runtests_decorators.command_failure_retcode')
++        self.assertEqual(
++            ret,
++            "'runtests_decorators.command_failure_retcode' is not available."
++        )
++
++    def test_command_success_nonzero_retcode_true(self):
++        ret = self.run_function('runtests_decorators.command_success_nonzero_retcode_true')
++        self.assertIs(ret, True)
++
++    def test_command_failure_nonzero_retcode_true(self):
++        ret = self.run_function('runtests_decorators.command_failure_nonzero_retcode_true')
++        self.assertEqual(
++            ret,
++            "'runtests_decorators.command_failure_nonzero_retcode_true' is not available."
++        )
++
++    def test_command_success_nonzero_retcode_false(self):
++        ret = self.run_function('runtests_decorators.command_success_nonzero_retcode_false')
++        self.assertIs(ret, True)
++
++    def test_command_failure_nonzero_retcode_false(self):
++        ret = self.run_function('runtests_decorators.command_failure_nonzero_retcode_false')
++        self.assertEqual(
++            ret,
++            "'runtests_decorators.command_failure_nonzero_retcode_false' is not available."
++        )
+diff --git a/tests/integration/states/test_file.py b/tests/integration/states/test_file.py
+index f6deffbf72..9ae4e1f019 100644
+--- a/tests/integration/states/test_file.py
++++ b/tests/integration/states/test_file.py
+@@ -23,10 +23,11 @@ log = logging.getLogger(__name__)
+ # Import Salt Testing libs
+ from tests.support.case import ModuleCase
+ from tests.support.unit import skipIf
+-from tests.support.paths import FILES, TMP, TMP_STATE_TREE
++from tests.support.paths import BASE_FILES, FILES, TMP, TMP_STATE_TREE
+ from tests.support.helpers import (
+     skip_if_not_root,
+     with_system_user_and_group,
++    with_tempfile,
+     Webserver,
+ )
+ from tests.support.mixins import SaltReturnAssertsMixin
+@@ -54,7 +55,6 @@ from salt.ext.six.moves import range  # pylint: disable=import-error,redefined-b
+ 
+ IS_WINDOWS = salt.utils.platform.is_windows()
+ 
+-STATE_DIR = os.path.join(FILES, 'file', 'base')
+ if IS_WINDOWS:
+     FILEPILLAR = 'C:\\Windows\\Temp\\filepillar-python'
+     FILEPILLARDEF = 'C:\\Windows\\Temp\\filepillar-defaultvalue'
+@@ -70,7 +70,7 @@ def _test_managed_file_mode_keep_helper(testcase, local=False):
+     DRY helper function to run the same test with a local or remote path
+     '''
+     name = os.path.join(TMP, 'scene33')
+-    grail_fs_path = os.path.join(FILES, 'file', 'base', 'grail', 'scene33')
++    grail_fs_path = os.path.join(BASE_FILES, 'grail', 'scene33')
+     grail = 'salt://grail/scene33' if not local else grail_fs_path
+ 
+     # Get the current mode so that we can put the file back the way we
+@@ -230,9 +230,7 @@ class FileTest(ModuleCase, SaltReturnAssertsMixin):
+         ret = self.run_state(
+             'file.managed', name=name, source='salt://grail/scene33'
+         )
+-        src = os.path.join(
+-            FILES, 'file', 'base', 'grail', 'scene33'
+-        )
++        src = os.path.join(BASE_FILES, 'grail', 'scene33')
+         with salt.utils.files.fopen(src, 'r') as fp_:
+             master_data = fp_.read()
+         with salt.utils.files.fopen(name, 'r') as fp_:
+@@ -446,11 +444,11 @@ class FileTest(ModuleCase, SaltReturnAssertsMixin):
+         funny_file = tempfile.mkstemp(prefix='?f!le? n@=3&', suffix='.file type')[1]
+         funny_file_name = os.path.split(funny_file)[1]
+         funny_url = 'salt://|' + funny_file_name
+-        funny_url_path = os.path.join(STATE_DIR, funny_file_name)
++        funny_url_path = os.path.join(BASE_FILES, funny_file_name)
+ 
+         state_name = 'funny_file'
+         state_file_name = state_name + '.sls'
+-        state_file = os.path.join(STATE_DIR, state_file_name)
++        state_file = os.path.join(BASE_FILES, state_file_name)
+         state_key = 'file_|-{0}_|-{0}_|-managed'.format(funny_file)
+ 
+         try:
+@@ -479,7 +477,7 @@ class FileTest(ModuleCase, SaltReturnAssertsMixin):
+         '''
+         state_name = 'file-FileTest-test_managed_contents'
+         state_filename = state_name + '.sls'
+-        state_file = os.path.join(STATE_DIR, state_filename)
++        state_file = os.path.join(BASE_FILES, state_filename)
+ 
+         managed_files = {}
+         state_keys = {}
+@@ -574,7 +572,7 @@ class FileTest(ModuleCase, SaltReturnAssertsMixin):
+         Make sure that we enforce the source_hash even with local files
+         '''
+         name = os.path.join(TMP, 'local_source_with_source_hash')
+-        local_path = os.path.join(FILES, 'file', 'base', 'grail', 'scene33')
++        local_path = os.path.join(BASE_FILES, 'grail', 'scene33')
+         actual_hash = '567fd840bf1548edc35c48eb66cdd78bfdfcccff'
+         # Reverse the actual hash
+         bad_hash = actual_hash[::-1]
+@@ -630,7 +628,7 @@ class FileTest(ModuleCase, SaltReturnAssertsMixin):
+         Make sure that we exit gracefully when a local source doesn't exist
+         '''
+         name = os.path.join(TMP, 'local_source_does_not_exist')
+-        local_path = os.path.join(FILES, 'file', 'base', 'grail', 'scene99')
++        local_path = os.path.join(BASE_FILES, 'grail', 'scene99')
+ 
+         for proto in ('file://', ''):
+             source = proto + local_path
+@@ -647,6 +645,29 @@ class FileTest(ModuleCase, SaltReturnAssertsMixin):
+             self.assertIn(
+                 'does not exist', ret['comment'])
+ 
++    @with_tempfile
++    def test_managed_latin1_diff(self, name):
++        '''
++        Tests that latin-1 file contents are represented properly in the diff
++        '''
++        # Lay down the initial file
++        ret = self.run_state(
++            'file.managed',
++            name=name,
++            source='salt://issue-48777/old.html')
++        ret = ret[next(iter(ret))]
++        assert ret['result'] is True, ret
++
++        # Replace it with the new file and check the diff
++        ret = self.run_state(
++            'file.managed',
++            name=name,
++            source='salt://issue-48777/new.html')
++        ret = ret[next(iter(ret))]
++        assert ret['result'] is True, ret
++        diff_lines = ret['changes']['diff'].split('\n')
++        assert '+räksmörgås' in diff_lines, diff_lines
++
+     def test_directory(self):
+         '''
+         file.directory
+@@ -863,7 +884,7 @@ class FileTest(ModuleCase, SaltReturnAssertsMixin):
+         '''
+         state_name = 'file-FileTest-test_directory_clean_require_in'
+         state_filename = state_name + '.sls'
+-        state_file = os.path.join(STATE_DIR, state_filename)
++        state_file = os.path.join(BASE_FILES, state_filename)
+ 
+         directory = tempfile.mkdtemp()
+         self.addCleanup(lambda: shutil.rmtree(directory))
+@@ -898,7 +919,7 @@ class FileTest(ModuleCase, SaltReturnAssertsMixin):
+         '''
+         state_name = 'file-FileTest-test_directory_clean_require_in_with_id'
+         state_filename = state_name + '.sls'
+-        state_file = os.path.join(STATE_DIR, state_filename)
++        state_file = os.path.join(BASE_FILES, state_filename)
+ 
+         directory = tempfile.mkdtemp()
+         self.addCleanup(lambda: shutil.rmtree(directory))
+@@ -934,7 +955,7 @@ class FileTest(ModuleCase, SaltReturnAssertsMixin):
+         '''
+         state_name = 'file-FileTest-test_directory_clean_require_in_with_id'
+         state_filename = state_name + '.sls'
+-        state_file = os.path.join(STATE_DIR, state_filename)
++        state_file = os.path.join(BASE_FILES, state_filename)
+ 
+         directory = tempfile.mkdtemp()
+         self.addCleanup(lambda: shutil.rmtree(directory))
+diff --git a/tests/support/paths.py b/tests/support/paths.py
+index 27cd7b597e..e5af1f2d6b 100644
+--- a/tests/support/paths.py
++++ b/tests/support/paths.py
+@@ -50,6 +50,8 @@ SYS_TMP_DIR = os.path.abspath(os.path.realpath(
+ ))
+ TMP = os.path.join(SYS_TMP_DIR, 'salt-tests-tmpdir')
+ FILES = os.path.join(INTEGRATION_TEST_DIR, 'files')
++BASE_FILES = os.path.join(INTEGRATION_TEST_DIR, 'files', 'file', 'base')
++PROD_FILES = os.path.join(INTEGRATION_TEST_DIR, 'files', 'file', 'prod')
+ PYEXEC = 'python{0}.{1}'.format(*sys.version_info)
+ MOCKBIN = os.path.join(INTEGRATION_TEST_DIR, 'mockbin')
+ SCRIPT_DIR = os.path.join(CODE_DIR, 'scripts')
+diff --git a/tests/unit/modules/test_file.py b/tests/unit/modules/test_file.py
+index c7ec9eff86..3d17a2003e 100644
+--- a/tests/unit/modules/test_file.py
++++ b/tests/unit/modules/test_file.py
+@@ -57,7 +57,10 @@ class FileReplaceTestCase(TestCase, LoaderModuleMockMixin):
+                     'grains': {},
+                 },
+                 '__grains__': {'kernel': 'Linux'},
+-                '__utils__': {'files.is_text': MagicMock(return_value=True)},
++                '__utils__': {
++                    'files.is_text': MagicMock(return_value=True),
++                    'stringutils.get_diff': salt.utils.stringutils.get_diff,
++                },
+             }
+         }
+ 
+@@ -235,7 +238,12 @@ class FileBlockReplaceTestCase(TestCase, LoaderModuleMockMixin):
+                     'grains': {},
+                 },
+                 '__grains__': {'kernel': 'Linux'},
+-                '__utils__': {'files.is_text': MagicMock(return_value=True)},
++                '__utils__': {
++                    'files.is_binary': MagicMock(return_value=False),
++                    'files.is_text': MagicMock(return_value=True),
++                    'files.get_encoding': MagicMock(return_value='utf-8'),
++                    'stringutils.get_diff': salt.utils.stringutils.get_diff,
++                },
+             }
+         }
+ 
+@@ -519,7 +527,10 @@ class FileModuleTestCase(TestCase, LoaderModuleMockMixin):
+                     'cachedir': 'tmp',
+                     'grains': {},
+                 },
+-                '__grains__': {'kernel': 'Linux'}
++                '__grains__': {'kernel': 'Linux'},
++                '__utils__': {
++                    'stringutils.get_diff': salt.utils.stringutils.get_diff,
++                },
+             }
+         }
+ 
+@@ -797,7 +808,10 @@ class FilemodLineTests(TestCase, LoaderModuleMockMixin):
+                     'cachedir': 'tmp',
+                     'grains': {},
+                 },
+-                '__grains__': {'kernel': 'Linux'}
++                '__grains__': {'kernel': 'Linux'},
++                '__utils__': {
++                    'stringutils.get_diff': salt.utils.stringutils.get_diff,
++                },
+             }
+         }
+ 
+@@ -820,6 +834,29 @@ class FilemodLineTests(TestCase, LoaderModuleMockMixin):
+             self.assertIn('Cannot find text to {0}'.format(mode),
+                           _log.warning.call_args_list[0][0][0])
+ 
++    @patch('os.path.realpath', MagicMock())
++    @patch('os.path.isfile', MagicMock(return_value=True))
++    @patch('os.stat', MagicMock())
++    def test_line_delete_no_match(self):
++        '''
++        Tests that when calling file.line with ``mode=delete``,
++        with not matching pattern to delete returns False
++        :return:
++        '''
++        file_content = os.linesep.join([
++            'file_roots:',
++            '  base:',
++            '    - /srv/salt',
++            '    - /srv/custom'
++        ])
++        match = 'not matching'
++        for mode in ['delete', 'replace']:
++            files_fopen = mock_open(read_data=file_content)
++            with patch('salt.utils.files.fopen', files_fopen):
++                atomic_opener = mock_open()
++                with patch('salt.utils.atomicfile.atomic_open', atomic_opener):
++                    self.assertFalse(filemod.line('foo', content='foo', match=match, mode=mode))
++
+     @patch('os.path.realpath', MagicMock())
+     @patch('os.path.isfile', MagicMock(return_value=True))
+     def test_line_modecheck_failure(self):
+@@ -972,7 +1009,7 @@ class FilemodLineTests(TestCase, LoaderModuleMockMixin):
+             '    - /srv/sugar'
+         ])
+         cfg_content = '- /srv/custom'
+-        for before_line in ['/srv/salt', '/srv/sa.*t', '/sr.*']:
++        for before_line in ['/srv/salt', '/srv/sa.*t']:
+             files_fopen = mock_open(read_data=file_content)
+             with patch('salt.utils.files.fopen', files_fopen):
+                 atomic_opener = mock_open()
+@@ -982,6 +1019,31 @@ class FilemodLineTests(TestCase, LoaderModuleMockMixin):
+                 self.assertEqual(atomic_opener().write.call_args_list[0][0][0],
+                                  file_modified)
+ 
++    @patch('os.path.realpath', MagicMock())
++    @patch('os.path.isfile', MagicMock(return_value=True))
++    @patch('os.stat', MagicMock())
++    def test_line_assert_exception_pattern(self):
++        '''
++        Test for file.line for exception on insert with too general pattern.
++        :return:
++        '''
++        file_content = os.linesep.join([
++            'file_roots:',
++            '  base:',
++            '    - /srv/salt',
++            '    - /srv/sugar'
++        ])
++        cfg_content = '- /srv/custom'
++        for before_line in ['/sr.*']:
++            files_fopen = mock_open(read_data=file_content)
++            with patch('salt.utils.files.fopen', files_fopen):
++                atomic_opener = mock_open()
++                with patch('salt.utils.atomicfile.atomic_open', atomic_opener):
++                    with self.assertRaises(CommandExecutionError) as cm:
++                        filemod.line('foo', content=cfg_content, before=before_line, mode='insert')
++                    self.assertEqual(cm.exception.strerror,
++                                     'Found more than expected occurrences in "before" expression')
++
+     @patch('os.path.realpath', MagicMock())
+     @patch('os.path.isfile', MagicMock(return_value=True))
+     @patch('os.stat', MagicMock())
+@@ -1069,7 +1131,7 @@ class FilemodLineTests(TestCase, LoaderModuleMockMixin):
+             '  base:',
+             '    - /srv/salt',
+             '    - /srv/sugar',
+-            cfg_content
++            '    ' + cfg_content
+         ])
+         files_fopen = mock_open(read_data=file_content)
+         with patch('salt.utils.files.fopen', files_fopen):
+@@ -1163,6 +1225,33 @@ class FilemodLineTests(TestCase, LoaderModuleMockMixin):
+                 self.assertEqual(atomic_opener().write.call_args_list[0][0][0],
+                                  file_modified)
+ 
++    @patch('os.path.realpath', MagicMock())
++    @patch('os.path.isfile', MagicMock(return_value=True))
++    @patch('os.stat', MagicMock())
++    def test_line_insert_ensure_before_first_line(self):
++        '''
++        Test for file.line for insertion ensuring the line is before first line
++        :return:
++        '''
++        cfg_content = '#!/bin/bash'
++        file_content = os.linesep.join([
++            '/etc/init.d/someservice restart',
++            'exit 0'
++        ])
++        file_modified = os.linesep.join([
++            cfg_content,
++            '/etc/init.d/someservice restart',
++            'exit 0'
++        ])
++        files_fopen = mock_open(read_data=file_content)
++        with patch('salt.utils.files.fopen', files_fopen):
++            atomic_opener = mock_open()
++            with patch('salt.utils.atomicfile.atomic_open', atomic_opener):
++                filemod.line('foo', content=cfg_content, before='/etc/init.d/someservice restart', mode='ensure')
++            self.assertEqual(len(atomic_opener().write.call_args_list), 1)
++            self.assertEqual(atomic_opener().write.call_args_list[0][0][0],
++                             file_modified)
++
+     @patch('os.path.realpath', MagicMock())
+     @patch('os.path.isfile', MagicMock(return_value=True))
+     @patch('os.stat', MagicMock())
+diff --git a/tests/unit/utils/test_data.py b/tests/unit/utils/test_data.py
+index ea87bcf679..bc1cbb16d9 100644
+--- a/tests/unit/utils/test_data.py
++++ b/tests/unit/utils/test_data.py
+@@ -9,14 +9,16 @@ import logging
+ 
+ # Import Salt libs
+ import salt.utils.data
+-import salt.utils.data
++import salt.utils.stringutils
+ from salt.utils.odict import OrderedDict
+ from tests.support.unit import TestCase, skipIf, LOREM_IPSUM
+ from tests.support.mock import patch, NO_MOCK, NO_MOCK_REASON
+ from salt.ext.six.moves import builtins  # pylint: disable=import-error,redefined-builtin
++from salt.ext import six
+ 
+ log = logging.getLogger(__name__)
+ _b = lambda x: x.encode('utf-8')
++_s = lambda x: salt.utils.stringutils.to_str(x, normalize=True)
+ # Some randomized data that will not decode
+ BYTES = b'\x9c\xb1\xf7\xa3'
+ # This is an example of a unicode string with й constructed using two separate
+@@ -213,6 +215,9 @@ class DataTestCase(TestCase):
+ 
+     def test_decode(self):
+         '''
++        Companion to test_decode_to_str, they should both be kept up-to-date
++        with one another.
++
+         NOTE: This uses the lambda "_b" defined above in the global scope,
+         which encodes a string to a bytestring, assuming utf-8.
+         '''
+@@ -294,6 +299,97 @@ class DataTestCase(TestCase):
+             BYTES,
+             keep=False)
+ 
++    def test_decode_to_str(self):
++        '''
++        Companion to test_decode, they should both be kept up-to-date with one
++        another.
++
++        NOTE: This uses the lambda "_s" defined above in the global scope,
++        which converts the string/bytestring to a str type.
++        '''
++        expected = [
++            _s('unicode_str'),
++            _s('питон'),
++            123,
++            456.789,
++            True,
++            False,
++            None,
++            _s('яйца'),
++            BYTES,
++            [123, 456.789, _s('спам'), True, False, None, _s('яйца'), BYTES],
++            (987, 654.321, _s('яйца'), _s('яйца'), None, (True, _s('яйца'), BYTES)),
++            {_s('str_key'): _s('str_val'),
++             None: True,
++             123: 456.789,
++             _s('яйца'): BYTES,
++             _s('subdict'): {
++                 _s('unicode_key'): _s('яйца'),
++                 _s('tuple'): (123, _s('hello'), _s('world'), True, _s('яйца'), BYTES),
++                 _s('list'): [456, _s('спам'), False, _s('яйца'), BYTES]}},
++            OrderedDict([(_s('foo'), _s('bar')), (123, 456), (_s('яйца'), BYTES)])
++        ]
++
++        ret = salt.utils.data.decode(
++            self.test_data,
++            keep=True,
++            normalize=True,
++            preserve_dict_class=True,
++            preserve_tuples=True,
++            to_str=True)
++        self.assertEqual(ret, expected)
++
++        if six.PY3:
++            # The binary data in the data structure should fail to decode, even
++            # using the fallback, and raise an exception.
++            self.assertRaises(
++                UnicodeDecodeError,
++                salt.utils.data.decode,
++                self.test_data,
++                keep=False,
++                normalize=True,
++                preserve_dict_class=True,
++                preserve_tuples=True,
++                to_str=True)
++
++        # Now munge the expected data so that we get what we would expect if we
++        # disable preservation of dict class and tuples
++        expected[10] = [987, 654.321, _s('яйца'), _s('яйца'), None, [True, _s('яйца'), BYTES]]
++        expected[11][_s('subdict')][_s('tuple')] = [123, _s('hello'), _s('world'), True, _s('яйца'), BYTES]
++        expected[12] = {_s('foo'): _s('bar'), 123: 456, _s('яйца'): BYTES}
++
++        ret = salt.utils.data.decode(
++            self.test_data,
++            keep=True,
++            normalize=True,
++            preserve_dict_class=False,
++            preserve_tuples=False,
++            to_str=True)
++        self.assertEqual(ret, expected)
++
++        # Now test single non-string, non-data-structure items, these should
++        # return the same value when passed to this function
++        for item in (123, 4.56, True, False, None):
++            log.debug('Testing decode of %s', item)
++            self.assertEqual(salt.utils.data.decode(item, to_str=True), item)
++
++        # Test single strings (not in a data structure)
++        self.assertEqual(salt.utils.data.decode('foo', to_str=True), _s('foo'))
++        self.assertEqual(salt.utils.data.decode(_b('bar'), to_str=True), _s('bar'))
++
++        # Test binary blob
++        self.assertEqual(
++            salt.utils.data.decode(BYTES, keep=True, to_str=True),
++            BYTES
++        )
++        if six.PY3:
++            self.assertRaises(
++                UnicodeDecodeError,
++                salt.utils.data.decode,
++                BYTES,
++                keep=False,
++                to_str=True)
++
+     @skipIf(NO_MOCK, NO_MOCK_REASON)
+     def test_decode_fallback(self):
+         '''
+diff --git a/tests/unit/utils/test_stringutils.py b/tests/unit/utils/test_stringutils.py
+index 36ff9308a4..07746872a7 100644
+--- a/tests/unit/utils/test_stringutils.py
++++ b/tests/unit/utils/test_stringutils.py
+@@ -18,6 +18,9 @@ STR = BYTES = UNICODE.encode('utf-8')
+ # code points. Do not modify it.
+ EGGS = '\u044f\u0438\u0306\u0446\u0430'
+ 
++LATIN1_UNICODE = 'räksmörgås'
++LATIN1_BYTES = LATIN1_UNICODE.encode('latin-1')
++
+ 
+ class StringutilsTestCase(TestCase):
+     def test_contains_whitespace(self):
+@@ -111,6 +114,13 @@ class StringutilsTestCase(TestCase):
+             'яйца'
+         )
+ 
++        self.assertEqual(
++            salt.utils.stringutils.to_unicode(
++                LATIN1_BYTES, encoding='latin-1'
++            ),
++            LATIN1_UNICODE
++        )
++
+         if six.PY3:
+             self.assertEqual(salt.utils.stringutils.to_unicode('plugh'), 'plugh')
+             self.assertEqual(salt.utils.stringutils.to_unicode('áéíóúý'), 'áéíóúý')
+@@ -124,6 +134,10 @@ class StringutilsTestCase(TestCase):
+             with patch.object(builtins, '__salt_system_encoding__', 'ascii'):
+                 self.assertEqual(salt.utils.stringutils.to_unicode(u'Ψ'.encode('utf-8')), u'Ψ')
+ 
++    def test_to_unicode_multi_encoding(self):
++        result = salt.utils.stringutils.to_unicode(LATIN1_BYTES, encoding=('utf-8', 'latin1'))
++        assert result == LATIN1_UNICODE
++
+     def test_build_whitespace_split_regex(self):
+         expected_regex = '(?m)^(?:[\\s]+)?Lorem(?:[\\s]+)?ipsum(?:[\\s]+)?dolor(?:[\\s]+)?sit(?:[\\s]+)?amet\\,' \
+                          '(?:[\\s]+)?$'
+-- 
+2.17.1
+
+

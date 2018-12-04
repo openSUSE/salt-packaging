@@ -242,6 +242,11 @@ Patch85:        debian-info_installed-compatibility-50453.patch
 Patch86:        handle-anycast-ipv6-addresses.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48580
 Patch87:        don-t-error-on-retcode-0-in-libcrypto.openssl_init_c.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47023
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47040
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48503
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48934
+Patch88:        fix-latin1-encoding-problems-on-file-module-bsc-1116.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -787,6 +792,7 @@ cp %{S:5} ./.travis.yml
 %patch85 -p1
 %patch86 -p1
 %patch87 -p1
+%patch88 -p1
 
 %build
 %if 0%{?build_py2}
