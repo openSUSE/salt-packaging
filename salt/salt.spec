@@ -199,6 +199,9 @@ Patch65:        make-aptpkg.list_repos-compatible-on-enabled-disable.patch
 Patch66:        debian-info_installed-compatibility-50453.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48580
 Patch67:        don-t-error-on-retcode-0-in-libcrypto.openssl_init_c.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48503
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48934
+Patch68:        fix-latin1-encoding-problems-on-file-module-bsc-1116.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -725,6 +728,7 @@ cp %{S:5} ./.travis.yml
 %patch65 -p1
 %patch66 -p1
 %patch67 -p1
+%patch68 -p1
 
 %build
 %if 0%{?build_py2}
