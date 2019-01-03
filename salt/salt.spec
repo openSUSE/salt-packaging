@@ -202,7 +202,10 @@ Patch67:        don-t-error-on-retcode-0-in-libcrypto.openssl_init_c.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48503
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48934
 Patch68:        fix-latin1-encoding-problems-on-file-module-bsc-1116.patch
-
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50742
+Patch69:        decide-if-the-source-should-be-actually-skipped.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50773
+Patch70:        add-hold-unhold-functions.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -729,6 +732,8 @@ cp %{S:5} ./.travis.yml
 %patch66 -p1
 %patch67 -p1
 %patch68 -p1
+%patch69 -p1
+%patch70 -p1
 
 %build
 %if 0%{?build_py2}
