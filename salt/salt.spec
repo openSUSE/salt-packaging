@@ -249,6 +249,10 @@ Patch87:        don-t-error-on-retcode-0-in-libcrypto.openssl_init_c.patch
 Patch88:        fix-latin1-encoding-problems-on-file-module-bsc-1116.patch
 # NOTE: TEMPORARY FIX https://github.com/SUSE/salt-board/issues/195
 Patch89:        strip-architecture-from-package-name-in-aptpkg-modul.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50742
+Patch90:        decide-if-the-source-should-be-actually-skipped.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50773
+Patch91:        add-hold-unhold-functions.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -796,6 +800,8 @@ cp %{S:5} ./.travis.yml
 %patch87 -p1
 %patch88 -p1
 %patch89 -p1
+%patch90 -p1
+%patch91 -p1
 
 %build
 %if 0%{?build_py2}
