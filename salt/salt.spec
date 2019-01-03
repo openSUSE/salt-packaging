@@ -253,6 +253,8 @@ Patch89:        strip-architecture-from-package-name-in-aptpkg-modul.patch
 Patch90:        decide-if-the-source-should-be-actually-skipped.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50773
 Patch91:        add-hold-unhold-functions.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49639
+Patch92:        retire-md5-checksum-for-pkg-mgmt-plugins.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -802,6 +804,7 @@ cp %{S:5} ./.travis.yml
 %patch89 -p1
 %patch90 -p1
 %patch91 -p1
+%patch92 -p1
 
 %build
 %if 0%{?build_py2}
