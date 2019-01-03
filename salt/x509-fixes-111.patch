@@ -1,4 +1,4 @@
-From 0a87ea79ab68ff6ac0a79e28b7be8f128e920fb8 Mon Sep 17 00:00:00 2001
+From 9b392dae97bfed4d7ce96e7d6c2c0d0b2afe4b4b Mon Sep 17 00:00:00 2001
 From: Florian Bergmann <bergmannf@users.noreply.github.com>
 Date: Fri, 14 Sep 2018 10:30:39 +0200
 Subject: [PATCH] X509 fixes (#111)
@@ -40,7 +40,7 @@ PEP8: line too long
  4 files changed, 74 insertions(+), 96 deletions(-)
 
 diff --git a/salt/modules/publish.py b/salt/modules/publish.py
-index f83791836a..8a6e02e13d 100644
+index 62e3e98f2f..fda848d1ec 100644
 --- a/salt/modules/publish.py
 +++ b/salt/modules/publish.py
 @@ -82,10 +82,8 @@ def _publish(
@@ -56,9 +56,9 @@ index f83791836a..8a6e02e13d 100644
  
              if not matching_master_uris:
                  raise SaltInvocationError('Could not find match for {0} in \
-@@ -175,6 +173,8 @@ def _publish(
-         else:
-             return ret
+@@ -178,6 +176,8 @@ def _publish(
+     finally:
+         channel.close()
  
 +    return {}
 +
@@ -66,7 +66,7 @@ index f83791836a..8a6e02e13d 100644
  def publish(tgt,
              fun,
 diff --git a/salt/modules/x509.py b/salt/modules/x509.py
-index 8d8943f347..6366a5d3fa 100644
+index 8689bfad35..4126f34960 100644
 --- a/salt/modules/x509.py
 +++ b/salt/modules/x509.py
 @@ -38,14 +38,13 @@ from salt.state import STATE_INTERNAL_KEYWORDS as _STATE_INTERNAL_KEYWORDS
@@ -493,7 +493,7 @@ index 209cbc6738..8c79c6d034 100644
  
      return __states__['file.managed'](**file_args)
 diff --git a/tests/unit/modules/test_x509.py b/tests/unit/modules/test_x509.py
-index 1b1ac5c2bc..29a93dc42c 100644
+index 6ff0dcc269..d2db03941e 100644
 --- a/tests/unit/modules/test_x509.py
 +++ b/tests/unit/modules/test_x509.py
 @@ -71,9 +71,11 @@ class X509TestCase(TestCase, LoaderModuleMockMixin):

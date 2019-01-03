@@ -114,8 +114,6 @@ Patch24:        preserving-signature-in-module.run-state-u-50049.patch
 Patch25:        support-config-non-root-permission-issues-fixes-u-50.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50018
 Patch26:        add-multi-file-support-and-globbing-to-the-filetree-.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50417
-Patch27:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
 
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -601,7 +599,6 @@ cp %{S:5} ./.travis.yml
 %patch24 -p1
 %patch25 -p1
 %patch26 -p1
-%patch27 -p1
 
 %build
 %if 0%{?build_py2}
