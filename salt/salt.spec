@@ -255,6 +255,9 @@ Patch90:        decide-if-the-source-should-be-actually-skipped.patch
 Patch91:        add-hold-unhold-functions.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49639
 Patch92:        retire-md5-checksum-for-pkg-mgmt-plugins.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50401
+# NOTE: This is a techpreview as well as in Fluorine! Release only in Neon.
+Patch93:        add-supportconfig-module-for-remote-calls-and-saltss.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -805,6 +808,7 @@ cp %{S:5} ./.travis.yml
 %patch90 -p1
 %patch91 -p1
 %patch92 -p1
+%patch93 -p1
 
 %build
 %if 0%{?build_py2}
