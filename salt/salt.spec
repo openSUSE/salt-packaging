@@ -260,6 +260,8 @@ Patch92:        retire-md5-checksum-for-pkg-mgmt-plugins.patch
 Patch93:        add-supportconfig-module-for-remote-calls-and-saltss.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50567
 Patch94:        azurefs-gracefully-handle-attributeerror.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/116
+Patch95:        return-the-expected-powerpc-os-arch-bsc-1117995.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -812,6 +814,7 @@ cp %{S:5} ./.travis.yml
 %patch92 -p1
 %patch93 -p1
 %patch94 -p1
+%patch95 -p1
 
 %build
 %if 0%{?build_py2}
