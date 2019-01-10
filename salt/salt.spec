@@ -211,6 +211,8 @@ Patch71:        retire-md5-checksum-for-pkg-mgmt-plugins.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50401
 # NOTE: This is a techpreview as well as in Fluorine! Release only in Neon.
 Patch72:        add-supportconfig-module-for-remote-calls-and-saltss.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50567
+Patch73:        azurefs-gracefully-handle-attributeerror.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -741,6 +743,7 @@ cp %{S:5} ./.travis.yml
 %patch70 -p1
 %patch71 -p1
 %patch72 -p1
+%patch73 -p1
 
 %build
 %if 0%{?build_py2}
