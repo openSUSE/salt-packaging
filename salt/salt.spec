@@ -215,6 +215,8 @@ Patch72:        add-supportconfig-module-for-remote-calls-and-saltss.patch
 Patch73:        azurefs-gracefully-handle-attributeerror.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/116
 Patch74:        return-the-expected-powerpc-os-arch-bsc-1117995.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51108
+Patch75:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -747,6 +749,7 @@ cp %{S:5} ./.travis.yml
 %patch72 -p1
 %patch73 -p1
 %patch74 -p1
+%patch75 -p1
 
 %build
 %if 0%{?build_py2}
