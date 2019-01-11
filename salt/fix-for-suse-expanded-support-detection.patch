@@ -1,4 +1,4 @@
-From 1c9cba3a397d53e399b82320507fb5141234c67f Mon Sep 17 00:00:00 2001
+From 616750ad4b2b2b8d55d19b81500dbd4f0aba1f74 Mon Sep 17 00:00:00 2001
 From: Jochen Breuer <jbreuer@suse.de>
 Date: Thu, 6 Sep 2018 17:15:18 +0200
 Subject: [PATCH] Fix for SUSE Expanded Support detection
@@ -10,20 +10,17 @@ CentOS installation, this lead to SUSE ES being detected as CentOS.
 This change also adds a check for redhat-release and then marks the
 'lsb_distrib_id' as RedHat.
 ---
- salt/grains/core.py | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ salt/grains/core.py | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index dc472a6c0a..a5c3a6a8cf 100644
+index f0f1bd17c4..b2c1d475b0 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
-@@ -1593,8 +1593,17 @@ def os_data():
-                                 grains['lsb_distrib_codename'] = \
-                                     comps[3].replace('(', '').replace(')', '')
-                 elif os.path.isfile('/etc/centos-release'):
--                    # CentOS Linux
--                    grains['lsb_distrib_id'] = 'CentOS'
-+                    log.trace('Parsing distrib info from /etc/centos-release')
+@@ -1821,6 +1821,15 @@ def os_data():
+                     log.trace('Parsing distrib info from /etc/centos-release')
+                     # CentOS Linux
+                     grains['lsb_distrib_id'] = 'CentOS'
 +                    # Maybe CentOS Linux; could also be SUSE Expanded Support.
 +                    # SUSE ES has both, centos-release and redhat-release.
 +                    if os.path.isfile('/etc/redhat-release'):
@@ -33,11 +30,10 @@ index dc472a6c0a..a5c3a6a8cf 100644
 +                                    # This is a SUSE Expanded Support Rhel installation
 +                                    grains['lsb_distrib_id'] = 'RedHat'
 +                                    break
-+                    grains.setdefault('lsb_distrib_id', 'CentOS')
                      with salt.utils.files.fopen('/etc/centos-release') as ifile:
                          for line in ifile:
                              # Need to pull out the version and codename
 -- 
-2.19.0
+2.17.1
 
 

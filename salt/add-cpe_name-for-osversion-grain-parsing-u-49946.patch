@@ -1,4 +1,4 @@
-From 3bad9e211c2e76ddac48f7c8ff1632e32e0a256e Mon Sep 17 00:00:00 2001
+From c2c002a2b8f106388fda3c1abaf518f2d47ce1cf Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Tue, 9 Oct 2018 14:08:50 +0200
 Subject: [PATCH] Add CPE_NAME for osversion* grain parsing (U#49946)
@@ -25,16 +25,15 @@ Expand unit test to verify part name
 
 Fix proper part name in the string-bound CPE
 ---
- salt/grains/core.py            | 43 +++++++++++++++++++++---
- tests/unit/grains/test_core.py | 60 +++++++++++++++++++++++++++++-----
- 2 files changed, 90 insertions(+), 13 deletions(-)
+ salt/grains/core.py | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index 80eebd1c05..e41ab4e0ae 100644
+index 29e8371c2b..d688b6c757 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
-@@ -1355,6 +1355,34 @@ def _parse_os_release(os_release_files):
-     return data
+@@ -1571,6 +1571,34 @@ def _parse_cpe_name(cpe):
+     return ret
  
  
 +def _parse_cpe_name(cpe):
@@ -68,127 +67,7 @@ index 80eebd1c05..e41ab4e0ae 100644
  def os_data():
      '''
      Return grains pertaining to the operating system
-@@ -1554,13 +1582,20 @@ def os_data():
-                                 codename = codename_match.group(1)
-                         grains['lsb_distrib_codename'] = codename
-                     if 'CPE_NAME' in os_release:
--                        if ":suse:" in os_release['CPE_NAME'] or ":opensuse:" in os_release['CPE_NAME']:
-+                        cpe = _parse_cpe_name(os_release['CPE_NAME'])
-+                        if not cpe:
-+                            log.error('Broken CPE_NAME format in /etc/os-release!')
-+                        elif cpe.get('vendor', '').lower() in ['suse', 'opensuse']:
-                             grains['os'] = "SUSE"
-                             # openSUSE `osfullname` grain normalization
-                             if os_release.get("NAME") == "openSUSE Leap":
-                                 grains['osfullname'] = "Leap"
-                             elif os_release.get("VERSION") == "Tumbleweed":
-                                 grains['osfullname'] = os_release["VERSION"]
-+                            # Override VERSION_ID, if CPE_NAME around
-+                            if cpe.get('version') and cpe.get('vendor') == 'opensuse':  # Keep VERSION_ID for SLES
-+                                grains['lsb_distrib_release'] = cpe['version']
-+
-                 elif os.path.isfile('/etc/SuSE-release'):
-                     grains['lsb_distrib_id'] = 'SUSE'
-                     version = ''
-@@ -1666,8 +1701,7 @@ def os_data():
-             # Commit introducing this comment should be reverted after the upstream bug is released.
-             if 'CentOS Linux 7' in grains.get('lsb_distrib_codename', ''):
-                 grains.pop('lsb_distrib_release', None)
--            grains['osrelease'] = \
--                grains.get('lsb_distrib_release', osrelease).strip()
-+            grains['osrelease'] = grains.get('lsb_distrib_release', osrelease).strip()
-         grains['oscodename'] = grains.get('lsb_distrib_codename', '').strip() or oscodename
-         if 'Red Hat' in grains['oscodename']:
-             grains['oscodename'] = oscodename
-@@ -1702,8 +1736,7 @@ def os_data():
-                         r'((?:Open|Oracle )?Solaris|OpenIndiana|OmniOS) (Development)?'
-                         r'\s*(\d+\.?\d*|v\d+)\s?[A-Z]*\s?(r\d+|\d+\/\d+|oi_\S+|snv_\S+)?'
-                     )
--                    osname, development, osmajorrelease, osminorrelease = \
--                        release_re.search(rel_data).groups()
-+                    osname, development, osmajorrelease, osminorrelease = release_re.search(rel_data).groups()
-                 except AttributeError:
-                     # Set a blank osrelease grain and fallback to 'Solaris'
-                     # as the 'os' grain.
-diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
-index e973428add..2ab32ef41b 100644
---- a/tests/unit/grains/test_core.py
-+++ b/tests/unit/grains/test_core.py
-@@ -62,10 +62,11 @@ class CoreGrainsTestCase(TestCase, LoaderModuleMockMixin):
-     def test_parse_etc_os_release(self, path_isfile_mock):
-         path_isfile_mock.side_effect = lambda x: x == "/usr/lib/os-release"
-         with salt.utils.files.fopen(os.path.join(OS_RELEASE_DIR, "ubuntu-17.10")) as os_release_file:
--            os_release_content = os_release_file.readlines()
--        with patch("salt.utils.files.fopen", mock_open()) as os_release_file:
--            os_release_file.return_value.__iter__.return_value = os_release_content
--            os_release = core._parse_os_release(["/etc/os-release", "/usr/lib/os-release"])
-+            os_release_content = os_release_file.read()
-+        with patch("salt.utils.files.fopen", mock_open(read_data=os_release_content)):
-+            os_release = core._parse_os_release(
-+                '/etc/os-release',
-+                '/usr/lib/os-release')
-         self.assertEqual(os_release, {
-             "NAME": "Ubuntu",
-             "VERSION": "17.10 (Artful Aardvark)",
-@@ -81,10 +82,53 @@ class CoreGrainsTestCase(TestCase, LoaderModuleMockMixin):
-             "UBUNTU_CODENAME": "artful",
-         })
- 
--    @patch("os.path.isfile")
--    def test_missing_os_release(self, path_isfile_mock):
--        path_isfile_mock.return_value = False
--        os_release = core._parse_os_release(["/etc/os-release", "/usr/lib/os-release"])
-+    def test_parse_cpe_name_wfn(self):
-+        '''
-+        Parse correct CPE_NAME data WFN formatted
-+        :return:
-+        '''
-+        for cpe, cpe_ret in [('cpe:/o:opensuse:leap:15.0',
-+                              {'phase': None, 'version': '15.0', 'product': 'leap',
-+                               'vendor': 'opensuse', 'part': 'operating system'}),
-+                             ('cpe:/o:vendor:product:42:beta',
-+                              {'phase': 'beta', 'version': '42', 'product': 'product',
-+                               'vendor': 'vendor', 'part': 'operating system'})]:
-+            ret = core._parse_cpe_name(cpe)
-+            for key in cpe_ret:
-+                assert key in ret
-+                assert cpe_ret[key] == ret[key]
-+
-+    def test_parse_cpe_name_v23(self):
-+        '''
-+        Parse correct CPE_NAME data v2.3 formatted
-+        :return:
-+        '''
-+        for cpe, cpe_ret in [('cpe:2.3:o:microsoft:windows_xp:5.1.601:beta:*:*:*:*:*:*',
-+                              {'phase': 'beta', 'version': '5.1.601', 'product': 'windows_xp',
-+                               'vendor': 'microsoft', 'part': 'operating system'}),
-+                             ('cpe:2.3:h:corellian:millenium_falcon:1.0:*:*:*:*:*:*:*',
-+                              {'phase': None, 'version': '1.0', 'product': 'millenium_falcon',
-+                               'vendor': 'corellian', 'part': 'hardware'}),
-+                             ('cpe:2.3:*:dark_empire:light_saber:3.0:beta:*:*:*:*:*:*',
-+                              {'phase': 'beta', 'version': '3.0', 'product': 'light_saber',
-+                               'vendor': 'dark_empire', 'part': None})]:
-+            ret = core._parse_cpe_name(cpe)
-+            for key in cpe_ret:
-+                assert key in ret
-+                assert cpe_ret[key] == ret[key]
-+
-+    def test_parse_cpe_name_broken(self):
-+        '''
-+        Parse broken CPE_NAME data
-+        :return:
-+        '''
-+        for cpe in ['cpe:broken', 'cpe:broken:in:all:ways:*:*:*:*',
-+                    'cpe:x:still:broken:123', 'who:/knows:what:is:here']:
-+            assert core._parse_cpe_name(cpe) == {}
-+
-+    def test_missing_os_release(self):
-+        with patch('salt.utils.files.fopen', mock_open(read_data={})):
-+            os_release = core._parse_os_release('/etc/os-release', '/usr/lib/os-release')
-         self.assertEqual(os_release, {})
- 
-     @skipIf(not salt.utils.platform.is_linux(), 'System is not Linux')
 -- 
-2.19.0
+2.17.1
 
 

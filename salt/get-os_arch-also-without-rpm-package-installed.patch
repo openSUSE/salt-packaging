@@ -1,4 +1,4 @@
-From 2e0abe6d12aa2657a4febed3a80b8c4cf104487a Mon Sep 17 00:00:00 2001
+From 11c9eacc439697e9fa7b30918963e4736333ed36 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Wed, 14 Nov 2018 17:36:23 +0100
 Subject: [PATCH] Get os_arch also without RPM package installed
@@ -17,10 +17,9 @@ Add UT for OS arch detection when no CPU arch or machine can be determined
 
 Remove unsupported testcase
 ---
- salt/utils/pkg/rpm.py        | 18 ++++++---
- tests/unit/utils/test_pkg.py | 72 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 84 insertions(+), 6 deletions(-)
- create mode 100644 tests/unit/utils/test_pkg.py
+ salt/utils/pkg/rpm.py        |  18 ++++--
+ tests/unit/utils/test_pkg.py | 105 ++++++++++++++++++++++-------------
+ 2 files changed, 77 insertions(+), 46 deletions(-)
 
 diff --git a/salt/utils/pkg/rpm.py b/salt/utils/pkg/rpm.py
 index 94e231da4b..bb8c3fb589 100644
@@ -60,32 +59,71 @@ index 94e231da4b..bb8c3fb589 100644
  
  
 diff --git a/tests/unit/utils/test_pkg.py b/tests/unit/utils/test_pkg.py
-new file mode 100644
-index 0000000000..361e0bf92f
---- /dev/null
+index c293852058..361e0bf92f 100644
+--- a/tests/unit/utils/test_pkg.py
 +++ b/tests/unit/utils/test_pkg.py
-@@ -0,0 +1,72 @@
-+# -*- coding: utf-8 -*-
-+
+@@ -1,47 +1,72 @@
+ # -*- coding: utf-8 -*-
+ 
+-# Import Python libs
+-from __future__ import absolute_import
+-# Import Salt Libs
 +from __future__ import absolute_import, unicode_literals, print_function
 +
 +from tests.support.unit import TestCase, skipIf
 +from tests.support.mock import Mock, MagicMock, patch, NO_MOCK, NO_MOCK_REASON
-+import salt.utils.pkg
+ import salt.utils.pkg
+-# Import Salt Testing Libs
+-from tests.support.unit import TestCase
 +from salt.utils.pkg import rpm
 +
 +try:
 +    import pytest
 +except ImportError:
 +    pytest = None
-+
-+
+ 
+ 
+-class PkgUtilsTestCase(TestCase):
 +@skipIf(NO_MOCK, NO_MOCK_REASON)
 +@skipIf(pytest is None, 'PyTest is missing')
 +class PkgRPMTestCase(TestCase):
-+    '''
+     '''
+-    TestCase for salt.utils.pkg module
 +    Test case for pkg.rpm utils
-+    '''
+     '''
+-    test_parameters = [
+-        ("16.0.0.49153-0+f1", "", "16.0.0.49153-0+f1"),
+-        ("> 15.0.0", ">", "15.0.0"),
+-        ("< 15.0.0", "<", "15.0.0"),
+-        ("<< 15.0.0", "<<", "15.0.0"),
+-        (">> 15.0.0", ">>", "15.0.0"),
+-        (">= 15.0.0", ">=", "15.0.0"),
+-        ("<= 15.0.0", "<=", "15.0.0"),
+-        ("!= 15.0.0", "!=", "15.0.0"),
+-        ("<=> 15.0.0", "<=>", "15.0.0"),
+-        ("<> 15.0.0", "<>", "15.0.0"),
+-        ("= 15.0.0", "=", "15.0.0"),
+-        (">15.0.0", ">", "15.0.0"),
+-        ("<15.0.0", "<", "15.0.0"),
+-        ("<<15.0.0", "<<", "15.0.0"),
+-        (">>15.0.0", ">>", "15.0.0"),
+-        (">=15.0.0", ">=", "15.0.0"),
+-        ("<=15.0.0", "<=", "15.0.0"),
+-        ("!=15.0.0", "!=", "15.0.0"),
+-        ("<=>15.0.0", "<=>", "15.0.0"),
+-        ("<>15.0.0", "<>", "15.0.0"),
+-        ("=15.0.0", "=", "15.0.0"),
+-        ("", "", "")
+-    ]
+-
+-    def test_split_comparison(self):
+-        '''
+-        Tests salt.utils.pkg.split_comparison
+-        '''
+-        for test_parameter in self.test_parameters:
+-            oper, verstr = salt.utils.pkg.split_comparison(test_parameter[0])
+-            self.assertEqual(test_parameter[1], oper)
+-            self.assertEqual(test_parameter[2], verstr)
 +
 +    @patch('salt.utils.path.which', MagicMock(return_value=True))
 +    def test_get_osarch_by_rpm(self):
@@ -138,6 +176,6 @@ index 0000000000..361e0bf92f
 +        '''
 +        assert rpm.get_osarch() == 'unknown'
 -- 
-2.19.1
+2.17.1
 
 

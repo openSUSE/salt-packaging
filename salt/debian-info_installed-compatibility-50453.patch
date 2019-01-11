@@ -1,4 +1,4 @@
-From 9b2473001dcf25c53dff469d3ffb38113e0402eb Mon Sep 17 00:00:00 2001
+From 254c46e655a71f4b0b238c04ed5bbd03d5b66695 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Tue, 20 Nov 2018 16:06:31 +0100
 Subject: [PATCH] Debian info_installed compatibility (#50453)
@@ -50,16 +50,16 @@ Adjust architecture getter according to the lowpkg info
 Fix wrong Git merge: missing function signature
 ---
  salt/modules/aptpkg.py            |  20 +++-
- salt/modules/dpkg.py              |  93 +++++++++++++--
- tests/unit/modules/test_aptpkg.py | 189 +++++++++++++++++-------------
- tests/unit/modules/test_dpkg.py   |  69 +++++++++++
- 4 files changed, 274 insertions(+), 97 deletions(-)
+ salt/modules/dpkg.py              |  93 +++++++++++++++---
+ tests/unit/modules/test_aptpkg.py | 151 +++++++++++++++++++-----------
+ tests/unit/modules/test_dpkg.py   |  69 ++++++++++++++
+ 4 files changed, 267 insertions(+), 66 deletions(-)
 
 diff --git a/salt/modules/aptpkg.py b/salt/modules/aptpkg.py
-index 90b99c44b9..dc27903230 100644
+index 6c3aade671..6a1067725c 100644
 --- a/salt/modules/aptpkg.py
 +++ b/salt/modules/aptpkg.py
-@@ -2800,6 +2800,15 @@ def info_installed(*names, **kwargs):
+@@ -2762,6 +2762,15 @@ def info_installed(*names, **kwargs):
  
          .. versionadded:: 2016.11.3
  
@@ -75,7 +75,7 @@ index 90b99c44b9..dc27903230 100644
      CLI example:
  
      .. code-block:: bash
-@@ -2810,11 +2819,15 @@ def info_installed(*names, **kwargs):
+@@ -2772,11 +2781,15 @@ def info_installed(*names, **kwargs):
      '''
      kwargs = salt.utils.args.clean_kwargs(**kwargs)
      failhard = kwargs.pop('failhard', True)
@@ -92,7 +92,7 @@ index 90b99c44b9..dc27903230 100644
          t_nfo = dict()
          # Translate dpkg-specific keys to a common structure
          for key, value in pkg_nfo.items():
-@@ -2831,7 +2844,10 @@ def info_installed(*names, **kwargs):
+@@ -2793,7 +2806,10 @@ def info_installed(*names, **kwargs):
              else:
                  t_nfo[key] = value
  
@@ -257,26 +257,19 @@ index 03be5f821a..26ca5dcf5a 100644
  
      return ret
 diff --git a/tests/unit/modules/test_aptpkg.py b/tests/unit/modules/test_aptpkg.py
-index c0e26cfcd4..5352e39982 100644
+index 1e963ee5db..580b840197 100644
 --- a/tests/unit/modules/test_aptpkg.py
 +++ b/tests/unit/modules/test_aptpkg.py
-@@ -13,12 +13,14 @@ import copy
- # Import Salt Testing Libs
- from tests.support.mixins import LoaderModuleMockMixin
- from tests.support.unit import TestCase, skipIf
--from tests.support.mock import MagicMock, patch, NO_MOCK, NO_MOCK_REASON
-+from tests.support.mock import Mock, MagicMock, patch, NO_MOCK, NO_MOCK_REASON
- 
- # Import Salt Libs
+@@ -20,6 +20,8 @@ from tests.support.mock import Mock, MagicMock, patch, NO_MOCK, NO_MOCK_REASON
  from salt.ext import six
  from salt.exceptions import CommandExecutionError, SaltInvocationError
  import salt.modules.aptpkg as aptpkg
 +import pytest
 +import textwrap
  
- 
- APT_KEY_LIST = r'''
-@@ -142,51 +144,39 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
+ try:
+     import pytest
+@@ -148,51 +150,39 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
      def setup_loader_modules(self):
          return {aptpkg: {}}
  
@@ -341,7 +334,7 @@ index c0e26cfcd4..5352e39982 100644
  
      def test_get_repo_keys(self):
          '''
-@@ -199,35 +189,31 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
+@@ -205,35 +195,31 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
          with patch.dict(aptpkg.__salt__, {'cmd.run_all': mock}):
              self.assertEqual(aptpkg.get_repo_keys(), REPO_KEYS)
  
@@ -388,7 +381,7 @@ index c0e26cfcd4..5352e39982 100644
      def test_info_installed(self):
          '''
          Test - Return the information of the named package(s) installed on the system.
-@@ -243,19 +229,72 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
+@@ -249,19 +235,72 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
              if installed['wget'].get(names[name], False):
                  installed['wget'][name] = installed['wget'].pop(names[name])
  
@@ -435,7 +428,7 @@ index c0e26cfcd4..5352e39982 100644
 +        assert isinstance(ret, dict)
 +        assert 'wget' in ret
 +        assert isinstance(ret['wget'], list)
- 
++
 +        pkgs = ret['wget']
 +
 +        assert len(pkgs) == 1
@@ -449,7 +442,7 @@ index c0e26cfcd4..5352e39982 100644
 +        for k in wget_pkg:
 +            assert k in expected_pkg
 +            assert wget_pkg[k] == expected_pkg[k]
-+
+ 
 +    @patch('salt.modules.aptpkg.__salt__', {'cmd.run_stdout': MagicMock(return_value='wget: /usr/bin/wget')})
      def test_owner(self):
          '''
@@ -468,18 +461,9 @@ index c0e26cfcd4..5352e39982 100644
      def test_refresh_db(self):
          '''
          Test - Updates the APT database to latest packages based upon repositories.
-@@ -267,26 +306,20 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
-             'http://security.ubuntu.com trusty-security/main amd64 Packages': True,
-             'http://security.ubuntu.com trusty-security/main i386 Packages': True
-         }
--        mock = MagicMock(return_value={
--            'retcode': 0,
--            'stdout': APT_Q_UPDATE
--        })
--        with patch('salt.utils.pkg.clear_rtag', MagicMock()):
--            with patch.dict(aptpkg.__salt__, {'cmd.run_all': mock}):
--                self.assertEqual(aptpkg.refresh_db(), refresh_db)
-+        assert aptpkg.refresh_db() == refresh_db
+@@ -281,6 +320,10 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
+             with patch.dict(aptpkg.__salt__, {'cmd.run_all': mock, 'config.get': MagicMock(return_value=False)}):
+                 self.assertEqual(aptpkg.refresh_db(), refresh_db)
  
 +    @patch('salt.utils.pkg.clear_rtag', MagicMock())
 +    @patch('salt.modules.aptpkg.__salt__', {'cmd.run_all': MagicMock(return_value={'retcode': 0,
@@ -488,25 +472,9 @@ index c0e26cfcd4..5352e39982 100644
      def test_refresh_db_failed(self):
          '''
          Test - Update the APT database using unreachable repositories.
-         '''
--        kwargs = {'failhard': True}
--        mock = MagicMock(return_value={
--            'retcode': 0,
--            'stdout': APT_Q_UPDATE_ERROR
--        })
--        with patch('salt.utils.pkg.clear_rtag', MagicMock()):
--            with patch.dict(aptpkg.__salt__, {'cmd.run_all': mock}):
--                self.assertRaises(CommandExecutionError, aptpkg.refresh_db, **kwargs)
-+        with pytest.raises(CommandExecutionError) as err:
-+            aptpkg.refresh_db(failhard=True)
-+        assert 'Error getting repos' in str(err)
-+        assert 'http://security.ubuntu.com trusty InRelease, http://security.ubuntu.com trusty Release.gpg' in str(err)
- 
-     def test_autoremove(self):
-         '''
-@@ -306,38 +339,26 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
-                 self.assertEqual(aptpkg.autoremove(list_only=True), list())
-                 self.assertEqual(aptpkg.autoremove(list_only=True, purge=True), list())
+@@ -312,22 +355,24 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
+                 assert aptpkg.autoremove(list_only=True) == []
+                 assert aptpkg.autoremove(list_only=True, purge=True) == []
  
 +    @patch('salt.modules.aptpkg._uninstall', MagicMock(return_value=UNINSTALL))
      def test_remove(self):
@@ -535,25 +503,8 @@ index c0e26cfcd4..5352e39982 100644
      def test_upgrade(self):
          '''
          Test - Upgrades all packages.
-         '''
--        with patch('salt.utils.pkg.clear_rtag', MagicMock()):
--            with patch('salt.modules.aptpkg.list_pkgs',
--                       MagicMock(return_value=UNINSTALL)):
--                mock_cmd = MagicMock(return_value={
--                    'retcode': 0,
--                    'stdout': UPGRADE
--                })
--                patch_kwargs = {
--                    '__salt__': {
--                        'config.get': MagicMock(return_value=True),
--                        'cmd.run_all': mock_cmd
--                    }
--                }
--                with patch.multiple(aptpkg, **patch_kwargs):
--                    self.assertEqual(aptpkg.upgrade(), dict())
-+        assert aptpkg.upgrade() == {}
 diff --git a/tests/unit/modules/test_dpkg.py b/tests/unit/modules/test_dpkg.py
-index fcfa7caf77..1acfd89ccf 100644
+index 5d36dd1c79..6b4feb60ed 100644
 --- a/tests/unit/modules/test_dpkg.py
 +++ b/tests/unit/modules/test_dpkg.py
 @@ -25,6 +25,30 @@ class DpkgTestCase(TestCase, LoaderModuleMockMixin):
@@ -637,6 +588,6 @@ index fcfa7caf77..1acfd89ccf 100644
 +        assert ret['emacs']['license'] == 'BSD v3'
 +        assert ret['emacs']['version'] == '46.1'
 -- 
-2.19.1
+2.17.1
 
 

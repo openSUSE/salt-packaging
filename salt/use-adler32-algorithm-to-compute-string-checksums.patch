@@ -1,4 +1,4 @@
-From 1cb2d2bc6c1cf1a39e735120c184d6ade9e64c34 Mon Sep 17 00:00:00 2001
+From 766886fd1ed00b363a963ddf40ad8b187a7de703 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Sat, 28 Jul 2018 22:59:04 +0200
 Subject: [PATCH] Use Adler32 algorithm to compute string checksums
@@ -15,24 +15,18 @@ Choose CRC method, default to faster but less reliable "adler32", if crc is in u
 
 Add warning for Sodium.
 ---
- salt/config/__init__.py | 13 +++++++++-
- salt/grains/core.py     | 54 +++++++++++++++++++++++++++--------------
- 2 files changed, 48 insertions(+), 19 deletions(-)
+ salt/config/__init__.py |  7 +++++-
+ salt/grains/core.py     | 53 +++++++++++++++++++++++++++--------------
+ 2 files changed, 41 insertions(+), 19 deletions(-)
 
 diff --git a/salt/config/__init__.py b/salt/config/__init__.py
-index feda0abac1..59df7e1cba 100644
+index c0c272bac6..f2a898cf2f 100644
 --- a/salt/config/__init__.py
 +++ b/salt/config/__init__.py
-@@ -1186,6 +1186,16 @@ VALID_OPTS = {
+@@ -1212,6 +1212,10 @@ VALID_OPTS = {
  
-     # Enable calling ssh minions from the salt master
-     'enable_ssh_minions': bool,
-+
-+    # Thorium saltenv
-+    'thoriumenv': (type(None), six.string_types),
-+
-+    # Thorium top file location
-+    'thorium_top': six.string_types,
+     # Thorium top file location
+     'thorium_top': six.string_types,
 +
 +    # Use Adler32 hashing algorithm for server_id (default False until Sodium, "adler32" after)
 +    # Possible values are: False, adler32, crc32
@@ -40,7 +34,7 @@ index feda0abac1..59df7e1cba 100644
  }
  
  # default configurations
-@@ -1486,7 +1496,8 @@ DEFAULT_MINION_OPTS = {
+@@ -1520,7 +1524,8 @@ DEFAULT_MINION_OPTS = {
      },
      'discovery': False,
      'schedule': {},
@@ -51,7 +45,7 @@ index feda0abac1..59df7e1cba 100644
  
  DEFAULT_MASTER_OPTS = {
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index a5c3a6a8cf..6aaf38096d 100644
+index b2c1d475b0..29e8371c2b 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
 @@ -20,6 +20,7 @@ import platform
@@ -62,16 +56,15 @@ index a5c3a6a8cf..6aaf38096d 100644
  from errno import EACCES, EPERM
  import datetime
  
-@@ -46,6 +47,8 @@ import salt.utils.files
- import salt.utils.network
- import salt.utils.path
+@@ -55,6 +56,7 @@ import salt.utils.path
+ import salt.utils.pkg.rpm
  import salt.utils.platform
-+import salt.utils.stringutils
+ import salt.utils.stringutils
 +import salt.utils.versions
  from salt.ext import six
  from salt.ext.six.moves import range
  
-@@ -2420,40 +2423,55 @@ def _hw_data(osdata):
+@@ -2718,40 +2720,55 @@ def _hw_data(osdata):
      return grains
  
  
@@ -146,6 +139,6 @@ index a5c3a6a8cf..6aaf38096d 100644
  
  def get_master():
 -- 
-2.19.0
+2.17.1
 
 

@@ -1,4 +1,4 @@
-From 7727ab13e3492b722b316469cc912d9dd64f063e Mon Sep 17 00:00:00 2001
+From ab7d69b3438c719f7ad6b4b346e56556e8a7bd10 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Fri, 21 Sep 2018 17:31:39 +0200
 Subject: [PATCH] Do not load pip state if there is no 3rd party
@@ -6,12 +6,11 @@ Subject: [PATCH] Do not load pip state if there is no 3rd party
 
 Safe import 3rd party dependency
 ---
- salt/modules/pip.py      | 12 ++++++++++--
- salt/states/pip_state.py |  9 +++++----
- 2 files changed, 15 insertions(+), 6 deletions(-)
+ salt/modules/pip.py | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
 diff --git a/salt/modules/pip.py b/salt/modules/pip.py
-index f1a2e42433..85844f098b 100644
+index eac40c719c..988ae695a7 100644
 --- a/salt/modules/pip.py
 +++ b/salt/modules/pip.py
 @@ -79,7 +79,10 @@ from __future__ import absolute_import, print_function, unicode_literals
@@ -40,34 +39,7 @@ index f1a2e42433..85844f098b 100644
  
  
  def _clear_context(bin_env=None):
-diff --git a/salt/states/pip_state.py b/salt/states/pip_state.py
-index ab58fbd5fc..afe41d7fc8 100644
---- a/salt/states/pip_state.py
-+++ b/salt/states/pip_state.py
-@@ -23,7 +23,10 @@ requisite to a pkg.installed state for the package which provides pip
- from __future__ import absolute_import, print_function, unicode_literals
- import re
- import logging
--import pkg_resources
-+try:
-+    import pkg_resources
-+except ImportError:
-+    pkg_resources = None
- 
- # Import salt libs
- import salt.utils.versions
-@@ -71,9 +74,7 @@ def __virtual__():
-     '''
-     Only load if the pip module is available in __salt__
-     '''
--    if 'pip.list' in __salt__:
--        return __virtualname__
--    return False
-+    return 'pip.list' in __salt__ and __virtualname__ or False
- 
- 
- def _find_key(prefix, pip_list):
 -- 
-2.19.0
+2.17.1
 
 

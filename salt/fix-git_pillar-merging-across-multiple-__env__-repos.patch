@@ -1,4 +1,4 @@
-From 49f8f296edf4655e2be7e564745931692ae939b7 Mon Sep 17 00:00:00 2001
+From 6747243babde058762428f9bdb0e3ef16402eadd Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Tue, 6 Nov 2018 16:38:54 +0000
@@ -11,85 +11,29 @@ Test git ext_pillar across multiple repos using __env__
 
 Remove unicode references
 ---
- salt/utils/gitfs.py                         |   2 +-
- tests/integration/pillar/test_git_pillar.py | 144 ++++++++++++++++++++
- tests/support/gitfs.py                      |  66 ++++++++-
- 3 files changed, 209 insertions(+), 3 deletions(-)
+ tests/integration/pillar/test_git_pillar.py | 45 +++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
 
-diff --git a/salt/utils/gitfs.py b/salt/utils/gitfs.py
-index 6963f40226..11af741e35 100644
---- a/salt/utils/gitfs.py
-+++ b/salt/utils/gitfs.py
-@@ -2975,7 +2975,7 @@ class GitPillar(GitBase):
-                 if repo.env:
-                     env = repo.env
-                 else:
--                    env = 'base' if repo.branch == repo.base else repo.branch
-+                    env = 'base' if repo.branch == repo.base else repo.get_checkout_target()
-                 if repo._mountpoint:
-                     if self.link_mountpoint(repo):
-                         self.pillar_dirs[repo.linkdir] = env
 diff --git a/tests/integration/pillar/test_git_pillar.py b/tests/integration/pillar/test_git_pillar.py
-index e97e720bab..e052782311 100644
+index 5d9a374f6e..4a9553d1a1 100644
 --- a/tests/integration/pillar/test_git_pillar.py
 +++ b/tests/integration/pillar/test_git_pillar.py
-@@ -358,6 +358,38 @@ class GitPythonMixin(object):
-                          "available on the salt master"]}
+@@ -1361,6 +1361,51 @@ class TestPygit2SSH(GitPillarSSHTestBase):
+                         'nested_dict': {'master': True}}}
          )
  
-+    def test_includes_enabled_solves___env___with_mountpoint(self):
-+        '''
-+        Test with git_pillar_includes enabled and using "__env__" as the branch
-+        name for the configured repositories.
-+        The "gitinfo" repository contains top.sls file with a local reference
-+        and also referencing external "nowhere.foo" which is provided by "webinfo"
-+        repository mounted as "nowhere".
-+        '''
-+        ret = self.get_pillar('''\
-+            file_ignore_regex: []
-+            file_ignore_glob: []
-+            git_pillar_provider: gitpython
-+            cachedir: {cachedir}
-+            extension_modules: {extmods}
-+            ext_pillar:
-+              - git:
-+                - __env__ {url_extra_repo}:
-+                  - name: gitinfo
-+                - __env__ {url}:
-+                  - name: webinfo
-+                  - mountpoint: nowhere
-+            ''')
-+        self.assertEqual(
-+            ret,
-+            {'branch': 'master',
-+             'motd': 'The force will be with you. Always.',
-+             'mylist': ['master'],
-+             'mydict': {'master': True,
-+                        'nested_list': ['master'],
-+                        'nested_dict': {'master': True}}}
-+        )
 +
- 
- @destructiveTest
- @skipIf(NO_MOCK, NO_MOCK_REASON)
-@@ -413,7 +445,12 @@ class TestGitPythonAuthenticatedHTTP(TestGitPythonHTTP, GitPythonMixin):
-             username=cls.username,
-             password=cls.password,
-             port=cls.nginx_port)
-+        cls.url_extra_repo = 'http://{username}:{password}@127.0.0.1:{port}/extra_repo.git'.format(
-+            username=cls.username,
-+            password=cls.password,
-+            port=cls.nginx_port)
-         cls.ext_opts['url'] = cls.url
-+        cls.ext_opts['url_extra_repo'] = cls.url_extra_repo
-         cls.ext_opts['username'] = cls.username
-         cls.ext_opts['password'] = cls.password
- 
-@@ -1192,6 +1229,40 @@ class TestPygit2SSH(GitPillarSSHTestBase):
-             ''')
-         self.assertEqual(ret, expected)
- 
-+    def test_includes_enabled_solves___env___with_mountpoint(self):
++@skipIf(NO_MOCK, NO_MOCK_REASON)
++@skipIf(_windows_or_mac(), 'minion is windows or mac')
++@skip_if_not_root
++@skipIf(not HAS_PYGIT2, 'pygit2 >= {0} and libgit2 >= {1} required'.format(PYGIT2_MINVER, LIBGIT2_MINVER))
++@skipIf(not HAS_NGINX, 'nginx not present')
++@skipIf(not HAS_VIRTUALENV, 'virtualenv not present')
++class TestPygit2HTTP(GitPillarHTTPTestBase):
++    '''
++    Test git_pillar with pygit2 using SSH authentication
++    '''
++    def test_single_source(self):
 +        '''
 +        Test with git_pillar_includes enabled and using "__env__" as the branch
 +        name for the configured repositories.
@@ -123,205 +67,9 @@ index e97e720bab..e052782311 100644
 +                        'nested_dict': {'master': True}}}
 +        )
 +
- 
- @skipIf(NO_MOCK, NO_MOCK_REASON)
- @skipIf(_windows_or_mac(), 'minion is windows or mac')
-@@ -1439,6 +1510,38 @@ class TestPygit2HTTP(GitPillarHTTPTestBase):
-             ''')
-         self.assertEqual(ret, expected)
- 
-+    def test_includes_enabled_solves___env___with_mountpoint(self):
-+        '''
-+        Test with git_pillar_includes enabled and using "__env__" as the branch
-+        name for the configured repositories.
-+        The "gitinfo" repository contains top.sls file with a local reference
-+        and also referencing external "nowhere.foo" which is provided by "webinfo"
-+        repository mounted as "nowhere".
-+        '''
-+        ret = self.get_pillar('''\
-+            file_ignore_regex: []
-+            file_ignore_glob: []
-+            git_pillar_provider: pygit2
-+            cachedir: {cachedir}
-+            extension_modules: {extmods}
-+            ext_pillar:
-+              - git:
-+                - __env__ {url_extra_repo}:
-+                  - name: gitinfo
-+                - __env__ {url}:
-+                  - name: webinfo
-+                  - mountpoint: nowhere
-+            ''')
-+        self.assertEqual(
-+            ret,
-+            {'branch': 'master',
-+             'motd': 'The force will be with you. Always.',
-+             'mylist': ['master'],
-+             'mydict': {'master': True,
-+                        'nested_list': ['master'],
-+                        'nested_dict': {'master': True}}}
-+        )
-+
- 
- @skipIf(NO_MOCK, NO_MOCK_REASON)
- @skipIf(_windows_or_mac(), 'minion is windows or mac')
-@@ -1887,3 +1990,44 @@ class TestPygit2AuthenticatedHTTP(GitPillarHTTPTestBase):
-                   - env: base
-             ''')
-         self.assertEqual(ret, expected)
-+
-+    def test_includes_enabled_solves___env___with_mountpoint(self):
-+        '''
-+        Test with git_pillar_includes enabled and using "__env__" as the branch
-+        name for the configured repositories.
-+        The "gitinfo" repository contains top.sls file with a local reference
-+        and also referencing external "nowhere.foo" which is provided by "webinfo"
-+        repository mounted as "nowhere".
-+        '''
-+        ret = self.get_pillar('''\
-+            file_ignore_regex: []
-+            file_ignore_glob: []
-+            git_pillar_provider: pygit2
-+            git_pillar_user: {user}
-+            git_pillar_password: {password}
-+            git_pillar_insecure_auth: True
-+            cachedir: {cachedir}
-+            extension_modules: {extmods}
-+            ext_pillar:
-+              - git:
-+                - __env__ {url_extra_repo}:
-+                  - name: gitinfo
-+                  - user: {user}
-+                  - password: {password}
-+                  - insecure_auth: True
-+                - __env__ {url}:
-+                  - name: webinfo
-+                  - mountpoint: nowhere
-+                  - user: {user}
-+                  - password: {password}
-+                  - insecure_auth: True
-+            ''')
-+        self.assertEqual(
-+            ret,
-+            {'branch': 'master',
-+             'motd': 'The force will be with you. Always.',
-+             'mylist': ['master'],
-+             'mydict': {'master': True,
-+                        'nested_list': ['master'],
-+                        'nested_dict': {'master': True}}}
-+        )
-diff --git a/tests/support/gitfs.py b/tests/support/gitfs.py
-index 2afd31539d..e645c50a86 100644
---- a/tests/support/gitfs.py
-+++ b/tests/support/gitfs.py
-@@ -133,9 +133,13 @@ class SSHDMixin(ModuleCase, ProcessManager, SaltReturnAssertsMixin):
-         cls.url = 'ssh://{username}@127.0.0.1:{port}/~/repo.git'.format(
-             username=cls.username,
-             port=cls.sshd_port)
-+        cls.url_extra_repo = 'ssh://{username}@127.0.0.1:{port}/~/extra_repo.git'.format(
-+            username=cls.username,
-+            port=cls.sshd_port)
-         home = '/root/.ssh'
-         cls.ext_opts = {
-             'url': cls.url,
-+            'url_extra_repo': cls.url_extra_repo,
-             'privkey_nopass': os.path.join(home, cls.id_rsa_nopass),
-             'pubkey_nopass': os.path.join(home, cls.id_rsa_nopass + '.pub'),
-             'privkey_withpass': os.path.join(home, cls.id_rsa_withpass),
-@@ -193,7 +197,8 @@ class WebserverMixin(ModuleCase, ProcessManager, SaltReturnAssertsMixin):
-             # get_unused_localhost_port() return identical port numbers.
-             cls.uwsgi_port = get_unused_localhost_port()
-         cls.url = 'http://127.0.0.1:{port}/repo.git'.format(port=cls.nginx_port)
--        cls.ext_opts = {'url': cls.url}
-+        cls.url_extra_repo = 'http://127.0.0.1:{port}/extra_repo.git'.format(port=cls.nginx_port)
-+        cls.ext_opts = {'url': cls.url, 'url_extra_repo': cls.url_extra_repo}
-         # Add auth params if present (if so this will trigger the spawned
-         # server to turn on HTTP basic auth).
-         for credential_param in ('user', 'password'):
-@@ -250,7 +255,7 @@ class GitTestBase(ModuleCase):
-     Base class for all gitfs/git_pillar tests. Must be subclassed and paired
-     with either SSHDMixin or WebserverMixin to provide the server.
-     '''
--    case = port = bare_repo = admin_repo = None
-+    case = port = bare_repo = base_extra_repo = admin_repo = admin_extra_repo = None
-     maxDiff = None
-     git_opts = '-c user.name="Foo Bar" -c user.email=foo@bar.com'
-     ext_opts = {}
-@@ -465,6 +470,61 @@ class GitPillarTestBase(GitTestBase, LoaderModuleMockMixin):
-             '''))
-         _push('top_only', 'add top_only branch')
- 
-+    def make_extra_repo(self, root_dir, user='root'):
-+        self.bare_extra_repo = os.path.join(root_dir, 'extra_repo.git')
-+        self.admin_extra_repo = os.path.join(root_dir, 'admin_extra')
-+
-+        for dirname in (self.bare_extra_repo, self.admin_extra_repo):
-+            shutil.rmtree(dirname, ignore_errors=True)
-+
-+        # Create bare extra repo
-+        self.run_function(
-+            'git.init',
-+            [self.bare_extra_repo],
-+            user=user,
-+            bare=True)
-+
-+        # Clone bare repo
-+        self.run_function(
-+            'git.clone',
-+            [self.admin_extra_repo],
-+            url=self.bare_extra_repo,
-+            user=user)
-+
-+        def _push(branch, message):
-+            self.run_function(
-+                'git.add',
-+                [self.admin_extra_repo, '.'],
-+                user=user)
-+            self.run_function(
-+                'git.commit',
-+                [self.admin_extra_repo, message],
-+                user=user,
-+                git_opts=self.git_opts,
-+            )
-+            self.run_function(
-+                'git.push',
-+                [self.admin_extra_repo],
-+                remote='origin',
-+                ref=branch,
-+                user=user,
-+            )
-+
-+        with salt.utils.files.fopen(
-+                os.path.join(self.admin_extra_repo, 'top.sls'), 'w') as fp_:
-+            fp_.write(textwrap.dedent('''\
-+            "{{saltenv}}":
-+              '*':
-+                - motd
-+                - nowhere.foo
-+            '''))
-+        with salt.utils.files.fopen(
-+                os.path.join(self.admin_extra_repo, 'motd.sls'), 'w') as fp_:
-+            fp_.write(textwrap.dedent('''\
-+            motd: The force will be with you. Always.
-+            '''))
-+        _push('master', 'initial commit')
-+
- 
- class GitPillarSSHTestBase(GitPillarTestBase, SSHDMixin):
-     '''
-@@ -533,6 +593,7 @@ class GitPillarSSHTestBase(GitPillarTestBase, SSHDMixin):
-                 )
-             )
-         self.make_repo(root_dir, user=self.username)
-+        self.make_extra_repo(root_dir, user=self.username)
- 
-     def get_pillar(self, ext_pillar_conf):
+     @requires_system_grains
+     def test_root_parameter(self, grains):
          '''
-@@ -579,3 +640,4 @@ class GitPillarHTTPTestBase(GitPillarTestBase, WebserverMixin):
-             self.spawn_server()  # pylint: disable=E1120
- 
-         self.make_repo(self.repo_dir)
-+        self.make_extra_repo(self.repo_dir)
 -- 
 2.17.1
 
