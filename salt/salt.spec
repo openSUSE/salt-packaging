@@ -247,21 +247,21 @@ Patch87:        don-t-error-on-retcode-0-in-libcrypto.openssl_init_c.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48503
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48934
 Patch88:        fix-latin1-encoding-problems-on-file-module-bsc-1116.patch
-# NOTE: TEMPORARY FIX https://github.com/SUSE/salt-board/issues/195
-Patch89:        strip-architecture-from-package-name-in-aptpkg-modul.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50742
-Patch90:        decide-if-the-source-should-be-actually-skipped.patch
+Patch89:        decide-if-the-source-should-be-actually-skipped.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50773
-Patch91:        add-hold-unhold-functions.patch
+Patch90:        add-hold-unhold-functions.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49639
-Patch92:        retire-md5-checksum-for-pkg-mgmt-plugins.patch
+Patch91:        retire-md5-checksum-for-pkg-mgmt-plugins.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50401
 # NOTE: This is a techpreview as well as in Fluorine! Release only in Neon.
-Patch93:        add-supportconfig-module-for-remote-calls-and-saltss.patch
+Patch92:        add-supportconfig-module-for-remote-calls-and-saltss.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50567
-Patch94:        azurefs-gracefully-handle-attributeerror.patch
+Patch93:        azurefs-gracefully-handle-attributeerror.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/116
-Patch95:        return-the-expected-powerpc-os-arch-bsc-1117995.patch
+Patch94:        return-the-expected-powerpc-os-arch-bsc-1117995.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51108
+Patch95:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
