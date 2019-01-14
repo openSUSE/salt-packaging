@@ -1,4 +1,4 @@
-From 2e9029db72879b30979a59e057d8712399ef567f Mon Sep 17 00:00:00 2001
+From ca9e358b0f7b5f8084cb7ee153a555003938918d Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Mon, 19 Nov 2018 11:46:26 +0000
@@ -43,8 +43,8 @@ Return None instead empty string for arch and release in pkg.list_pkgs
  salt/modules/zypper.py                  |  29 +++++-
  tests/unit/modules/test_pkg_resource.py | 116 ++++++++++++++++++++++++
  tests/unit/modules/test_yumpkg.py       |  85 ++++++++++++++++-
- tests/unit/modules/test_zypper.py       |  78 +++++++++++++++-
- 7 files changed, 380 insertions(+), 15 deletions(-)
+ tests/unit/modules/test_zypper.py       |  81 ++++++++++++++++-
+ 7 files changed, 382 insertions(+), 16 deletions(-)
 
 diff --git a/salt/modules/aptpkg.py b/salt/modules/aptpkg.py
 index bedefe9338..5cb0e22cd9 100644
@@ -583,7 +583,7 @@ index 74992071a1..d03d8a1d27 100644
          with patch.object(yumpkg, 'list_pkgs', MagicMock(return_value={})):
  
 diff --git a/tests/unit/modules/test_zypper.py b/tests/unit/modules/test_zypper.py
-index 424438c8bf..9c3dd43458 100644
+index 424438c8bf..a60e209b2c 100644
 --- a/tests/unit/modules/test_zypper.py
 +++ b/tests/unit/modules/test_zypper.py
 @@ -61,7 +61,7 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
@@ -605,7 +605,7 @@ index 424438c8bf..9c3dd43458 100644
              pkgs = zypper.list_pkgs(attr=['epoch', 'release', 'arch', 'install_date_time_t'])
              self.assertFalse(pkgs.get('gpg-pubkey', False))
              for pkg_name, pkg_attr in {
-@@ -612,58 +613,129 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -612,58 +613,130 @@ Repository 'DUMMY' not found by its alias, number, or URI.
                      'release': '129.686',
                      'arch': 'noarch',
                      'install_date_time_t': 1498636511,
@@ -654,7 +654,8 @@ index 424438c8bf..9c3dd43458 100644
                      'install_date_time_t': 1503572639,
 +                    'epoch': None,
                  }],
-                 'perseus-dummy.i586': [{
+-                'perseus-dummy.i586': [{
++                'perseus-dummy': [{
                      'version': '1.1',
                      'release': '1.1',
                      'arch': 'i586',
@@ -688,6 +689,7 @@ index 424438c8bf..9c3dd43458 100644
 +        ]
 +
 +        with patch.dict(zypper.__salt__, {'cmd.run': MagicMock(return_value=os.linesep.join(rpm_out))}), \
++             patch.dict(zypper.__grains__, {'osarch': 'x86_64'}), \
 +             patch.dict(zypper.__salt__, {'pkg_resource.add_pkg': _add_data}), \
 +             patch.dict(zypper.__salt__, {'pkg_resource.format_pkg_list': pkg_resource.format_pkg_list}), \
 +             patch.dict(zypper.__salt__, {'pkg_resource.stringify': MagicMock()}), \
