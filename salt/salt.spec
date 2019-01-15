@@ -262,6 +262,8 @@ Patch93:        azurefs-gracefully-handle-attributeerror.patch
 Patch94:        return-the-expected-powerpc-os-arch-bsc-1117995.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51108
 Patch95:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51119
+Patch96:        fix-issue-2068-test.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -815,6 +817,7 @@ cp %{S:5} ./.travis.yml
 %patch93 -p1
 %patch94 -p1
 %patch95 -p1
+%patch96 -p1
 
 %build
 %if 0%{?build_py2}

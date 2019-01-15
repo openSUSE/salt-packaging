@@ -1,0 +1,52 @@
+From 1ca56745102ed2509a69410b801ea75a95b0dbf4 Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Wed, 9 Jan 2019 16:08:19 +0100
+Subject: [PATCH] Fix issue #2068 test
+
+Skip injecting `__call__` if chunk is not dict.
+
+This also fixes `integration/modules/test_state.py:StateModuleTest.test_exclude` that tests `include` and `exclude` state directives containing the only list of strings.
+
+Minor update: more correct is-dict check.
+---
+ salt/state.py | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/salt/state.py b/salt/state.py
+index befe4b2f7f..4a59b77305 100644
+--- a/salt/state.py
++++ b/salt/state.py
+@@ -25,6 +25,7 @@ import traceback
+ import re
+ import time
+ import random
++import collections
+ 
+ # Import salt libs
+ import salt.loader
+@@ -2693,16 +2694,18 @@ class State(object):
+         '''
+         for chunk in high:
+             state = high[chunk]
++            if not isinstance(state, collections.Mapping):
++                continue
+             for state_ref in state:
+                 needs_default = True
++                if not isinstance(state[state_ref], list):
++                    continue
+                 for argset in state[state_ref]:
+                     if isinstance(argset, six.string_types):
+                         needs_default = False
+                         break
+                 if needs_default:
+-                    order = state[state_ref].pop(-1)
+-                    state[state_ref].append('__call__')
+-                    state[state_ref].append(order)
++                    state[state_ref].insert(-1, '__call__')
+ 
+     def call_high(self, high, orchestration_jid=None):
+         '''
+-- 
+2.20.1
+
+
