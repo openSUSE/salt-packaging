@@ -145,6 +145,8 @@ Patch39:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
 Patch40:        fix-issue-2068-test.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50125
 Patch41:        zypper-add-root-configuration-parameter.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51285
+Patch42:        ensure-metadata-is-an-accepted-keyword-argument-for-.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -644,6 +646,7 @@ cp %{S:5} ./.travis.yml
 %patch39 -p1
 %patch40 -p1
 %patch41 -p1
+%patch42 -p1
 
 %build
 %if 0%{?build_py2}
