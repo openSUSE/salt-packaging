@@ -219,6 +219,8 @@ Patch74:        return-the-expected-powerpc-os-arch-bsc-1117995.patch
 Patch75:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51119
 Patch76:        fix-issue-2068-test.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50125
+Patch77:        zypper-add-root-configuration-parameter.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -753,6 +755,7 @@ cp %{S:5} ./.travis.yml
 %patch74 -p1
 %patch75 -p1
 %patch76 -p1
+%patch77 -p1
 
 %build
 %if 0%{?build_py2}
