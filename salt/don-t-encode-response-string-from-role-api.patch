@@ -1,0 +1,31 @@
+From 16f91099bfe37e5657af0f6ab737bcb3745b1c78 Mon Sep 17 00:00:00 2001
+From: Max Orhai <max.orhai@fastmail.com>
+Date: Mon, 5 Mar 2018 16:12:27 -0800
+Subject: [PATCH] Don't encode response string from role API
+
+Substituting a bytestring in the URL of the subsequent request leads to a malformed URL and thus 404.
+
+This may also be an issue elsewhere in here where Python 3 string semantics differ from Python 2. I haven't checked all the other uses of `encode` in this file.
+---
+ salt/utils/aws.py | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/salt/utils/aws.py b/salt/utils/aws.py
+index 912f1466ba..0ff43277a0 100644
+--- a/salt/utils/aws.py
++++ b/salt/utils/aws.py
+@@ -90,9 +90,7 @@ def creds(provider):
+                 proxies={'http': ''}, timeout=AWS_METADATA_TIMEOUT,
+             )
+             result.raise_for_status()
+-            role = result.text.encode(
+-                result.encoding if result.encoding else 'utf-8'
+-            )
++            role = result.text
+         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError):
+             return provider['id'], provider['key'], ''
+ 
+-- 
+2.20.1
+
+
