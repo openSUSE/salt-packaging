@@ -147,6 +147,8 @@ Patch40:        fix-issue-2068-test.patch
 Patch41:        zypper-add-root-configuration-parameter.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51285
 Patch42:        ensure-metadata-is-an-accepted-keyword-argument-for-.patch
+# PATCH_FIX_OPENSUSE: Temporary fix allowing "id_" and "force" params while upstrem figures it out
+Patch43:        temporary-fix-extend-the-whitelist-of-allowed-comman.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -647,6 +649,7 @@ cp %{S:5} ./.travis.yml
 %patch40 -p1
 %patch41 -p1
 %patch42 -p1
+%patch43 -p1
 
 %build
 %if 0%{?build_py2}
