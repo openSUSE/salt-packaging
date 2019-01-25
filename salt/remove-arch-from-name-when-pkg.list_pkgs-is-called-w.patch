@@ -1,4 +1,4 @@
-From c9213a7807bad03ade14233ce7116c40818e7bc0 Mon Sep 17 00:00:00 2001
+From 75c6991fd042c0e0cd372af9752805f1463a4632 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Mon, 19 Nov 2018 11:46:26 +0000
@@ -43,8 +43,8 @@ Return None instead empty string for arch and release in pkg.list_pkgs
  salt/modules/zypper.py                  |  29 +++++-
  tests/unit/modules/test_pkg_resource.py | 116 ++++++++++++++++++++++++
  tests/unit/modules/test_yumpkg.py       |  85 ++++++++++++++++-
- tests/unit/modules/test_zypper.py       |  78 +++++++++++++++-
- 7 files changed, 382 insertions(+), 16 deletions(-)
+ tests/unit/modules/test_zypper.py       |  79 +++++++++++++++-
+ 7 files changed, 383 insertions(+), 16 deletions(-)
 
 diff --git a/salt/modules/aptpkg.py b/salt/modules/aptpkg.py
 index 2d25023a01..558ecfc3b5 100644
@@ -584,7 +584,7 @@ index 078f68b779..c2e0ed0609 100644
          with patch.object(yumpkg, 'list_pkgs', MagicMock(return_value={})):
  
 diff --git a/tests/unit/modules/test_zypper.py b/tests/unit/modules/test_zypper.py
-index 6df2cc699c..e0dde923b8 100644
+index 6df2cc699c..5a1dbe6ac8 100644
 --- a/tests/unit/modules/test_zypper.py
 +++ b/tests/unit/modules/test_zypper.py
 @@ -61,7 +61,7 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
@@ -606,7 +606,7 @@ index 6df2cc699c..e0dde923b8 100644
              pkgs = zypper.list_pkgs(attr=['epoch', 'release', 'arch', 'install_date_time_t'])
              self.assertFalse(pkgs.get('gpg-pubkey', False))
              for pkg_name, pkg_attr in {
-@@ -614,58 +615,129 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -614,58 +615,130 @@ Repository 'DUMMY' not found by its alias, number, or URI.
                      'release': '129.686',
                      'arch': 'noarch',
                      'install_date_time_t': 1498636511,
@@ -688,7 +688,8 @@ index 6df2cc699c..e0dde923b8 100644
 +            'virt-what_|-1.10_|-2.el7_|-x86_64_|-_|-1387838486',
 +        ]
 +
-+        with patch.dict(zypper.__salt__, {'cmd.run': MagicMock(return_value=os.linesep.join(rpm_out))}), \
++        with patch.dict(zypper.__grains__, {'osarch': 'x86_64'}), \
++             patch.dict(zypper.__salt__, {'cmd.run': MagicMock(return_value=os.linesep.join(rpm_out))}), \
 +             patch.dict(zypper.__salt__, {'pkg_resource.add_pkg': _add_data}), \
 +             patch.dict(zypper.__salt__, {'pkg_resource.format_pkg_list': pkg_resource.format_pkg_list}), \
 +             patch.dict(zypper.__salt__, {'pkg_resource.stringify': MagicMock()}), \
@@ -738,6 +739,6 @@ index 6df2cc699c..e0dde923b8 100644
          '''
          Test advisory patches listing.
 -- 
-2.17.1
+2.20.1
 
 
