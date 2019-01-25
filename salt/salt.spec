@@ -173,101 +173,99 @@ Patch52:        only-do-reverse-dns-lookup-on-ips-for-salt-ssh.patch
 Patch53:        prepend-current-directory-when-path-is-just-filename.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49538
 Patch54:        fix-for-suse-expanded-support-detection.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49063
-Patch55:        integration-of-msi-authentication-with-azurearm-clou.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49508
-Patch56:        x509-fixes-for-remote-signing-106.patch
+Patch55:        x509-fixes-for-remote-signing-106.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49555
-Patch57:        change-stringio-import-in-python2-to-import-the-clas.patch
+Patch56:        change-stringio-import-in-python2-to-import-the-clas.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49435
-Patch58:        no-longer-passes-missing-in-list-compound-engine-bsc.patch
+Patch57:        no-longer-passes-missing-in-list-compound-engine-bsc.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49497
-Patch59:        x509-fixes-111.patch
+Patch58:        x509-fixes-111.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49532
-Patch60:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
+Patch59:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47104
-Patch61:        yamlloader-properly-handle-colons-in-inline-dicts.patch
+Patch60:        yamlloader-properly-handle-colons-in-inline-dicts.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49605
-Patch62:        support-use-of-gce-instance-credentials-109.patch
+Patch61:        support-use-of-gce-instance-credentials-109.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49722
-Patch63:        fix-index-error-when-running-on-python-3.patch
+Patch62:        fix-index-error-when-running-on-python-3.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49696
-Patch64:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
+Patch63:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49737
-Patch65:        do-not-load-pip-state-if-there-is-no-3rd-party-depen.patch
+Patch64:        do-not-load-pip-state-if-there-is-no-3rd-party-depen.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49806
-Patch66:        update-error-list-for-zypper.patch
+Patch65:        update-error-list-for-zypper.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49815
-Patch67:        fix-ipv6-scope-bsc-1108557.patch
+Patch66:        fix-ipv6-scope-bsc-1108557.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49908
-Patch68:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
+Patch67:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49480
-Patch69:        early-feature-support-config.patch
+Patch68:        early-feature-support-config.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49085
-Patch70:        fix-async-call-to-process-manager.patch
+Patch69:        fix-async-call-to-process-manager.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49936
-Patch71:        make-profiles-a-package.patch
+Patch70:        make-profiles-a-package.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49930
-Patch72:        get-os_family-for-rpm-distros-from-the-rpm-macros.-u.patch
+Patch71:        get-os_family-for-rpm-distros-from-the-rpm-macros.-u.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49946
-Patch73:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
+Patch72:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
 # PATCH_FIX_OPENSUSE: Failed patch merger fix
-Patch74:        fix-unit-test-for-grains-core.patch
+Patch73:        fix-unit-test-for-grains-core.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50049
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50072
-Patch75:        preserving-signature-in-module.run-state-u-50049.patch
+Patch74:        preserving-signature-in-module.run-state-u-50049.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50095
-Patch76:        support-config-non-root-permission-issues-fixes-u-50.patch
+Patch75:        support-config-non-root-permission-issues-fixes-u-50.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50018
-Patch77:        add-multi-file-support-and-globbing-to-the-filetree-.patch
+Patch76:        add-multi-file-support-and-globbing-to-the-filetree-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49761
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50201
-Patch78:        fixes-cve-2018-15750-cve-2018-15751.patch
+Patch77:        fixes-cve-2018-15750-cve-2018-15751.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48491
-Patch79:        improved-handling-of-ldap-group-id.patch
+Patch78:        improved-handling-of-ldap-group-id.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48901
-Patch80:        fixing-issue-when-a-valid-token-is-generated-even-wh.patch
+Patch79:        fixing-issue-when-a-valid-token-is-generated-even-wh.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50523
-Patch81:        get-os_arch-also-without-rpm-package-installed.patch
+Patch80:        get-os_arch-also-without-rpm-package-installed.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50417
-Patch82:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
+Patch81:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
 # PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/113
-Patch83:        fix-crontab-module-file-attributes-option-missing-bs.patch
+Patch82:        fix-crontab-module-file-attributes-option-missing-bs.patch
 # PATCH-FIX_UPSTREAM https://github.com/openSUSE/salt/pull/50392
-Patch84:        make-aptpkg.list_repos-compatible-on-enabled-disable.patch
+Patch83:        make-aptpkg.list_repos-compatible-on-enabled-disable.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50453
-Patch85:        debian-info_installed-compatibility-50453.patch
+Patch84:        debian-info_installed-compatibility-50453.patch
 # PATCH-FIX_OPENSUSE (bsc#1114474)
 # NOTE: TEMPORARY FIX
-Patch86:        handle-anycast-ipv6-addresses.patch
+Patch85:        handle-anycast-ipv6-addresses.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48580
-Patch87:        don-t-error-on-retcode-0-in-libcrypto.openssl_init_c.patch
+Patch86:        don-t-error-on-retcode-0-in-libcrypto.openssl_init_c.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47023
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/47040
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48503
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48934
-Patch88:        fix-latin1-encoding-problems-on-file-module-bsc-1116.patch
+Patch87:        fix-latin1-encoding-problems-on-file-module-bsc-1116.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50742
-Patch89:        decide-if-the-source-should-be-actually-skipped.patch
+Patch88:        decide-if-the-source-should-be-actually-skipped.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50773
-Patch90:        add-hold-unhold-functions.patch
+Patch89:        add-hold-unhold-functions.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49639
-Patch91:        retire-md5-checksum-for-pkg-mgmt-plugins.patch
+Patch90:        retire-md5-checksum-for-pkg-mgmt-plugins.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50401
 # NOTE: This is a techpreview as well as in Fluorine! Release only in Neon.
-Patch92:        add-supportconfig-module-for-remote-calls-and-saltss.patch
+Patch91:        add-supportconfig-module-for-remote-calls-and-saltss.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50567
-Patch93:        azurefs-gracefully-handle-attributeerror.patch
+Patch92:        azurefs-gracefully-handle-attributeerror.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/116
-Patch94:        return-the-expected-powerpc-os-arch-bsc-1117995.patch
+Patch93:        return-the-expected-powerpc-os-arch-bsc-1117995.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51108
-Patch95:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
+Patch94:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51119
-Patch96:        fix-issue-2068-test.patch
+Patch95:        fix-issue-2068-test.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50125
-Patch97:        zypper-add-root-configuration-parameter.patch
+Patch96:        zypper-add-root-configuration-parameter.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46382
-Patch98:        don-t-encode-response-string-from-role-api.patch
+Patch97:        don-t-encode-response-string-from-role-api.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -823,7 +821,6 @@ cp %{S:5} ./.travis.yml
 %patch95 -p1
 %patch96 -p1
 %patch97 -p1
-%patch98 -p1
 
 %build
 %if 0%{?build_py2}
