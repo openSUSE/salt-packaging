@@ -264,6 +264,8 @@ Patch94:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
 Patch95:        fix-issue-2068-test.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46382
 Patch96:        don-t-encode-response-string-from-role-api.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51382
+Patch97:        don-t-call-zypper-with-more-than-one-no-refresh.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -818,6 +820,7 @@ cp %{S:5} ./.travis.yml
 %patch94 -p1
 %patch95 -p1
 %patch96 -p1
+%patch97 -p1
 
 %build
 %if 0%{?build_py2}

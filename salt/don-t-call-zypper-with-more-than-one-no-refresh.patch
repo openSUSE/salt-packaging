@@ -1,0 +1,42 @@
+From 0bb15f165946d24923fe3427a3e31f3079b8198d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?C=C3=A9dric=20Bosdonnat?= <cbosdonnat@suse.com>
+Date: Tue, 29 Jan 2019 09:44:03 +0100
+Subject: [PATCH] Don't call zypper with more than one --no-refresh
+
+Now zypper started being picky and errors out when --no-refresh is
+passed twice. Make sure we won't hit this.
+---
+ salt/modules/zypper.py            | 2 +-
+ tests/unit/modules/test_zypper.py | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
+index ec947fe6a4..2da55b320c 100644
+--- a/salt/modules/zypper.py
++++ b/salt/modules/zypper.py
+@@ -281,7 +281,7 @@ class _Zypper(object):
+         self.__called = True
+         if self.__xml:
+             self.__cmd.append('--xmlout')
+-        if not self.__refresh:
++        if not self.__refresh and '--no-refresh' not in args:
+             self.__cmd.append('--no-refresh')
+ 
+         self.__cmd.extend(args)
+diff --git a/tests/unit/modules/test_zypper.py b/tests/unit/modules/test_zypper.py
+index a60e209b2c..2c06847643 100644
+--- a/tests/unit/modules/test_zypper.py
++++ b/tests/unit/modules/test_zypper.py
+@@ -137,7 +137,7 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+             self.assertEqual(zypper.__zypper__.call('foo'), stdout_xml_snippet)
+             self.assertEqual(len(sniffer.calls), 1)
+ 
+-            zypper.__zypper__.call('bar')
++            zypper.__zypper__.call('--no-refresh', 'bar')
+             self.assertEqual(len(sniffer.calls), 2)
+             self.assertEqual(sniffer.calls[0]['args'][0], ['zypper', '--non-interactive', '--no-refresh', 'foo'])
+             self.assertEqual(sniffer.calls[1]['args'][0], ['zypper', '--non-interactive', '--no-refresh', 'bar'])
+-- 
+2.20.1
+
+
