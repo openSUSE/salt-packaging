@@ -52,13 +52,13 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        2019.2.0~rc1
+Version:        2019.2.0~rc2
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
 Group:          System/Management
 Url:            http://saltstack.org/
-Source:         https://github.com/saltstack/salt/archive/v%{version}.tar.gz
+Source:         v%{version}.tar.gz
 Source1:        README.SUSE
 Source2:        salt-tmpfiles.d
 Source3:        html.tar.bz2
@@ -145,15 +145,13 @@ Patch39:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
 Patch40:        fix-issue-2068-test.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50125
 Patch41:        zypper-add-root-configuration-parameter.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51285
-Patch42:        ensure-metadata-is-an-accepted-keyword-argument-for-.patch
 # PATCH_FIX_OPENSUSE: Temporary fix allowing "id_" and "force" params while upstrem figures it out
-Patch43:        temporary-fix-extend-the-whitelist-of-allowed-comman.patch
+Patch42:        temporary-fix-extend-the-whitelist-of-allowed-comman.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51382
-Patch44:        don-t-call-zypper-with-more-than-one-no-refresh.patch
+Patch43:        don-t-call-zypper-with-more-than-one-no-refresh.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50109
 # PATCH_FIX_OPENSUSE https://github.com/openSUSE/salt/pull/121
-Patch45:        add-virt.all_capabilities.patch
+Patch44:        add-virt.all_capabilities.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -656,7 +654,6 @@ cp %{S:5} ./.travis.yml
 %patch42 -p1
 %patch43 -p1
 %patch44 -p1
-%patch45 -p1
 
 %build
 %if 0%{?build_py2}
