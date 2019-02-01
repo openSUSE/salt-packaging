@@ -607,7 +607,7 @@ Zsh command line completion support for %{name}.
 
 %prep
 # %setup -q -n salt-%{version}
-%setup -q -n salt-2019.2.0rc1-suse
+%setup -q -n salt-2019.2.0rc2-suse
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
 %patch1 -p1
