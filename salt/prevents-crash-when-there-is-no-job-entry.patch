@@ -1,0 +1,29 @@
+From a5e623237c5fe1be10fb47d8938561ee7cbc801e Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Wed, 13 Feb 2019 16:50:34 +0100
+Subject: [PATCH] Prevents crash when there is no job entry
+
+Seems like in rare race conditions it might happen that there is no job
+entry. This prevents Salt from crashing at that point.
+---
+ salt/returners/local_cache.py | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/salt/returners/local_cache.py b/salt/returners/local_cache.py
+index 91023837d7..fd305ebb16 100644
+--- a/salt/returners/local_cache.py
++++ b/salt/returners/local_cache.py
+@@ -77,6 +77,9 @@ def _walk_through(job_dir):
+                 except Exception:
+                     log.exception('Failed to deserialize %s', load_path)
+                     continue
++                if not job:
++                    log.error('Deserialization of job succeded but there is no data in %s', load_path)
++                    continue
+                 jid = job['jid']
+                 yield jid, job, t_path, final
+ 
+-- 
+2.20.1
+
+

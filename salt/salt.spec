@@ -266,6 +266,8 @@ Patch95:        fix-issue-2068-test.patch
 Patch96:        don-t-encode-response-string-from-role-api.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51382
 Patch97:        don-t-call-zypper-with-more-than-one-no-refresh.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51622
+Patch98:        prevents-crash-when-there-is-no-job-entry.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -821,6 +823,7 @@ cp %{S:5} ./.travis.yml
 %patch95 -p1
 %patch96 -p1
 %patch97 -p1
+%patch98 -p1
 
 %build
 %if 0%{?build_py2}
