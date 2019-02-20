@@ -324,7 +324,7 @@ Summary:        python3 library for salt
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 BuildRequires:  python-rpm-macros
-BuildRequires:  python3 < 3.7
+BuildRequires:  python3 <= 3.7
 BuildRequires:  python3-devel
 # requirements/base.txt
 %if 0%{?rhel}
