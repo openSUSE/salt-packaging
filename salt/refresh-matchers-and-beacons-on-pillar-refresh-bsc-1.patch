@@ -1,0 +1,27 @@
+From 17df23de11fbce63ed25e6629a5f716508ea7db8 Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Tue, 19 Feb 2019 15:37:14 +0100
+Subject: [PATCH] Refresh matchers and beacons on pillar refresh
+ (bsc#1125015)
+
+---
+ salt/minion.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/salt/minion.py b/salt/minion.py
+index c87891456b..b64d4b172f 100644
+--- a/salt/minion.py
++++ b/salt/minion.py
+@@ -2207,6 +2207,8 @@ class Minion(MinionBase):
+             finally:
+                 async_pillar.destroy()
+         self.module_refresh(force_refresh)
++        self.matchers_refresh()
++        self.beacons_refresh()
+ 
+     def manage_schedule(self, tag, data):
+         '''
+-- 
+2.20.1
+
+

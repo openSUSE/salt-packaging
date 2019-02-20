@@ -152,6 +152,10 @@ Patch43:        don-t-call-zypper-with-more-than-one-no-refresh.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50109
 # PATCH_FIX_OPENSUSE https://github.com/openSUSE/salt/pull/121
 Patch44:        add-virt.all_capabilities.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51707
+Patch45:        refresh-matchers-and-beacons-on-pillar-refresh-bsc-1.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51691
+Patch46:        add-virt.volume_infos-and-virt.volume_delete.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -654,6 +658,8 @@ cp %{S:5} ./.travis.yml
 %patch42 -p1
 %patch43 -p1
 %patch44 -p1
+%patch45 -p1
+%patch46 -p1
 
 %build
 %if 0%{?build_py2}
