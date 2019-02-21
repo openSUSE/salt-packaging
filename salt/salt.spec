@@ -156,6 +156,8 @@ Patch44:        add-virt.all_capabilities.patch
 Patch45:        refresh-matchers-and-beacons-on-pillar-refresh-bsc-1.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51691
 Patch46:        add-virt.volume_infos-and-virt.volume_delete.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51384
+Patch47:        include-aliases-in-the-fqdns-grains.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -660,6 +662,7 @@ cp %{S:5} ./.travis.yml
 %patch44 -p1
 %patch45 -p1
 %patch46 -p1
+%patch47 -p1
 
 %build
 %if 0%{?build_py2}
