@@ -1,0 +1,136 @@
+From 865ea60056325e56fa8f74ed667e50fec45b6648 Mon Sep 17 00:00:00 2001
+From: Matei Albu <mateiw@users.noreply.github.com>
+Date: Fri, 15 Feb 2019 14:32:25 +0100
+Subject: [PATCH] Let dpkg.info expose package status (#122)
+
+* Let dpkg.info expose package status
+(cherry picked from commit 067cae2)
+
+* Make aptpkg.info return only installed packages
+
+On debian systems a package can have several other states apart from installed (ii or hi),
+ like rc (removed but config files present) or pn (purged not installed).
+ This returns only installed packages (ii or hi).
+(cherry picked from commit 73f602d)
+---
+ salt/modules/aptpkg.py            |  4 ++++
+ salt/modules/dpkg.py              |  1 +
+ tests/unit/modules/test_aptpkg.py | 26 +++++++++++++++++++++++---
+ tests/unit/modules/test_dpkg.py   |  6 ++++--
+ 4 files changed, 32 insertions(+), 5 deletions(-)
+
+diff --git a/salt/modules/aptpkg.py b/salt/modules/aptpkg.py
+index 5cb0e22cd9..f646e77a23 100644
+--- a/salt/modules/aptpkg.py
++++ b/salt/modules/aptpkg.py
+@@ -2888,6 +2888,8 @@ def info_installed(*names, **kwargs):
+     ret = dict()
+     for pkg_name, pkg_nfo in __salt__['lowpkg.info'](*names, failhard=failhard, attr=attr).items():
+         t_nfo = dict()
++        if pkg_nfo.get('status', 'ii')[1] != 'i':
++            continue    # return only packages that are really installed
+         # Translate dpkg-specific keys to a common structure
+         for key, value in pkg_nfo.items():
+             if key == 'package':
+@@ -2900,6 +2902,8 @@ def info_installed(*names, **kwargs):
+                 t_nfo['packager'] = value
+             elif key == 'homepage':
+                 t_nfo['url'] = value
++            elif key == 'status':
++                continue    # only installed pkgs are returned, no need for status
+             else:
+                 t_nfo[key] = value
+ 
+diff --git a/salt/modules/dpkg.py b/salt/modules/dpkg.py
+index 26ca5dcf5a..b78e844830 100644
+--- a/salt/modules/dpkg.py
++++ b/salt/modules/dpkg.py
+@@ -319,6 +319,7 @@ def _get_pkg_info(*packages, **kwargs):
+           "SHA256:${SHA256}\\n" \
+           "origin:${Origin}\\n" \
+           "homepage:${Homepage}\\n" \
++          "status:${db:Status-Abbrev}\\n" \
+           "======\\n" \
+           "description:${Description}\\n" \
+           "------\\n'"
+diff --git a/tests/unit/modules/test_aptpkg.py b/tests/unit/modules/test_aptpkg.py
+index 5352e39982..ebe1c940ff 100644
+--- a/tests/unit/modules/test_aptpkg.py
++++ b/tests/unit/modules/test_aptpkg.py
+@@ -86,7 +86,26 @@ LOWPKG_INFO = {
+         'name': 'wget',
+         'section': 'web',
+         'source': 'wget',
+-        'version': '1.15-1ubuntu1.14.04.2'
++        'version': '1.15-1ubuntu1.14.04.2',
++        'status': 'ii'
++    },
++    'apache2': {
++        'architecture': 'amd64',
++        'description': """Apache HTTP Server
++ The Apache HTTP Server Project's goal is to build a secure, efficient and
++ extensible HTTP server as standards-compliant open source software. The
++ result has long been the number one web server on the Internet.
++ .
++ Installing this package results in a full installation, including the
++ configuration files, init scripts and support scripts.""",
++        'homepage': 'http://httpd.apache.org/',
++        'install_date': '2016-08-30T22:20:15Z',
++        'maintainer': 'Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>',
++        'name': 'apache2',
++        'section': 'httpd',
++        'source': 'apache2',
++        'version': '2.4.18-2ubuntu3.9',
++        'status': 'rc'
+     }
+ }
+ 
+@@ -224,12 +243,13 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
+             'url': 'homepage'
+         }
+ 
+-        installed = copy.deepcopy(LOWPKG_INFO)
++        installed = copy.deepcopy({'wget': LOWPKG_INFO['wget']})
+         for name in names:
+             if installed['wget'].get(names[name], False):
+                 installed['wget'][name] = installed['wget'].pop(names[name])
+-
++        del installed['wget']['status']
+         assert aptpkg.info_installed('wget') == installed
++        assert len(aptpkg.info_installed()) == 1
+ 
+     @patch('salt.modules.aptpkg.__salt__', {'lowpkg.info': MagicMock(return_value=LOWPKG_INFO)})
+     def test_info_installed_attr(self):
+diff --git a/tests/unit/modules/test_dpkg.py b/tests/unit/modules/test_dpkg.py
+index 1acfd89ccf..8c71129e76 100644
+--- a/tests/unit/modules/test_dpkg.py
++++ b/tests/unit/modules/test_dpkg.py
+@@ -46,7 +46,8 @@ class DpkgTestCase(TestCase, LoaderModuleMockMixin):
+                                               'depend on the latest\n recommended Emacs release.\n',
+          'package': 'emacs', 'source': 'emacs-defaults',
+          'maintainer': 'Simpsons Developers <simpsons-devel-discuss@lists.springfield.org>',
+-         'build_date_time_t': 1407430308, 'installed_size': '25', 'install_date': '2016-12-14T20:02:58Z'}
++         'build_date_time_t': 1407430308, 'installed_size': '25', 'install_date': '2016-12-14T20:02:58Z',
++         'status': 'ii'}
+     ]
+ 
+     def setup_loader_modules(self):
+@@ -147,12 +148,13 @@ class DpkgTestCase(TestCase, LoaderModuleMockMixin):
+         for pkg_section in ['section', 'architecture', 'original-maintainer', 'maintainer', 'package', 'installed-size',
+                             'build_date_time_t', 'sha256', 'origin', 'build_date', 'size', 'source', 'version',
+                             'install_date_time_t', 'license', 'priority', 'description', 'md5sum', 'supported',
+-                            'filename', 'sha1', 'install_date', 'arch']:
++                            'filename', 'sha1', 'install_date', 'arch', "status"]:
+             assert pkg_section in pkg_data
+ 
+         assert pkg_data['section'] == 'editors'
+         assert pkg_data['maintainer'] == 'Simpsons Developers <simpsons-devel-discuss@lists.springfield.org>'
+         assert pkg_data['license'] == 'BSD v3'
++        assert pkg_data['status'] == 'ii'
+ 
+     @patch('salt.modules.dpkg._get_pkg_ds_avail', MagicMock(return_value=dselect_pkg))
+     @patch('salt.modules.dpkg._get_pkg_info', MagicMock(return_value=pkgs_info))
+-- 
+2.20.1
+
+
