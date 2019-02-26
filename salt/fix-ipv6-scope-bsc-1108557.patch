@@ -1,4 +1,4 @@
-From 4a13081f12843440650861c0abc70151e9b0d061 Mon Sep 17 00:00:00 2001
+From b6d47a2ca7f1bed902dfc6574e6fe91d3034aa29 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Fri, 28 Sep 2018 15:22:33 +0200
 Subject: [PATCH] Fix IPv6 scope (bsc#1108557)
@@ -70,14 +70,13 @@ Lintfix: W0611
 Reverse skipping tests: if no ipaddress
 ---
  salt/_compat.py | 74 +++++++++++++++++++++++++++++++++++++++++++++++++
- salt/minion.py  |  1 +
- 2 files changed, 75 insertions(+)
+ 1 file changed, 74 insertions(+)
 
 diff --git a/salt/_compat.py b/salt/_compat.py
-index 8d38f38230..0576210afc 100644
+index c10b82c0c2..8628833dcf 100644
 --- a/salt/_compat.py
 +++ b/salt/_compat.py
-@@ -230,7 +230,81 @@ class IPv6InterfaceScoped(ipaddress.IPv6Interface, IPv6AddressScoped):
+@@ -229,7 +229,81 @@ class IPv6InterfaceScoped(ipaddress.IPv6Interface, IPv6AddressScoped):
          self.hostmask = self.network.hostmask
  
  
@@ -159,19 +158,7 @@ index 8d38f38230..0576210afc 100644
          ipaddress.IPv6Interface = IPv6InterfaceScoped
 +    ipaddress.ip_address = ip_address
 +    ipaddress.ip_interface = ip_interface
-diff --git a/salt/minion.py b/salt/minion.py
-index 7a4f6587d9..c87891456b 100644
---- a/salt/minion.py
-+++ b/salt/minion.py
-@@ -25,6 +25,7 @@ from binascii import crc32
- # Import Salt Libs
- # pylint: disable=import-error,no-name-in-module,redefined-builtin
- from salt.ext import six
-+from salt._compat import ipaddress
- from salt.ext.six.moves import range
- from salt.utils.zeromq import zmq, ZMQDefaultLoop, install_zmq, ZMQ_VERSION_INFO
- import salt.transport.client
 -- 
-2.17.1
+2.20.1
 
 

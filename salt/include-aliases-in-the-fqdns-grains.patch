@@ -1,4 +1,4 @@
-From 99b56e65202bdb436c13a2f12dee89b7e7cc71fa Mon Sep 17 00:00:00 2001
+From 5dc6f2a59a8a774d13dcfd36b25ea735df18f10f Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Tue, 29 Jan 2019 11:11:38 +0100
 Subject: [PATCH] Include aliases in the fqdns grains
@@ -22,10 +22,10 @@ Leverage cached interfaces, if any.
  4 files changed, 61 insertions(+), 10 deletions(-)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index 5998a72912..85df6b8f4a 100644
+index b0c1acceeb..05a9d5035d 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
-@@ -2191,14 +2191,13 @@ def fqdns():
+@@ -2200,14 +2200,13 @@ def fqdns():
      grains = {}
      fqdns = set()
  
@@ -44,7 +44,7 @@ index 5998a72912..85df6b8f4a 100644
          except socket.herror as err:
              if err.errno == 0:
                  # No FQDN for this IP address, so we don't need to know this all the time.
-@@ -2208,8 +2207,7 @@ def fqdns():
+@@ -2217,8 +2216,7 @@ def fqdns():
          except (socket.error, socket.gaierror, socket.timeout) as err:
              log.error(err_message, err)
  
@@ -55,13 +55,13 @@ index 5998a72912..85df6b8f4a 100644
  
  def ip_fqdn():
 diff --git a/salt/utils/network.py b/salt/utils/network.py
-index 1b0613df41..726920351e 100644
+index 83269cdcf6..c72d2aec41 100644
 --- a/salt/utils/network.py
 +++ b/salt/utils/network.py
-@@ -1904,3 +1904,15 @@ def dns_check(addr, port, safe=False, ipv6=None):
-             raise SaltClientError()
-         raise SaltSystemExit(code=42, msg=err)
-     return resolved
+@@ -2016,3 +2016,15 @@ def parse_host_port(host_port):
+             raise ValueError('bad hostname: "{}"'.format(host))
+ 
+     return host, port
 +
 +
 +def is_fqdn(hostname):
@@ -115,13 +115,13 @@ index d5a1b1a36b..117e02c39f 100644
          '''
          test virtual grain with cmd virt-what
 diff --git a/tests/unit/utils/test_network.py b/tests/unit/utils/test_network.py
-index dacc3e1aef..c8cffe53fd 100644
+index 3d20c880bd..ca627777a7 100644
 --- a/tests/unit/utils/test_network.py
 +++ b/tests/unit/utils/test_network.py
-@@ -547,3 +547,22 @@ class NetworkTestCase(TestCase):
-         self.assertRaises(ValueError, network.mac_str_to_bytes, 'a0:b0:c0:d0:e0:fg')
-         self.assertEqual(b'\x10\x08\x06\x04\x02\x00', network.mac_str_to_bytes('100806040200'))
-         self.assertEqual(b'\xf8\xe7\xd6\xc5\xb4\xa3', network.mac_str_to_bytes('f8e7d6c5b4a3'))
+@@ -637,3 +637,22 @@ class NetworkTestCase(TestCase):
+             # An exception is raised if unicode is passed to socket.getfqdn
+             minion_id = network.generate_minion_id()
+         assert minion_id != '', minion_id
 +
 +    def test_is_fqdn(self):
 +        """

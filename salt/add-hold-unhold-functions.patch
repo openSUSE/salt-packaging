@@ -1,4 +1,4 @@
-From 688c36e33cb1a939b8352fa4e7bc264bb03ed636 Mon Sep 17 00:00:00 2001
+From 4219d3d69799bc20f88eed0a02ef15c932e6782e Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Thu, 6 Dec 2018 16:26:23 +0100
 Subject: [PATCH] Add hold/unhold functions
@@ -7,13 +7,13 @@ Add unhold function
 
 Add warnings
 ---
- salt/modules/zypper.py | 88 +++++++++++++++++++++++++++++++++++++++++-
+ salt/modules/zypperpkg.py | 88 ++++++++++++++++++++++++++++++++++++++-
  1 file changed, 87 insertions(+), 1 deletion(-)
 
-diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
+diff --git a/salt/modules/zypperpkg.py b/salt/modules/zypperpkg.py
 index 001b852fc4..0c26e2214c 100644
---- a/salt/modules/zypper.py
-+++ b/salt/modules/zypper.py
+--- a/salt/modules/zypperpkg.py
++++ b/salt/modules/zypperpkg.py
 @@ -41,6 +41,7 @@ import salt.utils.pkg
  import salt.utils.pkg.rpm
  import salt.utils.stringutils
@@ -139,6 +139,6 @@ index 001b852fc4..0c26e2214c 100644
      added = []
      try:
 -- 
-2.17.1
+2.20.1
 
 

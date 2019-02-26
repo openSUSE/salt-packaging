@@ -1,4 +1,4 @@
-From 254c46e655a71f4b0b238c04ed5bbd03d5b66695 Mon Sep 17 00:00:00 2001
+From afdfd35222223d81c304854b5ae7af60f3820ed3 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Tue, 20 Nov 2018 16:06:31 +0100
 Subject: [PATCH] Debian info_installed compatibility (#50453)
@@ -49,17 +49,17 @@ Adjust architecture getter according to the lowpkg info
 
 Fix wrong Git merge: missing function signature
 ---
- salt/modules/aptpkg.py            |  20 +++-
- salt/modules/dpkg.py              |  93 +++++++++++++++---
- tests/unit/modules/test_aptpkg.py | 151 +++++++++++++++++++-----------
- tests/unit/modules/test_dpkg.py   |  69 ++++++++++++++
+ salt/modules/aptpkg.py                 |  20 +++-
+ salt/modules/dpkg_lowpkg.py            |  93 +++++++++++++--
+ tests/unit/modules/test_aptpkg.py      | 151 ++++++++++++++++---------
+ tests/unit/modules/test_dpkg_lowpkg.py |  69 +++++++++++
  4 files changed, 267 insertions(+), 66 deletions(-)
 
 diff --git a/salt/modules/aptpkg.py b/salt/modules/aptpkg.py
-index 6c3aade671..6a1067725c 100644
+index 6b3a921a82..64620647c2 100644
 --- a/salt/modules/aptpkg.py
 +++ b/salt/modules/aptpkg.py
-@@ -2762,6 +2762,15 @@ def info_installed(*names, **kwargs):
+@@ -2776,6 +2776,15 @@ def info_installed(*names, **kwargs):
  
          .. versionadded:: 2016.11.3
  
@@ -75,7 +75,7 @@ index 6c3aade671..6a1067725c 100644
      CLI example:
  
      .. code-block:: bash
-@@ -2772,11 +2781,15 @@ def info_installed(*names, **kwargs):
+@@ -2786,11 +2795,15 @@ def info_installed(*names, **kwargs):
      '''
      kwargs = salt.utils.args.clean_kwargs(**kwargs)
      failhard = kwargs.pop('failhard', True)
@@ -92,7 +92,7 @@ index 6c3aade671..6a1067725c 100644
          t_nfo = dict()
          # Translate dpkg-specific keys to a common structure
          for key, value in pkg_nfo.items():
-@@ -2793,7 +2806,10 @@ def info_installed(*names, **kwargs):
+@@ -2807,7 +2820,10 @@ def info_installed(*names, **kwargs):
              else:
                  t_nfo[key] = value
  
@@ -104,10 +104,10 @@ index 6c3aade671..6a1067725c 100644
  
      return ret
  
-diff --git a/salt/modules/dpkg.py b/salt/modules/dpkg.py
+diff --git a/salt/modules/dpkg_lowpkg.py b/salt/modules/dpkg_lowpkg.py
 index 03be5f821a..26ca5dcf5a 100644
---- a/salt/modules/dpkg.py
-+++ b/salt/modules/dpkg.py
+--- a/salt/modules/dpkg_lowpkg.py
++++ b/salt/modules/dpkg_lowpkg.py
 @@ -252,6 +252,38 @@ def file_dict(*packages):
      return {'errors': errors, 'packages': ret}
  
@@ -503,10 +503,10 @@ index 1e963ee5db..580b840197 100644
      def test_upgrade(self):
          '''
          Test - Upgrades all packages.
-diff --git a/tests/unit/modules/test_dpkg.py b/tests/unit/modules/test_dpkg.py
-index 5d36dd1c79..6b4feb60ed 100644
---- a/tests/unit/modules/test_dpkg.py
-+++ b/tests/unit/modules/test_dpkg.py
+diff --git a/tests/unit/modules/test_dpkg_lowpkg.py b/tests/unit/modules/test_dpkg_lowpkg.py
+index bdcb7eec89..d16ce3cc1a 100644
+--- a/tests/unit/modules/test_dpkg_lowpkg.py
++++ b/tests/unit/modules/test_dpkg_lowpkg.py
 @@ -25,6 +25,30 @@ class DpkgTestCase(TestCase, LoaderModuleMockMixin):
      '''
      Test cases for salt.modules.dpkg
@@ -588,6 +588,6 @@ index 5d36dd1c79..6b4feb60ed 100644
 +        assert ret['emacs']['license'] == 'BSD v3'
 +        assert ret['emacs']['version'] == '46.1'
 -- 
-2.17.1
+2.20.1
 
 

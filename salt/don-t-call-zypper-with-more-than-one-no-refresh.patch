@@ -1,4 +1,4 @@
-From 7ea9b2a2ef396512bbb376296575342ffe71011b Mon Sep 17 00:00:00 2001
+From 1c3f8f32d475701e8b7fab64b8cb9dcd44b587d4 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?C=C3=A9dric=20Bosdonnat?= <cbosdonnat@suse.com>
 Date: Tue, 29 Jan 2019 09:44:03 +0100
 Subject: [PATCH] Don't call zypper with more than one --no-refresh
@@ -6,14 +6,14 @@ Subject: [PATCH] Don't call zypper with more than one --no-refresh
 Now zypper started being picky and errors out when --no-refresh is
 passed twice. Make sure we won't hit this.
 ---
- salt/modules/zypper.py            | 2 +-
- tests/unit/modules/test_zypper.py | 2 +-
+ salt/modules/zypperpkg.py            | 2 +-
+ tests/unit/modules/test_zypperpkg.py | 2 +-
  2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
+diff --git a/salt/modules/zypperpkg.py b/salt/modules/zypperpkg.py
 index c442337c58..bab9e22dec 100644
---- a/salt/modules/zypper.py
-+++ b/salt/modules/zypper.py
+--- a/salt/modules/zypperpkg.py
++++ b/salt/modules/zypperpkg.py
 @@ -291,7 +291,7 @@ class _Zypper(object):
          self.__called = True
          if self.__xml:
@@ -23,10 +23,10 @@ index c442337c58..bab9e22dec 100644
              self.__cmd.append('--no-refresh')
          if self.__root:
              self.__cmd.extend(['--root', self.__root])
-diff --git a/tests/unit/modules/test_zypper.py b/tests/unit/modules/test_zypper.py
-index e344bb58d8..97d144615c 100644
---- a/tests/unit/modules/test_zypper.py
-+++ b/tests/unit/modules/test_zypper.py
+diff --git a/tests/unit/modules/test_zypperpkg.py b/tests/unit/modules/test_zypperpkg.py
+index e7474ff777..9d109a431d 100644
+--- a/tests/unit/modules/test_zypperpkg.py
++++ b/tests/unit/modules/test_zypperpkg.py
 @@ -141,7 +141,7 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
              self.assertEqual(zypper.__zypper__.call('foo'), stdout_xml_snippet)
              self.assertEqual(len(sniffer.calls), 1)

@@ -1,4 +1,4 @@
-From 75c6991fd042c0e0cd372af9752805f1463a4632 Mon Sep 17 00:00:00 2001
+From 51ccc41dd16564dea5b465d122218ca8047f9f3e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Mon, 19 Nov 2018 11:46:26 +0000
@@ -40,14 +40,14 @@ Return None instead empty string for arch and release in pkg.list_pkgs
  salt/modules/aptpkg.py                  |  38 ++++++++
  salt/modules/pkg_resource.py            |  20 +++-
  salt/modules/yumpkg.py                  |  32 ++++++-
- salt/modules/zypper.py                  |  29 +++++-
+ salt/modules/zypperpkg.py               |  29 +++++-
  tests/unit/modules/test_pkg_resource.py | 116 ++++++++++++++++++++++++
  tests/unit/modules/test_yumpkg.py       |  85 ++++++++++++++++-
- tests/unit/modules/test_zypper.py       |  79 +++++++++++++++-
+ tests/unit/modules/test_zypperpkg.py    |  79 +++++++++++++++-
  7 files changed, 383 insertions(+), 16 deletions(-)
 
 diff --git a/salt/modules/aptpkg.py b/salt/modules/aptpkg.py
-index 2d25023a01..558ecfc3b5 100644
+index 4a331444c9..f51b6958e5 100644
 --- a/salt/modules/aptpkg.py
 +++ b/salt/modules/aptpkg.py
 @@ -73,6 +73,7 @@ except ImportError:
@@ -207,10 +207,10 @@ index a56a2e8366..4f26a41670 100644
                  if ':' in pkgver:
                      epoch, pkgver = pkgver.split(":", 1)
                  if '-' in pkgver:
-diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
+diff --git a/salt/modules/zypperpkg.py b/salt/modules/zypperpkg.py
 index 0c26e2214c..92e7052020 100644
---- a/salt/modules/zypper.py
-+++ b/salt/modules/zypper.py
+--- a/salt/modules/zypperpkg.py
++++ b/salt/modules/zypperpkg.py
 @@ -53,6 +53,7 @@ ZYPP_HOME = '/etc/zypp'
  LOCKS = '{0}/locks'.format(ZYPP_HOME)
  REPOS = '{0}/repos.d'.format(ZYPP_HOME)
@@ -389,13 +389,13 @@ index b6d90cc92c..a9ffe43cdd 100644
          '''
              Test to takes a dict of package name/version information
 diff --git a/tests/unit/modules/test_yumpkg.py b/tests/unit/modules/test_yumpkg.py
-index 078f68b779..c2e0ed0609 100644
+index 6113d3a4b1..6019a8179e 100644
 --- a/tests/unit/modules/test_yumpkg.py
 +++ b/tests/unit/modules/test_yumpkg.py
 @@ -18,6 +18,7 @@ from tests.support.mock import (
  # Import Salt libs
  from salt.exceptions import CommandExecutionError
- import salt.modules.rpm
+ import salt.modules.rpm_lowpkg as rpm
 +from salt.ext import six
  import salt.modules.yumpkg as yumpkg
  import salt.modules.pkg_resource as pkg_resource
@@ -583,10 +583,10 @@ index 078f68b779..c2e0ed0609 100644
      def test_latest_version_with_options(self):
          with patch.object(yumpkg, 'list_pkgs', MagicMock(return_value={})):
  
-diff --git a/tests/unit/modules/test_zypper.py b/tests/unit/modules/test_zypper.py
-index 6df2cc699c..5a1dbe6ac8 100644
---- a/tests/unit/modules/test_zypper.py
-+++ b/tests/unit/modules/test_zypper.py
+diff --git a/tests/unit/modules/test_zypperpkg.py b/tests/unit/modules/test_zypperpkg.py
+index 3259e1810d..f586c23fd0 100644
+--- a/tests/unit/modules/test_zypperpkg.py
++++ b/tests/unit/modules/test_zypperpkg.py
 @@ -61,7 +61,7 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
      '''
  

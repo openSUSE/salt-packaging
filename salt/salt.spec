@@ -52,7 +52,7 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        2019.2.0~rc2
+Version:        2019.2.0
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
@@ -88,76 +88,72 @@ Patch12:        fix-zypper.list_pkgs-to-be-aligned-with-pkg-state.patch
 Patch13:        integration-of-msi-authentication-with-azurearm-clou.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49538
 Patch14:        fix-for-suse-expanded-support-detection.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49508
-Patch15:        x509-fixes-for-remote-signing-106.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/48812
-Patch16:        use-adler32-algorithm-to-compute-string-checksums.patch
+Patch15:        use-adler32-algorithm-to-compute-string-checksums.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49497
-Patch17:        x509-fixes-111.patch
+Patch16:        x509-fixes-111.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49696
-Patch18:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
+Patch17:        loosen-azure-sdk-dependencies-in-azurearm-cloud-driv.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49737
-Patch19:        do-not-load-pip-state-if-there-is-no-3rd-party-depen.patch
+Patch18:        do-not-load-pip-state-if-there-is-no-3rd-party-depen.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49815
-Patch20:        fix-ipv6-scope-bsc-1108557.patch
+Patch19:        fix-ipv6-scope-bsc-1108557.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49480
-Patch21:        early-feature-support-config.patch
+Patch20:        early-feature-support-config.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49908
-Patch22:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
+Patch21:        bugfix-any-unicode-string-of-length-16-will-raise-ty.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49936
-Patch23:        make-profiles-a-package.patch
+Patch22:        make-profiles-a-package.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49946
-Patch24:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
+Patch23:        add-cpe_name-for-osversion-grain-parsing-u-49946.patch
 # PATCH-FIX_OPENSUSE: Fix unit test for grains core
-Patch25:        fix-unit-test-for-grains-core.patch
+Patch24:        fix-unit-test-for-grains-core.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50049
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50072
-Patch26:        preserving-signature-in-module.run-state-u-50049.patch
+Patch25:        preserving-signature-in-module.run-state-u-50049.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50095
-Patch27:        support-config-non-root-permission-issues-fixes-u-50.patch
+Patch26:        support-config-non-root-permission-issues-fixes-u-50.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50018
-Patch28:        add-multi-file-support-and-globbing-to-the-filetree-.patch
+Patch27:        add-multi-file-support-and-globbing-to-the-filetree-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/49761
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50201
-Patch29:        fixes-cve-2018-15750-cve-2018-15751.patch
+Patch28:        fixes-cve-2018-15750-cve-2018-15751.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50417
-Patch30:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
+Patch29:        fix-git_pillar-merging-across-multiple-__env__-repos.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50523
-Patch31:        get-os_arch-also-without-rpm-package-installed.patch
+Patch30:        get-os_arch-also-without-rpm-package-installed.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50392
-Patch32:        make-aptpkg.list_repos-compatible-on-enabled-disable.patch
+Patch31:        make-aptpkg.list_repos-compatible-on-enabled-disable.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50453
-Patch33:        debian-info_installed-compatibility-50453.patch
+Patch32:        debian-info_installed-compatibility-50453.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50742
-Patch34:        decide-if-the-source-should-be-actually-skipped.patch
+Patch33:        decide-if-the-source-should-be-actually-skipped.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50773
-Patch35:        add-hold-unhold-functions.patch
+Patch34:        add-hold-unhold-functions.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50401
 # NOTE: This is a techpreview as well as in Fluorine! Release only in Neon.
-Patch36:        add-supportconfig-module-for-remote-calls-and-saltss.patch
+Patch35:        add-supportconfig-module-for-remote-calls-and-saltss.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50567
-Patch37:        azurefs-gracefully-handle-attributeerror.patch
+Patch36:        azurefs-gracefully-handle-attributeerror.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/116
-Patch38:        return-the-expected-powerpc-os-arch-bsc-1117995.patch
+Patch37:        return-the-expected-powerpc-os-arch-bsc-1117995.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51108
-Patch39:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
+Patch38:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51119
-Patch40:        fix-issue-2068-test.patch
+Patch39:        fix-issue-2068-test.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50125
-Patch41:        zypper-add-root-configuration-parameter.patch
+Patch40:        zypper-add-root-configuration-parameter.patch
 # PATCH_FIX_OPENSUSE: Temporary fix allowing "id_" and "force" params while upstrem figures it out
-Patch42:        temporary-fix-extend-the-whitelist-of-allowed-comman.patch
+Patch41:        temporary-fix-extend-the-whitelist-of-allowed-comman.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51382
-Patch43:        don-t-call-zypper-with-more-than-one-no-refresh.patch
+Patch42:        don-t-call-zypper-with-more-than-one-no-refresh.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50109
 # PATCH_FIX_OPENSUSE https://github.com/openSUSE/salt/pull/121
-Patch44:        add-virt.all_capabilities.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51707
-Patch45:        refresh-matchers-and-beacons-on-pillar-refresh-bsc-1.patch
+Patch43:        add-virt.all_capabilities.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51691
-Patch46:        add-virt.volume_infos-and-virt.volume_delete.patch
+Patch44:        add-virt.volume_infos-and-virt.volume_delete.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51384
-Patch47:        include-aliases-in-the-fqdns-grains.patch
+Patch45:        include-aliases-in-the-fqdns-grains.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -613,7 +609,7 @@ Zsh command line completion support for %{name}.
 
 %prep
 # %setup -q -n salt-%{version}
-%setup -q -n salt-2019.2.0rc2-suse
+%setup -q -n salt-2019.2.0-suse
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
 %patch1 -p1
@@ -661,8 +657,6 @@ cp %{S:5} ./.travis.yml
 %patch43 -p1
 %patch44 -p1
 %patch45 -p1
-%patch46 -p1
-%patch47 -p1
 
 %build
 %if 0%{?build_py2}

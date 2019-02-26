@@ -1,4 +1,4 @@
-From 8781fcfaf4616d2ad80b5fd4ba8f12debddf2d5e Mon Sep 17 00:00:00 2001
+From e20116f09c1f68238008c13a0517a8d36a7be56a Mon Sep 17 00:00:00 2001
 From: Alberto Planas <aplanas@gmail.com>
 Date: Wed, 17 Oct 2018 11:58:04 +0200
 Subject: [PATCH] zypper: add root configuration parameter
@@ -56,19 +56,19 @@ zypper: add no_recommends parameter
 
 Add no_recommends parameter to install and upgrade actions.
 ---
- salt/modules/rpm.py               | 101 ++++++--
- salt/modules/zypper.py            | 390 +++++++++++++++++++++---------
- salt/states/pkg.py                |  28 ++-
- salt/states/pkgrepo.py            |  14 +-
- tests/unit/modules/test_rpm.py    |  92 ++++++-
- tests/unit/modules/test_zypper.py |  45 ++--
- tests/unit/states/test_pkg.py     |   7 +-
+ salt/modules/rpm_lowpkg.py            | 101 +++++--
+ salt/modules/zypperpkg.py             | 390 ++++++++++++++++++--------
+ salt/states/pkg.py                    |  28 +-
+ salt/states/pkgrepo.py                |  14 +-
+ tests/unit/modules/test_rpm_lowpkg.py |  92 +++++-
+ tests/unit/modules/test_zypperpkg.py  |  45 +--
+ tests/unit/states/test_pkg.py         |   7 +-
  7 files changed, 488 insertions(+), 189 deletions(-)
 
-diff --git a/salt/modules/rpm.py b/salt/modules/rpm.py
-index 15738b2523..21c9232c1a 100644
---- a/salt/modules/rpm.py
-+++ b/salt/modules/rpm.py
+diff --git a/salt/modules/rpm_lowpkg.py b/salt/modules/rpm_lowpkg.py
+index 893ae4f817..e577c4391a 100644
+--- a/salt/modules/rpm_lowpkg.py
++++ b/salt/modules/rpm_lowpkg.py
 @@ -76,7 +76,7 @@ def bin_pkg_info(path, saltenv='base'):
          minion so that it can be examined.
  
@@ -332,10 +332,10 @@ index 15738b2523..21c9232c1a 100644
                                                          ignore_retcode=True,
                                                          output_loglevel='trace',
                                                          python_shell=False))
-diff --git a/salt/modules/zypper.py b/salt/modules/zypper.py
+diff --git a/salt/modules/zypperpkg.py b/salt/modules/zypperpkg.py
 index 92e7052020..c442337c58 100644
---- a/salt/modules/zypper.py
-+++ b/salt/modules/zypper.py
+--- a/salt/modules/zypperpkg.py
++++ b/salt/modules/zypperpkg.py
 @@ -99,6 +99,7 @@ class _Zypper(object):
  
      LOCK_EXIT_CODE = 7
@@ -1754,7 +1754,7 @@ index 0aca1e0af8..22a97fe98c 100644
          ret['comment'] = (
              'Failed to install the following packages: {0}'
 diff --git a/salt/states/pkgrepo.py b/salt/states/pkgrepo.py
-index be096cab3d..bf62eb311d 100644
+index 4d5e9eea92..6d8e94aa18 100644
 --- a/salt/states/pkgrepo.py
 +++ b/salt/states/pkgrepo.py
 @@ -393,10 +393,7 @@ def managed(name, ppa=None, **kwargs):
@@ -1769,7 +1769,7 @@ index be096cab3d..bf62eb311d 100644
      except CommandExecutionError as exc:
          ret['result'] = False
          ret['comment'] = \
-@@ -502,10 +499,7 @@ def managed(name, ppa=None, **kwargs):
+@@ -512,10 +509,7 @@ def managed(name, ppa=None, **kwargs):
          return ret
  
      try:
@@ -1781,7 +1781,7 @@ index be096cab3d..bf62eb311d 100644
          if pre:
              for kwarg in sanitizedkwargs:
                  if post.get(kwarg) != pre.get(kwarg):
-@@ -599,9 +593,7 @@ def absent(name, **kwargs):
+@@ -608,9 +602,7 @@ def absent(name, **kwargs):
          return ret
  
      try:
@@ -1792,12 +1792,12 @@ index be096cab3d..bf62eb311d 100644
      except CommandExecutionError as exc:
          ret['result'] = False
          ret['comment'] = \
-diff --git a/tests/unit/modules/test_rpm.py b/tests/unit/modules/test_rpm.py
-index 4b642665ca..d8af71eb07 100644
---- a/tests/unit/modules/test_rpm.py
-+++ b/tests/unit/modules/test_rpm.py
+diff --git a/tests/unit/modules/test_rpm_lowpkg.py b/tests/unit/modules/test_rpm_lowpkg.py
+index 0a2359ccb2..dc9f52c572 100644
+--- a/tests/unit/modules/test_rpm_lowpkg.py
++++ b/tests/unit/modules/test_rpm_lowpkg.py
 @@ -20,6 +20,11 @@ from tests.support.mock import (
- import salt.modules.rpm as rpm
+ import salt.modules.rpm_lowpkg as rpm
  
  
 +def _called_with_root(mock):
@@ -1958,10 +1958,10 @@ index 4b642665ca..d8af71eb07 100644
  
      def test_version_cmp_rpm(self):
          '''
-diff --git a/tests/unit/modules/test_zypper.py b/tests/unit/modules/test_zypper.py
-index e0dde923b8..4b6dcbb321 100644
---- a/tests/unit/modules/test_zypper.py
-+++ b/tests/unit/modules/test_zypper.py
+diff --git a/tests/unit/modules/test_zypperpkg.py b/tests/unit/modules/test_zypperpkg.py
+index f586c23fd0..e7474ff777 100644
+--- a/tests/unit/modules/test_zypperpkg.py
++++ b/tests/unit/modules/test_zypperpkg.py
 @@ -40,6 +40,9 @@ class ZyppCallMock(object):
          return self
  
@@ -1972,7 +1972,7 @@ index e0dde923b8..4b6dcbb321 100644
          return MagicMock(return_value=self.__return_value)()
  
  
-@@ -924,7 +927,7 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -925,7 +928,7 @@ Repository 'DUMMY' not found by its alias, number, or URI.
                      'pico': '0.1.1',
                  }
  
@@ -1981,7 +1981,7 @@ index e0dde923b8..4b6dcbb321 100644
                  pkgs = self._pkgs.copy()
                  for target in self._packages:
                      if self._pkgs.get(target):
-@@ -990,10 +993,10 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -991,10 +994,10 @@ Repository 'DUMMY' not found by its alias, number, or URI.
          with zypper_patcher:
              zypper.mod_repo(name, **{'url': url})
              self.assertEqual(
@@ -1994,7 +1994,7 @@ index e0dde923b8..4b6dcbb321 100644
  
      def test_repo_noadd_nomod_noref(self):
          '''
-@@ -1015,8 +1018,8 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1016,8 +1019,8 @@ Repository 'DUMMY' not found by its alias, number, or URI.
              self.assertEqual(
                  out['comment'],
                  'Specified arguments did not result in modification of repo')
@@ -2005,7 +2005,7 @@ index e0dde923b8..4b6dcbb321 100644
  
      def test_repo_noadd_modbaseurl_ref(self):
          '''
-@@ -1044,9 +1047,11 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1045,9 +1048,11 @@ Repository 'DUMMY' not found by its alias, number, or URI.
                  'priority': 1,
                  'cache': False,
                  'keeppackages': False,
@@ -2020,7 +2020,7 @@ index e0dde923b8..4b6dcbb321 100644
  
      def test_repo_add_mod_noref(self):
          '''
-@@ -1062,10 +1067,10 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1063,10 +1068,10 @@ Repository 'DUMMY' not found by its alias, number, or URI.
          with zypper_patcher:
              zypper.mod_repo(name, **{'url': url, 'refresh': True})
              self.assertEqual(
@@ -2033,8 +2033,8 @@ index e0dde923b8..4b6dcbb321 100644
                  'mr', '--refresh', name
              )
  
-@@ -1084,8 +1089,8 @@ Repository 'DUMMY' not found by its alias, number, or URI.
-             'salt.modules.zypper', **self.zypper_patcher_config)
+@@ -1085,8 +1090,8 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+             'salt.modules.zypperpkg', **self.zypper_patcher_config)
          with zypper_patcher:
              zypper.mod_repo(name, **{'url': url, 'refresh': True})
 -            self.assertTrue(zypper.__zypper__.xml.call.call_count == 0)
@@ -2044,7 +2044,7 @@ index e0dde923b8..4b6dcbb321 100644
                  'mr', '--refresh', name
              )
  
-@@ -1104,13 +1109,13 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1105,13 +1110,13 @@ Repository 'DUMMY' not found by its alias, number, or URI.
          with zypper_patcher:
              zypper.mod_repo(name, **{'url': url, 'gpgautoimport': True})
              self.assertEqual(
@@ -2060,7 +2060,7 @@ index e0dde923b8..4b6dcbb321 100644
  
      def test_repo_noadd_nomod_ref(self):
          '''
-@@ -1131,10 +1136,10 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1132,10 +1137,10 @@ Repository 'DUMMY' not found by its alias, number, or URI.
          with zypper_patcher:
              zypper.mod_repo(name, **{'url': url, 'gpgautoimport': True})
              self.assertEqual(
@@ -2073,7 +2073,7 @@ index e0dde923b8..4b6dcbb321 100644
  
      def test_repo_add_mod_ref(self):
          '''
-@@ -1155,13 +1160,13 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1156,13 +1161,13 @@ Repository 'DUMMY' not found by its alias, number, or URI.
                  **{'url': url, 'refresh': True, 'gpgautoimport': True}
              )
              self.assertEqual(
@@ -2089,7 +2089,7 @@ index e0dde923b8..4b6dcbb321 100644
                  '--gpg-auto-import-keys', 'mr', '--refresh', name
              )
  
-@@ -1187,10 +1192,10 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1188,10 +1193,10 @@ Repository 'DUMMY' not found by its alias, number, or URI.
                  **{'url': url, 'refresh': True, 'gpgautoimport': True}
              )
              self.assertEqual(
@@ -2142,6 +2142,6 @@ index 42fe6c6867..d30e064167 100644
          with patch.dict(pkg.__salt__,
                          {'pkg.list_upgrades': list_upgrades,
 -- 
-2.17.1
+2.20.1
 
 
