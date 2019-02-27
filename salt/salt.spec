@@ -154,6 +154,9 @@ Patch43:        add-virt.all_capabilities.patch
 Patch44:        add-virt.volume_infos-and-virt.volume_delete.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51384
 Patch45:        include-aliases-in-the-fqdns-grains.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50546
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51863
+Patch46:        async-batch-implementation.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -657,6 +660,7 @@ cp %{S:5} ./.travis.yml
 %patch43 -p1
 %patch44 -p1
 %patch45 -p1
+%patch46 -p1
 
 %build
 %if 0%{?build_py2}
