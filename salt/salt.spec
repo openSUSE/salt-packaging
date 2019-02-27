@@ -276,6 +276,9 @@ Patch99:        let-dpkg.info-expose-package-status-122.patch
 Patch100:       strip-trailing-from-repo.uri-when-comparing-repos-in.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51384
 Patch101:       include-aliases-in-the-fqdns-grains.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50546
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51863
+Patch102:       async-batch-implementation.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -835,6 +838,7 @@ cp %{S:5} ./.travis.yml
 %patch99 -p1
 %patch100 -p1
 %patch101 -p1
+%patch102 -p1
 
 %build
 %if 0%{?build_py2}
