@@ -279,6 +279,8 @@ Patch101:       include-aliases-in-the-fqdns-grains.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50546
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51863
 Patch102:       async-batch-implementation.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/46023
+Patch103:       add-parallel-support-for-orchestrations.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -839,6 +841,7 @@ cp %{S:5} ./.travis.yml
 %patch100 -p1
 %patch101 -p1
 %patch102 -p1
+%patch103 -p1
 
 %build
 %if 0%{?build_py2}
