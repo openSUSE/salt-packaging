@@ -360,7 +360,7 @@ BuildRequires:  python3-xml
 %if %{with builddocs}
 BuildRequires:  python3-sphinx
 %endif
-Requires:       python3 < 3.7
+Requires:       python3
 #
 %if ! 0%{?suse_version} > 1110
 Requires:       python3-certifi
