@@ -220,6 +220,9 @@ Patch79:        fix-for-suse-expanded-support-detection.patch
 Patch80:        fix-wrong-recurse-behavior-on-for-linux_acl.present-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50563
 Patch81:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
+# PATCH-FIX_OPENSUSE bsc#1124290 backport of multiple commits from upstream
+# https://github.com/openSUSE/salt/commit/539a25d48792e9c470722269880da73ef0a25cc7
+Patch82:        fix-minion-arguments-assign-via-sysctl-bsc-1124290.patch
 
 
 
@@ -657,6 +660,7 @@ cp %{S:5} ./.travis.yml
 %patch79 -p1
 %patch80 -p1
 %patch81 -p1
+%patch82 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build

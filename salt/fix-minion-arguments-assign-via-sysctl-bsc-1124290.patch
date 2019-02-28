@@ -1,0 +1,38 @@
+From 539a25d48792e9c470722269880da73ef0a25cc7 Mon Sep 17 00:00:00 2001
+From: Bo Maryniuk <bo@suse.de>
+Date: Mon, 11 Feb 2019 15:48:54 +0100
+Subject: [PATCH] Fix minion arguments assign via sysctl (bsc#1124290)
+
+---
+ salt/modules/linux_sysctl.py | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/salt/modules/linux_sysctl.py b/salt/modules/linux_sysctl.py
+index 88742e4a16..35ea71200a 100644
+--- a/salt/modules/linux_sysctl.py
++++ b/salt/modules/linux_sysctl.py
+@@ -120,9 +120,17 @@ def assign(name, value):
+ 
+         salt '*' sysctl.assign net.ipv4.ip_forward 1
+     '''
+-    value = str(value)
+-    trantab = ''.maketrans('./', '/.') if six.PY3 else string.maketrans('./', '/.')
+-    sysctl_file = '/proc/sys/{0}'.format(name.translate(trantab))
++    value = six.text_type(value)
++    if six.PY3:
++        tran_tab = name.translate(''.maketrans('./', '/.'))
++    else:
++        if isinstance(name, unicode):  # pylint: disable=incompatible-py3-code,undefined-variable
++            trans_args = {ord('/'): u'.', ord('.'): u'/'}
++        else:
++            trans_args = string.maketrans('./', '/.')
++        tran_tab = name.translate(trans_args)
++
++    sysctl_file = '/proc/sys/{0}'.format(tran_tab)
+     if not os.path.exists(sysctl_file):
+         raise CommandExecutionError('sysctl {0} does not exist'.format(name))
+ 
+-- 
+2.20.1
+
+
