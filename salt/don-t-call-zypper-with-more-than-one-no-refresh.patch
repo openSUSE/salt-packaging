@@ -1,4 +1,4 @@
-From 1c3f8f32d475701e8b7fab64b8cb9dcd44b587d4 Mon Sep 17 00:00:00 2001
+From 5e0fe08c6afd75a7d65d6ccd6cf6b4b197fb1064 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?C=C3=A9dric=20Bosdonnat?= <cbosdonnat@suse.com>
 Date: Tue, 29 Jan 2019 09:44:03 +0100
 Subject: [PATCH] Don't call zypper with more than one --no-refresh
@@ -11,23 +11,23 @@ passed twice. Make sure we won't hit this.
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/salt/modules/zypperpkg.py b/salt/modules/zypperpkg.py
-index c442337c58..bab9e22dec 100644
+index 92e7052020..7ac0df26c6 100644
 --- a/salt/modules/zypperpkg.py
 +++ b/salt/modules/zypperpkg.py
-@@ -291,7 +291,7 @@ class _Zypper(object):
+@@ -282,7 +282,7 @@ class _Zypper(object):
          self.__called = True
          if self.__xml:
              self.__cmd.append('--xmlout')
 -        if not self.__refresh:
 +        if not self.__refresh and '--no-refresh' not in args:
              self.__cmd.append('--no-refresh')
-         if self.__root:
-             self.__cmd.extend(['--root', self.__root])
+ 
+         self.__cmd.extend(args)
 diff --git a/tests/unit/modules/test_zypperpkg.py b/tests/unit/modules/test_zypperpkg.py
-index e7474ff777..9d109a431d 100644
+index f586c23fd0..5c5091a570 100644
 --- a/tests/unit/modules/test_zypperpkg.py
 +++ b/tests/unit/modules/test_zypperpkg.py
-@@ -141,7 +141,7 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+@@ -138,7 +138,7 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
              self.assertEqual(zypper.__zypper__.call('foo'), stdout_xml_snippet)
              self.assertEqual(len(sniffer.calls), 1)
  
