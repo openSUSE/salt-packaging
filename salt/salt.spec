@@ -141,24 +141,22 @@ Patch37:        return-the-expected-powerpc-os-arch-bsc-1117995.patch
 Patch38:        remove-arch-from-name-when-pkg.list_pkgs-is-called-w.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51119
 Patch39:        fix-issue-2068-test.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50125
-Patch40:        zypper-add-root-configuration-parameter.patch
 # PATCH_FIX_OPENSUSE: Temporary fix allowing "id_" and "force" params while upstrem figures it out
-Patch41:        temporary-fix-extend-the-whitelist-of-allowed-comman.patch
+Patch40:        temporary-fix-extend-the-whitelist-of-allowed-comman.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51382
-Patch42:        don-t-call-zypper-with-more-than-one-no-refresh.patch
+Patch41:        don-t-call-zypper-with-more-than-one-no-refresh.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50109
 # PATCH_FIX_OPENSUSE https://github.com/openSUSE/salt/pull/121
-Patch43:        add-virt.all_capabilities.patch
+Patch42:        add-virt.all_capabilities.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51691
-Patch44:        add-virt.volume_infos-and-virt.volume_delete.patch
+Patch43:        add-virt.volume_infos-and-virt.volume_delete.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51384
-Patch45:        include-aliases-in-the-fqdns-grains.patch
+Patch44:        include-aliases-in-the-fqdns-grains.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/50546
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51863
-Patch46:        async-batch-implementation.patch
+Patch45:        async-batch-implementation.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51905
-Patch47:        mount-fix-extra-t-parameter.patch
+Patch46:        mount-fix-extra-t-parameter.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -663,7 +661,6 @@ cp %{S:5} ./.travis.yml
 %patch44 -p1
 %patch45 -p1
 %patch46 -p1
-%patch47 -p1
 
 %build
 %if 0%{?build_py2}
