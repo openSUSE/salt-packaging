@@ -1,0 +1,64 @@
+From 3b75126f0db440f383fdb739facd1687512fa3d3 Mon Sep 17 00:00:00 2001
+From: Mihai Dinca <mdinca@suse.de>
+Date: Tue, 26 Feb 2019 13:40:41 +0100
+Subject: [PATCH] Fix dynamic ext_pillar git branch with __env__
+
+---
+ salt/utils/gitfs.py                         |  7 ++++++-
+ tests/integration/pillar/test_git_pillar.py | 21 +++++++++++++++++++++
+ 2 files changed, 27 insertions(+), 1 deletion(-)
+
+diff --git a/salt/utils/gitfs.py b/salt/utils/gitfs.py
+index 9af91ecdb2..34c1b9cc14 100644
+--- a/salt/utils/gitfs.py
++++ b/salt/utils/gitfs.py
+@@ -2952,7 +2952,12 @@ class GitPillar(GitBase):
+             cachedir = self.do_checkout(repo)
+             if cachedir is not None:
+                 # Figure out which environment this remote should be assigned
+-                if repo.env:
++                if repo.branch == '__env__':
++                    env = self.opts.get('pillarenv') \
++                        or self.opts.get('saltenv') \
++                        or self.opts['{0}_base'.format(self.role)] \
++                        or 'base'
++                elif repo.env:
+                     env = repo.env
+                 else:
+                     base_branch = self.opts['{0}_base'.format(self.role)]
+diff --git a/tests/integration/pillar/test_git_pillar.py b/tests/integration/pillar/test_git_pillar.py
+index e052782311..73440c16dc 100644
+--- a/tests/integration/pillar/test_git_pillar.py
++++ b/tests/integration/pillar/test_git_pillar.py
+@@ -1448,6 +1448,27 @@ class TestPygit2HTTP(GitPillarHTTPTestBase):
+             ''')
+         self.assertEqual(ret, expected)
+ 
++    def test__env___with_pillarenv_base(self):
++        ret = self.get_pillar('''\
++            file_ignore_regex: []
++            file_ignore_glob: []
++            git_pillar_provider: pygit2
++            cachedir: {cachedir}
++            extension_modules: {extmods}
++            pillarenv: base
++            ext_pillar:
++              - git:
++                - __env__ {url}
++            ''')
++        self.assertEqual(
++            ret,
++            {'branch': 'master',
++             'mylist': ['master'],
++             'mydict': {'master': True,
++                        'nested_list': ['master'],
++                        'nested_dict': {'master': True}}}
++        )
++
+     def test_includes_enabled(self):
+         '''
+         Test with git_pillar_includes enabled. The top_only branch references
+-- 
+2.20.1
+
+
