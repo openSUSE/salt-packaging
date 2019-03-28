@@ -1,4 +1,4 @@
-From 2536ee56bd0060c024994f97388f9975ccbe1ee1 Mon Sep 17 00:00:00 2001
+From 5e202207d02d2bf4860cc5487ed19f9d835993d1 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?C=C3=A9dric=20Bosdonnat?= <cbosdonnat@suse.com>
 Date: Fri, 15 Feb 2019 17:28:00 +0100
 Subject: [PATCH] Add virt.volume_infos() and virt.volume_delete()
@@ -11,15 +11,15 @@ names of the virtual machines using the volumes of file type.
 
 virt.volume_delete() allows removing a given volume.
 ---
- salt/modules/virt.py            | 113 ++++++++++++++++++++
- tests/unit/modules/test_virt.py | 184 ++++++++++++++++++++++++++++++++
- 2 files changed, 297 insertions(+)
+ salt/modules/virt.py            | 126 +++++++++++++++++++++
+ tests/unit/modules/test_virt.py | 195 ++++++++++++++++++++++++++++++++
+ 2 files changed, 321 insertions(+)
 
 diff --git a/salt/modules/virt.py b/salt/modules/virt.py
-index 0921122a8a..4a301f289c 100644
+index 0921122a8a..17039444c4 100644
 --- a/salt/modules/virt.py
 +++ b/salt/modules/virt.py
-@@ -4988,3 +4988,116 @@ def pool_list_volumes(name, **kwargs):
+@@ -4988,3 +4988,129 @@ def pool_list_volumes(name, **kwargs):
          return pool.listVolumes()
      finally:
          conn.close()
@@ -34,6 +34,19 @@ index 0921122a8a..4a301f289c 100644
 +    return pool_obj.storageVolLookupByName(vol)
 +
 +
++def _is_valid_volume(vol):
++    '''
++    Checks whether a volume is valid for further use since those may have disappeared since
++    the last pool refresh.
++    '''
++    try:
++        # Getting info on an invalid volume raises error
++        vol.info()
++        return True
++    except libvirt.libvirtError as err:
++        return False
++
++
 +def _get_all_volumes_paths(conn):
 +    '''
 +    Extract the path and backing stores path of all volumes.
@@ -42,17 +55,17 @@ index 0921122a8a..4a301f289c 100644
 +    '''
 +    volumes = [vol for l in [obj.listAllVolumes() for obj in conn.listAllStoragePools()] for vol in l]
 +    return {vol.path(): [path.text for path in ElementTree.fromstring(vol.XMLDesc()).findall('.//backingStore/path')]
-+            for vol in volumes}
++            for vol in volumes if _is_valid_volume(vol)}
 +
 +
-+def volume_infos(pool, volume, **kwargs):
++def volume_infos(pool=None, volume=None, **kwargs):
 +    '''
 +    Provide details on a storage volume. If no volume name is provided, the infos
 +    all the volumes contained in the pool are provided. If no pool is provided,
 +    the infos of the volumes of all pools are output.
 +
-+    :param pool: libvirt storage pool name
-+    :param volume: name of the volume to get infos from
++    :param pool: libvirt storage pool name (default: ``None``)
++    :param volume: name of the volume to get infos from (default: ``None``)
 +    :param connection: libvirt connection URI, overriding defaults
 +    :param username: username to connect with, overriding defaults
 +    :param password: password to connect with, overriding defaults
@@ -102,7 +115,7 @@ index 0921122a8a..4a301f289c 100644
 +        pools = [obj for obj in conn.listAllStoragePools() if pool is None or obj.name() == pool]
 +        vols = {pool_obj.name(): {vol.name(): _volume_extract_infos(vol)
 +                                  for vol in pool_obj.listAllVolumes()
-+                                  if volume is None or vol.name() == volume}
++                                  if (volume is None or vol.name() == volume) and _is_valid_volume(vol)}
 +                for pool_obj in pools}
 +        return {pool_name: volumes for (pool_name, volumes) in vols.items() if volumes}
 +    except libvirt.libvirtError as err:
@@ -137,10 +150,10 @@ index 0921122a8a..4a301f289c 100644
 +    finally:
 +        conn.close()
 diff --git a/tests/unit/modules/test_virt.py b/tests/unit/modules/test_virt.py
-index bd34962a6a..55005f1d04 100644
+index bd34962a6a..14e51e1e2a 100644
 --- a/tests/unit/modules/test_virt.py
 +++ b/tests/unit/modules/test_virt.py
-@@ -2698,3 +2698,187 @@ class VirtTestCase(TestCase, LoaderModuleMockMixin):
+@@ -2698,3 +2698,198 @@ class VirtTestCase(TestCase, LoaderModuleMockMixin):
          self.mock_conn.storagePoolLookupByName.return_value = mock_pool
          # pylint: enable=no-member
          self.assertEqual(names, virt.pool_list_volumes('default'))
@@ -203,6 +216,13 @@ index bd34962a6a..55005f1d04 100644
 +                'name': 'pool1',
 +                'volumes': [
 +                    {
++                        'key': '/key/of/vol0bad',
++                        'name': 'vol0bad',
++                        'path': '/path/to/vol0bad.qcow2',
++                        'info': None,
++                        'backingStore': None
++                    },
++                    {
 +                        'key': '/key/of/vol1',
 +                        'name': 'vol1',
 +                        'path': '/path/to/vol1.qcow2',
@@ -230,23 +250,27 @@ index bd34962a6a..55005f1d04 100644
 +                mock_volume.name.return_value = vol_data['name']
 +                mock_volume.key.return_value = vol_data['key']
 +                mock_volume.path.return_value = '/path/to/{0}.qcow2'.format(vol_data['name'])
-+                mock_volume.info.return_value = vol_data['info']
-+                backing_store = '''
-+                    <backingStore>
-+                      <format>qcow2</format>
-+                      <path>{0}</path>
-+                    </backingStore>
-+                '''.format(vol_data['backingStore']) if vol_data['backingStore'] else '<backingStore/>'
-+                mock_volume.XMLDesc.return_value = '''
-+                    <volume type='file'>
-+                      <name>{0}</name>
-+                      <target>
-+                        <format>qcow2</format>
-+                        <path>/path/to/{0}.qcow2</path>
-+                      </target>
-+                      {1}
-+                    </volume>
-+                '''.format(vol_data['name'], backing_store)
++                if vol_data['info']:
++                    mock_volume.info.return_value = vol_data['info']
++                    backing_store = '''
++                        <backingStore>
++                          <format>qcow2</format>
++                          <path>{0}</path>
++                        </backingStore>
++                    '''.format(vol_data['backingStore']) if vol_data['backingStore'] else '<backingStore/>'
++                    mock_volume.XMLDesc.return_value = '''
++                        <volume type='file'>
++                          <name>{0}</name>
++                          <target>
++                            <format>qcow2</format>
++                            <path>/path/to/{0}.qcow2</path>
++                          </target>
++                          {1}
++                        </volume>
++                    '''.format(vol_data['name'], backing_store)
++                else:
++                    mock_volume.info.side_effect = self.mock_libvirt.libvirtError('No such volume')
++                    mock_volume.XMLDesc.side_effect = self.mock_libvirt.libvirtError('No such volume')
 +                mock_volumes.append(mock_volume)
 +                # pylint: enable=no-member
 +            mock_pool.listAllVolumes.return_value = mock_volumes  # pylint: disable=no-member
