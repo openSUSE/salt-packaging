@@ -157,6 +157,8 @@ Patch44:        include-aliases-in-the-fqdns-grains.patch
 Patch45:        async-batch-implementation.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/51905
 Patch46:        mount-fix-extra-t-parameter.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52527
+Patch47:        calculate-fqdns-in-parallel-to-avoid-blockings-bsc-1.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -661,6 +663,7 @@ cp %{S:5} ./.travis.yml
 %patch44 -p1
 %patch45 -p1
 %patch46 -p1
+%patch47 -p1
 
 %build
 %if 0%{?build_py2}
