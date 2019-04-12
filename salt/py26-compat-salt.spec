@@ -40,6 +40,7 @@ Source3:        html.tar.bz2
 Source4:        update-documentation.sh
 Source5:        travis.yml
 Source6:        py26-compat-salt.conf
+Source7:        tornado-4.2.1.tar.gz
 
 # PATCH-FIX-OPENSUSE use-forking-daemon.patch tserong@suse.com -- We don't have python-systemd, so notify can't work
 # We do not upstream this patch because this is something that we have to fix on our side
@@ -355,6 +356,7 @@ Python 2.6 compatible salt library used for thin generation.
 %setup -q -n salt-%{version}
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
+cp %{S:7} .
 %patch1 -p1
 
 # Do not apply this patch on RHEL 6
@@ -456,6 +458,11 @@ cp %{S:5} ./.travis.yml
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
 cp ./build/lib/salt/_version.py ./salt
 
+# Preparations for Tornado version that's needed in the thin file
+tar xfv %{S:7}
+mkdir -p %{buildroot}/opt/tornado/lib/python2.7/site-packages/
+
+
 %if %{with docs} && %{without builddocs}
 # extract docs from the tarball
 mkdir -p doc/_build
@@ -471,6 +478,12 @@ cd doc && make html && rm _build/html/.buildinfo && rm _build/html/_images/proxy
 
 %install
 %{__python} setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot} --install-lib=%{compatdir}/
+
+# Tornado for thin installed to /opt/tornado
+pushd tornado-4.2.1
+env PYTHONUSERBASE=%{buildroot}/opt/tornado python setup.py install --user
+find %{buildroot}/opt/tornado/ -name "*.pyc" | xargs rm
+popd
 
 mkdir -p %{buildroot}/etc/salt/master.d
 install -m 644 %{S:6} %{buildroot}/etc/salt/master.d
@@ -489,6 +502,8 @@ rm -f /var/cache/salt/master/thin/version
 
 %{compatdir}
 %doc LICENSE AUTHORS README.rst HACKING.rst README.SUSE
+
+/opt/tornado
 
 %if %{with docs}
 %files doc
