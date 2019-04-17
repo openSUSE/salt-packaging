@@ -283,6 +283,10 @@ Patch102:       async-batch-implementation.patch
 Patch103:       add-parallel-support-for-orchestrations.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/123
 Patch104:       fix-dynamic-ext_pillar-git-branch-with-__env__.patch
+#PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/139
+Patch105:       fix-async-batch-race-conditions.patch
+#PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/141
+Patch106:       add-batch_presence_ping_timeout-and-batch_presence_p.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -845,6 +849,8 @@ cp %{S:5} ./.travis.yml
 %patch102 -p1
 %patch103 -p1
 %patch104 -p1
+%patch105 -p1
+%patch106 -p1
 
 %build
 %if 0%{?build_py2}
