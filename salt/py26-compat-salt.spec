@@ -40,6 +40,7 @@ Source3:        html.tar.bz2
 Source4:        update-documentation.sh
 Source5:        travis.yml
 Source6:        py26-compat-salt.conf
+Source7:        py26-compat-salt-sle15-sp1-or-newer.conf
 
 # PATCH-FIX-OPENSUSE use-forking-daemon.patch tserong@suse.com -- We don't have python-systemd, so notify can't work
 # We do not upstream this patch because this is something that we have to fix on our side
@@ -329,6 +330,10 @@ Requires:       python-Jinja2
 Requires:       python-futures >= 2.0
 Requires:       python-markupsafe
 Requires:       python-msgpack-python > 0.3
+%if 0%{?suse_version} >= 1501
+Requires:       py26-compat-msgpack-python
+Requires:       py26-compat-tornado
+%endif
 Requires:       python-psutil
 Requires:       python-requests >= 1.0.0
 Requires:       python-tornado >= 4.2.1
@@ -537,7 +542,11 @@ cd doc && make html && rm _build/html/.buildinfo && rm _build/html/_images/proxy
 %{__python} setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot} --install-lib=%{compatdir}/
 
 mkdir -p %{buildroot}/etc/salt/master.d
+%if 0%{?suse_version} >= 1501
+install -m 644 %{S:7} %{buildroot}/etc/salt/master.d/py26-compat-salt.conf
+%else
 install -m 644 %{S:6} %{buildroot}/etc/salt/master.d
+%endif
 
 rm -rf %{buildroot}/usr/bin
 rm -rf %{buildroot}/usr/share/man
