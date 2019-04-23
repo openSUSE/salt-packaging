@@ -1,0 +1,43 @@
+From 48cf02e7af98a7dfe9919c5aeacf65f218663472 Mon Sep 17 00:00:00 2001
+From: Erik Johnson <palehose@gmail.com>
+Date: Tue, 17 Jul 2018 15:22:00 -0500
+Subject: [PATCH] Add optimization_order config option with default value
+
+---
+ salt/config/__init__.py | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/salt/config/__init__.py b/salt/config/__init__.py
+index 94e4d78799..84d2545b24 100644
+--- a/salt/config/__init__.py
++++ b/salt/config/__init__.py
+@@ -264,6 +264,9 @@ VALID_OPTS = {
+     # The type of hashing algorithm to use when doing file comparisons
+     'hash_type': str,
+ 
++    # Order of preference for optimized .pyc files (PY3 only)
++    'optimization_order': list,
++
+     # Refuse to load these modules
+     'disable_modules': list,
+ 
+@@ -1090,6 +1093,7 @@ DEFAULT_MINION_OPTS = {
+     'gitfs_ssl_verify': True,
+     'gitfs_saltenv': [],
+     'hash_type': 'sha256',
++    'optimization_order': [0, 1, 2],
+     'disable_modules': [],
+     'disable_returners': [],
+     'whitelist_modules': [],
+@@ -1360,6 +1364,7 @@ DEFAULT_MASTER_OPTS = {
+     'fileserver_limit_traversal': False,
+     'max_open_files': 100000,
+     'hash_type': 'sha256',
++    'optimization_order': [0, 1, 2],
+     'conf_file': os.path.join(salt.syspaths.CONFIG_DIR, 'master'),
+     'open_mode': False,
+     'auto_accept': False,
+-- 
+2.20.1
+
+
