@@ -229,6 +229,8 @@ Patch83:        calculate-fqdns-in-parallel-to-avoid-blockings-bsc-1.patch
 Patch84:        add-optimization_order-config-option-with-default-va.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52657
 Patch85:        do-not-report-patches-as-installed-when-not-all-the-.patch
+# PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/114
+Patch86:        fix-usermod-options-for-sle11-bsc-1117017-114.patch
 
 
 
@@ -670,6 +672,7 @@ cp %{S:5} ./.travis.yml
 %patch83 -p1
 %patch84 -p1
 %patch85 -p1
+%patch86 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
