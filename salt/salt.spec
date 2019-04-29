@@ -163,6 +163,8 @@ Patch47:        calculate-fqdns-in-parallel-to-avoid-blockings-bsc-1.patch
 Patch48:       fix-async-batch-race-conditions.patch
 #PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/141
 Patch49:       add-batch_presence_ping_timeout-and-batch_presence_p.patch
+#PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52657
+Patch50:       do-not-report-patches-as-installed-when-not-all-the-.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -670,6 +672,7 @@ cp %{S:5} ./.travis.yml
 %patch47 -p1
 %patch48 -p1
 %patch49 -p1
+%patch50 -p1
 
 %build
 %if 0%{?build_py2}
