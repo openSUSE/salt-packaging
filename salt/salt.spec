@@ -227,6 +227,8 @@ Patch82:        fix-minion-arguments-assign-via-sysctl-bsc-1124290.patch
 Patch83:        calculate-fqdns-in-parallel-to-avoid-blockings-bsc-1.patch
 # PATCH-FIX_OPENSUSE bsc#1131423 https://github.com/openSUSE/salt/pull/138
 Patch84:        add-optimization_order-config-option-with-default-va.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52657
+Patch85:        do-not-report-patches-as-installed-when-not-all-the-.patch
 
 
 
@@ -667,6 +669,7 @@ cp %{S:5} ./.travis.yml
 %patch82 -p1
 %patch83 -p1
 %patch84 -p1
+%patch85 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
