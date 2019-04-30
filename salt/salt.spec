@@ -231,6 +231,8 @@ Patch84:        add-optimization_order-config-option-with-default-va.patch
 Patch85:        do-not-report-patches-as-installed-when-not-all-the-.patch
 # PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/114
 Patch86:        fix-usermod-options-for-sle11-bsc-1117017-114.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52527
+Patch87:        use-threadpool-from-multiprocessing.pool-to-avoid-le.patch
 
 
 
@@ -673,6 +675,7 @@ cp %{S:5} ./.travis.yml
 %patch84 -p1
 %patch85 -p1
 %patch86 -p1
+%patch87 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
