@@ -167,6 +167,8 @@ Patch49:       add-batch_presence_ping_timeout-and-batch_presence_p.patch
 Patch50:       do-not-report-patches-as-installed-when-not-all-the-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52527
 Patch51:       use-threadpool-from-multiprocessing.pool-to-avoid-le.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52519 (partial porting)
+Patch52:       fix-syndic-start-issue.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -676,6 +678,7 @@ cp %{S:5} ./.travis.yml
 %patch49 -p1
 %patch50 -p1
 %patch51 -p1
+%patch52 -p1
 
 %build
 %if 0%{?build_py2}
