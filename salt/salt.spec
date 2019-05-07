@@ -169,6 +169,8 @@ Patch50:       do-not-report-patches-as-installed-when-not-all-the-.patch
 Patch51:       use-threadpool-from-multiprocessing.pool-to-avoid-le.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52519 (partial porting)
 Patch52:       fix-syndic-start-issue.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52888
+Patch53:       do-not-crash-when-there-are-ipv6-established-connect.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -679,6 +681,7 @@ cp %{S:5} ./.travis.yml
 %patch50 -p1
 %patch51 -p1
 %patch52 -p1
+%patch53 -p1
 
 %build
 %if 0%{?build_py2}
