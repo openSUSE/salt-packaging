@@ -171,6 +171,9 @@ Patch51:       use-threadpool-from-multiprocessing.pool-to-avoid-le.patch
 Patch52:       fix-syndic-start-issue.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52888
 Patch53:       do-not-crash-when-there-are-ipv6-established-connect.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/144
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52855
+Patch54:       fix-async-batch-multiple-done-events.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -682,6 +685,7 @@ cp %{S:5} ./.travis.yml
 %patch51 -p1
 %patch52 -p1
 %patch53 -p1
+%patch54 -p1
 
 %build
 %if 0%{?build_py2}
