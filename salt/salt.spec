@@ -174,6 +174,8 @@ Patch53:       do-not-crash-when-there-are-ipv6-established-connect.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/144
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52855
 Patch54:       fix-async-batch-multiple-done-events.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52743
+Patch55:       switch-firewalld-state-to-use-change_interface.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -686,6 +688,7 @@ cp %{S:5} ./.travis.yml
 %patch52 -p1
 %patch53 -p1
 %patch54 -p1
+%patch55 -p1
 
 %build
 %if 0%{?build_py2}
