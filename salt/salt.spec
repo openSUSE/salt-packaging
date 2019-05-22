@@ -176,6 +176,8 @@ Patch53:       do-not-crash-when-there-are-ipv6-established-connect.patch
 Patch54:       fix-async-batch-multiple-done-events.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52743
 Patch55:       switch-firewalld-state-to-use-change_interface.patch
+# PATCH-FIX_OPENSUSE
+Patch56:       add-standalone-configuration-file-for-enabling-packa.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -629,6 +631,18 @@ Zsh command line completion support for %{name}.
 
 %endif
 
+%package standalone-formulas-configuration
+Summary:        Standalone Salt configuration to make the packaged formulas available for the Salt master
+Group:          System/Management
+Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}-master = %{version}-%{release}
+Provides:       salt-formulas-configuration
+Conflicts:      otherproviders(salt-formulas-configuration)
+
+%description standalone-formulas-configuration
+This package adds the standalone configuration for the Salt master in order to make the packaged Salt formulas available on the Salt master
+
+
 %prep
 # %setup -q -n salt-%{version}
 %setup -q -n salt-2019.2.0-suse
@@ -689,6 +703,7 @@ cp %{S:5} ./.travis.yml
 %patch53 -p1
 %patch54 -p1
 %patch55 -p1
+%patch56 -p1
 
 %build
 %if 0%{?build_py2}
@@ -869,6 +884,12 @@ install -Dpm 0644 pkg/zsh_completion.zsh %{buildroot}%{_sysconfdir}/zsh_completi
 mkdir -p %{buildroot}%{fish_completions_dir}
 install -Dpm 0644 pkg/fish-completions/* %{buildroot}%{fish_completions_dir}
 %endif
+
+# Standalone Salt formulas configuration
+install -Dd -m 0750 %{buildroot}%{_prefix}/share/salt-formulas
+install -Dd -m 0750 %{buildroot}%{_prefix}/share/salt-formulas/states
+install -Dd -m 0750 %{buildroot}%{_prefix}/share/salt-formulas/metadata
+install -Dpm 0640 conf/suse/standalone-formulas-configuration.conf %{buildroot}%{_sysconfdir}/salt/master.d
 
 %if 0%{?suse_version} > 1020
 %fdupes %{buildroot}%{_docdir}
@@ -1399,6 +1420,13 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %dir %{fish_completions_dir}
 %dir %{fish_dir}
 %endif
+
+%files standalone-formulas-configuration
+%defattr(-,root,root)
+%config(noreplace) %attr(0640, root, root) %{_sysconfdir}/salt/master.d/standalone-formulas-configuration.conf
+%dir               %attr(0750, root, root) %{_prefix}/share/salt-formulas/
+%dir               %attr(0750, root, root) %{_prefix}/share/salt-formulas/states/
+%dir               %attr(0750, root, root) %{_prefix}/share/salt-formulas/metadata/
 
 %changelog
 
