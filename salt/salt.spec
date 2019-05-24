@@ -178,6 +178,8 @@ Patch54:       fix-async-batch-multiple-done-events.patch
 Patch55:       switch-firewalld-state-to-use-change_interface.patch
 # PATCH-FIX_OPENSUSE
 Patch56:       add-standalone-configuration-file-for-enabling-packa.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53237
+Patch57:       add-ppc64le-as-a-valid-rpm-package-architecture.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -704,6 +706,7 @@ cp %{S:5} ./.travis.yml
 %patch54 -p1
 %patch55 -p1
 %patch56 -p1
+%patch57 -p1
 
 %build
 %if 0%{?build_py2}
