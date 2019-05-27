@@ -1,0 +1,28 @@
+From 57132fd1cf67f7ea26ffdd249ac6fb8c5fbc1623 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Mon, 27 May 2019 15:56:45 +0100
+Subject: [PATCH] Avoid syntax error on yumpkg module running on Python
+ 2.6 (bsc#1136250)
+
+---
+ salt/modules/yumpkg.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
+index c150c59bfc..ef77e2a6bb 100644
+--- a/salt/modules/yumpkg.py
++++ b/salt/modules/yumpkg.py
+@@ -3010,7 +3010,7 @@ def _get_patches(installed_only=False):
+                 patches[advisory_id]['installed'] = False
+ 
+     if installed_only:
+-        patches = {k: v for k, v in patches.items() if v['installed']}
++        patches = dict((k, v) for k, v in patches.items() if v['installed'])
+     return patches
+ 
+ 
+-- 
+2.17.1
+
+
