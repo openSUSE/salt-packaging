@@ -235,6 +235,8 @@ Patch86:        fix-usermod-options-for-sle11-bsc-1117017-114.patch
 Patch87:        use-threadpool-from-multiprocessing.pool-to-avoid-le.patch
 # PATCH-FIX_OPENSUSE bsc#1136250
 Patch88:        avoid-syntax-error-on-yumpkg-module-running-on-pytho.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/53293
+Patch89:        do-not-break-repo-files-with-multiple-line-values-on.patch
 
 
 
@@ -679,6 +681,7 @@ cp %{S:5} ./.travis.yml
 %patch86 -p1
 %patch87 -p1
 %patch88 -p1
+%patch89 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
