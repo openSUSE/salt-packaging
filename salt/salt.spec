@@ -184,6 +184,8 @@ Patch57:       add-ppc64le-as-a-valid-rpm-package-architecture.patch
 Patch58:       do-not-break-repo-files-with-multiple-line-values-on.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53343
 Patch59:       preserve-already-defined-destructive_tests-and-expen.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53159
+Patch60:       batch.py-avoid-exception-when-minion-does-not-respon.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -713,6 +715,7 @@ cp %{S:5} ./.travis.yml
 %patch57 -p1
 %patch58 -p1
 %patch59 -p1
+%patch60 -p1
 
 %build
 %if 0%{?build_py2}
