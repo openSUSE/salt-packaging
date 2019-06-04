@@ -289,6 +289,8 @@ Patch105:       fix-async-batch-race-conditions.patch
 Patch106:       add-batch_presence_ping_timeout-and-batch_presence_p.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52527
 Patch107:       calculate-fqdns-in-parallel-to-avoid-blockings-bsc-1.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/53159
+Patch108:       batch.py-avoid-exception-when-minion-does-not-respon.patch<Paste>
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -854,6 +856,7 @@ cp %{S:5} ./.travis.yml
 %patch105 -p1
 %patch106 -p1
 %patch107 -p1
+%patch108 -p1
 
 %build
 %if 0%{?build_py2}
