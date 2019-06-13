@@ -186,6 +186,8 @@ Patch58:       do-not-break-repo-files-with-multiple-line-values-on.patch
 Patch59:       preserve-already-defined-destructive_tests-and-expen.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53159
 Patch60:       batch.py-avoid-exception-when-minion-does-not-respon.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53471
+Patch61:       fix-zypper-pkg.list_pkgs-expectation-and-dpkg-mockin.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -716,6 +718,7 @@ cp %{S:5} ./.travis.yml
 %patch58 -p1
 %patch59 -p1
 %patch60 -p1
+%patch61 -p1
 
 %build
 %if 0%{?build_py2}
