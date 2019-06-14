@@ -1450,10 +1450,10 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 
 %files standalone-formulas-configuration
 %defattr(-,root,root)
-%config(noreplace) %attr(0640, root, root) %{_sysconfdir}/salt/master.d/standalone-formulas-configuration.conf
-%dir               %attr(0750, root, root) %{_prefix}/share/salt-formulas/
-%dir               %attr(0750, root, root) %{_prefix}/share/salt-formulas/states/
-%dir               %attr(0750, root, root) %{_prefix}/share/salt-formulas/metadata/
+%config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/master.d/standalone-formulas-configuration.conf
+%dir               %attr(0750, root, salt) %{_prefix}/share/salt-formulas/
+%dir               %attr(0750, root, salt) %{_prefix}/share/salt-formulas/states/
+%dir               %attr(0750, root, salt) %{_prefix}/share/salt-formulas/metadata/
 
 %changelog
 
