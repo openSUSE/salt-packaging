@@ -188,6 +188,14 @@ Patch59:       preserve-already-defined-destructive_tests-and-expen.patch
 Patch60:       batch.py-avoid-exception-when-minion-does-not-respon.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53471
 Patch61:       fix-zypper-pkg.list_pkgs-expectation-and-dpkg-mockin.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/142
+Patch62:       try-except-undefineflags-as-this-operation-is-not-su.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52160
+Patch63:       virt-handle-whitespaces-in-vm-names.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52341
+Patch64:       virt.pool_running-fix-pool-start.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52414
+Patch65:       virt.volume_infos-fix-for-single-vm.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -719,6 +727,10 @@ cp %{S:5} ./.travis.yml
 %patch59 -p1
 %patch60 -p1
 %patch61 -p1
+%patch62 -p1
+%patch63 -p1
+%patch64 -p1
+%patch65 -p1
 
 %build
 %if 0%{?build_py2}
