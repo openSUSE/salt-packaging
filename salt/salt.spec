@@ -198,6 +198,8 @@ Patch64:       virt.pool_running-fix-pool-start.patch
 Patch65:       virt.volume_infos-fix-for-single-vm.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/161
 Patch66:       provide-the-missing-features-required-for-yomi-yet-o.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53661
+Patch67:       do-not-make-ansiblegate-to-crash-on-python3-minions.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -734,6 +736,7 @@ cp %{S:5} ./.travis.yml
 %patch64 -p1
 %patch65 -p1
 %patch66 -p1
+%patch67 -p1
 
 %build
 %if 0%{?build_py2}
