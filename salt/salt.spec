@@ -200,6 +200,8 @@ Patch65:       virt.volume_infos-fix-for-single-vm.patch
 Patch66:       provide-the-missing-features-required-for-yomi-yet-o.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53661
 Patch67:       do-not-make-ansiblegate-to-crash-on-python3-minions.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53693
+Patch68:       allow-passing-kwargs-to-pkg.list_downloaded-bsc-1140.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -737,6 +739,7 @@ cp %{S:5} ./.travis.yml
 %patch65 -p1
 %patch66 -p1
 %patch67 -p1
+%patch68 -p1
 
 %build
 %if 0%{?build_py2}
