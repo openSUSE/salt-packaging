@@ -204,6 +204,8 @@ Patch67:       do-not-make-ansiblegate-to-crash-on-python3-minions.patch
 Patch68:       allow-passing-kwargs-to-pkg.list_downloaded-bsc-1140.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53661
 Patch69:       prevent-ansiblegate-unit-tests-to-fail-on-ubuntu.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53755
+Patch70:       virt-1.volume_infos-fix-for-single-vm.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -743,6 +745,7 @@ cp %{S:5} ./.travis.yml
 %patch67 -p1
 %patch68 -p1
 %patch69 -p1
+%patch70 -p1
 
 %build
 %if 0%{?build_py2}
