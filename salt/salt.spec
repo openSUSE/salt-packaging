@@ -206,6 +206,8 @@ Patch68:       allow-passing-kwargs-to-pkg.list_downloaded-bsc-1140.patch
 Patch69:       prevent-ansiblegate-unit-tests-to-fail-on-ubuntu.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53755
 Patch70:       virt-1.volume_infos-fix-for-single-vm.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52459
+Patch71:       checking-for-jid-before-returning-data.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -746,6 +748,7 @@ cp %{S:5} ./.travis.yml
 %patch68 -p1
 %patch69 -p1
 %patch70 -p1
+%patch71 -p1
 
 %build
 %if 0%{?build_py2}
