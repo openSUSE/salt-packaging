@@ -208,6 +208,8 @@ Patch69:       prevent-ansiblegate-unit-tests-to-fail-on-ubuntu.patch
 Patch70:       virt-1.volume_infos-fix-for-single-vm.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52459
 Patch71:       checking-for-jid-before-returning-data.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54048
+Patch72:       avoid-traceback-when-http.query-request-cannot-be-pe.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -749,6 +751,7 @@ cp %{S:5} ./.travis.yml
 %patch69 -p1
 %patch70 -p1
 %patch71 -p1
+%patch72 -p1
 
 %build
 %if 0%{?build_py2}
