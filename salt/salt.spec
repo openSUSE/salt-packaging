@@ -219,6 +219,8 @@ Patch73:       accumulated-changes-required-for-yomi-165.patch
 Patch74:       restore-default-behaviour-of-pkg-list-return.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/6af07030a502c427781991fc9a2b994fa04ef32e
 Patch75:       fix-memory-leak-produced-by-batch-async-find_jobs-me.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/159
+Patch76:       move-server_id-deprecation-warning-to-reduce-log-spa.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -764,6 +766,7 @@ cp %{S:5} ./.travis.yml
 %patch73 -p1
 %patch74 -p1
 %patch75 -p1
+%patch76 -p1
 
 %build
 %if 0%{?build_py2}
