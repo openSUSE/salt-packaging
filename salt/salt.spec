@@ -210,6 +210,11 @@ Patch70:       virt-1.volume_infos-fix-for-single-vm.patch
 Patch71:       checking-for-jid-before-returning-data.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54048
 Patch72:       avoid-traceback-when-http.query-request-cannot-be-pe.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53992
+#                     https://github.com/saltstack/salt/pull/53996
+#                     https://github.com/saltstack/salt/pull/54022
+#                     https://github.com/saltstack/salt/pull/54024
+Patch73:       accumulated-changes-required-for-yomi-165.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -752,6 +757,7 @@ cp %{S:5} ./.travis.yml
 %patch70 -p1
 %patch71 -p1
 %patch72 -p1
+%patch73 -p1
 
 %build
 %if 0%{?build_py2}
