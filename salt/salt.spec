@@ -31,6 +31,7 @@
 %global build_py2   1
 %else
 %global build_py3   1
+%global default_py3 1
 %endif
 %endif
 %endif
