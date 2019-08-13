@@ -26,8 +26,12 @@
 %global build_py3   1
 %global build_py2   1
 %else
+%if 0%{?rhel} == 7
 # RES7
 %global build_py2   1
+%else
+%global build_py3   1
+%endif
 %endif
 %endif
 %define pythonX %{?default_py3: python3}%{!?default_py3: python2}
