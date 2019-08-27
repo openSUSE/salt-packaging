@@ -337,6 +337,8 @@ BuildRequires:  python-msgpack-python > 0.3
 BuildRequires:  python-psutil
 BuildRequires:  python-requests >= 1.0.0
 BuildRequires:  python-tornado >= 4.2.1
+# We can't cope with tornado 5.x and newer (boo#1101780)
+BuildConflicts: python3-tornado >= 5
 
 # requirements/zeromq.txt
 BuildRequires:  python-pycrypto >= 2.6.1
@@ -379,6 +381,8 @@ Requires:       python-msgpack-python > 0.3
 Requires:       python-psutil
 Requires:       python-requests >= 1.0.0
 Requires:       python-tornado >= 4.2.1
+# We can't cope with tornado 5.x and newer (boo#1101780)
+Conflicts: python3-tornado >= 5
 %if 0%{?suse_version}
 # required for zypper.py
 Requires:       rpm-python
@@ -425,6 +429,8 @@ BuildRequires:  python3-msgpack-python > 0.3
 BuildRequires:  python3-psutil
 BuildRequires:  python3-requests >= 1.0.0
 BuildRequires:  python3-tornado >= 4.2.1
+# We can't cope with tornado 5.x and newer (boo#1101780)
+BuildConflicts: python3-tornado >= 5
 
 # requirements/zeromq.txt
 BuildRequires:  python3-pycrypto >= 2.6.1
@@ -463,6 +469,8 @@ Requires:       python3-msgpack-python > 0.3
 Requires:       python3-psutil
 Requires:       python3-requests >= 1.0.0
 Requires:       python3-tornado >= 4.2.1
+# We can't cope with tornado 5.x and newer (boo#1101780)
+Conflicts: python3-tornado >= 5
 %if 0%{?suse_version}
 # required for zypper.py
 Requires:       python3-rpm
