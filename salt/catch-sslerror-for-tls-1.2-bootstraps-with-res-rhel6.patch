@@ -1,0 +1,33 @@
+From 774db12810de3983427dc030103edef1530bf429 Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Thu, 29 Aug 2019 15:32:51 +0200
+Subject: [PATCH] Catch SSLError for TLS 1.2 bootstraps with RES/RHEL6
+ and SLE11 (bsc#1147126)
+
+RES/RHEL6 and SLE11 don't support TLS 1.2 and we need to return an error
+in this case.
+
+Co-authored-by: Mihai Dinca <mdinca@suse.de>
+---
+ salt/utils/http.py | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/salt/utils/http.py b/salt/utils/http.py
+index 51d43dcfdd..b97a68bb16 100644
+--- a/salt/utils/http.py
++++ b/salt/utils/http.py
+@@ -494,6 +494,10 @@ def query(url,
+                 decompress_response=False,
+                 **req_kwargs
+             )
++        except ssl.SSLError as exc:
++            ret['status'] = 901
++            ret['error'] = ">>> No TLS 1.2 and above for RHEL6 and SLES11. Please check your Apache config. <<<"
++            return ret
+         except tornado.httpclient.HTTPError as exc:
+             ret['status'] = exc.code
+             ret['error'] = str(exc)
+-- 
+2.20.1
+
+

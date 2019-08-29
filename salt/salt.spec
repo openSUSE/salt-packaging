@@ -237,6 +237,7 @@ Patch87:        use-threadpool-from-multiprocessing.pool-to-avoid-le.patch
 Patch88:        avoid-syntax-error-on-yumpkg-module-running-on-pytho.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/53293
 Patch89:        do-not-break-repo-files-with-multiple-line-values-on.patch
+Patch90:        catch-sslerror-for-tls-1.2-bootstraps-with-res-rhel6.patch
 
 
 
@@ -682,6 +683,7 @@ cp %{S:5} ./.travis.yml
 %patch87 -p1
 %patch88 -p1
 %patch89 -p1
+%patch90 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
