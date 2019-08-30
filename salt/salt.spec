@@ -229,6 +229,8 @@ Patch76:       move-server_id-deprecation-warning-to-reduce-log-spa.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54077
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/166
 Patch77:       fix-aptpkg-systemd-call-bsc-1143301.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/170
+Patch78:       strip-trailing-from-repo.uri-when-comparing-repos-in.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -776,6 +778,7 @@ cp %{S:5} ./.travis.yml
 %patch75 -p1
 %patch76 -p1
 %patch77 -p1
+%patch78 -p1
 
 %build
 %if 0%{?build_py2}
