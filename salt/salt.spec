@@ -235,6 +235,8 @@ Patch78:       implement-network.fqdns-module-function-bsc-1134860-.patch
 Patch79:       2019.2.0-pr-54196-backport-173.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/174
 Patch80:       virt.volume_infos-needs-to-ignore-inactive-pools-174.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/175
+Patch81:       virt.volume_infos-silence-libvirt-error-message-175.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -785,6 +787,7 @@ cp %{S:5} ./.travis.yml
 %patch78 -p1
 %patch79 -p1
 %patch80 -p1
+%patch81 -p1
 
 %build
 %if 0%{?build_py2}
