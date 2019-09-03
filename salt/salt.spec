@@ -229,6 +229,8 @@ Patch75:       fix-aptpkg-systemd-call-bsc-1143301.patch
 Patch76:       strip-trailing-from-repo.uri-when-comparing-repos-in.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/177
 Patch77:       restore-default-behaviour-of-pkg-list-return.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/172
+Patch78:       implement-network.fqdns-module-function-bsc-1134860-.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -776,6 +778,7 @@ cp %{S:5} ./.travis.yml
 %patch75 -p1
 %patch76 -p1
 %patch77 -p1
+%patch78 -p1
 
 %build
 %if 0%{?build_py2}
