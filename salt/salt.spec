@@ -254,7 +254,7 @@ Requires(pre):  %{_sbindir}/useradd
 
 %if 0%{?suse_version}
 Requires(pre):  %fillup_prereq
-Requires(pre):  pwdutils
+Requires(pre):  shadow
 %endif
 
 %if 0%{?suse_version}
