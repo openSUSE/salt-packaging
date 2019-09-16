@@ -217,6 +217,8 @@ Patch72:       avoid-traceback-when-http.query-request-cannot-be-pe.patch
 Patch73:       accumulated-changes-required-for-yomi-165.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/177
 Patch74:       restore-default-behaviour-of-pkg-list-return.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/6af07030a502c427781991fc9a2b994fa04ef32e
+Patch75:       fix-memory-leak-produced-by-batch-async-find_jobs-me.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -761,6 +763,7 @@ cp %{S:5} ./.travis.yml
 %patch72 -p1
 %patch73 -p1
 %patch74 -p1
+%patch75 -p1
 
 %build
 %if 0%{?build_py2}
