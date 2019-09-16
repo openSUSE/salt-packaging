@@ -803,7 +803,9 @@ cp %{S:5} ./.travis.yml
 %build
 %if 0%{?build_py2}
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
+%if ! 0%{?build_py3}
 cp ./build/lib/salt/_version.py ./salt
+%endif
 mv build _build.python2
 %endif
 %if 0%{?build_py3}
