@@ -241,6 +241,8 @@ Patch81:       virt.volume_infos-needs-to-ignore-inactive-pools-174.patch
 Patch82:       virt.volume_infos-silence-libvirt-error-message-175.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/176
 Patch83:       fix-virt.full_info-176.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/002543df392f65d95dbc127dc058ac897f2035ed
+Patch84:       improve-batch_async-to-release-consumed-memory-bsc-1.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -802,6 +804,7 @@ cp %{S:5} ./.travis.yml
 %patch81 -p1
 %patch82 -p1
 %patch83 -p1
+%patch84 -p1
 
 %build
 %if 0%{?build_py2}
