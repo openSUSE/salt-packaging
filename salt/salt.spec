@@ -245,6 +245,9 @@ Patch83:       fix-virt.full_info-176.patch
 Patch84:       improve-batch_async-to-release-consumed-memory-bsc-1.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54770
 Patch85:       take-checksums-arg-into-account-for-postgres.datadir.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54077
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/44a91c2ce6df78d93ce0ef659dedb0e41b1c2e04
+Patch86:       prevent-systemd-run-description-issue-when-running-a.patch
 
 # BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -808,6 +811,7 @@ cp %{S:5} ./.travis.yml
 %patch83 -p1
 %patch84 -p1
 %patch85 -p1
+%patch86 -p1
 
 %build
 %if 0%{?build_py2}
