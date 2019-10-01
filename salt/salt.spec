@@ -58,7 +58,7 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        2019.2.0
+Version:        2019.2.1
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
@@ -733,8 +733,7 @@ This package adds the standalone configuration for the Salt master in order to m
 
 
 %prep
-# %setup -q -n salt-%{version}
-%setup -q -n salt-2019.2.0-suse
+%setup -q -n salt-%{version}
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
 %patch1 -p1

@@ -1,0 +1,89 @@
+From 24e7afc0d7a496d34cfaf3b0ff6a622c4b57850c Mon Sep 17 00:00:00 2001
+From: Dmitry Kuzmenko <dmitry.kuzmenko@dsr-corporation.com>
+Date: Mon, 4 Mar 2019 22:38:20 +0300
+Subject: [PATCH] Support parallel work of multiple IPCMEssageSubscribers
+ in one process
+
+Update doc conf with the new import `tornado.queues`
+
+Regression test for parallel IPCMessageSubscriber support
+
+Minor: Fix typo in docstring
+
+Re-raise queued exceptions with traceback
+
+Remove IPCClient singleton
+
+Fix linter issues
+
+Fix ipc unit tests
+
+Use six.reraise for py3 compatability
+
+Ensure exceptions in service future are handled
+
+Remove un-used import
+
+Fix merge wart
+
+Remove un-needed test
+
+Revert "Minor: Fix typo in docstring"
+
+This reverts commit 37aeba314330a5cefdf9ca1d5ce069bc790e692f.
+
+Revert "Update doc conf with the new import `tornado.queues`"
+
+This reverts commit 684bf584f68bef5d1965e81494dfbd00f5c46542.
+
+Revert "Support parallel work of multiple IPCMEssageSubscribers in one process"
+
+This reverts commit 710ab50624b16012d54485beeff151ff5940846a.
+
+Drop singleton from IPCClient
+
+A couple of race conditions fixes and a test update.
+---
+ salt/transport/ipc.py            | 3 ++-
+ tests/unit/transport/test_ipc.py | 3 +++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/salt/transport/ipc.py b/salt/transport/ipc.py
+index 4f5e578921..a1056d72bf 100644
+--- a/salt/transport/ipc.py
++++ b/salt/transport/ipc.py
+@@ -625,6 +625,7 @@ class IPCMessageSubscriber(IPCClient):
+         except tornado.gen.TimeoutError:
+             raise tornado.gen.Return(None)
+ 
++        log.debug('IPC Subscriber is starting reading')
+         exc_to_raise = None
+         ret = None
+         try:
+@@ -696,7 +697,7 @@ class IPCMessageSubscriber(IPCClient):
+             self.io_loop.spawn_callback(callback, raw)
+ 
+     @tornado.gen.coroutine
+-    def read_async(self):
++    def read_async(self, callback):
+         '''
+         Asynchronously read messages and invoke a callback when they are ready.
+ 
+diff --git a/tests/unit/transport/test_ipc.py b/tests/unit/transport/test_ipc.py
+index d7495b93c7..39b4e7707d 100644
+--- a/tests/unit/transport/test_ipc.py
++++ b/tests/unit/transport/test_ipc.py
+@@ -30,6 +30,9 @@ from tests.support.mock import MagicMock
+ from tests.support.paths import TMP
+ from tests.support.unit import skipIf
+ 
++import pytest
++import threading
++
+ log = logging.getLogger(__name__)
+ 
+ 
+-- 
+2.22.0
+
+
