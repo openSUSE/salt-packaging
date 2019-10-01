@@ -429,10 +429,11 @@ BuildRequires:  python3-devel
 # requirements/base.txt
 %if 0%{?rhel}
 BuildRequires:  python3-jinja2
+BuildRequires:  python3-markupsafe
 %else
 BuildRequires:  python3-Jinja2
-%endif
 BuildRequires:  python3-MarkupSafe
+%endif
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-msgpack-python > 0.3
 BuildRequires:  python3-psutil
