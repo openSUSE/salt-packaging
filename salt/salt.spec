@@ -436,7 +436,6 @@ BuildRequires:  python3-m2crypto
 %else
 BuildRequires:  python3-Jinja2
 BuildRequires:  python3-MarkupSafe
-%endif
 BuildRequires:  python3-msgpack-python > 0.3
 BuildRequires:  python3-pyzmq >= 2.2.0
 BuildRequires:  python3-pycrypto >= 2.6.1
