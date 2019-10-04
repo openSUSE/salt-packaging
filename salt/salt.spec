@@ -251,6 +251,8 @@ Patch85:       take-checksums-arg-into-account-for-postgres.datadir.patch
 Patch86:       prevent-systemd-run-description-issue-when-running-a.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/55d8a777d6a9b19c959e14a4060e5579e92cd106
 Patch87:       use-current-ioloop-for-the-localclient-instance-of-b.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/8378bb24a5a53973e8dba7658b8b3465d967329f
+Patch88:       fix-failing-unit-tests-for-batch-async.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -826,6 +828,7 @@ cp %{S:5} ./.travis.yml
 %patch85 -p1
 %patch86 -p1
 %patch87 -p1
+%patch88 -p1
 
 %build
 %if 0%{?build_py2}
