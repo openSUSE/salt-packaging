@@ -253,6 +253,8 @@ Patch86:       prevent-systemd-run-description-issue-when-running-a.patch
 Patch87:       use-current-ioloop-for-the-localclient-instance-of-b.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/8378bb24a5a53973e8dba7658b8b3465d967329f
 Patch88:       fix-failing-unit-tests-for-batch-async.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54935
+Patch89:       add-missing-fun-for-returns-from-wfunc-executions.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -829,6 +831,7 @@ cp %{S:5} ./.travis.yml
 %patch86 -p1
 %patch87 -p1
 %patch88 -p1
+%patch89 -p1
 
 %build
 %if 0%{?build_py2}
