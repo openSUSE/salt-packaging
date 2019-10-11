@@ -356,9 +356,15 @@ BuildRequires:  python-futures >= 2.0
 BuildRequires:  python-msgpack-python > 0.3
 BuildRequires:  python-psutil
 BuildRequires:  python-requests >= 1.0.0
+%if 0%{?suse_version} >= 1500 || 0%{?rhel} >= 8
+# We can't cope with tornado 5.x and newer (boo#1101780); this is only relevant for SLE >= 15 and TW
+# where tornado exists in multiple versions
+BuildRequires: (python-tornado >= 4.2.1 with python-tornado < 5)
+%else
 BuildRequires:  python-tornado >= 4.2.1
 # We can't cope with tornado 5.x and newer (boo#1101780)
 BuildConflicts: python3-tornado >= 5
+%endif
 
 # requirements/zeromq.txt
 BuildRequires:  python-pycrypto >= 2.6.1
@@ -454,9 +460,15 @@ BuildRequires:  python3-pycrypto >= 2.6.1
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-psutil
 BuildRequires:  python3-requests >= 1.0.0
+%if 0%{?suse_version} >= 1500 || 0%{?rhel} >= 8
+# We can't cope with tornado 5.x and newer (boo#1101780); this is only relevant for SLE >= 15 and TW,
+# where tornado exists in multiple versions
+BuildRequires: (python3-tornado >= 4.2.1 with python3-tornado < 5)
+%else
 BuildRequires:  python3-tornado >= 4.2.1
 # We can't cope with tornado 5.x and newer (boo#1101780)
 BuildConflicts: python3-tornado >= 5
+%endif
 
 # requirements/zeromq.txt
 %if %{with test}
