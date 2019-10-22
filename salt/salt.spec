@@ -257,6 +257,9 @@ Patch88:       fix-failing-unit-tests-for-batch-async.patch
 Patch89:       add-missing-fun-for-returns-from-wfunc-executions.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/179
 Patch90:       adds-the-possibility-to-also-use-downloadonly-in-kwa.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53326
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54954
+Patch91:       accumulated-changes-from-yomi-167.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -835,6 +838,7 @@ cp %{S:5} ./.travis.yml
 %patch88 -p1
 %patch89 -p1
 %patch90 -p1
+%patch91 -p1
 
 %build
 %if 0%{?build_py2}
