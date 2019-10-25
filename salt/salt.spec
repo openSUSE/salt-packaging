@@ -262,6 +262,8 @@ Patch90:       adds-the-possibility-to-also-use-downloadonly-in-kwa.patch
 Patch91:       accumulated-changes-from-yomi-167.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/180
 Patch92:       fix-a-wrong-rebase-in-test_core.py-180.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/181
+Patch93:       fix-for-older-mock-module.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -854,6 +856,7 @@ cp %{S:5} ./.travis.yml
 %patch90 -p1
 %patch91 -p1
 %patch92 -p1
+%patch93 -p1
 
 %build
 %if 0%{?build_py2}
