@@ -268,6 +268,8 @@ Patch93:       fix-for-older-mock-module.patch
 Patch94:       prevent-already-reading-continuous-exception-message.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/182
 Patch95:       remove-unnecessary-yield-causing-badyielderror-bsc-1.patch
+# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54475
+Patch96:       remove-virt.pool_delete-fast-parameter-178.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -863,6 +865,7 @@ cp %{S:5} ./.travis.yml
 %patch93 -p1
 %patch94 -p1
 %patch95 -p1
+%patch96 -p1
 
 %build
 %if 0%{?build_py2}
