@@ -201,7 +201,7 @@ Patch63:       allow-passing-kwargs-to-pkg.list_downloaded-bsc-1140.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53661
 Patch64:       prevent-ansiblegate-unit-tests-to-fail-on-ubuntu.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53755
-Patch65:       virt.volume_infos-fix-for-single-vm.patch
+Patch65:       virt-1.volume_infos-fix-for-single-vm.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52459
 Patch66:       checking-for-jid-before-returning-data.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54048
