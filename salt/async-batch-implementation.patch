@@ -1,4 +1,4 @@
-From b5fb1f490bfdd5b2113bf5fd6f1053da8b2fbb76 Mon Sep 17 00:00:00 2001
+From 6dea5186842285588ee02b66701cc91a4a2c4fa9 Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Fri, 16 Nov 2018 17:05:29 +0100
 Subject: [PATCH] Async batch implementation
@@ -26,15 +26,15 @@ Pass only metadata not all **kwargs
 Add separate batch presence_ping timeout
 ---
  salt/auth/__init__.py              |   4 +-
- salt/cli/batch.py                  |  91 ++++++++--
- salt/cli/batch_async.py            | 227 ++++++++++++++++++++++++
- salt/client/__init__.py            |  44 +----
- salt/master.py                     |  25 +++
+ salt/cli/batch.py                  |  91 ++++++--
+ salt/cli/batch_async.py            | 227 +++++++++++++++++++
+ salt/client/__init__.py            |  44 +---
+ salt/master.py                     |  25 ++
  salt/netapi/__init__.py            |   3 +-
  salt/transport/ipc.py              |   9 +-
- salt/utils/event.py                |  11 +-
- tests/unit/cli/test_batch_async.py | 351 +++++++++++++++++++++++++++++++++++++
- 9 files changed, 705 insertions(+), 60 deletions(-)
+ salt/utils/event.py                |   8 +-
+ tests/unit/cli/test_batch_async.py | 351 +++++++++++++++++++++++++++++
+ 9 files changed, 703 insertions(+), 59 deletions(-)
  create mode 100644 salt/cli/batch_async.py
  create mode 100644 tests/unit/cli/test_batch_async.py
 
@@ -560,7 +560,7 @@ index dbcba18e5c..d0e1639b6e 100644
      def close(self):
          '''
 diff --git a/salt/utils/event.py b/salt/utils/event.py
-index 0b877980aa..744bd62bf9 100644
+index 0b877980aa..ad9c85b576 100644
 --- a/salt/utils/event.py
 +++ b/salt/utils/event.py
 @@ -858,6 +858,10 @@ class SaltEvent(object):
@@ -574,17 +574,15 @@ index 0b877980aa..744bd62bf9 100644
      def set_event_handler(self, event_handler):
          '''
          Invoke the event_handler callback each time an event arrives.
-@@ -866,8 +870,11 @@ class SaltEvent(object):
+@@ -866,8 +870,10 @@ class SaltEvent(object):
  
          if not self.cpub:
              self.connect_pub()
--        # This will handle reconnects
--        return self.subscriber.read_async(event_handler)
 +
 +        self.subscriber.callbacks.add(event_handler)
-+        if not self.subscriber.reading:
-+            # This will handle reconnects
-+            self.subscriber.read_async()
+         # This will handle reconnects
+-        return self.subscriber.read_async(event_handler)
++        return self.subscriber.read_async()
  
      def __del__(self):
          # skip exceptions in destroy-- since destroy() doesn't cover interpreter
@@ -946,6 +944,6 @@ index 0000000000..f65b6a06c3
 +            (self.batch.find_job, {'foo'})
 +        )
 -- 
-2.16.4
+2.23.0
 
 
