@@ -368,7 +368,11 @@ BuildConflicts: python3-tornado >= 5
 %endif
 
 # requirements/zeromq.txt
-BuildRequires:  python-M2Crypto
+%if 0%{?suse_version} >= 1500
+Requires:       python2-M2Crypto
+%else
+Requires:       python-pycrypto >= 2.6.1
+%endif
 BuildRequires:  python-pyzmq >= 2.2.0
 %if %{with test}
 # requirements/dev_python27.txt
@@ -421,7 +425,11 @@ Suggests:       python-timelib
 Suggests:       python-gnupg
 # requirements/zeromq.txt
 %endif
-Requires:       python-M2Crypto
+%if 0%{?suse_version} >= 1500
+Requires:       python2-M2Crypto
+%else
+Requires:       python-pycrypto >= 2.6.1
+%endif
 Requires:       python-pyzmq >= 2.2.0
 #
 %if 0%{?suse_version}
@@ -456,7 +464,11 @@ BuildRequires:  python3-Jinja2
 BuildRequires:  python3-MarkupSafe
 BuildRequires:  python3-msgpack-python > 0.3
 BuildRequires:  python3-pyzmq >= 2.2.0
+%if 0%{?suse_version} >= 1500
 BuildRequires:  python3-M2Crypto
+%else
+BuildRequires:  python3-pycrypto >= 2.6.1
+%endif
 %endif
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-psutil
@@ -508,7 +520,11 @@ Requires:       yum-plugin-security
 Requires:       python3-Jinja2
 Requires:       python3-MarkupSafe
 Requires:       python3-msgpack-python > 0.3
+%if 0%{?suse_version} >= 1500
 Requires:       python3-M2Crypto
+%else
+Requires:       python3-pycrypto >= 2.6.1
+%endif
 Requires:       python3-pyzmq >= 2.2.0
 %endif
 Requires:       python3-PyYAML
