@@ -382,9 +382,9 @@ BuildConflicts: python3-tornado >= 5
 
 # requirements/zeromq.txt
 %if 0%{?suse_version} >= 1500
-Requires:       python2-M2Crypto
+BuildRequires:       python2-M2Crypto
 %else
-Requires:       python-pycrypto >= 2.6.1
+BuildRequires:       python-pycrypto >= 2.6.1
 %endif
 BuildRequires:  python-pyzmq >= 2.2.0
 %if %{with test}
