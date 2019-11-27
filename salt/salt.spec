@@ -274,6 +274,8 @@ Patch96:       remove-virt.pool_delete-fast-parameter-178.patch
 Patch97:       fixing-streamclosed-issue.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/191
 Patch98:       let-salt-ssh-use-platform-python-binary-in-rhel8-191.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/186
+Patch99:       read-repo-info-without-using-interpolation-bsc-11356.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -888,6 +890,7 @@ cp %{S:5} ./.travis.yml
 %patch96 -p1
 %patch97 -p1
 %patch98 -p1
+%patch99 -p1
 
 %build
 %if 0%{?build_py2}
