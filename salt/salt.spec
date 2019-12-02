@@ -261,6 +261,8 @@ Patch90:       read-repo-info-without-using-interpolation-bsc-11356.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53293
 Patch91:       prevent-test_mod_del_repo_multiline_values-to-fail.patch
 Patch92:       fix-for-log-checking-in-x509-test.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/190
+Patch93:       fixing-streamclosed-issue.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -869,6 +871,7 @@ cp %{S:5} ./.travis.yml
 %patch90 -p1
 %patch91 -p1
 %patch92 -p1
+%patch93 -p1
 
 %build
 %if 0%{?build_py2}
