@@ -274,6 +274,7 @@ Patch96:       remove-virt.pool_delete-fast-parameter-178.patch
 Patch97:       read-repo-info-without-using-interpolation-bsc-11356.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53293
 Patch98:       prevent-test_mod_del_repo_multiline_values-to-fail.patch
+Patch99:       fix-for-log-checking-in-x509-test.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -888,6 +889,7 @@ cp %{S:5} ./.travis.yml
 %patch96 -p1
 %patch97 -p1
 %patch98 -p1
+%patch99 -p1
 
 %build
 %if 0%{?build_py2}
