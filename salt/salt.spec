@@ -277,8 +277,9 @@ Patch98:       let-salt-ssh-use-platform-python-binary-in-rhel8-191.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/186
 Patch99:       read-repo-info-without-using-interpolation-bsc-11356.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53293
-Patch100:       prevent-test_mod_del_repo_multiline_values-to-fail.patch
-Patch101:       fix-for-log-checking-in-x509-test.patch
+Patch100:      prevent-test_mod_del_repo_multiline_values-to-fail.patch
+Patch101:      fix-for-log-checking-in-x509-test.patch
+Patch102:      fix-batch_async-obsolete-test.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -896,6 +897,7 @@ cp %{S:5} ./.travis.yml
 %patch99 -p1
 %patch100 -p1
 %patch101 -p1
+%patch102 -p1
 
 %build
 %if 0%{?build_py2}
