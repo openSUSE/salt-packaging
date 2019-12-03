@@ -263,6 +263,7 @@ Patch91:       prevent-test_mod_del_repo_multiline_values-to-fail.patch
 Patch92:       fix-for-log-checking-in-x509-test.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/190
 Patch93:       fixing-streamclosed-issue.patch
+Patch94:       fix-batch_async-obsolete-test.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -872,6 +873,7 @@ cp %{S:5} ./.travis.yml
 %patch91 -p1
 %patch92 -p1
 %patch93 -p1
+%patch94 -p1
 
 %build
 %if 0%{?build_py2}
