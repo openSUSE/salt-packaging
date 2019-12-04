@@ -272,6 +272,8 @@ Patch95:       remove-unnecessary-yield-causing-badyielderror-bsc-1.patch
 Patch96:       remove-virt.pool_delete-fast-parameter-178.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/190
 Patch97:       fixing-streamclosed-issue.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/191
+Patch98:       let-salt-ssh-use-platform-python-binary-in-rhel8-191.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -869,6 +871,7 @@ cp %{S:5} ./.travis.yml
 %patch95 -p1
 %patch96 -p1
 %patch97 -p1
+%patch98 -p1
 
 %build
 %if 0%{?build_py2}
