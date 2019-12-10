@@ -907,12 +907,12 @@ cp %{S:5} ./.travis.yml
 
 %build
 %if 0%{?build_py2}
-%{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
+python setup.py --with-salt-version=%{version} --salt-transport=both build
 cp ./build/lib/salt/_version.py ./salt
 mv build _build.python2
 %endif
 %if 0%{?build_py3}
-%{__python3} setup.py --with-salt-version=%{version} --salt-transport=both build
+python3 setup.py --with-salt-version=%{version} --salt-transport=both build
 cp ./build/lib/salt/_version.py ./salt
 mv build _build.python3
 %endif
@@ -933,12 +933,12 @@ cd doc && make html && rm _build/html/.buildinfo && rm _build/html/_images/proxy
 %install
 %if 0%{?build_py2}
 mv _build.python2 build
-%{__python} setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot}
+python setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot}
 mv build _build.python2
 %endif
 %if 0%{?build_py3}
 mv _build.python3 build
-%{__python3} setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot}
+python3 setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot}
 mv build _build.python3
 %endif
 
@@ -1104,9 +1104,9 @@ install -Dpm 0640 conf/suse/standalone-formulas-configuration.conf %{buildroot}%
 %check
 %if %{with test}
 %if 0%{?default_py3}
-%{__python3} setup.py test --runtests-opts=-u
+python3 setup.py test --runtests-opts=-u
 %else
-%{__python} setup.py test --runtests-opts=-u
+python setup.py test --runtests-opts=-u
 %endif
 %endif
 
