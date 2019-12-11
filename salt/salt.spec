@@ -284,6 +284,8 @@ Patch102:      fix-batch_async-obsolete-test.patch
 Patch103:      align-virt-full-info-fixes-with-upstream-192.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55351
 Patch104:      fix-virt.get_hypervisor-188.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/193
+Patch105:      xfs-do-not-fails-if-type-is-not-present.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -904,6 +906,7 @@ cp %{S:5} ./.travis.yml
 %patch102 -p1
 %patch103 -p1
 %patch104 -p1
+%patch105 -p1
 
 %build
 %if 0%{?build_py2}
