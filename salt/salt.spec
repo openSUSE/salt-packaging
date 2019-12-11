@@ -270,6 +270,8 @@ Patch95:       let-salt-ssh-use-platform-python-binary-in-rhel8-191.patch
 Patch96:       align-virt-full-info-fixes-with-upstream-192.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55351
 Patch97:       fix-virt.get_hypervisor-188.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/193
+Patch98:       xfs-do-not-fails-if-type-is-not-present.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -883,6 +885,7 @@ cp %{S:5} ./.travis.yml
 %patch95 -p1
 %patch96 -p1
 %patch97 -p1
+%patch98 -p1
 
 %build
 %if 0%{?build_py2}
