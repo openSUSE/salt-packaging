@@ -1,0 +1,27 @@
+From f02df4c2e53a356608025f19ff981ad4455ead12 Mon Sep 17 00:00:00 2001
+From: rbthomp <26642445+rbthomp@users.noreply.github.com>
+Date: Tue, 16 Oct 2018 15:04:56 -0600
+Subject: [PATCH] Fix applying of attributes for returner rawfile_json
+
+Arguments are not getting applied to the rawfile_json returner. For example if you specify an alternate filename for the output the default "/var/log/salt/events" is always used. Passing the `ret` to `_get_options(ret) resolve this.
+---
+ salt/returners/rawfile_json.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/returners/rawfile_json.py b/salt/returners/rawfile_json.py
+index d010164360..cf55840a87 100644
+--- a/salt/returners/rawfile_json.py
++++ b/salt/returners/rawfile_json.py
+@@ -55,7 +55,7 @@ def returner(ret):
+     '''
+     Write the return data to a file on the minion.
+     '''
+-    opts = _get_options({})  # Pass in empty ret, since this is a list of events
++    opts = _get_options(ret)
+     try:
+         with salt.utils.files.flopen(opts['filename'], 'a') as logfile:
+             salt.utils.json.dump(ret, logfile)
+-- 
+2.23.0
+
+
