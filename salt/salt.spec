@@ -288,6 +288,9 @@ Patch104:      fix-virt.get_hypervisor-188.patch
 Patch105:      xfs-do-not-fails-if-type-is-not-present.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50087
 Patch106:      fix-applying-of-attributes-for-returner-rawfile_json.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54196
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/195
+Patch107:      fix-virt-states-to-not-fail-on-vms-already-stopped.-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -910,6 +913,7 @@ cp %{S:5} ./.travis.yml
 %patch104 -p1
 %patch105 -p1
 %patch106 -p1
+%patch107 -p1
 
 %build
 %if 0%{?build_py2}
