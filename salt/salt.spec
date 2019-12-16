@@ -272,6 +272,9 @@ Patch96:       align-virt-full-info-fixes-with-upstream-192.patch
 Patch97:       fix-virt.get_hypervisor-188.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/193
 Patch98:       xfs-do-not-fails-if-type-is-not-present.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54196
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/195
+Patch99:       fix-virt-states-to-not-fail-on-vms-already-stopped.-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -886,6 +889,7 @@ cp %{S:5} ./.travis.yml
 %patch96 -p1
 %patch97 -p1
 %patch98 -p1
+%patch99 -p1
 
 %build
 %if 0%{?build_py2}
