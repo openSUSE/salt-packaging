@@ -1,0 +1,174 @@
+From d39d0014cc50d7a9a5a24ec5e8ec2bd04609dbdd Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Mihai=20Dinc=C4=83?= <dincamihai@users.noreply.github.com>
+Date: Tue, 17 Dec 2019 12:19:45 +0100
+Subject: [PATCH] Fix schedule.run_job - Port upstream PR#54799 (#194)
+
+If a scheduled job does not contains a time element parameter then running that job with schedule.run_job fails with a traceback because data['run'] does not exist.
+
+Fixing lint.
+
+Fixing test_run_job test to ensure the right data is being asserted.  Updating unit/test_module_names.py to include integration.scheduler.test_run_job.
+
+Removing extra, unnecessary code.
+---
+ salt/utils/schedule.py                      | 11 ++--
+ tests/integration/scheduler/test_run_job.py | 73 +++++++++++++++++++++
+ tests/unit/modules/test_schedule.py         |  8 +--
+ tests/unit/test_module_names.py             |  1 +
+ 4 files changed, 85 insertions(+), 8 deletions(-)
+ create mode 100644 tests/integration/scheduler/test_run_job.py
+
+diff --git a/salt/utils/schedule.py b/salt/utils/schedule.py
+index 6d1a8311e5..3f7f26141e 100644
+--- a/salt/utils/schedule.py
++++ b/salt/utils/schedule.py
+@@ -210,7 +210,7 @@ class Schedule(object):
+         # dict we treat it like it was there and is True
+ 
+         # Check if we're able to run
+-        if not data['run']:
++        if 'run' not in data or not data['run']:
+             return data
+         if 'jid_include' not in data or data['jid_include']:
+             jobcount = 0
+@@ -459,7 +459,10 @@ class Schedule(object):
+ 
+         if 'name' not in data:
+             data['name'] = name
+-        log.info('Running Job: %s', name)
++
++        # Assume run should be True until we check max_running
++        if 'run' not in data:
++            data['run'] = True
+ 
+         if not self.standalone:
+             data = self._check_max_running(func,
+@@ -468,8 +471,8 @@ class Schedule(object):
+                                            datetime.datetime.now())
+ 
+         # Grab run, assume True
+-        run = data.get('run', True)
+-        if run:
++        if data.get('run'):
++            log.info('Running Job: %s', name)
+             self._run_job(func, data)
+ 
+     def enable_schedule(self):
+diff --git a/tests/integration/scheduler/test_run_job.py b/tests/integration/scheduler/test_run_job.py
+new file mode 100644
+index 0000000000..c8cdcb6b24
+--- /dev/null
++++ b/tests/integration/scheduler/test_run_job.py
+@@ -0,0 +1,73 @@
++# -*- coding: utf-8 -*-
++
++# Import Python libs
++from __future__ import absolute_import
++import copy
++import logging
++import os
++
++# Import Salt Testing libs
++from tests.support.case import ModuleCase
++from tests.support.mixins import SaltReturnAssertsMixin
++
++# Import Salt Testing Libs
++from tests.support.mock import MagicMock, patch
++import tests.integration as integration
++
++# Import Salt libs
++import salt.utils.schedule
++import salt.utils.platform
++
++from salt.modules.test import ping as ping
++
++try:
++    import croniter  # pylint: disable=W0611
++    HAS_CRONITER = True
++except ImportError:
++    HAS_CRONITER = False
++
++log = logging.getLogger(__name__)
++ROOT_DIR = os.path.join(integration.TMP, 'schedule-unit-tests')
++SOCK_DIR = os.path.join(ROOT_DIR, 'test-socks')
++
++DEFAULT_CONFIG = salt.config.minion_config(None)
++DEFAULT_CONFIG['conf_dir'] = ROOT_DIR
++DEFAULT_CONFIG['root_dir'] = ROOT_DIR
++DEFAULT_CONFIG['sock_dir'] = SOCK_DIR
++DEFAULT_CONFIG['pki_dir'] = os.path.join(ROOT_DIR, 'pki')
++DEFAULT_CONFIG['cachedir'] = os.path.join(ROOT_DIR, 'cache')
++
++
++class SchedulerRunJobTest(ModuleCase, SaltReturnAssertsMixin):
++    '''
++    Validate the pkg module
++    '''
++    def setUp(self):
++        with patch('salt.utils.schedule.clean_proc_dir', MagicMock(return_value=None)):
++            functions = {'test.ping': ping}
++            self.schedule = salt.utils.schedule.Schedule(copy.deepcopy(DEFAULT_CONFIG), functions, returners={})
++        self.schedule.opts['loop_interval'] = 1
++
++    def tearDown(self):
++        self.schedule.reset()
++
++    def test_run_job(self):
++        '''
++        verify that scheduled job runs
++        '''
++        job_name = 'test_run_job'
++        job = {
++          'schedule': {
++            job_name: {
++              'function': 'test.ping',
++            }
++          }
++        }
++        # Add the job to the scheduler
++        self.schedule.opts.update(job)
++
++        # Run job
++        self.schedule.run_job(job_name)
++        ret = self.schedule.job_status(job_name)
++        expected = {'function': 'test.ping', 'run': True, 'name': 'test_run_job'}
++        self.assertEqual(ret, expected)
+diff --git a/tests/unit/modules/test_schedule.py b/tests/unit/modules/test_schedule.py
+index f3e68f4b28..9fb01e94ec 100644
+--- a/tests/unit/modules/test_schedule.py
++++ b/tests/unit/modules/test_schedule.py
+@@ -150,14 +150,14 @@ class ScheduleTestCase(TestCase, LoaderModuleMockMixin):
+         '''
+         Test if it run a scheduled job on the minion immediately.
+         '''
+-        with patch.dict(schedule.__opts__, {'schedule': {}, 'sock_dir': SOCK_DIR}):
++        with patch.dict(schedule.__opts__, {'schedule': {'job1': JOB1}, 'sock_dir': SOCK_DIR}):
+             mock = MagicMock(return_value=True)
+             with patch.dict(schedule.__salt__, {'event.fire': mock}):
+-                _ret_value = {'complete': True, 'schedule': {}}
++                _ret_value = {'complete': True, 'schedule': {'job1': JOB1}}
+                 with patch.object(SaltEvent, 'get_event', return_value=_ret_value):
+                     self.assertDictEqual(schedule.run_job('job1'),
+-                                         {'comment': 'Job job1 does not exist.',
+-                                          'result': False})
++                                         {'comment': 'Scheduling Job job1 on minion.',
++                                          'result': True})
+ 
+     # 'enable_job' function tests: 1
+ 
+diff --git a/tests/unit/test_module_names.py b/tests/unit/test_module_names.py
+index 1efcb5869e..c4109c0916 100644
+--- a/tests/unit/test_module_names.py
++++ b/tests/unit/test_module_names.py
+@@ -152,6 +152,7 @@ class BadTestModuleNamesTestCase(TestCase):
+             'integration.scheduler.test_skip',
+             'integration.scheduler.test_maxrunning',
+             'integration.scheduler.test_helpers',
++            'integration.scheduler.test_run_job',
+             'integration.shell.test_spm',
+             'integration.shell.test_cp',
+             'integration.shell.test_syndic',
+-- 
+2.23.0
+
+

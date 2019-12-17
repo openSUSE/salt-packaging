@@ -291,6 +291,8 @@ Patch106:      fix-applying-of-attributes-for-returner-rawfile_json.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54196
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/195
 Patch107:      fix-virt-states-to-not-fail-on-vms-already-stopped.-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54799
+Patch108:      fix-schedule.run_job-port-upstream-pr-54799-194.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -914,6 +916,7 @@ cp %{S:5} ./.travis.yml
 %patch105 -p1
 %patch106 -p1
 %patch107 -p1
+%patch108 -p1
 
 %build
 %if 0%{?build_py2}
