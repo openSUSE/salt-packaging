@@ -295,6 +295,11 @@ Patch107:      fix-virt-states-to-not-fail-on-vms-already-stopped.-.patch
 Patch108:      fix-schedule.run_job-port-upstream-pr-54799-194.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55245
 Patch109:      virt-adding-kernel-boot-parameters-to-libvirt-xml-55.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/189
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/185
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/184
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/183
+Patch110:      virt.network_define-allow-adding-ip-configuration.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -920,6 +925,7 @@ cp %{S:5} ./.travis.yml
 %patch107 -p1
 %patch108 -p1
 %patch109 -p1
+%patch110 -p1
 
 %build
 %if 0%{?build_py2}
