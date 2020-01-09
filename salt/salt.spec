@@ -300,6 +300,10 @@ Patch109:      virt-adding-kernel-boot-parameters-to-libvirt-xml-55.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/184
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/183
 Patch110:      virt.network_define-allow-adding-ip-configuration.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/196
+Patch111:      add-virt.network_get_xml-function.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/198
+Patch112:      list_downloaded-for-apt-module.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -926,6 +930,8 @@ cp %{S:5} ./.travis.yml
 %patch108 -p1
 %patch109 -p1
 %patch110 -p1
+%patch111 -p1
+%patch112 -p1
 
 %build
 %if 0%{?build_py2}
