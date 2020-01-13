@@ -304,6 +304,8 @@ Patch110:      virt.network_define-allow-adding-ip-configuration.patch
 Patch111:      add-virt.network_get_xml-function.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/198
 Patch112:      list_downloaded-for-apt-module.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/199
+Patch113:      support-for-btrfs-and-xfs-in-parted-and-mkfs.patch<Paste>
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -932,6 +934,7 @@ cp %{S:5} ./.travis.yml
 %patch110 -p1
 %patch111 -p1
 %patch112 -p1
+%patch113 -p1
 
 %build
 %if 0%{?build_py2}
