@@ -260,7 +260,11 @@ BuildRequires:  python-tornado >= 4.2.1
 BuildRequires:  python-yaml
 
 # requirements/zeromq.txt
-BuildRequires:  python-pycrypto >= 2.6.1
+%if 0%{?suse_version} >= 1500
+BuildRequires:       python2-M2Crypto
+%else
+BuildRequires:       python-pycrypto >= 2.6.1
+%endif
 BuildRequires:  python-pyzmq >= 2.2.0
 %if %{with test}
 # requirements/dev_python27.txt
@@ -329,7 +333,11 @@ Suggests:       python-timelib
 Suggests:       python-gnupg
 # requirements/zeromq.txt
 %endif
+%if 0%{?suse_version} >= 1500
+Requires:       python2-M2Crypto
+%else
 Requires:       python-pycrypto >= 2.6.1
+%endif
 Requires:       python-pyzmq >= 2.2.0
 #
 %if 0%{?suse_version}
