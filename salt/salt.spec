@@ -288,6 +288,10 @@ Patch102:      add-virt.network_get_xml-function.patch
 Patch103:      list_downloaded-for-apt-module.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/200
 Patch104:      support-for-btrfs-and-xfs-in-parted-and-mkfs.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/204
+Patch105:      enable-passing-grains-to-start-event-based-on-start_.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/205
+Patch106:      restrict-the-start_event_grains-only-to-the-start-ev.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -908,6 +912,8 @@ cp %{S:5} ./.travis.yml
 %patch102 -p1
 %patch103 -p1
 %patch104 -p1
+%patch105 -p1
+%patch106 -p1
 
 %build
 %if 0%{?build_py2}
