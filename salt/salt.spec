@@ -305,7 +305,13 @@ Patch111:      add-virt.network_get_xml-function.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/198
 Patch112:      list_downloaded-for-apt-module.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/199
-Patch113:      support-for-btrfs-and-xfs-in-parted-and-mkfs.patch<Paste>
+Patch113:      support-for-btrfs-and-xfs-in-parted-and-mkfs.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/207
+Patch114:      adds-enabled-kwarg.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/208
+Patch115:      move-tokens-in-place-with-an-atomic-operation.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/206
+Patch116:      delete-bad-api-token-files.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -935,6 +941,9 @@ cp %{S:5} ./.travis.yml
 %patch111 -p1
 %patch112 -p1
 %patch113 -p1
+%patch114 -p1
+%patch115 -p1
+%patch116 -p1
 
 %build
 %if 0%{?build_py2}

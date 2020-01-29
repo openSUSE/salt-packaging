@@ -1,0 +1,65 @@
+From d0ebd2b6b6bb93ae151b78a19154870624b16c71 Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Tue, 5 Nov 2019 13:59:12 +0100
+Subject: [PATCH] Adds enabled kwarg
+
+aptpkg is using the keyword argument 'disabled', while zypper and
+yum are using enabled. This change allows to also pass 'disabled'
+to mod_repo from the aptpkg module.
+---
+ salt/modules/aptpkg.py            |  2 ++
+ tests/unit/modules/test_aptpkg.py | 24 ++++++++++++++++++++++++
+ 2 files changed, 26 insertions(+)
+
+diff --git a/salt/modules/aptpkg.py b/salt/modules/aptpkg.py
+index 023049b2af..009cfb2c5b 100644
+--- a/salt/modules/aptpkg.py
++++ b/salt/modules/aptpkg.py
+@@ -2353,6 +2353,8 @@ def mod_repo(repo, saltenv='base', **kwargs):
+ 
+     if 'disabled' in kwargs:
+         kwargs['disabled'] = salt.utils.data.is_true(kwargs['disabled'])
++    elif 'enabled' in kwargs:
++        kwargs['disabled'] = not salt.utils.data.is_true(kwargs['enabled'])
+ 
+     kw_type = kwargs.get('type')
+     kw_dist = kwargs.get('dist')
+diff --git a/tests/unit/modules/test_aptpkg.py b/tests/unit/modules/test_aptpkg.py
+index 5c7e38eae7..d5e3d765b1 100644
+--- a/tests/unit/modules/test_aptpkg.py
++++ b/tests/unit/modules/test_aptpkg.py
+@@ -548,6 +548,30 @@ class AptPkgTestCase(TestCase, LoaderModuleMockMixin):
+             self.assert_called_once(refresh_mock)
+             refresh_mock.reset_mock()
+ 
++    def test_mod_repo_enabled(self):
++        '''
++        Checks if a repo is enabled or disabled depending on the passed kwargs.
++        '''
++        with patch.dict(aptpkg.__salt__, {'config.option': MagicMock(), 'no_proxy': MagicMock(return_value=False)}):
++            with patch('salt.modules.aptpkg._check_apt', MagicMock(return_value=True)):
++                with patch('salt.modules.aptpkg.refresh_db', MagicMock(return_value={})):
++                    with patch('salt.utils.data.is_true', MagicMock(return_value=True)) as data_is_true:
++                        with patch('salt.modules.aptpkg.sourceslist', MagicMock(), create=True):
++                            repo = aptpkg.mod_repo('foo', enabled=False)
++                            data_is_true.assert_called_with(False)
++                            # with disabled=True; should call salt.utils.data.is_true True
++                            data_is_true.reset_mock()
++                            repo = aptpkg.mod_repo('foo', disabled=True)
++                            data_is_true.assert_called_with(True)
++                            # with enabled=True; should call salt.utils.data.is_true with False
++                            data_is_true.reset_mock()
++                            repo = aptpkg.mod_repo('foo', enabled=True)
++                            data_is_true.assert_called_with(True)
++                            # with disabled=True; should call salt.utils.data.is_true False
++                            data_is_true.reset_mock()
++                            repo = aptpkg.mod_repo('foo', disabled=False)
++                            data_is_true.assert_called_with(False)
++
+     @patch('salt.utils.path.os_walk', MagicMock(return_value=[('test', 'test', 'test')]))
+     @patch('os.path.getsize', MagicMock(return_value=123456))
+     @patch('os.path.getctime', MagicMock(return_value=1234567890.123456))
+-- 
+2.16.4
+
+
