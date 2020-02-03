@@ -312,6 +312,8 @@ Patch114:      adds-enabled-kwarg.patch
 Patch115:      move-tokens-in-place-with-an-atomic-operation.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/206
 Patch116:      delete-bad-api-token-files.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/202
+Patch117:      various-netapi-fixes-and-tests.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -944,6 +946,7 @@ cp %{S:5} ./.travis.yml
 %patch114 -p1
 %patch115 -p1
 %patch116 -p1
+%patch117 -p1
 
 %build
 %if 0%{?build_py2}
