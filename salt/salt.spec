@@ -292,6 +292,8 @@ Patch104:      support-for-btrfs-and-xfs-in-parted-and-mkfs.patch
 Patch105:      enable-passing-grains-to-start-event-based-on-start_.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/205
 Patch106:      restrict-the-start_event_grains-only-to-the-start-ev.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56125
+Patch107:      add-astra-linux-common-edition-to-the-os-family-list.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -914,6 +916,7 @@ cp %{S:5} ./.travis.yml
 %patch104 -p1
 %patch105 -p1
 %patch106 -p1
+%patch107 -p1
 
 %build
 %if 0%{?build_py2}
