@@ -316,6 +316,8 @@ Patch116:      delete-bad-api-token-files.patch
 Patch117:      various-netapi-fixes-and-tests.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56125
 Patch118:      add-astra-linux-common-edition-to-the-os-family-list.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/210
+Patch119:      adds-missing-function-body-for-win32_kill_process_tr.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -950,6 +952,7 @@ cp %{S:5} ./.travis.yml
 %patch116 -p1
 %patch117 -p1
 %patch118 -p1
+%patch119 -p1
 
 %build
 %if 0%{?build_py2}
