@@ -1,15 +1,15 @@
-From feeaad3b7ede61183f3923ee529314f88727da78 Mon Sep 17 00:00:00 2001
-From: "Gareth J. Greenaway" <gareth@wiked.org>
-Date: Tue, 14 Jan 2020 18:17:45 -0800
+From 95f38ddf067b9c52654395a217afea988e44a54f Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Wed, 19 Feb 2020 14:37:05 +0100
 Subject: [PATCH] various netapi fixes and tests
 
 ---
  conf/master                             |   6 ++
- salt/config/__init__.py                 |   5 ++
+ salt/config/__init__.py                 |   6 +-
  salt/netapi/__init__.py                 |   7 +-
- tests/integration/netapi/test_client.py | 136 +++++++++++++++++++++++++++++++-
- tests/support/helpers.py                |  25 +++++-
- 5 files changed, 175 insertions(+), 4 deletions(-)
+ tests/integration/netapi/test_client.py | 150 +++++++++++++++++++++++++++++++-
+ tests/support/helpers.py                |  19 ++++
+ 5 files changed, 185 insertions(+), 3 deletions(-)
 
 diff --git a/conf/master b/conf/master
 index 06bed3ea44..349d971414 100644
@@ -26,7 +26,7 @@ index 06bed3ea44..349d971414 100644
 +# Allow the raw_shell parameter to be used when calling Salt SSH client via API
 +#netapi_allow_raw_shell: True
 diff --git a/salt/config/__init__.py b/salt/config/__init__.py
-index 5d0c18b5d1..30ae7550c6 100644
+index 5d0c18b5d1..dc257ff8b8 100644
 --- a/salt/config/__init__.py
 +++ b/salt/config/__init__.py
 @@ -1216,6 +1216,10 @@ VALID_OPTS = {
@@ -40,14 +40,17 @@ index 5d0c18b5d1..30ae7550c6 100644
  }
  
  # default configurations
-@@ -1869,6 +1873,7 @@ DEFAULT_MASTER_OPTS = {
+@@ -1869,9 +1873,9 @@ DEFAULT_MASTER_OPTS = {
      'auth_events': True,
      'minion_data_cache_events': True,
      'enable_ssh_minions': False,
 +    'netapi_allow_raw_shell': False,
  }
  
- 
+-
+ # ----- Salt Proxy Minion Configuration Defaults ----------------------------------->
+ # These are merged with DEFAULT_MINION_OPTS since many of them also apply here.
+ DEFAULT_PROXY_MINION_OPTS = {
 diff --git a/salt/netapi/__init__.py b/salt/netapi/__init__.py
 index 43b6e943a7..31a24bb420 100644
 --- a/salt/netapi/__init__.py
@@ -70,10 +73,10 @@ index 43b6e943a7..31a24bb420 100644
          f_call = salt.utils.args.format_call(l_fun, low)
          return l_fun(*f_call.get('args', ()), **f_call.get('kwargs', {}))
 diff --git a/tests/integration/netapi/test_client.py b/tests/integration/netapi/test_client.py
-index 503bbaf335..46df7e57cd 100644
+index 503bbaf335..a886563e3d 100644
 --- a/tests/integration/netapi/test_client.py
 +++ b/tests/integration/netapi/test_client.py
-@@ -2,17 +2,31 @@
+@@ -2,17 +2,32 @@
  
  # Import Python libs
  from __future__ import absolute_import, print_function, unicode_literals
@@ -84,6 +87,7 @@ index 503bbaf335..46df7e57cd 100644
  # Import Salt Testing libs
 -from tests.support.paths import TMP_CONF_DIR
 +from tests.support.paths import TMP_CONF_DIR, TMP
++from tests.support.runtests import RUNTIME_VARS
  from tests.support.unit import TestCase, skipIf
 +from tests.support.mock import patch
 +from tests.support.case import SSHCase
@@ -106,7 +110,7 @@ index 503bbaf335..46df7e57cd 100644
  
  class NetapiClientTest(TestCase):
      eauth_creds = {
-@@ -74,6 +88,12 @@ class NetapiClientTest(TestCase):
+@@ -74,6 +89,12 @@ class NetapiClientTest(TestCase):
              pass
          self.assertEqual(ret, {'minions': sorted(['minion', 'sub_minion'])})
  
@@ -119,7 +123,7 @@ index 503bbaf335..46df7e57cd 100644
      def test_wheel(self):
          low = {'client': 'wheel', 'fun': 'key.list_all'}
          low.update(self.eauth_creds)
-@@ -107,6 +127,12 @@ class NetapiClientTest(TestCase):
+@@ -107,6 +128,12 @@ class NetapiClientTest(TestCase):
          self.assertIn('jid', ret)
          self.assertIn('tag', ret)
  
@@ -132,7 +136,7 @@ index 503bbaf335..46df7e57cd 100644
      @skipIf(True, 'This is not testing anything. Skipping for now.')
      def test_runner(self):
          # TODO: fix race condition in init of event-- right now the event class
-@@ -125,3 +151,111 @@ class NetapiClientTest(TestCase):
+@@ -125,3 +152,124 @@ class NetapiClientTest(TestCase):
          low.update(self.eauth_creds)
  
          ret = self.netapi.run(low)
@@ -158,6 +162,11 @@ index 503bbaf335..46df7e57cd 100644
 +        '''
 +        opts = salt.config.client_config(os.path.join(TMP_CONF_DIR, 'master'))
 +        self.netapi = salt.netapi.NetapiClient(opts)
++        self.priv_file = os.path.join(RUNTIME_VARS.TMP_CONF_DIR, 'key_test')
++        self.rosters = os.path.join(RUNTIME_VARS.TMP_CONF_DIR)
++
++        self.priv_file = os.path.join(RUNTIME_VARS.TMP_CONF_DIR, 'key_test')
++        self.rosters = os.path.join(RUNTIME_VARS.TMP_CONF_DIR)
 +
 +        # Initialize salt-ssh
 +        self.run_function('test.ping')
@@ -178,12 +187,20 @@ index 503bbaf335..46df7e57cd 100644
 +        del cls.post_webserver
 +
 +    def test_ssh(self):
-+        low = {'client': 'ssh', 'tgt': 'localhost', 'fun': 'test.ping'}
++        low = {'client': 'ssh',
++               'tgt': 'localhost',
++               'fun': 'test.ping',
++               'ignore_host_keys': True,
++               'roster_file': 'roster',
++               'rosters': [self.rosters],
++               'ssh_priv': self.priv_file}
++
 +        low.update(self.eauth_creds)
 +
 +        ret = self.netapi.run(low)
 +
 +        self.assertIn('localhost', ret)
++        self.assertIn('return', ret['localhost'])
 +        self.assertEqual(ret['localhost']['return'], True)
 +        self.assertEqual(ret['localhost']['id'], 'localhost')
 +        self.assertEqual(ret['localhost']['fun'], 'test.ping')
@@ -245,15 +262,13 @@ index 503bbaf335..46df7e57cd 100644
 +        self.assertEqual(ret, None)
 +        self.assertFalse(os.path.exists('badfile.txt'))
 diff --git a/tests/support/helpers.py b/tests/support/helpers.py
-index 626da6a069..047752c3df 100644
+index 626da6a069..e5ca5918c9 100644
 --- a/tests/support/helpers.py
 +++ b/tests/support/helpers.py
-@@ -1582,8 +1582,26 @@ class Webserver(object):
+@@ -1582,6 +1582,25 @@ class Webserver(object):
          self.server_thread.join()
  
  
--def win32_kill_process_tree(pid, sig=signal.SIGTERM, include_parent=True,
--        timeout=None, on_terminate=None):
 +class SaveRequestsPostHandler(tornado.web.RequestHandler):
 +    '''
 +    Save all requests sent to the server.
@@ -273,20 +288,9 @@ index 626da6a069..047752c3df 100644
 +        raise NotImplementedError()
 +
 +
-+class MirrorPostHandler(tornado.web.RequestHandler):
+ def win32_kill_process_tree(pid, sig=signal.SIGTERM, include_parent=True,
+         timeout=None, on_terminate=None):
      '''
-     Kill a process tree (including grandchildren) with signal "sig" and return
-     a (gone, still_alive) tuple.  "on_terminate", if specified, is a callabck
-@@ -1606,6 +1624,9 @@ def win32_kill_process_tree(pid, sig=signal.SIGTERM, include_parent=True,
-     return (gone, alive)
- 
- 
-+def win32_kill_process_tree(pid, sig=signal.SIGTERM, include_parent=True,
-+        timeout=None, on_terminate=None):
-+
- def this_user():
-     '''
-     Get the user associated with the current process.
 -- 
 2.16.4
 
