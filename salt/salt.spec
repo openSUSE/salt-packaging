@@ -294,6 +294,8 @@ Patch105:      enable-passing-grains-to-start-event-based-on-start_.patch
 Patch106:      restrict-the-start_event_grains-only-to-the-start-ev.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56125
 Patch107:      add-astra-linux-common-edition-to-the-os-family-list.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/211
+Patch108:      apply-patch-from-upstream-to-support-python-3.8.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -390,6 +392,7 @@ BuildRequires:  python-futures >= 2.0
 BuildRequires:  python-msgpack-python > 0.3
 BuildRequires:  python-psutil
 BuildRequires:  python-requests >= 1.0.0
+BuildRequires:  python-distro
 %if 0%{?suse_version} >= 1500 || 0%{?rhel} >= 8
 # We can't cope with tornado 5.x and newer (boo#1101780); this is only relevant for SLE >= 15 and TW
 # where tornado exists in multiple versions
@@ -444,6 +447,7 @@ Requires:       python-futures >= 2.0
 Requires:       python-msgpack-python > 0.3
 Requires:       python-psutil
 Requires:       python-requests >= 1.0.0
+Requires:       python-distro
 Requires:       python-tornado >= 4.2.1
 # We can't cope with tornado 5.x and newer (boo#1101780)
 Conflicts: python3-tornado >= 5
@@ -506,6 +510,7 @@ BuildRequires:  python3-pycrypto >= 2.6.1
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-psutil
 BuildRequires:  python3-requests >= 1.0.0
+BuildRequires:  python3-distro
 %if 0%{?suse_version} >= 1500 || 0%{?rhel} >= 8
 # We can't cope with tornado 5.x and newer (boo#1101780); this is only relevant for SLE >= 15 and TW,
 # where tornado exists in multiple versions
@@ -563,6 +568,7 @@ Requires:       python3-pyzmq >= 2.2.0
 Requires:       python3-PyYAML
 Requires:       python3-psutil
 Requires:       python3-requests >= 1.0.0
+Requires:       python3-distro
 Requires:       python3-tornado >= 4.2.1
 # We can't cope with tornado 5.x and newer (boo#1101780)
 Conflicts: python3-tornado >= 5
@@ -917,6 +923,7 @@ cp %{S:5} ./.travis.yml
 %patch105 -p1
 %patch106 -p1
 %patch107 -p1
+%patch108 -p1
 
 %build
 %if 0%{?build_py2}
