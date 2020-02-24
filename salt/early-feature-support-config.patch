@@ -1,4 +1,4 @@
-From 0e4ac6001d552e649f8ab9d6c04b18bd531e4240 Mon Sep 17 00:00:00 2001
+From ff8647e1a03d0ff11f9e68eb86d247418817824b Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Tue, 10 Jul 2018 12:06:33 +0200
 Subject: [PATCH] early feature: support-config
@@ -1359,7 +1359,7 @@ index 0000000000..391acdb606
 +      info: List of all available groups
 +      output: table
 diff --git a/salt/scripts.py b/salt/scripts.py
-index 71120366e0..c789df4e39 100644
+index 858a0c36ff..a961192b55 100644
 --- a/salt/scripts.py
 +++ b/salt/scripts.py
 @@ -539,3 +539,17 @@ def salt_extend(extension, name, description, salt_dir, merge):
@@ -1381,10 +1381,10 @@ index 71120366e0..c789df4e39 100644
 +    _install_signal_handlers(client)
 +    client.run()
 diff --git a/salt/utils/parsers.py b/salt/utils/parsers.py
-index 1e652a845e..aa13310d5a 100644
+index fb9b0987a6..83dfe717f6 100644
 --- a/salt/utils/parsers.py
 +++ b/salt/utils/parsers.py
-@@ -20,6 +20,7 @@ import getpass
+@@ -21,6 +21,7 @@ import getpass
  import logging
  import optparse
  import traceback
@@ -1392,15 +1392,15 @@ index 1e652a845e..aa13310d5a 100644
  from functools import partial
  
  
-@@ -34,6 +35,7 @@ import salt.utils.data
+@@ -34,6 +35,7 @@ import salt.utils.args
+ import salt.utils.data
  import salt.utils.files
  import salt.utils.jid
- import salt.utils.kinds as kinds
 +import salt.utils.network
  import salt.utils.platform
  import salt.utils.process
  import salt.utils.stringutils
-@@ -1902,6 +1904,69 @@ class SyndicOptionParser(six.with_metaclass(OptionParserMeta,
+@@ -1913,6 +1915,69 @@ class SyndicOptionParser(six.with_metaclass(OptionParserMeta,
              self.get_config_file_path('minion'))
  
  
@@ -1488,10 +1488,10 @@ index 0000000000..48ce141c67
 +if __name__ == '__main__':
 +    salt_support()
 diff --git a/setup.py b/setup.py
-index 3e930df8db..25e06a42f6 100755
+index db2aa0b84e..0ebe7ff8bd 100755
 --- a/setup.py
 +++ b/setup.py
-@@ -1051,6 +1051,7 @@ class SaltDistribution(distutils.dist.Distribution):
+@@ -1058,6 +1058,7 @@ class SaltDistribution(distutils.dist.Distribution):
                          'scripts/salt-master',
                          'scripts/salt-minion',
                          'scripts/salt-proxy',
@@ -1499,7 +1499,7 @@ index 3e930df8db..25e06a42f6 100755
                          'scripts/salt-ssh',
                          'scripts/salt-syndic',
                          'scripts/salt-unity',
-@@ -1086,6 +1087,7 @@ class SaltDistribution(distutils.dist.Distribution):
+@@ -1093,6 +1094,7 @@ class SaltDistribution(distutils.dist.Distribution):
                          'salt-key = salt.scripts:salt_key',
                          'salt-master = salt.scripts:salt_master',
                          'salt-minion = salt.scripts:salt_minion',

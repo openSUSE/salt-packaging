@@ -1,4 +1,4 @@
-From 160103e536cfb5c956d64ed13b9c633153fb7a2e Mon Sep 17 00:00:00 2001
+From e31cd4f6823910f36db2d8347e7ce65bbae68958 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Fri, 5 Oct 2018 12:02:08 +0200
 Subject: [PATCH] Bugfix: any unicode string of length 16 will raise
@@ -9,7 +9,7 @@ Subject: [PATCH] Bugfix: any unicode string of length 16 will raise
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/salt/_compat.py b/salt/_compat.py
-index 61842b4bf3..42153f2395 100644
+index 965bb90da3..69b9af456e 100644
 --- a/salt/_compat.py
 +++ b/salt/_compat.py
 @@ -190,8 +190,8 @@ class IPv6AddressScoped(ipaddress.IPv6Address):
