@@ -316,6 +316,10 @@ Patch116:      delete-bad-api-token-files.patch
 Patch117:      various-netapi-fixes-and-tests.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56125
 Patch118:      add-astra-linux-common-edition-to-the-os-family-list.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54948
+Patch119:      enable-passing-grains-to-start-event-based-on-start_.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55885
+Patch120:      restrict-the-start_event_grains-only-to-the-start-ev.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -950,6 +954,8 @@ cp %{S:5} ./.travis.yml
 %patch116 -p1
 %patch117 -p1
 %patch118 -p1
+%patch119 -p1
+%patch120 -p1
 
 %build
 %if 0%{?build_py2}
