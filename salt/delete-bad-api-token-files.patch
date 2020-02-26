@@ -1,4 +1,4 @@
-From 82114441af56b2da3074169260399a6dcd807311 Mon Sep 17 00:00:00 2001
+From 2a3e94535e41339aa3163d89151cee44e04fe5b1 Mon Sep 17 00:00:00 2001
 From: Jochen Breuer <jbreuer@suse.de>
 Date: Wed, 29 Jan 2020 15:49:35 +0100
 Subject: [PATCH] Delete bad API token files
@@ -216,7 +216,7 @@ index 5d88e82077..54c3915144 100644
          valid_eauth_load = {'username': 'test_user',
                              'show_timeout': False,
 diff --git a/tests/unit/tokens/test_localfs.py b/tests/unit/tokens/test_localfs.py
-index f950091252..2456957aea 100644
+index f950091252..b7d86d9f23 100644
 --- a/tests/unit/tokens/test_localfs.py
 +++ b/tests/unit/tokens/test_localfs.py
 @@ -1,10 +1,14 @@
@@ -241,7 +241,7 @@ index f950091252..2456957aea 100644
          ], rename.called_with
 +
 +
-+class TestLocalFS(unittest.TestCase):
++class TestLocalFS(TestCase):
 +    def setUp(self):
 +        # Default expected data
 +        self.expected_data = {'this': 'is', 'some': 'token data'}
