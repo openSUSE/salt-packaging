@@ -509,7 +509,11 @@ Summary:        python3 library for salt
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 BuildRequires:  python-rpm-macros
+%if 0%{?rhel} == 8
+BuildRequires:  platform-python
+%else
 BuildRequires:  python3
+%endif
 BuildRequires:  python3-devel
 # requirements/base.txt
 %if 0%{?rhel}
@@ -556,7 +560,11 @@ BuildRequires:  python3-xml
 %if %{with builddocs}
 BuildRequires:  python3-sphinx
 %endif
+%if 0%{?rhel} == 8
+Requires:       platform-python
+%else
 Requires:       python3
+%endif
 #
 %if ! 0%{?suse_version} > 1110
 Requires:       python3-certifi
