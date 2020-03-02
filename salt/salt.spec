@@ -248,6 +248,10 @@ Patch84:      support-for-btrfs-and-xfs-in-parted-and-mkfs.patch
 Patch85:      add-astra-linux-common-edition-to-the-os-family-list.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/211
 Patch86:      apply-patch-from-upstream-to-support-python-3.8.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/217
+Patch87:      batch_async-avoid-using-fnmatch-to-match-event-217.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/8a23030d347b7487328c0395f5e30ef29daf1455
+Patch88:      batch-async-catch-exceptions-and-safety-unregister-a.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -862,6 +866,8 @@ cp %{S:5} ./.travis.yml
 %patch84 -p1
 %patch85 -p1
 %patch86 -p1
+%patch87 -p1
+%patch88 -p1
 
 %build
 %if 0%{?build_py2}
