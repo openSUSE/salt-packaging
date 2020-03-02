@@ -296,6 +296,10 @@ Patch106:      restrict-the-start_event_grains-only-to-the-start-ev.patch
 Patch107:      add-astra-linux-common-edition-to-the-os-family-list.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/211
 Patch108:      apply-patch-from-upstream-to-support-python-3.8.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/217
+Patch109:      batch_async-avoid-using-fnmatch-to-match-event-217.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/8a23030d347b7487328c0395f5e30ef29daf1455
+Patch110:      batch-async-catch-exceptions-and-safety-unregister-a.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -932,6 +936,8 @@ cp %{S:5} ./.travis.yml
 %patch106 -p1
 %patch107 -p1
 %patch108 -p1
+%patch109 -p1
+%patch110 -p1
 
 %build
 %if 0%{?build_py2}
