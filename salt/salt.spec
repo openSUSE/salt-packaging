@@ -320,6 +320,10 @@ Patch118:      add-astra-linux-common-edition-to-the-os-family-list.patch
 Patch119:      enable-passing-grains-to-start-event-based-on-start_.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55885
 Patch120:      restrict-the-start_event_grains-only-to-the-start-ev.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/217
+Patch121:      batch_async-avoid-using-fnmatch-to-match-event-217.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/8a23030d347b7487328c0395f5e30ef29daf1455
+Patch122:      batch-async-catch-exceptions-and-safety-unregister-a.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -964,6 +968,8 @@ cp %{S:5} ./.travis.yml
 %patch118 -p1
 %patch119 -p1
 %patch120 -p1
+%patch121 -p1
+%patch122 -p1
 
 %build
 %if 0%{?build_py2}
