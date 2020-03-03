@@ -333,6 +333,7 @@ Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 BuildRequires:  python >= 2.7
 BuildRequires:  python-devel >= 2.7
+BuildRequires:  python-setuptools
 # requirements/base.txt
 %if 0%{?rhel}
 BuildRequires:  python-jinja2
@@ -449,6 +450,7 @@ BuildRequires:  platform-python
 BuildRequires:  python3
 %endif
 BuildRequires:  python3-devel
+BuildRequires:  python3-setuptools
 # requirements/base.txt
 %if 0%{?rhel}
 BuildRequires:  python3-jinja2
