@@ -324,6 +324,8 @@ Patch120:      restrict-the-start_event_grains-only-to-the-start-ev.patch
 Patch121:      batch_async-avoid-using-fnmatch-to-match-event-217.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/8a23030d347b7487328c0395f5e30ef29daf1455
 Patch122:      batch-async-catch-exceptions-and-safety-unregister-a.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/a38adfa2efe40c2b1508b685af0b5d28a6bbcfc8
+Patch123:      fix-unit-tests-for-batch-async-after-refactor.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -970,6 +972,7 @@ cp %{S:5} ./.travis.yml
 %patch120 -p1
 %patch121 -p1
 %patch122 -p1
+%patch123 -p1
 
 %build
 %if 0%{?build_py2}
