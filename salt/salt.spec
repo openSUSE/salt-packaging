@@ -1205,11 +1205,12 @@ if [ $1 -eq 2 ] ; then
   # version to actually work.  It seems a manual restart of salt-master may
   # still be required, but at least this will actually work given the file
   # ownership is correct.
+  # Symlinks are excluded to avoid possible user escalation (bsc#1157465) (CVE-2019-18897).
   for file in master.{pem,pub} ; do
-    [ -f /etc/salt/pki/master/$file ] && chown salt /etc/salt/pki/master/$file
+    [ -f /etc/salt/pki/master/$file ] && [ ! -L /etc/salt/pki/master/$file ] && chown salt /etc/salt/pki/master/$file
   done
   MASTER_CACHE_DIR="/var/cache/salt/master"
-  [ -d $MASTER_CACHE_DIR ] && chown -R salt:salt $MASTER_CACHE_DIR
+  find $MASTER_CACHE_DIR -type d,f | xargs chown salt:salt
   [ -f $MASTER_CACHE_DIR/.root_key ] && chown root:root $MASTER_CACHE_DIR/.root_key
   true
 fi
