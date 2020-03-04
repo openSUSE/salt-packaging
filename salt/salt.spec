@@ -1302,8 +1302,8 @@ if [ $1 -eq 2 ] ; then
     [ -f /etc/salt/pki/master/$file ] && [ ! -L /etc/salt/pki/master/$file ] && chown salt /etc/salt/pki/master/$file
   done
   MASTER_CACHE_DIR="/var/cache/salt/master"
-  find $MASTER_CACHE_DIR -type d | xargs chown salt:salt
-  find $MASTER_CACHE_DIR -type f | xargs chown salt:salt
+  [ -d $MASTER_CACHE_DIR ] && find $MASTER_CACHE_DIR -type d | xargs -r chown salt:salt
+  [ -d $MASTER_CACHE_DIR ] && find $MASTER_CACHE_DIR -type f | xargs -r chown salt:salt
   [ -f $MASTER_CACHE_DIR/.root_key ] && chown root:root $MASTER_CACHE_DIR/.root_key
   true
 fi
