@@ -252,6 +252,8 @@ Patch86:      apply-patch-from-upstream-to-support-python-3.8.patch
 Patch87:      batch_async-avoid-using-fnmatch-to-match-event-217.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/8a23030d347b7487328c0395f5e30ef29daf1455
 Patch88:      batch-async-catch-exceptions-and-safety-unregister-a.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/a38adfa2efe40c2b1508b685af0b5d28a6bbcfc8
+Patch89:      fix-unit-tests-for-batch-async-after-refactor.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -870,6 +872,7 @@ cp %{S:5} ./.travis.yml
 %patch86 -p1
 %patch87 -p1
 %patch88 -p1
+%patch89 -p1
 
 %build
 %if 0%{?build_py2}
