@@ -256,6 +256,8 @@ Patch88:      batch-async-catch-exceptions-and-safety-unregister-a.patch
 Patch89:      fix-unit-tests-for-batch-async-after-refactor.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/218
 Patch90:      use-full-option-name-instead-of-undocumented-abbrevi.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/93c0630b84b9da89acaf549a5c79e5d834c70a65
+Patch91:      removes-unresolved-merge-conflict-in-yumpkg-module.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -850,6 +852,7 @@ cp %{S:5} ./.travis.yml
 %patch88 -p1
 %patch89 -p1
 %patch90 -p1
+%patch91 -p1
 
 %build
 %if 0%{?build_py2}
