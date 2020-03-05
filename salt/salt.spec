@@ -302,6 +302,8 @@ Patch109:      batch_async-avoid-using-fnmatch-to-match-event-217.patch
 Patch110:      batch-async-catch-exceptions-and-safety-unregister-a.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/a38adfa2efe40c2b1508b685af0b5d28a6bbcfc8
 Patch111:      fix-unit-tests-for-batch-async-after-refactor.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/218
+Patch112:      use-full-option-name-instead-of-undocumented-abbrevi.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -939,6 +941,7 @@ cp %{S:5} ./.travis.yml
 %patch109 -p1
 %patch110 -p1
 %patch111 -p1
+%patch112 -p1
 
 %build
 %if 0%{?build_py2}
