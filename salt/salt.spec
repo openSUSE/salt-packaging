@@ -1207,12 +1207,12 @@ if [ $1 -eq 2 ] ; then
   # ownership is correct.
   # Symlinks are excluded to avoid possible user escalation (bsc#1157465) (CVE-2019-18897).
   for file in master.{pem,pub} ; do
-    [ -f /etc/salt/pki/master/$file ] && [ ! -L /etc/salt/pki/master/$file ] && chown salt /etc/salt/pki/master/$file
+    [ -f /etc/salt/pki/master/$file ] && [ ! -L /etc/salt/pki/master/$file ] && chown --no-dereference salt /etc/salt/pki/master/$file
   done
   MASTER_CACHE_DIR="/var/cache/salt/master"
-  [ -d $MASTER_CACHE_DIR ] && find $MASTER_CACHE_DIR -type d | xargs -r chown salt:salt
-  [ -d $MASTER_CACHE_DIR ] && find $MASTER_CACHE_DIR -type f | xargs -r chown salt:salt
-  [ -f $MASTER_CACHE_DIR/.root_key ] && chown root:root $MASTER_CACHE_DIR/.root_key
+  [ -d $MASTER_CACHE_DIR ] && find $MASTER_CACHE_DIR -type d | xargs -r chown --no-dereference salt:salt
+  [ -d $MASTER_CACHE_DIR ] && find $MASTER_CACHE_DIR -type f | xargs -r chown --no-dereference salt:salt
+  [ -f $MASTER_CACHE_DIR/.root_key ] && chown --no-dereference root:root $MASTER_CACHE_DIR/.root_key
   true
 fi
 %if %{with systemd}
