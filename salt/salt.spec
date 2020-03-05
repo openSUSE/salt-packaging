@@ -398,7 +398,6 @@ BuildRequires:  python-futures >= 2.0
 BuildRequires:  python-msgpack-python > 0.3
 BuildRequires:  python-psutil
 BuildRequires:  python-requests >= 1.0.0
-BuildRequires:  python-distro
 %if 0%{?suse_version} >= 1500 || 0%{?rhel} >= 8
 # We can't cope with tornado 5.x and newer (boo#1101780); this is only relevant for SLE >= 15 and TW
 # where tornado exists in multiple versions
@@ -453,7 +452,6 @@ Requires:       python-futures >= 2.0
 Requires:       python-msgpack-python > 0.3
 Requires:       python-psutil
 Requires:       python-requests >= 1.0.0
-Requires:       python-distro
 Requires:       python-tornado >= 4.2.1
 # We can't cope with tornado 5.x and newer (boo#1101780)
 Conflicts: python3-tornado >= 5
