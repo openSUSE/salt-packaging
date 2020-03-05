@@ -510,6 +510,7 @@ BuildRequires:  python3-MarkupSafe
 BuildRequires:  python3-msgpack-python > 0.3
 BuildRequires:  python3-pyzmq >= 2.2.0
 %if 0%{?suse_version} >= 1500
+BuildRequires:  python3-distro
 BuildRequires:  python3-M2Crypto
 %else
 BuildRequires:  python3-pycrypto >= 2.6.1
@@ -518,7 +519,6 @@ BuildRequires:  python3-pycrypto >= 2.6.1
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-psutil
 BuildRequires:  python3-requests >= 1.0.0
-BuildRequires:  python3-distro
 %if 0%{?suse_version} >= 1500 || 0%{?rhel} >= 8
 # We can't cope with tornado 5.x and newer (boo#1101780); this is only relevant for SLE >= 15 and TW,
 # where tornado exists in multiple versions
@@ -571,6 +571,7 @@ Requires:       python3-Jinja2
 Requires:       python3-MarkupSafe
 Requires:       python3-msgpack-python > 0.3
 %if 0%{?suse_version} >= 1500
+Requires:       python3-distro
 Requires:       python3-M2Crypto
 %else
 Requires:       python3-pycrypto >= 2.6.1
@@ -580,7 +581,6 @@ Requires:       python3-pyzmq >= 2.2.0
 Requires:       python3-PyYAML
 Requires:       python3-psutil
 Requires:       python3-requests >= 1.0.0
-Requires:       python3-distro
 Requires:       python3-tornado >= 4.2.1
 # We can't cope with tornado 5.x and newer (boo#1101780)
 Conflicts: python3-tornado >= 5
