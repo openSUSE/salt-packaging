@@ -1,4 +1,4 @@
-From 3a7c4c58a1f1642dfbff1f500e5d0164a769fcc2 Mon Sep 17 00:00:00 2001
+From bfee3a7c47786bb860663de97fca26725101f1d0 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Tue, 7 May 2019 15:33:51 +0100
@@ -7,15 +7,18 @@ Subject: [PATCH] Do not crash when there are IPv6 established
 
 Add unit test for '_netlink_tool_remote_on'
 ---
- salt/utils/network.py | 4 ++++
- 1 file changed, 4 insertions(+)
+ salt/utils/network.py | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/salt/utils/network.py b/salt/utils/network.py
-index 2ae2e213b7..74536cc143 100644
+index 2ae2e213b7..307cab885f 100644
 --- a/salt/utils/network.py
 +++ b/salt/utils/network.py
-@@ -1444,6 +1444,10 @@ def _netlink_tool_remote_on(port, which_end):
+@@ -1442,8 +1442,13 @@ def _netlink_tool_remote_on(port, which_end):
+         elif 'ESTAB' not in line:
+             continue
          chunks = line.split()
++        local_host, local_port = chunks[3].rsplit(':', 1)
          remote_host, remote_port = chunks[4].rsplit(':', 1)
  
 +        if which_end == 'remote_port' and int(remote_port) != port:
@@ -26,6 +29,6 @@ index 2ae2e213b7..74536cc143 100644
  
      if valid is False:
 -- 
-2.16.4
+2.23.0
 
 
