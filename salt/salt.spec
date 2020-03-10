@@ -258,6 +258,10 @@ Patch89:      fix-unit-tests-for-batch-async-after-refactor.patch
 Patch90:      use-full-option-name-instead-of-undocumented-abbrevi.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/93c0630b84b9da89acaf549a5c79e5d834c70a65
 Patch91:      removes-unresolved-merge-conflict-in-yumpkg-module.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/b4c401cfe6031b61e27f7795bfa1aca6e8341e52
+Patch92:      changed-imports-to-vendored-tornado.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/082fa07e5301414b5b834b731aaa96bd5d966de7
+Patch93:      add-missing-_utils-at-loader-grains_func.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -853,6 +857,8 @@ cp %{S:5} ./.travis.yml
 %patch89 -p1
 %patch90 -p1
 %patch91 -p1
+%patch92 -p1
+%patch93 -p1
 
 %build
 %if 0%{?build_py2}
