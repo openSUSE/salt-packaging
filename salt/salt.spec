@@ -262,6 +262,8 @@ Patch91:      removes-unresolved-merge-conflict-in-yumpkg-module.patch
 Patch92:      changed-imports-to-vendored-tornado.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/082fa07e5301414b5b834b731aaa96bd5d966de7
 Patch93:      add-missing-_utils-at-loader-grains_func.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/25b4e3ea983b2606b2fb3d3c0e42f9840208bf84
+Patch94:      remove-deprecated-usage-of-no_mock-and-no_mock_reaso.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -859,6 +861,7 @@ cp %{S:5} ./.travis.yml
 %patch91 -p1
 %patch92 -p1
 %patch93 -p1
+%patch94 -p1
 
 %build
 %if 0%{?build_py2}
