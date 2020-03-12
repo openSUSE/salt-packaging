@@ -268,6 +268,8 @@ Patch94:      remove-deprecated-usage-of-no_mock-and-no_mock_reaso.patch
 Patch95:      fix-for-unless-requisite-when-pip-is-not-installed.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/a8f0a15e4067ec278c8a2d690e3bf815523286ca
 Patch96:      fix-wrong-test_mod_del_repo_multiline_values-test-af.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56185
+Patch97:      fix-regression-in-service-states-with-reload-argumen.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -868,6 +870,7 @@ cp %{S:5} ./.travis.yml
 %patch94 -p1
 %patch95 -p1
 %patch96 -p1
+%patch97 -p1
 
 %build
 %if 0%{?build_py2}
