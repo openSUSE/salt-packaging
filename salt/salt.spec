@@ -264,6 +264,8 @@ Patch92:      changed-imports-to-vendored-tornado.patch
 Patch93:      add-missing-_utils-at-loader-grains_func.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/25b4e3ea983b2606b2fb3d3c0e42f9840208bf84
 Patch94:      remove-deprecated-usage-of-no_mock-and-no_mock_reaso.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56215
+Patch95:      fix-for-unless-requisite-when-pip-is-not-installed.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -862,6 +864,7 @@ cp %{S:5} ./.travis.yml
 %patch92 -p1
 %patch93 -p1
 %patch94 -p1
+%patch95 -p1
 
 %build
 %if 0%{?build_py2}
