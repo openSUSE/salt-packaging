@@ -304,6 +304,11 @@ Patch110:      batch-async-catch-exceptions-and-safety-unregister-a.patch
 Patch111:      fix-unit-tests-for-batch-async-after-refactor.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/218
 Patch112:      use-full-option-name-instead-of-undocumented-abbrevi.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/221
+Patch113:      loader-invalidate-the-import-cachefor-extra-modules.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55814
+Patch114:      open-suse-2019.2.3-virt-defined-states-219.patch
+
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -942,6 +947,8 @@ cp %{S:5} ./.travis.yml
 %patch110 -p1
 %patch111 -p1
 %patch112 -p1
+%patch113 -p1
+%patch114 -p1
 
 %build
 %if 0%{?build_py2}
