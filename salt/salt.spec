@@ -270,6 +270,8 @@ Patch95:      fix-for-unless-requisite-when-pip-is-not-installed.patch
 Patch96:      fix-wrong-test_mod_del_repo_multiline_values-test-af.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56185
 Patch97:      fix-regression-in-service-states-with-reload-argumen.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56369
+Patch98:      make-salt.ext.tornado.gen-to-use-salt.ext.backports_.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -871,6 +873,7 @@ cp %{S:5} ./.travis.yml
 %patch95 -p1
 %patch96 -p1
 %patch97 -p1
+%patch98 -p1
 
 %build
 %if 0%{?build_py2}
