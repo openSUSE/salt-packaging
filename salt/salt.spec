@@ -276,6 +276,8 @@ Patch98:      make-salt.ext.tornado.gen-to-use-salt.ext.backports_.patch
 Patch99:      loader-invalidate-the-import-cachefor-extra-modules.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55814
 Patch100:     opensuse-3000-virt-defined-states-222.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/223
+Patch101:     fix-for-temp-folder-definition-in-loader-unit-test.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -880,6 +882,7 @@ cp %{S:5} ./.travis.yml
 %patch98 -p1
 %patch99 -p1
 %patch100 -p1
+%patch101 -p1
 
 %build
 %if 0%{?build_py2}
