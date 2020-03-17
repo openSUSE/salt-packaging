@@ -1,0 +1,79 @@
+From adf4ba15ac16a83b7ba49ba2ca051c00400cb265 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?C=C3=A9dric=20Bosdonnat?= <cbosdonnat@suse.com>
+Date: Tue, 17 Mar 2020 11:01:48 +0100
+Subject: [PATCH] virt._get_domain: don't raise an exception if there
+ is no VM
+
+Raising an exception if there is no VM in _get_domain makes sense if
+looking for some VMs, but not when listing all VMs.
+---
+ salt/modules/virt.py            |  2 +-
+ tests/unit/modules/test_virt.py | 41 +++++++++++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+), 1 deletion(-)
+
+diff --git a/salt/modules/virt.py b/salt/modules/virt.py
+index 339760ead477f7c3a96d0deb61124c44c1c6aee0..3b5b5ebc694531340827f1d772399cd4033ac86b 100644
+--- a/salt/modules/virt.py
++++ b/salt/modules/virt.py
+@@ -268,7 +268,7 @@ def _get_domain(conn, *vms, **kwargs):
+         for id_ in conn.listDefinedDomains():
+             all_vms.append(id_)
+ 
+-    if not all_vms:
++    if vms and not all_vms:
+         raise CommandExecutionError('No virtual machines found.')
+ 
+     if vms:
+diff --git a/tests/unit/modules/test_virt.py b/tests/unit/modules/test_virt.py
+index 719f97a724e98885d3edbed145cabca4c75a4069..a1f83c22285724824a8d5b457874d6cf1cdba5e0 100644
+--- a/tests/unit/modules/test_virt.py
++++ b/tests/unit/modules/test_virt.py
+@@ -3608,3 +3608,44 @@ class VirtTestCase(TestCase, LoaderModuleMockMixin):
+                 }
+             },
+             [backend for backend in backends if backend['name'] == 'netfs'][0]['options'])
++
++    def test_get_domain(self):
++        '''
++        Test the virt._get_domain function
++        '''
++        # Tests with no VM
++        self.mock_conn.listDomainsID.return_value = []
++        self.mock_conn.listDefinedDomains.return_value = []
++        self.assertEqual([], virt._get_domain(self.mock_conn))
++        self.assertRaisesRegex(CommandExecutionError, 'No virtual machines found.',
++                               virt._get_domain, self.mock_conn, 'vm2')
++
++        # Test with active and inactive VMs
++        self.mock_conn.listDomainsID.return_value = [1]
++
++        def create_mock_vm(idx):
++            mock_vm = MagicMock()
++            mock_vm.name.return_value = 'vm{0}'.format(idx)
++            return mock_vm
++
++        mock_vms = [create_mock_vm(idx) for idx in range(3)]
++        self.mock_conn.lookupByID.return_value = mock_vms[0]
++        self.mock_conn.listDefinedDomains.return_value = ['vm1', 'vm2']
++
++        self.mock_conn.lookupByName.side_effect = mock_vms
++        self.assertEqual(mock_vms, virt._get_domain(self.mock_conn))
++
++        self.mock_conn.lookupByName.side_effect = None
++        self.mock_conn.lookupByName.return_value = mock_vms[0]
++        self.assertEqual(mock_vms[0], virt._get_domain(self.mock_conn, inactive=False))
++
++        self.mock_conn.lookupByName.return_value = None
++        self.mock_conn.lookupByName.side_effect = [mock_vms[1], mock_vms[2]]
++        self.assertEqual([mock_vms[1], mock_vms[2]], virt._get_domain(self.mock_conn, active=False))
++
++        self.mock_conn.reset_mock()
++        self.mock_conn.lookupByName.return_value = None
++        self.mock_conn.lookupByName.side_effect = [mock_vms[1], mock_vms[2]]
++        self.assertEqual([mock_vms[1], mock_vms[2]], virt._get_domain(self.mock_conn, 'vm1', 'vm2'))
++        self.assertRaisesRegex(CommandExecutionError, 'The VM "vm2" is not present',
++                               virt._get_domain, self.mock_conn, 'vm2', inactive=False)
+-- 
+2.23.0
+
+
