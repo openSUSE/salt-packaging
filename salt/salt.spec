@@ -377,6 +377,7 @@ BuildRequires:  python-futures >= 2.0
 BuildRequires:  python-msgpack-python > 0.3
 BuildRequires:  python-psutil
 BuildRequires:  python-requests >= 1.0.0
+BuildRequires:  python-singledispatch
 
 # requirements/zeromq.txt
 %if 0%{?suse_version} >= 1500
@@ -422,6 +423,7 @@ Requires:       python-futures >= 2.0
 Requires:       python-msgpack-python > 0.3
 Requires:       python-psutil
 Requires:       python-requests >= 1.0.0
+Requires:       python-singledispatch
 %if 0%{?suse_version}
 # required for zypper.py
 Requires:       rpm-python
