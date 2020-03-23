@@ -15,8 +15,12 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 %global debug_package %{nil}
-
-%if 0%{?suse_version} >= 1320
+%if 0%{?suse_version} > 1500
+%global build_py3   1
+%global build_py2   0
+%global default_py3 1
+%else
+%if 0%{?suse_version} >= 1500
 # SLE15
 %global build_py3   1
 %global build_py2   1
@@ -33,6 +37,7 @@
 %else
 %global build_py3   1
 %global default_py3 1
+%endif
 %endif
 %endif
 %endif
