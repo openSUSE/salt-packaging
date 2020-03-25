@@ -281,6 +281,10 @@ Patch101:     re-adding-function-to-test-for-root.patch
 Patch102:     loop-fix-variable-names-for-until_no_eval.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/226
 Patch103:     make-setup.py-script-to-not-require-setuptools-9.1.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50453
+#                     https://github.com/saltstack/salt/commit/e20362f6f053eaa4144583604e6aac3d62838419
+# Can be dropped one pull/50453 is in released version.
+Patch104:     reintroducing-reverted-changes.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -890,6 +894,7 @@ cp %{S:5} ./.travis.yml
 %patch101 -p1
 %patch102 -p1
 %patch103 -p1
+%patch104 -p1
 
 %build
 %if 0%{?build_py2}
