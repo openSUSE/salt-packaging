@@ -277,6 +277,10 @@ Patch99:     fix-for-temp-folder-definition-in-loader-unit-test.patch
 Patch100:     virt._get_domain-don-t-raise-an-exception-if-there-i.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/226
 Patch101:     re-adding-function-to-test-for-root.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/227
+Patch102:     loop-fix-variable-names-for-until_no_eval.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/226
+Patch103:     make-setup.py-script-to-not-require-setuptools-9.1.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -884,6 +888,8 @@ cp %{S:5} ./.travis.yml
 %patch99 -p1
 %patch100 -p1
 %patch101 -p1
+%patch102 -p1
+%patch103 -p1
 
 %build
 %if 0%{?build_py2}
