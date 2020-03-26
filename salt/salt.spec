@@ -328,6 +328,8 @@ Patch122:      batch-async-catch-exceptions-and-safety-unregister-a.patch
 Patch123:      fix-unit-tests-for-batch-async-after-refactor.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56392
 Patch124:      virt._get_domain-don-t-raise-an-exception-if-there-i.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50197
+Patch125:      backport-saltutil-state-module-to-2019.2-codebase.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -976,6 +978,7 @@ cp %{S:5} ./.travis.yml
 %patch122 -p1
 %patch123 -p1
 %patch124 -p1
+%patch125 -p1
 
 %build
 %if 0%{?build_py2}
