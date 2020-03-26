@@ -285,6 +285,8 @@ Patch103:     make-setup.py-script-to-not-require-setuptools-9.1.patch
 #                     https://github.com/saltstack/salt/commit/e20362f6f053eaa4144583604e6aac3d62838419
 # Can be dropped one pull/50453 is in released version.
 Patch104:     reintroducing-reverted-changes.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/b713d0b3031faadc17cd9cf09977ccc19e50bef7
+Patch105:     add-new-custom-suse-capability-for-saltutil-state-mo.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -895,6 +897,7 @@ cp %{S:5} ./.travis.yml
 %patch102 -p1
 %patch103 -p1
 %patch104 -p1
+%patch105 -p1
 
 %build
 %if 0%{?build_py2}
