@@ -239,9 +239,9 @@ Patch88:        avoid-syntax-error-on-yumpkg-module-running-on-pytho.patch
 Patch89:        do-not-break-repo-files-with-multiple-line-values-on.patch
 Patch90:        catch-sslerror-for-tls-1.2-bootstraps-with-res-rhel6.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50197
-Patch91:      backport-saltutil-state-module-to-2019.2-codebase.patch
+Patch91:        backport-saltutil-state-module-to-2019.2-codebase-bs.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/b713d0b3031faadc17cd9cf09977ccc19e50bef7
-Patch92:      add-new-custom-suse-capability-for-saltutil-state-mo.patch
+Patch92:        add-new-custom-suse-capability-for-saltutil-state-mo.patch
 
 
 
