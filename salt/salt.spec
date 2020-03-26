@@ -310,6 +310,8 @@ Patch113:      loader-invalidate-the-import-cachefor-extra-modules.patch
 Patch114:      open-suse-2019.2.3-virt-defined-states-219.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56392
 Patch115:      virt._get_domain-don-t-raise-an-exception-if-there-i.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50197
+Patch116:      backport-saltutil-state-module-to-2019.2-codebase.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -952,6 +954,7 @@ cp %{S:5} ./.travis.yml
 %patch113 -p1
 %patch114 -p1
 %patch115 -p1
+%patch116 -p1
 
 %build
 %if 0%{?build_py2}
