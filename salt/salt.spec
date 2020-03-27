@@ -352,8 +352,8 @@ Requires:       iproute
 %endif
 
 %if %{with systemd}
-BuildRequires:  systemd
-%{?systemd_requires}
+BuildRequires:  pkgconfig(systemd)
+%{?systemd_ordering}
 %else
 %if 0%{?suse_version}
 Requires(pre): %insserv_prereq
