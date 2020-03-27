@@ -287,6 +287,8 @@ Patch103:     make-setup.py-script-to-not-require-setuptools-9.1.patch
 Patch104:     reintroducing-reverted-changes.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/b713d0b3031faadc17cd9cf09977ccc19e50bef7
 Patch105:     add-new-custom-suse-capability-for-saltutil-state-mo.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56463
+Patch106:     fix-typo-on-msgpack-version-when-sanitizing-msgpack-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -898,6 +900,7 @@ cp %{S:5} ./.travis.yml
 %patch103 -p1
 %patch104 -p1
 %patch105 -p1
+%patch106 -p1
 
 %build
 %if 0%{?build_py2}
