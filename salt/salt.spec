@@ -289,6 +289,8 @@ Patch104:     reintroducing-reverted-changes.patch
 Patch105:     add-new-custom-suse-capability-for-saltutil-state-mo.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56463
 Patch106:     fix-typo-on-msgpack-version-when-sanitizing-msgpack-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56491
+Patch107:     sanitize-grains-loaded-from-roster_grains.json.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -901,6 +903,7 @@ cp %{S:5} ./.travis.yml
 %patch104 -p1
 %patch105 -p1
 %patch106 -p1
+%patch107 -p1
 
 %build
 %if 0%{?build_py2}
