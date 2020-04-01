@@ -291,6 +291,8 @@ Patch105:     add-new-custom-suse-capability-for-saltutil-state-mo.patch
 Patch106:     fix-typo-on-msgpack-version-when-sanitizing-msgpack-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56491
 Patch107:     sanitize-grains-loaded-from-roster_grains.json.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/228
+Patch108:     adds-explicit-type-cast-for-port.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -904,6 +906,7 @@ cp %{S:5} ./.travis.yml
 %patch105 -p1
 %patch106 -p1
 %patch107 -p1
+%patch108 -p1
 
 %build
 %if 0%{?build_py2}
