@@ -43,7 +43,7 @@
 %endif
 %define pythonX %{?default_py3: python3}%{!?default_py3: python2}
 
-%if 0%{?suse_version} > 1210 || 0%{?rhel} >= 7 || 0%{?fedora}
+%if 0%{?suse_version} > 1210 || 0%{?rhel} >= 7 || 0%{?fedora} >=28
 %bcond_without systemd
 %else
 %bcond_with    systemd
@@ -360,7 +360,7 @@ BuildRequires:  bash
 BuildRequires:  zsh
 %endif
 
-%if 0%{?rhel}
+%if 0%{?rhel} || 0%{?fedora}
 BuildRequires:  yum
 %endif
 
@@ -381,7 +381,7 @@ BuildRequires:  python >= 2.7
 BuildRequires:  python-devel >= 2.7
 BuildRequires:  python-setuptools
 # requirements/base.txt
-%if 0%{?rhel}
+%if 0%{?rhel} || 0%{?fedora}
 BuildRequires:  python-jinja2
 BuildRequires:  python-yaml
 BuildRequires:  python-markupsafe
@@ -423,7 +423,7 @@ Requires:       python >= 2.7
 Requires:       python-certifi
 %endif
 # requirements/base.txt
-%if 0%{?rhel}
+%if 0%{?rhel} || 0%{?fedora}
 Requires:       python-jinja2
 Requires:       python-yaml
 Requires:       python-markupsafe
@@ -486,7 +486,7 @@ BuildRequires:  python3
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 # requirements/base.txt
-%if 0%{?rhel}
+%if 0%{?rhel} || 0%{?fedora}
 BuildRequires:  python3-jinja2
 BuildRequires:  python3-markupsafe
 BuildRequires:  python3-msgpack > 0.3
@@ -532,14 +532,15 @@ Requires:       python3
 Requires:       python3-certifi
 %endif
 # requirements/base.txt
-%if 0%{?rhel}
+%if 0%{?rhel} || 0%{?fedora}
 Requires:       python3-jinja2
 Requires:       yum
 Requires:       python3-markupsafe
 Requires:       python3-msgpack > 0.3
 Requires:       python3-m2crypto
 Requires:       python3-zmq >= 2.2.0
-%if 0%{?rhel} == 8
+
+%if 0%{?rhel} == 8 || 0%{?fedora} >= 30
 Requires:       dnf
 %endif
 %if 0%{?rhel} == 6
