@@ -43,7 +43,7 @@
 %endif
 %define pythonX %{?default_py3: python3}%{!?default_py3: python2}
 
-%if 0%{?suse_version} > 1210 || 0%{?rhel} >= 7 || 0%{?fedora}
+%if 0%{?suse_version} > 1210 || 0%{?rhel} >= 7 || 0%{?fedora} >=28
 %bcond_without systemd
 %else
 %bcond_with    systemd
@@ -385,7 +385,7 @@ BuildRequires:  bash
 BuildRequires:  zsh
 %endif
 
-%if 0%{?rhel}
+%if 0%{?rhel} || 0%{?fedora}
 BuildRequires:  yum
 %endif
 
@@ -405,7 +405,7 @@ Requires:       %{name} = %{version}-%{release}
 BuildRequires:  python >= 2.7
 BuildRequires:  python-devel >= 2.7
 # requirements/base.txt
-%if 0%{?rhel}
+%if 0%{?rhel} || 0%{?fedora}
 BuildRequires:  python-jinja2
 BuildRequires:  python-yaml
 BuildRequires:  python-markupsafe
@@ -419,7 +419,7 @@ BuildRequires:  python-futures >= 2.0
 BuildRequires:  python-msgpack-python > 0.3
 BuildRequires:  python-psutil
 BuildRequires:  python-requests >= 1.0.0
-%if 0%{?suse_version} >= 1500 || 0%{?rhel} >= 8
+%if 0%{?suse_version} >= 1500 || 0%{?rhel} >= 8 || 0%{?fedora} >= 30
 # We can't cope with tornado 5.x and newer (boo#1101780); this is only relevant for SLE >= 15 and TW
 # where tornado exists in multiple versions
 BuildRequires: (python-tornado >= 4.2.1 with python-tornado < 5)
@@ -455,7 +455,7 @@ Requires:       python >= 2.7
 Requires:       python-certifi
 %endif
 # requirements/base.txt
-%if 0%{?rhel}
+%if 0%{?rhel} || 0%{?fedora}
 Requires:       python-jinja2
 Requires:       python-yaml
 Requires:       python-markupsafe
@@ -519,7 +519,7 @@ BuildRequires:  python3
 %endif
 BuildRequires:  python3-devel
 # requirements/base.txt
-%if 0%{?rhel}
+%if 0%{?rhel} || 0%{?fedora}
 BuildRequires:  python3-jinja2
 BuildRequires:  python3-markupsafe
 BuildRequires:  python3-msgpack > 0.3
@@ -540,7 +540,7 @@ BuildRequires:  python3-pycrypto >= 2.6.1
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-psutil
 BuildRequires:  python3-requests >= 1.0.0
-%if 0%{?suse_version} >= 1500 || 0%{?rhel} >= 8
+%if 0%{?suse_version} >= 1500 || 0%{?rhel} >= 8 || 0%{?fedora} >= 30
 # We can't cope with tornado 5.x and newer (boo#1101780); this is only relevant for SLE >= 15 and TW,
 # where tornado exists in multiple versions
 BuildRequires: (python3-tornado >= 4.2.1 with python3-tornado < 5)
@@ -574,14 +574,15 @@ Requires:       python3
 Requires:       python3-certifi
 %endif
 # requirements/base.txt
-%if 0%{?rhel}
+%if 0%{?rhel} || 0%{?fedora}
 Requires:       python3-jinja2
 Requires:       yum
 Requires:       python3-markupsafe
 Requires:       python3-msgpack > 0.3
 Requires:       python3-m2crypto
 Requires:       python3-zmq >= 2.2.0
-%if 0%{?rhel} == 8
+
+%if 0%{?rhel} == 8 || 0%{?fedora} >= 30
 Requires:       dnf
 %endif
 %if 0%{?rhel} == 6
