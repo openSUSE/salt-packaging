@@ -329,14 +329,15 @@ Requires:       python-Jinja2
 %endif
 Requires:       python-futures >= 2.0
 Requires:       python-markupsafe
-Requires:       python-msgpack-python > 0.3
 %if 0%{?suse_version} >= 1500
 Requires:       py26-compat-msgpack-python
 Requires:       py26-compat-tornado
+%else
+Requires:       python-msgpack-python > 0.3
+Requires:       python-tornado >= 4.2.1
 %endif
 Requires:       python-psutil
 Requires:       python-requests >= 1.0.0
-Requires:       python-tornado >= 4.2.1
 Requires:       python-backports.ssl_match_hostname
 Requires:       python-yaml
 %if 0%{?suse_version}
