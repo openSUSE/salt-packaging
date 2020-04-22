@@ -332,6 +332,11 @@ Patch124:      virt._get_domain-don-t-raise-an-exception-if-there-i.patch
 Patch125:      backport-saltutil-state-module-to-2019.2-codebase.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/b713d0b3031faadc17cd9cf09977ccc19e50bef7
 Patch126:      add-new-custom-suse-capability-for-saltutil-state-mo.patch
+# PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/231
+Patch127:      catch-nameerror-in-ipcclient.close-231.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55796
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56491
+Patch128:      fix-load-cached-grain-osrelease_info.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -982,6 +987,8 @@ cp %{S:5} ./.travis.yml
 %patch124 -p1
 %patch125 -p1
 %patch126 -p1
+%patch127 -p1
+%patch128 -p1
 
 %build
 %if 0%{?build_py2}
