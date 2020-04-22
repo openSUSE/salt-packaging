@@ -1,0 +1,39 @@
+From 0c45eb67f7e1651539277278184839641fa6e6e1 Mon Sep 17 00:00:00 2001
+From: Alexander Graul <mail@agraul.de>
+Date: Wed, 22 Apr 2020 17:02:32 +0200
+Subject: [PATCH] Catch NameError in IPCClient.close() (#231)
+
+IPCClient's destructor calls close(), which tries to log a debug
+statement. Logging might hit a race condition, it sometimes raises:
+
+    NameError: name '__salt_system_encoding__' is not defined
+
+Logging not being available should not stop __del__() or close() from
+cleaning up.
+
+Fixes SUSE/spacewalk#11018
+---
+ salt/transport/ipc.py | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/salt/transport/ipc.py b/salt/transport/ipc.py
+index 0ed0baeec2e706283fa222bd62c409780ca9d246..ff6ec36d075b33db4964ef86cf1ba9236c08dd3e 100644
+--- a/salt/transport/ipc.py
++++ b/salt/transport/ipc.py
+@@ -402,7 +402,11 @@ class IPCClient(object):
+ 
+         self._closing = True
+ 
+-        log.debug('Closing %s instance', self.__class__.__name__)
++        try:
++            log.debug('Closing %s instance', self.__class__.__name__)
++        except NameError:
++            # Possible race condition: name '__salt_system_encoding__' is not defined
++            pass
+ 
+         if self.stream is not None and not self.stream.closed():
+             self.stream.close()
+-- 
+2.23.0
+
+
