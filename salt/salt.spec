@@ -298,6 +298,8 @@ Patch106:     fix-typo-on-msgpack-version-when-sanitizing-msgpack-.patch
 Patch107:     sanitize-grains-loaded-from-roster_grains.json.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/228
 Patch108:     adds-explicit-type-cast-for-port.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53882
+Patch109:     fixed-bug-lvm-has-no-parttion-type.-the-scipt-later-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -913,6 +915,7 @@ cp %{S:5} ./.travis.yml
 %patch106 -p1
 %patch107 -p1
 %patch108 -p1
+%patch109 -p1
 
 %build
 %if 0%{?build_py2}
