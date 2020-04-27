@@ -300,6 +300,8 @@ Patch107:     sanitize-grains-loaded-from-roster_grains.json.patch
 Patch108:     adds-explicit-type-cast-for-port.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53882
 Patch109:     fixed-bug-lvm-has-no-parttion-type.-the-scipt-later-.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/4f80e969e31247a4755d98d25f29b5d8b1b916c3
+Patch110:     remove-vendored-backports-abc-from-requirements.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -916,6 +918,7 @@ cp %{S:5} ./.travis.yml
 %patch107 -p1
 %patch108 -p1
 %patch109 -p1
+%patch110 -p1
 
 %build
 %if 0%{?build_py2}
