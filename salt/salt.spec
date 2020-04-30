@@ -326,17 +326,19 @@ Patch121:      batch_async-avoid-using-fnmatch-to-match-event-217.patch
 Patch122:      batch-async-catch-exceptions-and-safety-unregister-a.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/a38adfa2efe40c2b1508b685af0b5d28a6bbcfc8
 Patch123:      fix-unit-tests-for-batch-async-after-refactor.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56987
+Patch124:      fix-cve-2020-11651-and-fix-cve-2020-11652.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56392
-Patch124:      virt._get_domain-don-t-raise-an-exception-if-there-i.patch
+Patch125:      virt._get_domain-don-t-raise-an-exception-if-there-i.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50197
-Patch125:      backport-saltutil-state-module-to-2019.2-codebase.patch
+Patch126:      backport-saltutil-state-module-to-2019.2-codebase.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/b713d0b3031faadc17cd9cf09977ccc19e50bef7
-Patch126:      add-new-custom-suse-capability-for-saltutil-state-mo.patch
+Patch127:      add-new-custom-suse-capability-for-saltutil-state-mo.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/231
-Patch127:      catch-nameerror-in-ipcclient.close-231.patch
+Patch128:      catch-nameerror-in-ipcclient.close-231.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55796
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56491
-Patch128:      fix-load-cached-grain-osrelease_info.patch
+Patch129:      fix-load-cached-grain-osrelease_info.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -989,6 +991,7 @@ cp %{S:5} ./.travis.yml
 %patch126 -p1
 %patch127 -p1
 %patch128 -p1
+%patch129 -p1
 
 %build
 %if 0%{?build_py2}
