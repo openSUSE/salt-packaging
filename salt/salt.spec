@@ -63,7 +63,7 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        3000.1
+Version:        3000.2
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
@@ -298,8 +298,8 @@ Patch106:     adds-explicit-type-cast-for-port.patch
 Patch107:     fixed-bug-lvm-has-no-parttion-type.-the-scipt-later-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/4f80e969e31247a4755d98d25f29b5d8b1b916c3
 Patch108:     remove-vendored-backports-abc-from-requirements.patch
-# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56987
-Patch109:     fix-cve-2020-11651-and-fix-cve-2020-11652.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/a5ef829408685d9e65eaa24bba40d221adffaa95
+Patch109:     fix-typo-in-minion_runner-for-aesfuncs-exposed-metho.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -804,7 +804,7 @@ This package adds the standalone configuration for the Salt master in order to m
 
 %prep
 # %setup -q -n salt-%{version}
-%setup -q -n salt-3000.1-suse
+%setup -q -n salt-3000.2-suse
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
 %patch1 -p1
