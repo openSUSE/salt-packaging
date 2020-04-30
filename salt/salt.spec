@@ -298,6 +298,8 @@ Patch106:     adds-explicit-type-cast-for-port.patch
 Patch107:     fixed-bug-lvm-has-no-parttion-type.-the-scipt-later-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/4f80e969e31247a4755d98d25f29b5d8b1b916c3
 Patch108:     remove-vendored-backports-abc-from-requirements.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56987
+Patch109:     fix-cve-2020-11651-and-fix-cve-2020-11652.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -913,6 +915,7 @@ cp %{S:5} ./.travis.yml
 %patch106 -p1
 %patch107 -p1
 %patch108 -p1
+%patch109 -p1
 
 %build
 %if 0%{?build_py2}
