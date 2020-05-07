@@ -341,6 +341,8 @@ Patch128:      catch-nameerror-in-ipcclient.close-231.patch
 Patch129:      fix-load-cached-grain-osrelease_info.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53882
 Patch130:      fixed-bug-lvm-has-no-parttion-type.-the-scipt-later-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57119
+Patch131:      make-lazyloader.__init__-call-to-_refresh_file_mappi.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -995,6 +997,7 @@ cp %{S:5} ./.travis.yml
 %patch128 -p1
 %patch129 -p1
 %patch130 -p1
+%patch131 -p1
 
 %build
 %if 0%{?build_py2}
