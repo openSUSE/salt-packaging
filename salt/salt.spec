@@ -308,6 +308,8 @@ Patch111:     fix-cve-2020-11651-and-fix-cve-2020-11652.patch
 Patch112:     add-ip-filtering-by-network.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56341
 Patch113:     revert-changes-to-slspath-saltstack-salt-56341.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57119
+Patch114:     make-lazyloader.__init__-call-to-_refresh_file_mappi.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -928,6 +930,7 @@ cp %{S:5} ./.travis.yml
 %patch111 -p1
 %patch112 -p1
 %patch113 -p1
+%patch114 -p1
 
 %build
 %if 0%{?build_py2}
