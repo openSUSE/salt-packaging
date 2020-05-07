@@ -343,6 +343,8 @@ Patch129:      fix-load-cached-grain-osrelease_info.patch
 Patch130:      fixed-bug-lvm-has-no-parttion-type.-the-scipt-later-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57119
 Patch131:      make-lazyloader.__init__-call-to-_refresh_file_mappi.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57123
+Patch132:      prevent-logging-deadlock-on-salt-api-subprocesses-bs.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -998,6 +1000,7 @@ cp %{S:5} ./.travis.yml
 %patch129 -p1
 %patch130 -p1
 %patch131 -p1
+%patch132 -p1
 
 %build
 %if 0%{?build_py2}
