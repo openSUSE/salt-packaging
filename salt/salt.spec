@@ -304,6 +304,8 @@ Patch109:     fixed-bug-lvm-has-no-parttion-type.-the-scipt-later-.patch
 Patch110:     remove-vendored-backports-abc-from-requirements.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56987
 Patch111:     fix-cve-2020-11651-and-fix-cve-2020-11652.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56394
+Patch112:     add-ip-filtering-by-network.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -922,6 +924,7 @@ cp %{S:5} ./.travis.yml
 %patch109 -p1
 %patch110 -p1
 %patch111 -p1
+%patch112 -p1
 
 %build
 %if 0%{?build_py2}
