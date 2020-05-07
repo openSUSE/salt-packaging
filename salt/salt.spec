@@ -310,6 +310,8 @@ Patch112:     add-ip-filtering-by-network.patch
 Patch113:     revert-changes-to-slspath-saltstack-salt-56341.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57119
 Patch114:     make-lazyloader.__init__-call-to-_refresh_file_mappi.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57123
+Patch115:     prevent-logging-deadlock-on-salt-api-subprocesses-bs.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -931,6 +933,7 @@ cp %{S:5} ./.travis.yml
 %patch112 -p1
 %patch113 -p1
 %patch114 -p1
+%patch115 -p1
 
 %build
 %if 0%{?build_py2}
