@@ -1,0 +1,119 @@
+From 43c0b0f181e5e25ae90a25d2f3bcf9465385015a Mon Sep 17 00:00:00 2001
+From: Alexander Graul <agraul@suse.com>
+Date: Mon, 27 Apr 2020 18:55:34 +0200
+Subject: [PATCH] Revert changes to slspath (saltstack/salt#56341)
+
+This was a breaking change in v3000 that was fixed in 3000.1
+
+Fixes bsc#1170104
+---
+ doc/ref/states/vars.rst            |  9 +++---
+ salt/utils/templates.py            |  2 ++
+ tests/unit/utils/test_templates.py | 46 ++++++++++++++++++++++++++++++
+ 3 files changed, 53 insertions(+), 4 deletions(-)
+
+diff --git a/doc/ref/states/vars.rst b/doc/ref/states/vars.rst
+index 2b146f7dc15f7830237cad342e7cc44cbd73a0ff..1d8fc343984931148217bfce46ff1a854e70c80f 100644
+--- a/doc/ref/states/vars.rst
++++ b/doc/ref/states/vars.rst
+@@ -96,10 +96,11 @@ include option.
+ slspath
+ =======
+ 
+-The `slspath` variable contains the path to the current sls file. The value
+-of `slspath` in files referenced in the current sls depends on the reference
+-method. For jinja includes `slspath` is the path to the current file. For
+-salt includes `slspath` is the path to the included file.
++The `slspath` variable contains the path to the directory of the current sls
++file. The value of `slspath` in files referenced in the current sls depends on
++the reference method. For jinja includes `slspath` is the path to the current
++directory of the file. For salt includes `slspath` is the path to the directory
++of the included file.
+ 
+ .. code-block:: jinja
+ 
+diff --git a/salt/utils/templates.py b/salt/utils/templates.py
+index d026118269cdd78da9b101d1fa598e3b9a1cf6aa..98092a9d796032985f173d6463123281c60c2713 100644
+--- a/salt/utils/templates.py
++++ b/salt/utils/templates.py
+@@ -122,6 +122,8 @@ def wrap_tmpl_func(render_str):
+             slspath = context['sls'].replace('.', '/')
+             if tmplpath is not None:
+                 context['tplpath'] = tmplpath
++                if not tmplpath.lower().replace('\\', '/').endswith('/init.sls'):
++                    slspath = os.path.dirname(slspath)
+                 template = tmplpath.replace('\\', '/')
+                 i = template.rfind(slspath.replace('.', '/'))
+                 if i != -1:
+diff --git a/tests/unit/utils/test_templates.py b/tests/unit/utils/test_templates.py
+index 3d5855dd21e82eb92351a9a847c3e4d132450cb2..b9d9eba24d5ea1d630bc1392beeccdd1233a1f7a 100644
+--- a/tests/unit/utils/test_templates.py
++++ b/tests/unit/utils/test_templates.py
+@@ -5,13 +5,16 @@ Unit tests for salt.utils.templates.py
+ 
+ # Import python libs
+ from __future__ import absolute_import, print_function, unicode_literals
++import os
+ import sys
+ import logging
+ 
+ # Import Salt libs
+ import salt.utils.templates
++import salt.utils.files
+ 
+ # Import Salt Testing Libs
++from tests.support.helpers import with_tempdir
+ from tests.support.unit import TestCase, skipIf
+ 
+ log = logging.getLogger(__name__)
+@@ -181,3 +184,46 @@ class RenderTestCase(TestCase):
+         ctx['var'] = 'OK'
+         res = salt.utils.templates.render_cheetah_tmpl(tmpl, ctx)
+         self.assertEqual(res.strip(), 'OK')
++
++
++class MockRender(object):
++    def __call__(self, tplstr, context, tmplpath=None):
++        self.tplstr = tplstr
++        self.context = context
++        self.tmplpath = tmplpath
++        return tplstr
++
++
++class WrapRenderTestCase(TestCase):
++
++    @with_tempdir()
++    def test_wrap_issue_56119_a(self, tempdir):
++        slsfile = os.path.join(tempdir, 'foo')
++        with salt.utils.files.fopen(slsfile, 'w') as fp:
++            fp.write('{{ slspath }}')
++        context = {'opts': {}, 'saltenv': 'base', 'sls': 'foo.bar'}
++        render = MockRender()
++        wrapped = salt.utils.templates.wrap_tmpl_func(render)
++        res = wrapped(
++            slsfile,
++            context=context,
++            tmplpath='/tmp/foo/bar/init.sls'
++        )
++        assert render.context['slspath'] == 'foo/bar', render.context['slspath']
++        assert render.context['tpldir'] == 'foo/bar', render.context['tpldir']
++
++    @with_tempdir()
++    def test_wrap_issue_56119_b(self, tempdir):
++        slsfile = os.path.join(tempdir, 'foo')
++        with salt.utils.files.fopen(slsfile, 'w') as fp:
++            fp.write('{{ slspath }}')
++        context = {'opts': {}, 'saltenv': 'base', 'sls': 'foo.bar.bang'}
++        render = MockRender()
++        wrapped = salt.utils.templates.wrap_tmpl_func(render)
++        res = wrapped(
++            slsfile,
++            context=context,
++            tmplpath='/tmp/foo/bar/bang.sls'
++        )
++        assert render.context['slspath'] == 'foo/bar', render.context['slspath']
++        assert render.context['tpldir'] == 'foo/bar', render.context['tpldir']
+-- 
+2.23.0
+
+

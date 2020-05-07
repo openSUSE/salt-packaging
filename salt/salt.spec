@@ -306,6 +306,8 @@ Patch110:     remove-vendored-backports-abc-from-requirements.patch
 Patch111:     fix-cve-2020-11651-and-fix-cve-2020-11652.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56394
 Patch112:     add-ip-filtering-by-network.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56341
+Patch113:     revert-changes-to-slspath-saltstack-salt-56341.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -925,6 +927,7 @@ cp %{S:5} ./.travis.yml
 %patch110 -p1
 %patch111 -p1
 %patch112 -p1
+%patch113 -p1
 
 %build
 %if 0%{?build_py2}
