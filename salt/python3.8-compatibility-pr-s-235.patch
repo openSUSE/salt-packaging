@@ -1,4 +1,4 @@
-From a08cf66659fa83d9ca087888b27df35b95e674c7 Mon Sep 17 00:00:00 2001
+From 1721978eb0644c90a834493449ee27e1e4de03e1 Mon Sep 17 00:00:00 2001
 From: Jochen Breuer <jbreuer@suse.de>
 Date: Fri, 8 May 2020 15:56:35 +0200
 Subject: [PATCH] Python3.8 compatibility PR's (#235)
@@ -174,9 +174,9 @@ Co-authored-by: Benjamin Drung <benjamin.drung@cloud.ionos.com>
  salt/renderers/stateconf.py                 |   4 +-
  salt/utils/args.py                          |  14 +-
  salt/utils/decorators/path.py               |  13 +-
- salt/utils/jinja.py                         |  34 +--
+ salt/utils/jinja.py                         |  24 ++-
  salt/utils/oset.py                          |   4 +-
- 38 files changed, 1198 insertions(+), 88 deletions(-)
+ 38 files changed, 1193 insertions(+), 83 deletions(-)
  delete mode 100644 pkg/windows/req_testing.txt
  create mode 100644 requirements/static/py3.8/cloud.txt
  create mode 100644 requirements/static/py3.8/darwin-crypto.txt
@@ -1881,7 +1881,7 @@ index 4adacf0e4e..8ee7fb1d11 100644
 +
      return wrapper
 diff --git a/salt/utils/jinja.py b/salt/utils/jinja.py
-index 6e4261e68e..0b0e8c0a44 100644
+index 6e4261e68e..31ce179808 100644
 --- a/salt/utils/jinja.py
 +++ b/salt/utils/jinja.py
 @@ -6,7 +6,6 @@ Jinja loading utils to enable a more powerful backend for jinja templates
@@ -1924,59 +1924,49 @@ index 6e4261e68e..0b0e8c0a44 100644
          ret = set(values)
      else:
          ret = []
-@@ -563,9 +569,9 @@ def lst_avg(lst):
-     .. code-block:: yaml
+@@ -564,8 +570,8 @@ def lst_avg(lst):
  
          2.5
--    '''
+     '''
 -    if not isinstance(lst, collections.Hashable):
 -        return float(sum(lst)/len(lst))
-+    """
 +    if not isinstance(lst, Hashable):
 +        return float(sum(lst) / len(lst))
      return float(lst)
  
  
-@@ -584,8 +590,8 @@ def union(lst1, lst2):
-     .. code-block:: text
+@@ -585,7 +591,7 @@ def union(lst1, lst2):
  
          [1, 2, 3, 4, 6]
--    '''
+     '''
 -    if isinstance(lst1, collections.Hashable) and isinstance(lst2, collections.Hashable):
-+    """
 +    if isinstance(lst1, Hashable) and isinstance(lst2, Hashable):
          return set(lst1) | set(lst2)
      return unique(lst1 + lst2)
  
-@@ -605,8 +611,8 @@ def intersect(lst1, lst2):
-     .. code-block:: text
+@@ -606,7 +612,7 @@ def intersect(lst1, lst2):
  
          [2, 4]
--    '''
+     '''
 -    if isinstance(lst1, collections.Hashable) and isinstance(lst2, collections.Hashable):
-+    """
 +    if isinstance(lst1, Hashable) and isinstance(lst2, Hashable):
          return set(lst1) & set(lst2)
      return unique([ele for ele in lst1 if ele in lst2])
  
-@@ -626,8 +632,8 @@ def difference(lst1, lst2):
-     .. code-block:: text
+@@ -627,7 +633,7 @@ def difference(lst1, lst2):
  
          [1, 3, 6]
--    '''
+     '''
 -    if isinstance(lst1, collections.Hashable) and isinstance(lst2, collections.Hashable):
-+    """
 +    if isinstance(lst1, Hashable) and isinstance(lst2, Hashable):
          return set(lst1) - set(lst2)
      return unique([ele for ele in lst1 if ele not in lst2])
  
-@@ -647,8 +653,8 @@ def symmetric_difference(lst1, lst2):
-     .. code-block:: text
+@@ -648,7 +654,7 @@ def symmetric_difference(lst1, lst2):
  
          [1, 3]
--    '''
+     '''
 -    if isinstance(lst1, collections.Hashable) and isinstance(lst2, collections.Hashable):
-+    """
 +    if isinstance(lst1, Hashable) and isinstance(lst2, Hashable):
          return set(lst1) ^ set(lst2)
      return unique([ele for ele in union(lst1, lst2) if ele not in intersect(lst1, lst2)])
