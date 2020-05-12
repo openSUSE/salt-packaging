@@ -345,6 +345,10 @@ Patch130:      fixed-bug-lvm-has-no-parttion-type.-the-scipt-later-.patch
 Patch131:      make-lazyloader.__init__-call-to-_refresh_file_mappi.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57123
 Patch132:      prevent-logging-deadlock-on-salt-api-subprocesses-bs.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55345
+Patch133:      chroot-add-apply_-sls-and-highstate-for-state-execut.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56419
+Patch134:      option-to-en-disable-force-refresh-in-zypper-215.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1001,6 +1005,8 @@ cp %{S:5} ./.travis.yml
 %patch130 -p1
 %patch131 -p1
 %patch132 -p1
+%patch133 -p1
+%patch134 -p1
 
 %build
 %if 0%{?build_py2}
