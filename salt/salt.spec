@@ -312,6 +312,12 @@ Patch113:     revert-changes-to-slspath-saltstack-salt-56341.patch
 Patch114:     make-lazyloader.__init__-call-to-_refresh_file_mappi.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57123
 Patch115:     prevent-logging-deadlock-on-salt-api-subprocesses-bs.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/229
+Patch116:     fix-a-test-and-some-variable-names-229.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56419
+Patch117:     option-to-en-disable-force-refresh-in-zypper-215.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/235
+Patch118:     python3.8-compatibility-pr-s-235.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -934,6 +940,9 @@ cp %{S:5} ./.travis.yml
 %patch113 -p1
 %patch114 -p1
 %patch115 -p1
+%patch116 -p1
+%patch117 -p1
+%patch118 -p1
 
 %build
 %if 0%{?build_py2}
