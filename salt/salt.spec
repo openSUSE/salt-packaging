@@ -308,6 +308,10 @@ Patch111:     prevent-logging-deadlock-on-salt-api-subprocesses-bs.patch
 Patch112:     msgpack-support-versions-1.0.0.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/235
 Patch113:     python3.8-compatibility-pr-s-235.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56419
+Patch114:     option-to-en-disable-force-refresh-in-zypper-215.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/229
+Patch115:     fix-a-test-and-some-variable-names-229.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -928,6 +932,8 @@ cp %{S:5} ./.travis.yml
 %patch111 -p1
 %patch112 -p1
 %patch113 -p1
+%patch114 -p1
+%patch115 -p1
 
 %build
 %if 0%{?build_py2}
