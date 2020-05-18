@@ -349,6 +349,8 @@ Patch132:      prevent-logging-deadlock-on-salt-api-subprocesses-bs.patch
 Patch133:      chroot-add-apply_-sls-and-highstate-for-state-execut.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56419
 Patch134:      option-to-en-disable-force-refresh-in-zypper-215.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56439
+Patch135:      add-docker-logout-237.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1007,6 +1009,7 @@ cp %{S:5} ./.travis.yml
 %patch132 -p1
 %patch133 -p1
 %patch134 -p1
+%patch135 -p1
 
 %build
 %if 0%{?build_py2}
