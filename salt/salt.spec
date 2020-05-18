@@ -312,6 +312,8 @@ Patch113:     python3.8-compatibility-pr-s-235.patch
 Patch114:     option-to-en-disable-force-refresh-in-zypper-215.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/229
 Patch115:     fix-a-test-and-some-variable-names-229.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56439
+Patch116:     add-docker-logout-237.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -934,6 +936,7 @@ cp %{S:5} ./.travis.yml
 %patch113 -p1
 %patch114 -p1
 %patch115 -p1
+%patch116 -p1
 
 %build
 %if 0%{?build_py2}
