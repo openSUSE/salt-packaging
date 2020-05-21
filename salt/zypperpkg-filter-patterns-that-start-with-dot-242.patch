@@ -1,0 +1,80 @@
+From b37b453f188e9d03b9e680124f12c85fb808fe1f Mon Sep 17 00:00:00 2001
+From: Alberto Planas <aplanas@suse.com>
+Date: Thu, 21 May 2020 10:18:53 +0200
+Subject: [PATCH] zypperpkg: filter patterns that start with dot (#242)
+
+For versions <=SLE12SP4 some patterns can contain alias, and can appear
+duplicated.  The alias start with ".", so they can be filtered.
+
+If the module try to search by the alias name (pattern:.basename, for
+example), zypper will not be able to find it and the operation will
+fail.
+
+This patch detect and filter the alias, and remove duplicates.
+
+Fix bsc#1171906
+
+(cherry picked from commit d043db63000df2892b2e7259f580ede81e33724d)
+---
+ salt/modules/zypperpkg.py            | 10 ++++++++--
+ tests/unit/modules/test_zypperpkg.py | 22 ++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/salt/modules/zypperpkg.py b/salt/modules/zypperpkg.py
+index 0a8635ca0bf33b5b5321d34ef1880a39267c17c5..a2c0db084a6c1f7e0c4ed6f5ea966d21b5c4825a 100644
+--- a/salt/modules/zypperpkg.py
++++ b/salt/modules/zypperpkg.py
+@@ -2298,8 +2298,14 @@ def _get_installed_patterns(root=None):
+     # a real error.
+     output = __salt__['cmd.run'](cmd, ignore_retcode=True)
+ 
+-    installed_patterns = [_pattern_name(line) for line in output.splitlines()
+-                          if line.startswith('pattern() = ')]
++    # On <= SLE12SP4 we have patterns that have multiple names (alias)
++    # and that are duplicated.  The alias start with ".", so we filter
++    # them.
++    installed_patterns = {
++        _pattern_name(line)
++        for line in output.splitlines()
++        if line.startswith("pattern() = ") and not _pattern_name(line).startswith(".")
++    }
+ 
+     patterns = {k: v for k, v in _get_visible_patterns(root=root).items() if v['installed']}
+ 
+diff --git a/tests/unit/modules/test_zypperpkg.py b/tests/unit/modules/test_zypperpkg.py
+index 76171134014f150ab3368ec1624de7150cff1174..942fbab701940a2b33f9e3fa199523b7ed21c18b 100644
+--- a/tests/unit/modules/test_zypperpkg.py
++++ b/tests/unit/modules/test_zypperpkg.py
+@@ -1460,6 +1460,28 @@ pattern() = package-c'''),
+                 },
+             }
+ 
++    @patch("salt.modules.zypperpkg._get_visible_patterns")
++    def test__get_installed_patterns_with_alias(self, get_visible_patterns):
++        """Test installed patterns in the system if they have alias"""
++        get_visible_patterns.return_value = {
++            "package-a": {"installed": True, "summary": "description a"},
++            "package-b": {"installed": False, "summary": "description b"},
++        }
++
++        salt_mock = {
++            "cmd.run": MagicMock(
++                return_value="""pattern() = .package-a-alias
++pattern() = package-a
++pattern-visible()
++pattern() = package-c"""
++            ),
++        }
++        with patch.dict("salt.modules.zypperpkg.__salt__", salt_mock):
++            assert zypper._get_installed_patterns() == {
++                "package-a": {"installed": True, "summary": "description a"},
++                "package-c": {"installed": True, "summary": "Non-visible pattern"},
++            }
++
+     @patch('salt.modules.zypperpkg._get_visible_patterns')
+     def test_list_patterns(self, get_visible_patterns):
+         '''Test available patterns in the repo'''
+-- 
+2.23.0
+
+

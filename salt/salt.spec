@@ -353,6 +353,8 @@ Patch134:      option-to-en-disable-force-refresh-in-zypper-215.patch
 Patch135:      add-docker-logout-237.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56595
 Patch136:      fix-for-return-value-ret-vs-return-in-batch-mode.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57392
+Patch137:      zypperpkg-filter-patterns-that-start-with-dot-242.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1013,6 +1015,7 @@ cp %{S:5} ./.travis.yml
 %patch134 -p1
 %patch135 -p1
 %patch136 -p1
+%patch137 -p1
 
 %build
 %if 0%{?build_py2}
