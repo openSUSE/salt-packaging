@@ -322,6 +322,8 @@ Patch118:     python3.8-compatibility-pr-s-235.patch
 Patch119:     add-docker-logout-237.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56595
 Patch120:     fix-for-return-value-ret-vs-return-in-batch-mode.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57392
+Patch121:     zypperpkg-filter-patterns-that-start-with-dot-243.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -949,6 +951,7 @@ cp %{S:5} ./.travis.yml
 %patch118 -p1
 %patch119 -p1
 %patch120 -p1
+%patch121 -p1
 
 %build
 %if 0%{?build_py2}
