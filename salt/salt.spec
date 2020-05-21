@@ -315,7 +315,9 @@ Patch115:     fix-a-test-and-some-variable-names-229.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56439
 Patch116:     add-docker-logout-237.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56595
-Patch117:      fix-for-return-value-ret-vs-return-in-batch-mode.patch
+Patch117:     fix-for-return-value-ret-vs-return-in-batch-mode.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57392
+Patch118:     zypperpkg-filter-patterns-that-start-with-dot-244.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -940,6 +942,7 @@ cp %{S:5} ./.travis.yml
 %patch115 -p1
 %patch116 -p1
 %patch117 -p1
+%patch118 -p1
 
 %build
 %if 0%{?build_py2}
