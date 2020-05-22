@@ -355,6 +355,8 @@ Patch135:      add-docker-logout-237.patch
 Patch136:      fix-for-return-value-ret-vs-return-in-batch-mode.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57392
 Patch137:      zypperpkg-filter-patterns-that-start-with-dot-242.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/221
+Patch138:      loader-invalidate-the-import-cachefor-extra-modules.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1016,6 +1018,7 @@ cp %{S:5} ./.travis.yml
 %patch135 -p1
 %patch136 -p1
 %patch137 -p1
+%patch138 -p1
 
 %build
 %if 0%{?build_py2}
