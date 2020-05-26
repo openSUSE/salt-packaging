@@ -819,8 +819,7 @@ This package adds the standalone configuration for the Salt master in order to m
 
 
 %prep
-# %setup -q -n salt-%{version}
-%setup -q -n salt-3000.2-suse
+%setup -q -n salt-%{version}-suse
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
 %patch1 -p1
