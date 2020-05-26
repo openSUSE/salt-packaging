@@ -63,7 +63,7 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        3000.2
+Version:        3000.3
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
@@ -298,26 +298,24 @@ Patch106:     adds-explicit-type-cast-for-port.patch
 Patch107:     fixed-bug-lvm-has-no-parttion-type.-the-scipt-later-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/4f80e969e31247a4755d98d25f29b5d8b1b916c3
 Patch108:     remove-vendored-backports-abc-from-requirements.patch
-# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/a5ef829408685d9e65eaa24bba40d221adffaa95
-Patch109:     fix-typo-in-minion_runner-for-aesfuncs-exposed-metho.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57119
-Patch110:     make-lazyloader.__init__-call-to-_refresh_file_mappi.patch
+Patch109:     make-lazyloader.__init__-call-to-_refresh_file_mappi.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57123
-Patch111:     prevent-logging-deadlock-on-salt-api-subprocesses-bs.patch
+Patch110:     prevent-logging-deadlock-on-salt-api-subprocesses-bs.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57122
-Patch112:     msgpack-support-versions-1.0.0.patch
+Patch111:     msgpack-support-versions-1.0.0.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/235
-Patch113:     python3.8-compatibility-pr-s-235.patch
+Patch112:     python3.8-compatibility-pr-s-235.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56419
-Patch114:     option-to-en-disable-force-refresh-in-zypper-215.patch
+Patch113:     option-to-en-disable-force-refresh-in-zypper-215.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/229
-Patch115:     fix-a-test-and-some-variable-names-229.patch
+Patch114:     fix-a-test-and-some-variable-names-229.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56439
-Patch116:     add-docker-logout-237.patch
+Patch115:     add-docker-logout-237.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56595
-Patch117:     fix-for-return-value-ret-vs-return-in-batch-mode.patch
+Patch116:     fix-for-return-value-ret-vs-return-in-batch-mode.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57392
-Patch118:     zypperpkg-filter-patterns-that-start-with-dot-244.patch
+Patch117:     zypperpkg-filter-patterns-that-start-with-dot-244.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -942,7 +940,6 @@ cp %{S:5} ./.travis.yml
 %patch115 -p1
 %patch116 -p1
 %patch117 -p1
-%patch118 -p1
 
 %build
 %if 0%{?build_py2}
