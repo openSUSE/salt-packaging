@@ -318,6 +318,8 @@ Patch116:     fix-for-return-value-ret-vs-return-in-batch-mode.patch
 Patch117:     zypperpkg-filter-patterns-that-start-with-dot-244.patch
 # PATCH-FIX_OPENSUSE: hhttps://github.com/openSUSE/salt/commit/da936daeebd701e147707ad814c07bfc259d4be
 Patch118:     add-publish_batch-to-clearfuncs-exposed-methods.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57489
+Patch119:     avoid-has_docker-true-if-import-messes-with-salt.uti.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -942,6 +944,7 @@ cp %{S:5} ./.travis.yml
 %patch116 -p1
 %patch117 -p1
 %patch118 -p1
+%patch119 -p1
 
 %build
 %if 0%{?build_py2}
