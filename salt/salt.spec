@@ -324,6 +324,8 @@ Patch119:     add-docker-logout-237.patch
 Patch120:     fix-for-return-value-ret-vs-return-in-batch-mode.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57392
 Patch121:     zypperpkg-filter-patterns-that-start-with-dot-243.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/a7fd55e534ed985800be53bcb54e4c51aba7516a
+Patch122:     add-publish_batch-to-clearfuncs-exposed-methods.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -952,6 +954,7 @@ cp %{S:5} ./.travis.yml
 %patch119 -p1
 %patch120 -p1
 %patch121 -p1
+%patch122 -p1
 
 %build
 %if 0%{?build_py2}
