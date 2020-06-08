@@ -1,0 +1,41 @@
+From 98df4d155fafbccadd5dc71e16679b2986e26dc9 Mon Sep 17 00:00:00 2001
+From: Jochen Breuer <jbreuer@suse.de>
+Date: Tue, 2 Jun 2020 17:40:43 +0200
+Subject: [PATCH] Revert "Check to see if a line is already commented
+ before moving on"
+
+The underlying issue got solved.This patch now only causes file changes to
+be skipped if just one line for the search pattern got commented. Additional
+lines are then just ignored. (bsc#1172281)
+
+This reverts commit 8a685b1820f586966f11c38909844eded94dc147.
+---
+ salt/states/file.py | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
+
+diff --git a/salt/states/file.py b/salt/states/file.py
+index 8823a7c8cf9..9dd9c9b58aa 100644
+--- a/salt/states/file.py
++++ b/salt/states/file.py
+@@ -4884,16 +4884,8 @@ def comment(name, regex, char='#', backup='.bak'):
+     # remove (?i)-like flags, ^ and $
+     unanchor_regex = re.sub(r'^(\(\?[iLmsux]\))?\^?(.*?)\$?$', r'\2', regex)
+ 
+-    comment_regex = char + unanchor_regex
+-
+-    # Check if the line is already commented
+-    if __salt__['file.search'](name, comment_regex, multiline=True):
+-        commented = True
+-    else:
+-        commented = False
+-
+     # Make sure the pattern appears in the file before continuing
+-    if commented or not __salt__['file.search'](name, regex, multiline=True):
++    if not __salt__['file.search'](name, regex, multiline=True):
+         if __salt__['file.search'](name, unanchor_regex, multiline=True):
+             ret['comment'] = 'Pattern already commented'
+             ret['result'] = True
+-- 
+2.26.2
+
+
