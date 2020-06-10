@@ -328,6 +328,8 @@ Patch121:     zypperpkg-filter-patterns-that-start-with-dot-243.patch
 Patch122:     add-publish_batch-to-clearfuncs-exposed-methods.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57489
 Patch123:     avoid-has_docker-true-if-import-messes-with-salt.uti.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/236
+Patch124:     opensuse-3000.2-virt-backports-236.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -958,6 +960,7 @@ cp %{S:5} ./.travis.yml
 %patch121 -p1
 %patch122 -p1
 %patch123 -p1
+%patch124 -p1
 
 %build
 %if 0%{?build_py2}
