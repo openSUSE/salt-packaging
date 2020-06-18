@@ -530,7 +530,6 @@ BuildRequires:  python3-MarkupSafe
 BuildRequires:  python3-msgpack-python > 0.3
 BuildRequires:  python3-pyzmq >= 2.2.0
 %if 0%{?suse_version} >= 1500
-BuildRequires:  python3-distro
 BuildRequires:  python3-M2Crypto
 %else
 BuildRequires:  python3-pycrypto >= 2.6.1
@@ -539,6 +538,10 @@ BuildRequires:  python3-pycrypto >= 2.6.1
 BuildRequires:  python3-PyYAML
 BuildRequires:  python3-psutil
 BuildRequires:  python3-requests >= 1.0.0
+# required for Python >= 3.8
+%if 0%{?suse_version} >= 1550
+BuildRequires:  python3-distro
+%endif
 
 # requirements/zeromq.txt
 %if %{with test}
@@ -583,7 +586,6 @@ Requires:       python3-Jinja2
 Requires:       python3-MarkupSafe
 Requires:       python3-msgpack-python > 0.3
 %if 0%{?suse_version} >= 1500
-Requires:       python3-distro
 Requires:       python3-M2Crypto
 %else
 Requires:       python3-pycrypto >= 2.6.1
@@ -593,6 +595,10 @@ Requires:       python3-pyzmq >= 2.2.0
 Requires:       python3-PyYAML
 Requires:       python3-psutil
 Requires:       python3-requests >= 1.0.0
+# required for Python >= 3.8
+%if 0%{?suse_version} >= 1550
+Requires:       python3-distro
+%endif
 %if 0%{?suse_version}
 # required for zypper.py
 Requires:       python3-rpm
