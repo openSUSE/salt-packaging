@@ -330,6 +330,8 @@ Patch122:     add-publish_batch-to-clearfuncs-exposed-methods.patch
 Patch123:     avoid-has_docker-true-if-import-messes-with-salt.uti.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/236
 Patch124:     opensuse-3000.2-virt-backports-236.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57779
+Patch125:     info_installed-works-without-status-attr-now.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -967,6 +969,7 @@ cp %{S:5} ./.travis.yml
 %patch122 -p1
 %patch123 -p1
 %patch124 -p1
+%patch125 -p1
 
 %build
 %if 0%{?build_py2}
