@@ -322,6 +322,8 @@ Patch118:     add-publish_batch-to-clearfuncs-exposed-methods.patch
 Patch119:     avoid-has_docker-true-if-import-messes-with-salt.uti.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57779
 Patch120:     info_installed-works-without-status-attr-now.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57491
+Patch121:     opensuse-3000.3-spacewalk-runner-parse-command-250.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -948,6 +950,7 @@ cp %{S:5} ./.travis.yml
 %patch118 -p1
 %patch119 -p1
 %patch120 -p1
+%patch121 -p1
 
 %build
 %if 0%{?build_py2}
