@@ -320,6 +320,8 @@ Patch117:     zypperpkg-filter-patterns-that-start-with-dot-244.patch
 Patch118:     add-publish_batch-to-clearfuncs-exposed-methods.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57489
 Patch119:     avoid-has_docker-true-if-import-messes-with-salt.uti.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57779
+Patch120:     info_installed-works-without-status-attr-now.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -945,6 +947,7 @@ cp %{S:5} ./.travis.yml
 %patch117 -p1
 %patch118 -p1
 %patch119 -p1
+%patch120 -p1
 
 %build
 %if 0%{?build_py2}
