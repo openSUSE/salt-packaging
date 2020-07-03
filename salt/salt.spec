@@ -332,6 +332,8 @@ Patch123:     avoid-has_docker-true-if-import-messes-with-salt.uti.patch
 Patch124:     opensuse-3000.2-virt-backports-236.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57779
 Patch125:     info_installed-works-without-status-attr-now.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57491
+Patch126:     opensuse-3000-spacewalk-runner-parse-command-247.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -970,6 +972,7 @@ cp %{S:5} ./.travis.yml
 %patch123 -p1
 %patch124 -p1
 %patch125 -p1
+%patch126 -p1
 
 %build
 %if 0%{?build_py2}
