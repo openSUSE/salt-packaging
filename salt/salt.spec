@@ -361,6 +361,8 @@ Patch138:      loader-invalidate-the-import-cachefor-extra-modules.patch
 Patch139:      docker-logout-uses-pillar-instead-of-config.get.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/246
 Patch140:      revert-check-to-see-if-a-line-is-already-commented-b.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57491
+Patch141:      backport-spacewalk-runner-parse-command-247.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1025,6 +1027,7 @@ cp %{S:5} ./.travis.yml
 %patch138 -p1
 %patch139 -p1
 %patch140 -p1
+%patch141 -p1
 
 %build
 %if 0%{?build_py2}
