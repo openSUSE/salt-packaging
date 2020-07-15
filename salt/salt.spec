@@ -330,12 +330,14 @@ Patch122:     add-publish_batch-to-clearfuncs-exposed-methods.patch
 Patch123:     avoid-has_docker-true-if-import-messes-with-salt.uti.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/236
 Patch124:     opensuse-3000.2-virt-backports-236.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56094
+Patch125:     fix-type-error-in-tornadoimporter.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57779
-Patch125:     info_installed-works-without-status-attr-now.patch
+Patch126:     info_installed-works-without-status-attr-now.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57491
-Patch126:     opensuse-3000-spacewalk-runner-parse-command-247.patch
+Patch127:     opensuse-3000-spacewalk-runner-parse-command-247.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/248
-Patch127:     opensuse-3000-libvirt-engine-fixes-248.patch
+Patch128:     opensuse-3000-libvirt-engine-fixes-248.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -976,6 +978,7 @@ cp %{S:5} ./.travis.yml
 %patch125 -p1
 %patch126 -p1
 %patch127 -p1
+%patch128 -p1
 
 %build
 %if 0%{?build_py2}
