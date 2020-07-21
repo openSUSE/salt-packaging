@@ -959,6 +959,12 @@ cp %{S:5} ./.travis.yml
 %patch123 -p1
 
 %build
+# Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
+# change, the RPM will require /bin/python, which is not provided by any package
+# on RHEL/RES 7.
+%if 0%{?fedora} || 0%{?rhel}
+export PATH=/usr/bin:$PATH
+%endif
 %if 0%{?build_py2}
 python setup.py --with-salt-version=%{version} --salt-transport=both build
 cp ./build/lib/salt/_version.py ./salt
