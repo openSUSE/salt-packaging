@@ -326,6 +326,8 @@ Patch120:     info_installed-works-without-status-attr-now.patch
 Patch121:     opensuse-3000.3-spacewalk-runner-parse-command-250.patch
 # PATCH-FIX_UPSTREAM: https://github.com/openSUSE/salt/pull/251
 Patch122:     opensuse-3000-libvirt-engine-fixes-251.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58013
+Patch123:     fix-__mount_device-wrapper-254.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -954,6 +956,7 @@ cp %{S:5} ./.travis.yml
 %patch120 -p1
 %patch121 -p1
 %patch122 -p1
+%patch123 -p1
 
 %build
 %if 0%{?build_py2}
