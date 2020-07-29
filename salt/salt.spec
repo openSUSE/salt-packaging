@@ -363,6 +363,8 @@ Patch139:      docker-logout-uses-pillar-instead-of-config.get.patch
 Patch140:      revert-check-to-see-if-a-line-is-already-commented-b.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57491
 Patch141:      backport-spacewalk-runner-parse-command-247.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58013
+Patch142:      fix-__mount_device-wrapper-252.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
