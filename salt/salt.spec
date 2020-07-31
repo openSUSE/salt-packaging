@@ -1122,8 +1122,10 @@ install -Dpm 0644  pkg/suse/salt-common.logrotate %{buildroot}%{_sysconfdir}/log
 install -Dpm 0644  pkg/salt-common.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/salt
 %endif
 #
+%if 0%{?suse_version} <= 1500
 ## install SuSEfirewall2 rules
 install -Dpm 0644  pkg/suse/salt.SuSEfirewall2 %{buildroot}%{_sysconfdir}/sysconfig/SuSEfirewall2.d/services/salt
+%endif
 #
 ## install completion scripts
 %if %{with bash_completion}
@@ -1576,7 +1578,9 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %{_mandir}/man1/salt-key.1.gz
 %{_mandir}/man1/salt-run.1.gz
 %{_mandir}/man7/salt.7.gz
+%if 0%{?suse_version} <= 1500
 %config(noreplace) %{_sysconfdir}/sysconfig/SuSEfirewall2.d/services/salt
+%endif
 %{_sbindir}/rcsalt-master
 %if %{with systemd}
 %{_unitdir}/salt-master.service
