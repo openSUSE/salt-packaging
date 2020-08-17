@@ -328,6 +328,8 @@ Patch121:     opensuse-3000.3-spacewalk-runner-parse-command-250.patch
 Patch122:     opensuse-3000-libvirt-engine-fixes-251.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58013
 Patch123:     fix-__mount_device-wrapper-254.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58214
+Patch124:     ansiblegate-take-care-of-failed-skipped-and-unreacha.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -957,6 +959,7 @@ cp %{S:5} ./.travis.yml
 %patch121 -p1
 %patch122 -p1
 %patch123 -p1
+%patch124 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
