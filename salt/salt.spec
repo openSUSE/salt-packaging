@@ -344,6 +344,8 @@ Patch129:     fix-__mount_device-wrapper-253.patch
 Patch130:     ansiblegate-take-care-of-failed-skipped-and-unreacha.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56174
 Patch131:     various-fixes-to-the-mysql-module-to-break-out-the-h.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58301
+Patch132:     do-not-raise-streamclosederror-traceback-but-only-lo.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -988,6 +990,7 @@ cp %{S:5} ./.travis.yml
 %patch129 -p1
 %patch130 -p1
 %patch131 -p1
+%patch132 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
