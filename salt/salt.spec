@@ -332,6 +332,8 @@ Patch123:     fix-__mount_device-wrapper-254.patch
 Patch124:     ansiblegate-take-care-of-failed-skipped-and-unreacha.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58301
 Patch125:     do-not-raise-streamclosederror-traceback-but-only-lo.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/257
+Patch126:     opensuse-3000.2-virt-backports-236-257.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -963,6 +965,7 @@ cp %{S:5} ./.travis.yml
 %patch123 -p1
 %patch124 -p1
 %patch125 -p1
+%patch126 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
