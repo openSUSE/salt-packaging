@@ -335,7 +335,7 @@ Patch125:     do-not-raise-streamclosederror-traceback-but-only-lo.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/257
 Patch126:     opensuse-3000.2-virt-backports-236-257.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/256
-Patch127:     backport-virt-patches-from-3001-256.patch patch
+Patch127:     backport-virt-patches-from-3001-256.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
