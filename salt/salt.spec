@@ -336,6 +336,8 @@ Patch125:     do-not-raise-streamclosederror-traceback-but-only-lo.patch
 Patch126:     opensuse-3000.2-virt-backports-236-257.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/256
 Patch127:     backport-virt-patches-from-3001-256.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/262
+Patch128:     fix-the-removed-six.itermitems-and-six.-_type-262.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -969,6 +971,7 @@ cp %{S:5} ./.travis.yml
 %patch125 -p1
 %patch126 -p1
 %patch127 -p1
+%patch128 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
