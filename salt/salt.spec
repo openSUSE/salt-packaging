@@ -348,6 +348,8 @@ Patch131:     various-fixes-to-the-mysql-module-to-break-out-the-h.patch
 Patch132:     do-not-raise-streamclosederror-traceback-but-only-lo.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/256
 Patch133:     backport-virt-patches-from-3001-256.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/262
+Patch134:     fix-the-removed-six.itermitems-and-six.-_type-262.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -994,6 +996,7 @@ cp %{S:5} ./.travis.yml
 %patch131 -p1
 %patch132 -p1
 %patch133 -p1
+%patch134 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
