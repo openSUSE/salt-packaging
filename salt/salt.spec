@@ -352,6 +352,8 @@ Patch133:     backport-virt-patches-from-3001-256.patch
 Patch134:     fix-the-removed-six.itermitems-and-six.-_type-262.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/263
 Patch135:     fix-virt.update-with-cpu-defined-263.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/bc20f38d0fa492af70321fef7fe2530937dfc86a
+Patch136:     prevent-import-errors-when-running-test_btrfs-unit-t.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1000,6 +1002,7 @@ cp %{S:5} ./.travis.yml
 %patch133 -p1
 %patch134 -p1
 %patch135 -p1
+%patch136 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
