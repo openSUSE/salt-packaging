@@ -354,6 +354,8 @@ Patch134:     fix-the-removed-six.itermitems-and-six.-_type-262.patch
 Patch135:     fix-virt.update-with-cpu-defined-263.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/bc20f38d0fa492af70321fef7fe2530937dfc86a
 Patch136:     prevent-import-errors-when-running-test_btrfs-unit-t.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58529
+Patch137:     invalidate-file-list-cache-when-cache-file-modified-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1003,6 +1005,7 @@ cp %{S:5} ./.travis.yml
 %patch134 -p1
 %patch135 -p1
 %patch136 -p1
+%patch137 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
