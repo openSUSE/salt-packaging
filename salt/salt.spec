@@ -345,6 +345,8 @@ Patch129:     fix-virt.update-with-cpu-defined-263.patch
 Patch130:     remove-msgpack-1.0.0-requirement-in-the-installed-me.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/bc20f38d0fa492af70321fef7fe2530937dfc86a
 Patch131:     prevent-import-errors-when-running-test_btrfs-unit-t.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58529
+Patch132:     invalidate-file-list-cache-when-cache-file-modified-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -982,6 +984,7 @@ cp %{S:5} ./.travis.yml
 %patch129 -p1
 %patch130 -p1
 %patch131 -p1
+%patch132 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
