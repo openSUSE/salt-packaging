@@ -349,6 +349,8 @@ Patch131:     prevent-import-errors-when-running-test_btrfs-unit-t.patch
 Patch132:     invalidate-file-list-cache-when-cache-file-modified-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58400
 Patch133:     xen-disk-fixes-264.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58552
+Patch134:     zypperpkg-ignore-retcode-104-for-search-bsc-1176697-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -988,6 +990,7 @@ cp %{S:5} ./.travis.yml
 %patch131 -p1
 %patch132 -p1
 %patch133 -p1
+%patch134 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
