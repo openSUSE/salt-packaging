@@ -353,6 +353,8 @@ Patch133:     xen-disk-fixes-264.patch
 Patch134:     zypperpkg-ignore-retcode-104-for-search-bsc-1176697-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
 Patch135:     support-transactional-systems-microos-271.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/272
+Patch136:     backport-a-few-virt-prs-272.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -994,6 +996,7 @@ cp %{S:5} ./.travis.yml
 %patch133 -p1
 %patch134 -p1
 %patch135 -p1
+%patch136 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
