@@ -360,6 +360,8 @@ Patch137:     invalidate-file-list-cache-when-cache-file-modified-.patch
 Patch138:     xen-disk-fixes-264.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58552
 Patch139:     zypperpkg-ignore-retcode-104-for-search-bsc-1176697-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
+Patch140:     support-transactional-systems-microos-268.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1012,6 +1014,7 @@ cp %{S:5} ./.travis.yml
 %patch137 -p1
 %patch138 -p1
 %patch139 -p1
+%patch140 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
