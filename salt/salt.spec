@@ -356,6 +356,8 @@ Patch135:     fix-virt.update-with-cpu-defined-263.patch
 Patch136:     prevent-import-errors-when-running-test_btrfs-unit-t.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58529
 Patch137:     invalidate-file-list-cache-when-cache-file-modified-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58400
+Patch138:     xen-disk-fixes-264.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1006,6 +1008,7 @@ cp %{S:5} ./.travis.yml
 %patch135 -p1
 %patch136 -p1
 %patch137 -p1
+%patch138 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
