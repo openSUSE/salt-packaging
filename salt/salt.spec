@@ -1283,7 +1283,8 @@ if [ $1 -eq 2 ] ; then
   true
 fi
 %if %{with systemd}
-if [ `rpm -q systemd --queryformat="%%{VERSION}"` -lt 228 ]; then
+systemd_ver=$(rpm -q systemd --queryformat="%%{VERSION}")
+if [ ${systemd_ver%.*} -lt 228 ]; then
   # On systemd < 228 the 'TasksTask' attribute is not available.
   # Removing TasksMax from salt-master.service on SLE12SP1 LTSS (bsc#985112)
   sed -i '/TasksMax=infinity/d' %{_unitdir}/salt-master.service
