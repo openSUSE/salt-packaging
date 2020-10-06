@@ -355,6 +355,8 @@ Patch134:     zypperpkg-ignore-retcode-104-for-search-bsc-1176697-.patch
 Patch135:     support-transactional-systems-microos-271.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/272
 Patch136:     backport-a-few-virt-prs-272.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/275
+Patch137:     bsc-1176024-fix-file-directory-user-and-group-owners.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -997,6 +999,7 @@ cp %{S:5} ./.travis.yml
 %patch134 -p1
 %patch135 -p1
 %patch136 -p1
+%patch137 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
