@@ -368,6 +368,8 @@ Patch141:     backport-a-few-virt-prs-272.patch
 Patch142:     bsc-1176024-fix-file-directory-user-and-group-owners.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/276
 Patch143:     fix-grains.test_core-unit-test-276.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/ca8289b521c298e2c9e7ad235daf62e81e07ebd4
+Patch144:     drop-wrong-mock-from-chroot-unit-test.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1025,6 +1027,7 @@ cp %{S:5} ./.travis.yml
 %patch141 -p1
 %patch142 -p1
 %patch143 -p1
+%patch144 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
