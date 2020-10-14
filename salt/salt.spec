@@ -361,6 +361,8 @@ Patch137:     bsc-1176024-fix-file-directory-user-and-group-owners.patch
 Patch138:     fix-grains.test_core-unit-test-277.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/e2c3b1cb72b796fe12f94af64baa2e64cbe5db0b
 Patch139:     drop-wrong-mock-from-chroot-unit-test.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/280
+Patch140:     ensure-virt.update-stop_on_reboot-is-updated-with-it.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1007,6 +1009,7 @@ cp %{S:5} ./.travis.yml
 %patch137 -p1
 %patch138 -p1
 %patch139 -p1
+%patch140 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
