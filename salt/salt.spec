@@ -882,6 +882,18 @@ Conflicts:      otherproviders(salt-formulas-configuration)
 This package adds the standalone configuration for the Salt master in order to make the packaged Salt formulas available on the Salt master
 
 
+%package standalone-formulas-configuration-masterless
+Summary:        Standalone configuration to make the packaged formulas available for the salt-call and salt-minion in a masterless environment
+Group:          System/Management
+Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}-minion = %{version}-%{release}
+Provides:       salt-formulas-configuration
+Conflicts:      otherproviders(salt-formulas-configuration)
+
+%description standalone-formulas-configuration-masterless
+This package adds the standalone configuration for salt-call and salt-minion in order to make the packaged Salt formulas available in a masterless environment
+
+
 %prep
 # %setup -q -n salt-%{version}
 %setup -q -n salt-3000-suse
@@ -1762,6 +1774,13 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %files standalone-formulas-configuration
 %defattr(-,root,root)
 %config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/master.d/standalone-formulas-configuration.conf
+%dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/
+%dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/states/
+%dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/metadata/
+
+%files standalone-formulas-configuration-masterless
+%defattr(-,root,root)
+%config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/minion.d/standalone-formulas-configuration.conf
 %dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/
 %dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/states/
 %dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/metadata/
