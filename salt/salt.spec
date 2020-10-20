@@ -363,6 +363,8 @@ Patch138:     fix-grains.test_core-unit-test-277.patch
 Patch139:     drop-wrong-mock-from-chroot-unit-test.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/280
 Patch140:     ensure-virt.update-stop_on_reboot-is-updated-with-it.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/281
+Patch141:     path-replace-functools.wraps-with-six.wraps-bsc-1177.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1010,6 +1012,7 @@ cp %{S:5} ./.travis.yml
 %patch138 -p1
 %patch139 -p1
 %patch140 -p1
+%patch141 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
