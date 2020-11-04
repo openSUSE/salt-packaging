@@ -367,6 +367,8 @@ Patch140:     ensure-virt.update-stop_on_reboot-is-updated-with-it.patch
 Patch141:     path-replace-functools.wraps-with-six.wraps-bsc-1177.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58560
 Patch142:     fix-novendorchange-option-284.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58871
+Patch143:     fix-cve-2020-25592-and-add-tests-bsc-1178319.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1016,6 +1018,7 @@ cp %{S:5} ./.travis.yml
 %patch140 -p1
 %patch141 -p1
 %patch142 -p1
+%patch143 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
