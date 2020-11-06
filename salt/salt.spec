@@ -369,6 +369,8 @@ Patch141:     path-replace-functools.wraps-with-six.wraps-bsc-1177.patch
 Patch142:     fix-novendorchange-option-284.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58871
 Patch143:     fix-cve-2020-25592-and-add-tests-bsc-1178319.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/293
+Patch144:     set-passphrase-for-salt-ssh-keys-to-empty-string-293.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1019,6 +1021,7 @@ cp %{S:5} ./.travis.yml
 %patch141 -p1
 %patch142 -p1
 %patch143 -p1
+%patch144 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
