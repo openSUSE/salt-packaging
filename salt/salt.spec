@@ -386,6 +386,8 @@ Patch150:     fix-for-bsc-1102248-psutil-is-broken-and-so-process-.patch
 Patch151:     grains-master-can-read-grains.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/289
 Patch152:     add-migrated-state-and-gpg-key-management-functions-.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/291
+Patch153:     transactional_update-unify-with-chroot.call.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1053,6 +1055,7 @@ cp %{S:5} ./.travis.yml
 %patch150 -p1
 %patch151 -p1
 %patch152 -p1
+%patch153 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
