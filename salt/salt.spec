@@ -384,6 +384,8 @@ Patch149:     fix-novendorchange-option-284.patch
 Patch150:     fix-for-bsc-1102248-psutil-is-broken-and-so-process-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/287
 Patch151:     grains-master-can-read-grains.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/289
+Patch152:     add-migrated-state-and-gpg-key-management-functions-.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1050,6 +1052,7 @@ cp %{S:5} ./.travis.yml
 %patch149 -p1
 %patch150 -p1
 %patch151 -p1
+%patch152 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
