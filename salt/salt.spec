@@ -382,6 +382,8 @@ Patch148:     set-passphrase-for-salt-ssh-keys-to-empty-string-293.patch
 Patch149:     fix-novendorchange-option-284.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/278
 Patch150:     fix-for-bsc-1102248-psutil-is-broken-and-so-process-.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/287
+Patch151:     grains-master-can-read-grains.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1047,6 +1049,7 @@ cp %{S:5} ./.travis.yml
 %patch148 -p1
 %patch149 -p1
 %patch150 -p1
+%patch151 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
