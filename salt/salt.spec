@@ -382,7 +382,7 @@ Patch148:     set-passphrase-for-salt-ssh-keys-to-empty-string-293.patch
 Patch149:     fix-novendorchange-option-284.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/278
 Patch150:     fix-for-bsc-1102248-psutil-is-broken-and-so-process-.patch
-# PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/287
 Patch151:     grains-master-can-read-grains.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58784
