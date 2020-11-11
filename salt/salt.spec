@@ -375,7 +375,7 @@ Patch144:     set-passphrase-for-salt-ssh-keys-to-empty-string-293.patch
 Patch145:     fix-for-bsc-1102248-psutil-is-broken-and-so-process-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/286
 Patch146:     grains-master-can-read-grains.patch
-# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/290
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58784
 Patch147:     add-migrated-state-and-gpg-key-management-functions-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/292
 Patch148:     transactional_update-unify-with-chroot.call.patch
