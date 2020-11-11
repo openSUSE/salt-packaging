@@ -384,7 +384,7 @@ Patch149:     fix-novendorchange-option-284.patch
 Patch150:     fix-for-bsc-1102248-psutil-is-broken-and-so-process-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/287
 Patch151:     grains-master-can-read-grains.patch
-# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/289
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58784
 Patch152:     add-migrated-state-and-gpg-key-management-functions-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/291
 Patch153:     transactional_update-unify-with-chroot.call.patch
