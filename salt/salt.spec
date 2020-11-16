@@ -380,6 +380,8 @@ Patch146:     grains-master-can-read-grains.patch
 Patch147:     add-migrated-state-and-gpg-key-management-functions-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/292
 Patch148:     transactional_update-unify-with-chroot.call.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/295
+Patch149:     pkgrepo-support-python-2.7-function-call-295.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1035,6 +1037,7 @@ cp %{S:5} ./.travis.yml
 %patch146 -p1
 %patch147 -p1
 %patch148 -p1
+%patch149 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
