@@ -761,7 +761,7 @@ than serially.
 %package minion
 Summary:        The client component for Saltstack
 Group:          System/Management
-Requires(pre):  %{name} = %{version}-%{release}
+Requires:       %{name} = %{version}-%{release}
 
 %if %{with systemd}
 %{?systemd_requires}
