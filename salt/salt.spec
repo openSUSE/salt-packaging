@@ -691,7 +691,11 @@ Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
 %if 0%{?default_py3}
+%if 0%{?suse_version}
 Requires:       python3-CherryPy >= 3.2.2
+%else
+Requires:       python3-cherrypy
+%endif
 %else
 Requires:       python-CherryPy >= 3.2.2
 %endif
