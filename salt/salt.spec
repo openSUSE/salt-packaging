@@ -393,6 +393,11 @@ Patch153:     transactional_update-unify-with-chroot.call.patch
 Patch154:     pkgrepo-support-python-2.7-function-call-294.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/297
 Patch155:     fix-salt.utils.stringutils.to_str-calls-to-make-it-w.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/300
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58859
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59007
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58196
+Patch156:     opensuse-3000-bigvm-backports-300.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1063,6 +1068,7 @@ cp %{S:5} ./.travis.yml
 %patch153 -p1
 %patch154 -p1
 %patch155 -p1
+%patch156 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
