@@ -402,6 +402,8 @@ Patch156:     opensuse-3000-bigvm-backports-300.patch
 Patch157:     add-pkg.services_need_restart-302.patch
 # PATCH-FIX_UPSTREAM: https://github.com/openSUSE/salt/pull/301
 Patch158:     add-patch-support-for-allow-vendor-change-option-wit.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/304
+Patch159:     force-zyppnotify-to-prefer-packages.db-than-packages.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1075,6 +1077,7 @@ cp %{S:5} ./.travis.yml
 %patch156 -p1
 %patch157 -p1
 %patch158 -p1
+%patch159 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
