@@ -391,7 +391,7 @@ Patch150:     fix-salt.utils.stringutils.to_str-calls-to-make-it-w.patch
 Patch151:     opensuse-3000.3-bigvm-backports-303.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58262
 Patch152:     add-pkg.services_need_restart-302.patch
-# PATCH-FIX_UPSTREAM: https://github.com/openSUSE/salt/pull/301
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/301
 Patch153:     add-patch-support-for-allow-vendor-change-option-wit.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/304
 Patch154:     force-zyppnotify-to-prefer-packages.db-than-packages.patch
