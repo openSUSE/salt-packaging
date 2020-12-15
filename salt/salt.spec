@@ -19,17 +19,20 @@
 %global build_py3   1
 %global build_py2   0
 %global default_py3 1
+%global cherrypy CherryPy
 %else
 %if 0%{?suse_version} >= 1500
 # SLE15
 %global build_py3   1
 %global build_py2   1
 %global default_py3 1
+%global cherrypy CherryPy
 %else
 %if 0%{?suse_version} == 1315
 # SLE12
 %global build_py3   1
 %global build_py2   1
+%global cherrypy CherryPy
 %else
 %if 0%{?rhel} == 7
 # RES7
@@ -38,6 +41,7 @@
 %global build_py3   1
 %global default_py3 1
 %endif
+%global cherrypy cherrypy
 %endif
 %endif
 %endif
@@ -703,10 +707,12 @@ Summary:        The api for Salt a parallel remote execution system
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
+
+
 %if 0%{?default_py3}
-Requires:       python3-CherryPy >= 3.2.2
+Requires:       python3-%{cherrypy} >= 3.2.2
 %else
-Requires:       python-CherryPy >= 3.2.2
+Requires:       python-%{cherrypy} >= 3.2.2
 %endif
 
 %description api
