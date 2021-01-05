@@ -327,6 +327,9 @@ Patch133:     transactional_update-unify-with-chroot.call.patch
 Patch134:     pkgrepo-support-python-2.7-function-call-295.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/79ae019ac7515614c6fbc620e66575f015bc447
 Patch135:     drop-wrong-virt-capabilities-code-after-rebasing-pat.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/5ea2f10b15684dd417bad858642faafc92cd382
+#                     (revert https://github.com/saltstack/salt/pull/58655)
+Patch136:     revert-fixing-a-use-case-when-multiple-inotify-beaco.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -862,6 +865,7 @@ cp %{S:5} ./.travis.yml
 %patch133 -p1
 %patch134 -p1
 %patch135 -p1
+%patch136 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
