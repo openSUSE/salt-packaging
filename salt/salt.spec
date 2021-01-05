@@ -325,6 +325,8 @@ Patch132:     add-migrated-state-and-gpg-key-management-functions-.patch
 Patch133:     transactional_update-unify-with-chroot.call.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/295
 Patch134:     pkgrepo-support-python-2.7-function-call-295.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/79ae019ac7515614c6fbc620e66575f015bc447
+Patch135:     drop-wrong-virt-capabilities-code-after-rebasing-pat.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -859,6 +861,7 @@ cp %{S:5} ./.travis.yml
 %patch132 -p1
 %patch133 -p1
 %patch134 -p1
+%patch135 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
