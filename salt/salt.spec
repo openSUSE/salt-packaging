@@ -441,7 +441,6 @@ BuildRequires:  python3-requests >= 1.0.0
 
 # requirements/zeromq.txt
 %if %{with test}
-# requirements/dev_python27.txt
 BuildRequires:  python3-boto >= 2.32.1
 BuildRequires:  python3-mock
 BuildRequires:  python3-moto >= 0.3.6
