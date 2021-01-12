@@ -332,6 +332,8 @@ Patch135:     drop-wrong-virt-capabilities-code-after-rebasing-pat.patch
 Patch136:     revert-fixing-a-use-case-when-multiple-inotify-beaco.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59269
 Patch137:     fix-aptpkg.normalize_name-when-package-arch-is-all.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/310
+Patch138:     open-suse-3002.2-bigvm-310.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -868,6 +870,7 @@ cp %{S:5} ./.travis.yml
 %patch135 -p1
 %patch136 -p1
 %patch137 -p1
+%patch138 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
