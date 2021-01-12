@@ -340,7 +340,7 @@ Patch139:     open-suse-3002.2-virt-network-311.patch
 Patch140:     fix-salt.utils.stringutils.to_str-calls-to-make-it-w.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58262
 Patch141:     add-pkg.services_need_restart-302.patch
-# PATCH-FIX_UPSTREAM: https://github.com/openSUSE/salt/pull/301
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/301
 Patch142:     add-patch-support-for-allow-vendor-change-option-wit.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/304
 Patch143:     force-zyppnotify-to-prefer-packages.db-than-packages.patch
