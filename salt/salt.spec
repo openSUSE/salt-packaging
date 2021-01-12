@@ -342,6 +342,8 @@ Patch140:     fix-salt.utils.stringutils.to_str-calls-to-make-it-w.patch
 Patch141:     add-pkg.services_need_restart-302.patch
 # PATCH-FIX_UPSTREAM: https://github.com/openSUSE/salt/pull/301
 Patch142:     add-patch-support-for-allow-vendor-change-option-wit.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/304
+Patch143:     force-zyppnotify-to-prefer-packages.db-than-packages.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -883,6 +885,7 @@ cp %{S:5} ./.travis.yml
 %patch140 -p1
 %patch141 -p1
 %patch142 -p1
+%patch143 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
