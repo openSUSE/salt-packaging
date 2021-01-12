@@ -340,6 +340,8 @@ Patch139:     open-suse-3002.2-virt-network-311.patch
 Patch140:     fix-salt.utils.stringutils.to_str-calls-to-make-it-w.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58262
 Patch141:     add-pkg.services_need_restart-302.patch
+# PATCH-FIX_UPSTREAM: https://github.com/openSUSE/salt/pull/301
+Patch142:     add-patch-support-for-allow-vendor-change-option-wit.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -880,6 +882,7 @@ cp %{S:5} ./.travis.yml
 %patch139 -p1
 %patch140 -p1
 %patch141 -p1
+%patch142 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
