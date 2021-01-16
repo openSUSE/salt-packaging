@@ -15,7 +15,13 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
-
+%if 0%{?rhel} >= 8
+%global __python /usr/bin/python2
+%define pythonX python2
+%else
+%define pythonX python
+%endif
+ 
 %{!?python_sitelib: %global python_sitelib %(python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %bcond_with    test
 %bcond_with    docs
@@ -240,41 +246,53 @@ Patch93:        fix-cve-2020-25592-and-add-tests-bsc-1178319.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
-BuildRequires:  python
-BuildRequires:  python-devel
+BuildRequires:  %{pythonX}
+BuildRequires:  %{pythonX}-devel
 # requirements/base.txt
 %if 0%{?rhel}
-BuildRequires:  python-jinja2
+BuildRequires:  %{pythonX}-jinja2
 %else
 BuildRequires:  python-Jinja2
 %endif
-BuildRequires:  python-futures >= 2.0
-BuildRequires:  python-markupsafe
+BuildRequires:  %{pythonX}-futures >= 2.0
+BuildRequires:  %{pythonX}-markupsafe
+%if 0%{?rhel} >= 8
+BuildRequires:  %{pythonX}-msgpack > 0.3
+%else
 BuildRequires:  python-msgpack-python > 0.3
-BuildRequires:  python-psutil
-BuildRequires:  python-requests >= 1.0.0
-BuildRequires:  python-tornado >= 4.2.1
-BuildRequires:  python-yaml
+%endif
+BuildRequires:  %{pythonX}-psutil
+BuildRequires:  %{pythonX}-requests >= 1.0.0
+BuildRequires:  %{pythonX}-tornado >= 4.2.1
+BuildRequires:  %{pythonX}-yaml
 
 # requirements/zeromq.txt
 %if 0%{?suse_version} >= 1500
 BuildRequires:       python2-M2Crypto
 %else
+%if 0%{?rhel} >= 8
+BuildRequires:       %{pythonX}-m2crypto
+%else
 BuildRequires:       python-pycrypto >= 2.6.1
 %endif
-BuildRequires:  python-pyzmq >= 2.2.0
+%endif
+%if 0%{?rhel} >= 8
+BuildRequires:       %{pythonX}-zmq >= 2.2.0
+%else
+BuildRequires:       python-pyzmq >= 2.2.0
+%endif
 %if %{with test}
 # requirements/dev_python27.txt
-BuildRequires:  python-boto >= 2.32.1
-BuildRequires:  python-mock
-BuildRequires:  python-moto >= 0.3.6
-BuildRequires:  python-pip
-BuildRequires:  python-salt-testing >= 2015.2.16
-BuildRequires:  python-unittest2
-BuildRequires:  python-xml
+BuildRequires:  %{pythonX}-boto >= 2.32.1
+BuildRequires:  %{pythonX}-mock
+BuildRequires:  %{pythonX}-moto >= 0.3.6
+BuildRequires:  %{pythonX}-pip
+BuildRequires:  %{pythonX}-salt-testing >= 2015.2.16
+BuildRequires:  %{pythonX}-unittest2
+BuildRequires:  %{pythonX}-xml
 %endif
 %if %{with builddocs}
-BuildRequires:  python-sphinx
+BuildRequires:  %{pythonX}-sphinx
 %endif
 %if 0%{?suse_version} > 1020
 BuildRequires:  fdupes
@@ -296,14 +314,14 @@ Requires(pre):  dbus
 
 Requires:       procps
 Requires:       logrotate
-Requires:       python
+Requires:       %{pythonX}
 #
 %if ! 0%{?suse_version} > 1110
-Requires:       python-certifi
+Requires:       %{pythonX}-certifi
 %endif
 # requirements/base.txt
 %if 0%{?rhel}
-Requires:       python-jinja2
+Requires:       %{pythonX}-jinja2
 Requires:       yum
 %if 0%{?rhel} == 6
 Requires:       yum-plugin-security
@@ -311,19 +329,27 @@ Requires:       yum-plugin-security
 %else
 Requires:       python-Jinja2
 %endif
-Requires:       python-futures >= 2.0
-Requires:       python-markupsafe
+Requires:       %{pythonX}-futures >= 2.0
+Requires:       %{pythonX}-markupsafe
 %if 0%{?suse_version} >= 1500
 Requires:       py26-compat-msgpack-python
 Requires:       py26-compat-tornado
 %else
+%if 0%{?rhel} >= 8
+Requires:       %{pythonX}-msgpack > 0.3
+%else
 Requires:       python-msgpack-python > 0.3
-Requires:       python-tornado >= 4.2.1
 %endif
-Requires:       python-psutil
-Requires:       python-requests >= 1.0.0
-Requires:       python-backports.ssl_match_hostname
-Requires:       python-yaml
+Requires:       %{pythonX}-tornado >= 4.2.1
+%endif
+Requires:       %{pythonX}-psutil
+Requires:       %{pythonX}-requests >= 1.0.0
+%if 0%{?rhel} >= 8
+Requires:       %{pythonX}-backports-ssl_match_hostname
+%else
+Requires:       %{pythonX}-backports.ssl_match_hostname
+%endif
+Requires:       %{pythonX}-yaml
 %if 0%{?suse_version}
 # required for zypper.py
 Requires:       rpm-python
@@ -338,9 +364,17 @@ Suggests:       python-gnupg
 %if 0%{?suse_version} >= 1500
 Requires:       python2-M2Crypto
 %else
+%if 0%{?rhel} >= 8
+Requires:       %{pythonX}-m2crypto
+%else
 Requires:       python-pycrypto >= 2.6.1
 %endif
+%endif
+%if 0%{?rhel} >= 8
+Requires:       %{pythonX}-zmq >= 2.2.0
+%else
 Requires:       python-pyzmq >= 2.2.0
+%endif
 #
 %if 0%{?suse_version}
 # python-xml is part of python-base in all rhel versions
