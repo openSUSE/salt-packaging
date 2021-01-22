@@ -535,10 +535,7 @@ BuildRequires:  python-xml
 BuildRequires:  python-sphinx
 %endif
 Requires:       python >= 2.7
-#
-%if ! 0%{?suse_version} > 1110
 Requires:       python-certifi
-%endif
 # requirements/base.txt
 %if 0%{?rhel} || 0%{?fedora}
 Requires:       python-jinja2
@@ -647,10 +644,7 @@ Requires:       platform-python
 %else
 Requires:       python3
 %endif
-#
-%if ! 0%{?suse_version} > 1110
 Requires:       python3-certifi
-%endif
 # requirements/base.txt
 %if 0%{?rhel} || 0%{?fedora}
 Requires:       python3-jinja2
