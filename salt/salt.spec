@@ -348,6 +348,8 @@ Patch143:     force-zyppnotify-to-prefer-packages.db-than-packages.patch
 Patch144:     revert-add-patch-support-for-allow-vendor-change-opt.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/73e357d7eee19a73cade22becb30d9689cae27ba
 Patch145:     remove-deprecated-warning-that-breaks-miniion-execut.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59345
+Patch146:     fix-onlyif-unless-when-multiple-conditions-bsc-11808.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -892,6 +894,7 @@ cp %{S:5} ./.travis.yml
 %patch143 -p1
 %patch144 -p1
 %patch145 -p1
+%patch146 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
