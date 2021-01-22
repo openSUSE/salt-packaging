@@ -401,6 +401,8 @@ Patch153:     add-patch-support-for-allow-vendor-change-option-wit.patch
 Patch154:     force-zyppnotify-to-prefer-packages.db-than-packages.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/4028fd6e84d882b6dcee695d409c7e1ed6c83bdc
 Patch155:     revert-add-patch-support-for-allow-vendor-change-opt.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59345
+Patch156:     fix-onlyif-unless-when-multiple-conditions-bsc-11808.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1065,6 +1067,7 @@ cp %{S:5} ./.travis.yml
 %patch153 -p1
 %patch154 -p1
 %patch155 -p1
+%patch156 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
