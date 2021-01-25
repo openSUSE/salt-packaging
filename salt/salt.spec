@@ -350,6 +350,8 @@ Patch144:     revert-add-patch-support-for-allow-vendor-change-opt.patch
 Patch145:     remove-deprecated-warning-that-breaks-miniion-execut.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59345
 Patch146:     fix-onlyif-unless-when-multiple-conditions-bsc-11808.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59354
+Patch147:     do-not-crash-when-unexpected-cmd-output-at-listing-p.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -895,6 +897,7 @@ cp %{S:5} ./.travis.yml
 %patch144 -p1
 %patch145 -p1
 %patch146 -p1
+%patch147 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
