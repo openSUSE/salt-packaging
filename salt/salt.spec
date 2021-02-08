@@ -354,6 +354,9 @@ Patch146:     fix-onlyif-unless-when-multiple-conditions-bsc-11808.patch
 Patch147:     do-not-crash-when-unexpected-cmd-output-at-listing-p.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59189
 Patch148:     virt-uefi-fix-backport-312.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59355
+#                     https://github.com/saltstack/salt/pull/59417
+Patch149:     3002.2-xen-spicevmc-dns-srv-records-backports-314.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -901,6 +904,7 @@ cp %{S:5} ./.travis.yml
 %patch146 -p1
 %patch147 -p1
 %patch148 -p1
+%patch149 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
