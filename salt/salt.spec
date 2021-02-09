@@ -414,6 +414,8 @@ Patch160:     revert-add-patch-support-for-allow-vendor-change-opt.patch
 Patch161:     fix-onlyif-unless-when-multiple-conditions-bsc-11808.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59354
 Patch162:     do-not-crash-when-unexpected-cmd-output-at-listing-p.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59189
+Patch163:     virt-uefi-fix-backport-312.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1093,6 +1095,7 @@ cp %{S:5} ./.travis.yml
 %patch160 -p1
 %patch161 -p1
 %patch162 -p1
+%patch163 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
