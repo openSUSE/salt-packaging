@@ -1,0 +1,205 @@
+From 0c3c2c07051106f64d89d588927f4d89f9e6b5fb Mon Sep 17 00:00:00 2001
+From: Cedric Bosdonnat <cbosdonnat@suse.com>
+Date: Mon, 8 Feb 2021 16:42:47 +0100
+Subject: [PATCH] 3002.2 Xen spicevmc, DNS SRV records backports (#314)
+
+* Fix virtual network generated DNS XML for SRV records
+
+libvirt network's srv element doesn't take a `name` property but a
+`service` one.
+
+* Add missing property in virt.network_define dns srv doc
+
+* virt: convert spice generation tests to pytests
+
+* virt: don't add spicevmc channel to Xen VMs
+
+Xen fully virtualized VMs with spicevmc channel fail to start, so better
+not write it out in such cases.
+
+* virt: inverse the remaining asserts in pytests
+
+openSUSE 3000 spicevmc backport (#315)
+
+* Revert "3002.2 Xen spicevmc, DNS SRV records backports (#314)"
+
+This reverts commit 6d71be52432bcf0089acd851a05cdfca834a3642.
+
+* virt: convert spice generation tests to pytests
+
+* virt: don't add spicevmc channel to Xen VMs
+
+Xen fully virtualized VMs with spicevmc channel fail to start, so better
+not write it out in such cases.
+---
+ changelog/59416.fixed                         |  1 +
+ salt/templates/virt/libvirt_domain.jinja      |  2 +-
+ .../pytests/unit/modules/virt/test_domain.py  | 62 +++++++++++++++++++
+ tests/unit/modules/test_virt.py               | 59 ------------------
+ 4 files changed, 64 insertions(+), 60 deletions(-)
+ create mode 100644 changelog/59416.fixed
+
+diff --git a/changelog/59416.fixed b/changelog/59416.fixed
+new file mode 100644
+index 0000000000..820124e99a
+--- /dev/null
++++ b/changelog/59416.fixed
+@@ -0,0 +1 @@
++Don't create spicevmc channel for Xen virtual machines
+diff --git a/salt/templates/virt/libvirt_domain.jinja b/salt/templates/virt/libvirt_domain.jinja
+index 6ac3e867b9..7c4cf0acf3 100644
+--- a/salt/templates/virt/libvirt_domain.jinja
++++ b/salt/templates/virt/libvirt_domain.jinja
+@@ -305,7 +305,7 @@
+                             {% endif %}/>
+                 </graphics>
+ 
+-                  {% if graphics.type == "spice" -%}
++                  {% if graphics.type == "spice" and hypervisor in ["qemu", "kvm"] -%}
+                   <channel type='spicevmc'>
+                     <target type='virtio' name='com.redhat.spice.0'/>
+                   </channel>
+diff --git a/tests/pytests/unit/modules/virt/test_domain.py b/tests/pytests/unit/modules/virt/test_domain.py
+index f1599ced84..9938499d37 100644
+--- a/tests/pytests/unit/modules/virt/test_domain.py
++++ b/tests/pytests/unit/modules/virt/test_domain.py
+@@ -1573,3 +1573,65 @@ def test_update_failure(make_mock_vm):
+         "disk": {"attached": [], "detached": [], "updated": []},
+         "interface": {"attached": [], "detached": []},
+     }
++
++@pytest.mark.parametrize("hypervisor", ["kvm", "xen"])
++def test_gen_xml_spice_default(hypervisor):
++    """
++    Test virt._gen_xml() with default spice graphics device
++    """
++    xml_data = virt._gen_xml(
++        virt.libvirt.openAuth.return_value,
++        "hello",
++        1,
++        512,
++        {},
++        {},
++        hypervisor,
++        "hvm",
++        "x86_64",
++        graphics={"type": "spice"},
++    )
++    root = ET.fromstring(xml_data)
++    assert root.find("devices/graphics").attrib["type"] == "spice"
++    assert root.find("devices/graphics").attrib["autoport"] == "yes"
++    assert root.find("devices/graphics").attrib["listen"] == "0.0.0.0"
++    assert root.find("devices/graphics/listen").attrib["type"] == "address"
++    assert root.find("devices/graphics/listen").attrib["address"] == "0.0.0.0"
++    if hypervisor == "kvm":
++        assert (
++            root.find(".//channel[@type='spicevmc']/target").get("name")
++            == "com.redhat.spice.0"
++        )
++    else:
++        assert root.find(".//channel[@type='spicevmc']") is None
++
++
++def test_gen_xml_spice():
++    """
++    Test virt._gen_xml() with spice graphics device
++    """
++    xml_data = virt._gen_xml(
++        virt.libvirt.openAuth.return_value,
++        "hello",
++        1,
++        512,
++        {},
++        {},
++        "kvm",
++        "hvm",
++        "x86_64",
++        graphics={
++            "type": "spice",
++            "port": 1234,
++            "tls_port": 5678,
++            "listen": {"type": "none"},
++        },
++    )
++    root = ET.fromstring(xml_data)
++    assert root.find("devices/graphics").attrib["type"] == "spice"
++    assert root.find("devices/graphics").attrib["autoport"] == "no"
++    assert root.find("devices/graphics").attrib["port"] == "1234"
++    assert root.find("devices/graphics").attrib["tlsPort"] == "5678"
++    assert "listen" not in root.find("devices/graphics").attrib
++    assert root.find("devices/graphics/listen").attrib["type"] == "none"
++    assert "address" not in root.find("devices/graphics/listen").attrib
+diff --git a/tests/unit/modules/test_virt.py b/tests/unit/modules/test_virt.py
+index 910b3b014a..41a15eaa3d 100644
+--- a/tests/unit/modules/test_virt.py
++++ b/tests/unit/modules/test_virt.py
+@@ -519,65 +519,6 @@ class VirtTestCase(TestCase, LoaderModuleMockMixin):
+             root.find("devices/graphics/listen").attrib["address"], "myhost"
+         )
+ 
+-    def test_gen_xml_spice_default(self):
+-        """
+-        Test virt._gen_xml() with default spice graphics device
+-        """
+-        diskp = virt._disk_profile(self.mock_conn, "default", "kvm", [], "hello")
+-        nicp = virt._nic_profile("default", "kvm")
+-        xml_data = virt._gen_xml(
+-            self.mock_conn,
+-            "hello",
+-            1,
+-            512,
+-            diskp,
+-            nicp,
+-            "kvm",
+-            "hvm",
+-            "x86_64",
+-            graphics={"type": "spice"},
+-        )
+-        root = ET.fromstring(xml_data)
+-        self.assertEqual(root.find("devices/graphics").attrib["type"], "spice")
+-        self.assertEqual(root.find("devices/graphics").attrib["autoport"], "yes")
+-        self.assertEqual(root.find("devices/graphics").attrib["listen"], "0.0.0.0")
+-        self.assertEqual(root.find("devices/graphics/listen").attrib["type"], "address")
+-        self.assertEqual(
+-            root.find("devices/graphics/listen").attrib["address"], "0.0.0.0"
+-        )
+-
+-    def test_gen_xml_spice(self):
+-        """
+-        Test virt._gen_xml() with spice graphics device
+-        """
+-        diskp = virt._disk_profile(self.mock_conn, "default", "kvm", [], "hello")
+-        nicp = virt._nic_profile("default", "kvm")
+-        xml_data = virt._gen_xml(
+-            self.mock_conn,
+-            "hello",
+-            1,
+-            512,
+-            diskp,
+-            nicp,
+-            "kvm",
+-            "hvm",
+-            "x86_64",
+-            graphics={
+-                "type": "spice",
+-                "port": 1234,
+-                "tls_port": 5678,
+-                "listen": {"type": "none"},
+-            },
+-        )
+-        root = ET.fromstring(xml_data)
+-        self.assertEqual(root.find("devices/graphics").attrib["type"], "spice")
+-        self.assertEqual(root.find("devices/graphics").attrib["autoport"], "no")
+-        self.assertEqual(root.find("devices/graphics").attrib["port"], "1234")
+-        self.assertEqual(root.find("devices/graphics").attrib["tlsPort"], "5678")
+-        self.assertFalse("listen" in root.find("devices/graphics").attrib)
+-        self.assertEqual(root.find("devices/graphics/listen").attrib["type"], "none")
+-        self.assertFalse("address" in root.find("devices/graphics/listen").attrib)
+-
+     def test_gen_xml_memory(self):
+         """
+         Test virt._gen_xml() with advanced memory settings
+-- 
+2.30.0
+
+
