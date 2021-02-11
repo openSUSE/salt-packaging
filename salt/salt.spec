@@ -419,6 +419,8 @@ Patch163:     virt-uefi-fix-backport-312.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59355
 #                     https://github.com/saltstack/salt/pull/59417
 Patch164:     3002.2-xen-spicevmc-dns-srv-records-backports-314.patch
+# PATCH-FIX_UPSTREAM: open-suse-3002.2-xen-grub-316.patch
+Patch165:     open-suse-3002.2-xen-grub-316.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1100,6 +1102,7 @@ cp %{S:5} ./.travis.yml
 %patch162 -p1
 %patch163 -p1
 %patch164 -p1
+%patch165 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
