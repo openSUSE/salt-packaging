@@ -359,6 +359,8 @@ Patch148:     virt-uefi-fix-backport-312.patch
 Patch149:     3002.2-xen-spicevmc-dns-srv-records-backports-314.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59485
 Patch150:     open-suse-3002.2-xen-grub-316.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/320
+Patch151:     async-batch-implementation-fix-320.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -908,6 +910,7 @@ cp %{S:5} ./.travis.yml
 %patch148 -p1
 %patch149 -p1
 %patch150 -p1
+%patch151 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
