@@ -416,6 +416,8 @@ Patch160:     open-suse-3002.2-xen-grub-316.patch
 Patch161:     fixes-56144-to-enable-hotadd-profile-support.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/307
 Patch162:     add-sleep-on-exception-handling-minion-connecting-to.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/a715b2c2a985f4fe9db3438cddc6efb29c87fd65
+Patch163:     fix-recursion-false-detection-in-payload-bsc-1180101.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1081,6 +1083,7 @@ cp %{S:5} ./.travis.yml
 %patch160 -p1
 %patch161 -p1
 %patch162 -p1
+%patch163 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
