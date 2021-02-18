@@ -414,6 +414,8 @@ Patch159:     3002.2-xen-spicevmc-dns-srv-records-backports-314.patch
 Patch160:     open-suse-3002.2-xen-grub-316.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56173
 Patch161:     fixes-56144-to-enable-hotadd-profile-support.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/307
+Patch162:     add-sleep-on-exception-handling-minion-connecting-to.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1078,6 +1080,7 @@ cp %{S:5} ./.travis.yml
 %patch159 -p1
 %patch160 -p1
 %patch161 -p1
+%patch162 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
