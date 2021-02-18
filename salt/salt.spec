@@ -429,6 +429,8 @@ Patch167:     add-sleep-on-exception-handling-minion-connecting-to.patch
 Patch168:     fix-recursion-false-detectioni-in-payload-305.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/299
 Patch169:     implementation-of-suse_ip-execution-module-bsc-10999.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58591
+Patch170:     backport-commit-1b16478c51fb75c25cd8d217c80955feefb6.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1109,6 +1111,7 @@ cp %{S:5} ./.travis.yml
 %patch167 -p1
 %patch168 -p1
 %patch169 -p1
+%patch170 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
