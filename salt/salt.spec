@@ -365,6 +365,8 @@ Patch151:     async-batch-implementation-fix-320.patch
 Patch152:     fixes-56144-to-enable-hotadd-profile-support.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/307
 Patch153:     add-sleep-on-exception-handling-on-minion-connection.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/323
+Patch154:     implementation-of-suse_ip-execution-module-bsc-10999.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -914,6 +916,7 @@ cp %{S:5} ./.travis.yml
 %patch151 -p1
 %patch152 -p1
 %patch153 -p1
+%patch154 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
