@@ -1,0 +1,26 @@
+From 9817ff56d61ef0cccc781024d4d7df29f82dfc3a Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
+Date: Thu, 18 Feb 2021 15:32:40 +0300
+Subject: [PATCH] Fix recursion false detectioni in payload (#305)
+
+---
+ salt/payload.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/payload.py b/salt/payload.py
+index 37397a6672..80ca695d6a 100644
+--- a/salt/payload.py
++++ b/salt/payload.py
+@@ -197,7 +197,7 @@ class Serial(object):
+             def verylong_encoder(obj, context):
+                 # Make sure we catch recursion here.
+                 objid = id(obj)
+-                if objid in context:
++                if objid in context and isinstance(obj, (dict, list, tuple)):
+                     return '<Recursion on {} with id={}>'.format(type(obj).__name__, id(obj))
+                 context.add(objid)
+ 
+-- 
+2.30.0
+
+
