@@ -415,7 +415,7 @@ Patch160:     open-suse-3002.2-xen-grub-316.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56173
 Patch161:     fixes-56144-to-enable-hotadd-profile-support.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/307
-Patch162:     add-sleep-on-exception-handling-minion-connecting-to.patch
+Patch162:     add-sleep-on-exception-handling-on-minion-connection.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/a715b2c2a985f4fe9db3438cddc6efb29c87fd65
 Patch163:     fix-recursion-false-detection-in-payload-bsc-1180101.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/324
