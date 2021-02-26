@@ -410,27 +410,33 @@ Patch158:     add-patch-support-for-allow-vendor-change-option-wit.patch
 Patch159:     force-zyppnotify-to-prefer-packages.db-than-packages.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/4028fd6e84d882b6dcee695d409c7e1ed6c83bdc
 Patch160:     revert-add-patch-support-for-allow-vendor-change-opt.patch
-# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59345
-Patch161:     fix-onlyif-unless-when-multiple-conditions-bsc-11808.patch
-# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59354
-Patch162:     do-not-crash-when-unexpected-cmd-output-at-listing-p.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59189
-Patch163:     virt-uefi-fix-backport-312.patch
+Patch161:     virt-uefi-fix-backport-312.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59355
 #                     https://github.com/saltstack/salt/pull/59417
-Patch164:     3002.2-xen-spicevmc-dns-srv-records-backports-314.patch
+Patch162:     3002.2-xen-spicevmc-dns-srv-records-backports-314.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59485
-Patch165:     open-suse-3002.2-xen-grub-316.patch
-# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56173
-Patch166:     fixes-56144-to-enable-hotadd-profile-support.patch
-# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/307
-Patch167:     add-sleep-on-exception-handling-minion-connecting-to.patch
-# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/a715b2c2a985f4fe9db3438cddc6efb29c87fd65
-Patch168:     fix-recursion-false-detectioni-in-payload-305.patch
-# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/299
-Patch169:     implementation-of-suse_ip-execution-module-bsc-10999.patch
+Patch163:     open-suse-3002.2-xen-grub-316.patch
+# PATCH-FIX_UPSTREAM: embargoed - not yet link
+Patch164:     fix-for-some-cves-bsc1181550.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58591
-Patch170:     backport-commit-1b16478c51fb75c25cd8d217c80955feefb6.patch
+Patch165:     backport-commit-1b16478c51fb75c25cd8d217c80955feefb6.patch
+# PATCH-FIX_UPSTREAM: embargoed - not yet link
+Patch166:     allow-extra_filerefs-as-sanitized-kwargs-for-ssh-cli.patch
+# PATCH-FIX_UPSTREAM: embargoed - not yet link
+Patch167:     fix_regression_in_cmd_run_after_cve.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59345
+Patch168:     fix-onlyif-unless-when-multiple-conditions-bsc-11808.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59354
+Patch169:     do-not-crash-when-unexpected-cmd-output-at-listing-p.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56173
+Patch170:     fixes-56144-to-enable-hotadd-profile-support.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/307
+Patch171:     add-sleep-on-exception-handling-minion-connecting-to.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/a715b2c2a985f4fe9db3438cddc6efb29c87fd65
+Patch172:     fix-recursion-false-detectioni-in-payload-305.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/299
+Patch173:     implementation-of-suse_ip-execution-module-bsc-10999.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1114,6 +1120,9 @@ cp %{S:5} ./.travis.yml
 %patch168 -p1
 %patch169 -p1
 %patch170 -p1
+%patch171 -p1
+%patch172 -p1
+%patch173 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this

@@ -1,0 +1,27 @@
+From db8155ddf85c661d13cc447c98073ad99f305976 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Mon, 22 Feb 2021 11:39:19 +0000
+Subject: [PATCH] Allow extra_filerefs as sanitized kwargs for SSH
+ client
+
+---
+ salt/client/ssh/client.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/salt/client/ssh/client.py b/salt/client/ssh/client.py
+index ae514d67b3..1bd1246118 100644
+--- a/salt/client/ssh/client.py
++++ b/salt/client/ssh/client.py
+@@ -60,6 +60,7 @@ class SSHClient(object):
+             ('rosters', list),
+             ('ignore_host_keys', bool),
+             ('raw_shell', bool),
++            ('extra_filerefs', str),
+         ]
+         sane_kwargs = {}
+         for name, kind in roster_vals:
+-- 
+2.30.1
+
+
