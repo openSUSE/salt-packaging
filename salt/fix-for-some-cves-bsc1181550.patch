@@ -1,7 +1,7 @@
-From 198b19bd596f48f44571f4e25be5f4f2e48f96b9 Mon Sep 17 00:00:00 2001
+From fccf31a57d37d6c67c2d596e52d2debc9e9c7978 Mon Sep 17 00:00:00 2001
 From: "Daniel A. Wozniak" <dwozniak@vmware.com>
 Date: Tue, 26 Jan 2021 12:53:55 -0700
-Subject: [PATCH] Fix for some cves (bsc#1181550)
+Subject: [PATCH] Fix for some cves bsc1181550
 
 CVE-2020-28243 CVE-2020-28972 CVE-2020-35662 CVE-2021-3148 CVE-2021-3144
 CVE-2021-25281 CVE-2021-25282 CVE-2021-25283 CVE-2021-25284
