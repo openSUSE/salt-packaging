@@ -1,0 +1,28 @@
+From 0936131e05d16997a2991e74328dd7ad38ac16b1 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Fri, 26 Feb 2021 09:15:03 +0000
+Subject: [PATCH] Fix regression on cmd.run when passing tuples as cmd
+ (bsc#1182740)
+
+---
+ salt/modules/cmdmod.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/modules/cmdmod.py b/salt/modules/cmdmod.py
+index b673da8a3b..5e1921f0b0 100644
+--- a/salt/modules/cmdmod.py
++++ b/salt/modules/cmdmod.py
+@@ -67,7 +67,7 @@ def __virtual__():
+ 
+ 
+ def _log_cmd(cmd):
+-    if not isinstance(cmd, list):
++    if isinstance(cmd, six.string_types):
+         return cmd.split()[0].strip()
+     return cmd[0].strip()
+ 
+-- 
+2.30.1
+
+

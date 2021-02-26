@@ -244,8 +244,14 @@ Patch91:        backport-saltutil-state-module-to-2019.2-codebase-bs.patch
 Patch92:        add-new-custom-suse-capability-for-saltutil-state-mo.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58871
 Patch93:        fix-cve-2020-25592-and-add-tests-bsc-1178319.patch
+# PATCH-FIX_UPSTREAM: embargoed - not yet link
+Patch94:        fix-for-some-cves-bsc1181550.patch
+# PATCH-FIX_UPSTREAM: embargoed - not yet link
+Patch95:        allow-extra_filerefs-as-sanitized-kwargs-for-ssh-cli.patch
+# PATCH-FIX_UPSTREAM: embargoed - not yet link
+Patch96:        fix-regression-on-cmd.run-when-passing-tuples-as-cmd.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59354
-Patch94:        do-not-crash-when-unexpected-cmd-output-at-listing-p.patch
+Patch97:        do-not-crash-when-unexpected-cmd-output-at-listing-p.patch
 
 
 
@@ -704,6 +710,9 @@ cp %{S:5} ./.travis.yml
 %patch92 -p1
 %patch93 -p1
 %patch94 -p1
+%patch95 -p1
+%patch96 -p1
+%patch97 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build

@@ -1,0 +1,2363 @@
+From 12ced30cde6e43b928d634f9bf139dab6e4d401a Mon Sep 17 00:00:00 2001
+From: "Daniel A. Wozniak" <dwozniak@vmware.com>
+Date: Tue, 26 Jan 2021 12:53:55 -0700
+Subject: [PATCH] Fix for some cves bsc1181550
+
+CVE-2020-28243 CVE-2020-28972 CVE-2020-35662 CVE-2021-3148 CVE-2021-3144
+CVE-2021-25281 CVE-2021-25282 CVE-2021-25283 CVE-2021-25284
+CVE-2021-3197
+---
+ salt/client/mixins.py          |  42 ++-
+ salt/client/ssh/client.py      |  46 +++
+ salt/cloud/clouds/qingcloud.py |   6 +-
+ salt/cloud/clouds/vmware.py    |  16 +-
+ salt/master.py                 |   5 +-
+ salt/modules/bigip.py          |   2 +-
+ salt/modules/cmdmod.py         |   8 +-
+ salt/modules/keystone.py       |   7 +-
+ salt/modules/restartcheck.py   |   4 +-
+ salt/modules/vsphere.py        | 636 ++++++++++++++++++++-------------
+ salt/modules/zenoss.py         |  16 +-
+ salt/returners/splunk.py       |  29 +-
+ salt/runners/asam.py           |  29 +-
+ salt/states/esxi.py            |   8 +-
+ salt/utils/http.py             |  20 ++
+ salt/utils/templates.py        |   9 +-
+ salt/utils/thin.py             |  70 ++--
+ salt/utils/vmware.py           | 122 +++++--
+ salt/wheel/__init__.py         |   4 +-
+ salt/wheel/pillar_roots.py     |   5 +-
+ 20 files changed, 711 insertions(+), 373 deletions(-)
+
+diff --git a/salt/client/mixins.py b/salt/client/mixins.py
+index 89e659356a..a7c1e8fcc6 100644
+--- a/salt/client/mixins.py
++++ b/salt/client/mixins.py
+@@ -458,10 +458,10 @@ class AsyncClientMixin(object):
+     client = None
+     tag_prefix = None
+ 
+-    def _proc_function(self, fun, low, user, tag, jid, daemonize=True):
++    def _proc_function_remote(self, fun, low, user, tag, jid, daemonize=True):
+         '''
+-        Run this method in a multiprocess target to execute the function in a
+-        multiprocess and fire the return data on the event bus
++        Run this method in a multiprocess target to execute the function on the
++        master and fire the return data on the event bus
+         '''
+         if daemonize and not salt.utils.is_windows():
+             # Shutdown the multiprocessing before daemonizing
+@@ -477,7 +477,31 @@ class AsyncClientMixin(object):
+         low['__user__'] = user
+         low['__tag__'] = tag
+ 
+-        return self.low(fun, low, full_return=False)
++        try:
++            return self.cmd_sync(low)
++        except salt.exceptions.EauthAuthenticationError as exc:
++            log.error(exc)
++
++    def _proc_function(self, fun, low, user, tag, jid, daemonize=True):
++        '''
++        Run this method in a multiprocess target to execute the function
++        locally and fire the return data on the event bus
++        '''
++        if daemonize and not salt.utils.platform.is_windows():
++            # Shutdown the multiprocessing before daemonizing
++            salt.log.setup.shutdown_multiprocessing_logging()
++
++            salt.utils.process.daemonize()
++
++            # Reconfigure multiprocessing logging after daemonizing
++            salt.log.setup.setup_multiprocessing_logging()
++
++        # pack a few things into low
++        low["__jid__"] = jid
++        low["__user__"] = user
++        low["__tag__"] = tag
++
++        return self.low(fun, low)
+ 
+     def cmd_async(self, low):
+         '''
+@@ -505,15 +529,19 @@ class AsyncClientMixin(object):
+         tag = salt.utils.event.tagify(jid, prefix=self.tag_prefix)
+         return {'tag': tag, 'jid': jid}
+ 
+-    def async(self, fun, low, user='UNKNOWN', pub=None):
++    def async(self, fun, low, user='UNKNOWN', pub=None, local=True):
+         '''
+         Execute the function in a multiprocess and return the event tag to use
+         to watch for the return
+         '''
++        if local:
++            proc_func = self._proc_function
++        else:
++            proc_func = self._proc_function_remote
+         async_pub = pub if pub is not None else self._gen_async_pub()
+-
+         proc = salt.utils.process.SignalHandlingMultiprocessingProcess(
+-                target=self._proc_function,
++                target=proc_func,
++                name="ProcessFunc",
+                 args=(fun, low, user, async_pub['tag'], async_pub['jid']))
+         with salt.utils.process.default_signals(signal.SIGINT, signal.SIGTERM):
+             # Reset current signals before starting the process in
+diff --git a/salt/client/ssh/client.py b/salt/client/ssh/client.py
+index e56b975e4e..80dc4a63a5 100644
+--- a/salt/client/ssh/client.py
++++ b/salt/client/ssh/client.py
+@@ -39,6 +39,51 @@ class SSHClient(object):
+         # Salt API should never offer a custom roster!
+         self.opts['__disable_custom_roster'] = disable_custom_roster
+ 
++    def sanitize_kwargs(self, kwargs):
++        roster_vals = [
++            ('host', str),
++            ('ssh_user', str),
++            ('ssh_passwd', str),
++            ('ssh_port', int),
++            ('ssh_sudo', bool),
++            ('ssh_sudo_user', str),
++            ('ssh_priv', str),
++            ('ssh_priv_passwd', str),
++            ('ssh_identities_only', bool),
++            ('ssh_remote_port_forwards', str),
++            ('ssh_options', list),
++            ('roster_file', str),
++            ('rosters', list),
++            ('ignore_host_keys', bool),
++            ('raw_shell', bool),
++        ]
++        sane_kwargs = {}
++        for name, kind in roster_vals:
++            if name not in kwargs:
++                continue
++            try:
++                val = kind(kwargs[name])
++            except ValueError:
++                log.warn("Unable to cast kwarg %s", name)
++                continue
++            if kind is bool or kind is int:
++                sane_kwargs[name] = val
++            elif kind is str:
++                if val.find('ProxyCommand') != -1:
++                    log.warn("Filter unsafe value for kwarg %s", name)
++                    continue
++                sane_kwargs[name] = val
++            elif kind is list:
++                sane_val = []
++                for item in val:
++                    # This assumes the values are strings
++                    if item.find('ProxyCommand') != -1:
++                        log.warn("Filter unsafe value for kwarg %s", name)
++                        continue
++                    sane_val.append(item)
++                sane_kwargs[name] = sane_val
++        return sane_kwargs
++
+     def _prep_ssh(
+             self,
+             tgt,
+@@ -51,6 +96,7 @@ class SSHClient(object):
+         '''
+         Prepare the arguments
+         '''
++        kwargs = self.sanitize_kwargs(kwargs)
+         opts = copy.deepcopy(self.opts)
+         opts.update(kwargs)
+         if timeout:
+diff --git a/salt/cloud/clouds/qingcloud.py b/salt/cloud/clouds/qingcloud.py
+index 1d770df567..3514fe4c41 100644
+--- a/salt/cloud/clouds/qingcloud.py
++++ b/salt/cloud/clouds/qingcloud.py
+@@ -139,6 +139,10 @@ def query(params=None):
+         'secret_access_key', get_configured_provider(), __opts__, search_global=False
+     )
+ 
++    verify_ssl = config.get_cloud_config_value(
++        'verify_ssl', get_configured_provider(), __opts__, default=True, search_global=False
++    )
++
+     # public interface parameters
+     real_parameters = {
+         'access_key_id': access_key_id,
+@@ -170,7 +174,7 @@ def query(params=None):
+     # print('parameters:')
+     # pprint.pprint(real_parameters)
+ 
+-    request = requests.get(path, params=real_parameters, verify=False)
++    request = requests.get(path, params=real_parameters, verify=verify_ssl)
+ 
+     # print('url:')
+     # print(request.url)
+diff --git a/salt/cloud/clouds/vmware.py b/salt/cloud/clouds/vmware.py
+index fc7e19bd21..769dc5a65d 100644
+--- a/salt/cloud/clouds/vmware.py
++++ b/salt/cloud/clouds/vmware.py
+@@ -252,12 +252,16 @@ def _get_si():
+     port = config.get_cloud_config_value(
+         'port', get_configured_provider(), __opts__, search_global=False, default=443
+     )
+-
+-    return salt.utils.vmware.get_service_instance(url,
+-                                                  username,
+-                                                  password,
+-                                                  protocol=protocol,
+-                                                  port=port)
++    verify_ssl = config.get_cloud_config_value(
++        "verify_ssl",
++        get_configured_provider(),
++        __opts__,
++        search_global=False,
++        default=True,
++    )
++    return salt.utils.vmware.get_service_instance(
++        url, username, password, protocol=protocol, port=port, verify_ssl=verify_ssl
++    )
+ 
+ 
+ def _edit_existing_hard_disk_helper(disk, size_kb=None, size_gb=None, mode=None):
+diff --git a/salt/master.py b/salt/master.py
+index da860bbf2b..6fa63d24ae 100644
+--- a/salt/master.py
++++ b/salt/master.py
+@@ -1852,7 +1852,8 @@ class ClearFuncs(object):
+             runner_client = salt.runner.RunnerClient(self.opts)
+             return runner_client.async(fun,
+                                        clear_load.get('kwarg', {}),
+-                                       username)
++                                       username,
++                                       local=True)
+         except Exception as exc:
+             log.error('Exception occurred while '
+                       'introspecting {0}: {1}'.format(fun, exc))
+@@ -1864,6 +1865,7 @@ class ClearFuncs(object):
+         '''
+         Send a master control function back to the wheel system
+         '''
++        jid = clear_load.get('__jid__', salt.utils.jid.gen_jid(self.opts))
+         # All wheel ops pass through eauth
+         username = None
+         if 'token' in clear_load:
+@@ -1918,7 +1920,6 @@ class ClearFuncs(object):
+ 
+         # Authorized. Do the job!
+         try:
+-            jid = salt.utils.jid.gen_jid()
+             fun = clear_load.pop('fun')
+             tag = tagify(jid, prefix='wheel')
+             data = {'fun': "wheel.{0}".format(fun),
+diff --git a/salt/modules/bigip.py b/salt/modules/bigip.py
+index fcaf602124..020cdf4e1e 100644
+--- a/salt/modules/bigip.py
++++ b/salt/modules/bigip.py
+@@ -53,7 +53,7 @@ def _build_session(username, password, trans_label=None):
+ 
+     bigip = requests.session()
+     bigip.auth = (username, password)
+-    bigip.verify = False
++    bigip.verify = True
+     bigip.headers.update({'Content-Type': 'application/json'})
+ 
+     if trans_label:
+diff --git a/salt/modules/cmdmod.py b/salt/modules/cmdmod.py
+index 32653d08c1..b673da8a3b 100644
+--- a/salt/modules/cmdmod.py
++++ b/salt/modules/cmdmod.py
+@@ -66,6 +66,12 @@ def __virtual__():
+     return __virtualname__
+ 
+ 
++def _log_cmd(cmd):
++    if not isinstance(cmd, list):
++        return cmd.split()[0].strip()
++    return cmd[0].strip()
++
++
+ def _check_cb(cb_):
+     '''
+     If the callback is None or is not callable, return a lambda that returns
+@@ -360,7 +366,7 @@ def _run(cmd,
+         msg = (
+             'Executing command {0}{1}{0} {2}in directory \'{3}\'{4}'.format(
+                 '\'' if not isinstance(cmd, list) else '',
+-                cmd,
++                _log_cmd(cmd),
+                 'as user \'{0}\' '.format(runas) if runas else '',
+                 cwd,
+                 '. Executing command in the background, no output will be '
+diff --git a/salt/modules/keystone.py b/salt/modules/keystone.py
+index 02765f0546..fa09f1b649 100644
+--- a/salt/modules/keystone.py
++++ b/salt/modules/keystone.py
+@@ -13,6 +13,7 @@ Module for handling openstack keystone calls.
+         keystone.tenant: admin
+         keystone.tenant_id: f80919baedab48ec8931f200c65a50df
+         keystone.auth_url: 'http://127.0.0.1:5000/v2.0/'
++        keystone.verify_ssl: True
+ 
+     OR (for token based authentication)
+ 
+@@ -32,6 +33,7 @@ Module for handling openstack keystone calls.
+           keystone.tenant: admin
+           keystone.tenant_id: f80919baedab48ec8931f200c65a50df
+           keystone.auth_url: 'http://127.0.0.1:5000/v2.0/'
++          keystone.verify_ssl: True
+ 
+         openstack2:
+           keystone.user: admin
+@@ -39,6 +41,7 @@ Module for handling openstack keystone calls.
+           keystone.tenant: admin
+           keystone.tenant_id: f80919baedab48ec8931f200c65a50df
+           keystone.auth_url: 'http://127.0.0.2:5000/v2.0/'
++          keystone.verify_ssl: True
+ 
+     With this configuration in place, any of the keystone functions can make use
+     of a configuration profile by declaring it explicitly.
+@@ -112,6 +115,7 @@ def _get_kwargs(profile=None, **connection_args):
+     insecure = get('insecure', False)
+     token = get('token')
+     endpoint = get('endpoint', 'http://127.0.0.1:35357/v2.0')
++    verify_ssl = get("verify_ssl", True)
+ 
+     if token:
+         kwargs = {'token': token,
+@@ -126,6 +130,7 @@ def _get_kwargs(profile=None, **connection_args):
+         #   this ensures it's only passed in when defined
+         if insecure:
+             kwargs['insecure'] = True
++    kwargs["verify_ssl"] = verify_ssl
+     return kwargs
+ 
+ 
+@@ -143,7 +148,7 @@ def api_version(profile=None, **connection_args):
+     auth_url = kwargs.get('auth_url', kwargs.get('endpoint', None))
+     try:
+         return salt.utils.http.query(auth_url, decode=True, decode_type='json',
+-                                     verify_ssl=False)['dict']['version']['id']
++                                     verify_ssl=kwargs["verify_ssl"])['dict']['version']['id']
+     except KeyError:
+         return None
+ 
+diff --git a/salt/modules/restartcheck.py b/salt/modules/restartcheck.py
+index 9f85b56b9a..527b8f6e70 100644
+--- a/salt/modules/restartcheck.py
++++ b/salt/modules/restartcheck.py
+@@ -15,6 +15,7 @@ from __future__ import absolute_import
+ # Import python libs
+ import os
+ import re
++import shlex
+ import subprocess
+ import sys
+ 
+@@ -394,7 +395,8 @@ def restartcheck(ignorelist=None, blacklist=None, excludepid=None, verbose=True)
+ 
+     for package in packages.keys():
+         cmd = cmd_pkg_query + package
+-        paths = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
++        cmd = shlex.split(cmd)
++        paths = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+ 
+         while True:
+             line = paths.stdout.readline()
+diff --git a/salt/modules/vsphere.py b/salt/modules/vsphere.py
+index 2707c0ad23..8fd6c2dc4f 100644
+--- a/salt/modules/vsphere.py
++++ b/salt/modules/vsphere.py
+@@ -992,7 +992,7 @@ def reset_syslog_config(host,
+ 
+ 
+ def upload_ssh_key(host, username, password, ssh_key=None, ssh_key_file=None,
+-                   protocol=None, port=None, certificate_verify=False):
++                   protocol=None, port=None, certificate_verify=None):
+     '''
+     Upload an ssh key for root to an ESXi host via http PUT.
+     This function only works for ESXi, not vCenter.
+@@ -1008,7 +1008,7 @@ def upload_ssh_key(host, username, password, ssh_key=None, ssh_key_file=None,
+     :param protocol: defaults to https, can be http if ssl is disabled on ESXi
+     :param port: defaults to 443 for https
+     :param certificate_verify: If true require that the SSL connection present
+-                               a valid certificate
++                               a valid certificate. Default: True
+     :return: Dictionary with a 'status' key, True if upload is successful.
+              If upload is unsuccessful, 'status' key will be False and
+              an 'Error' key will have an informative message.
+@@ -1024,6 +1024,8 @@ def upload_ssh_key(host, username, password, ssh_key=None, ssh_key_file=None,
+         protocol = 'https'
+     if port is None:
+         port = 443
++    if certificate_verify is None:
++        certificate_verify = True
+ 
+     url = '{0}://{1}:{2}/host/ssh_root_authorized_keys'.format(protocol,
+                                                                host,
+@@ -1067,7 +1069,7 @@ def get_ssh_key(host,
+                 password,
+                 protocol=None,
+                 port=None,
+-                certificate_verify=False):
++                certificate_verify=None):
+     '''
+     Retrieve the authorized_keys entry for root.
+     This function only works for ESXi, not vCenter.
+@@ -1078,7 +1080,7 @@ def get_ssh_key(host,
+     :param protocol: defaults to https, can be http if ssl is disabled on ESXi
+     :param port: defaults to 443 for https
+     :param certificate_verify: If true require that the SSL connection present
+-                               a valid certificate
++                               a valid certificate. Default: True
+     :return: True if upload is successful
+ 
+     CLI Example:
+@@ -1092,6 +1094,8 @@ def get_ssh_key(host,
+         protocol = 'https'
+     if port is None:
+         port = 443
++    if certificate_verify is None:
++        certificate_verify = True
+ 
+     url = '{0}://{1}:{2}/host/ssh_root_authorized_keys'.format(protocol,
+                                                                host,
+@@ -1118,7 +1122,10 @@ def get_ssh_key(host,
+     return ret
+ 
+ 
+-def get_host_datetime(host, username, password, protocol=None, port=None, host_names=None):
++def get_host_datetime(
++    host, username, password, protocol=None, port=None, host_names=None,
++    verify_ssl=True
++):
+     '''
+     Get the date/time information for a given host or list of host_names.
+ 
+@@ -1148,6 +1155,9 @@ def get_host_datetime(host, username, password, protocol=None, port=None, host_n
+         ``host`` location instead. This is useful for when service instance connection
+         information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -1159,11 +1169,10 @@ def get_host_datetime(host, username, password, protocol=None, port=None, host_n
+         salt '*' vsphere.get_host_datetime my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     ret = {}
+     for host_name in host_names:
+@@ -1175,7 +1184,8 @@ def get_host_datetime(host, username, password, protocol=None, port=None, host_n
+     return ret
+ 
+ 
+-def get_ntp_config(host, username, password, protocol=None, port=None, host_names=None):
++def get_ntp_config(host, username, password, protocol=None, port=None,
++                   host_names=None, verify_ssl=True):
+     '''
+     Get the NTP configuration information for a given host or list of host_names.
+ 
+@@ -1205,6 +1215,9 @@ def get_ntp_config(host, username, password, protocol=None, port=None, host_name
+         ``host`` location instead. This is useful for when service instance connection
+         information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -1216,11 +1229,10 @@ def get_ntp_config(host, username, password, protocol=None, port=None, host_name
+         salt '*' vsphere.get_ntp_config my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     ret = {}
+     for host_name in host_names:
+@@ -1231,7 +1243,10 @@ def get_ntp_config(host, username, password, protocol=None, port=None, host_name
+     return ret
+ 
+ 
+-def get_service_policy(host, username, password, service_name, protocol=None, port=None, host_names=None):
++def get_service_policy(
++    host, username, password, service_name, protocol=None, port=None,
++    host_names=None, verify_ssl=True,
++):
+     '''
+     Get the service name's policy for a given host or list of hosts.
+ 
+@@ -1277,6 +1292,9 @@ def get_service_policy(host, username, password, service_name, protocol=None, po
+         for the ``host`` location instead. This is useful for when service instance
+         connection information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -1288,13 +1306,26 @@ def get_service_policy(host, username, password, service_name, protocol=None, po
+         salt '*' vsphere.get_service_policy my.vcenter.location root bad-password 'ntpd' \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
+-    valid_services = ['DCUI', 'TSM', 'SSH', 'ssh', 'lbtd', 'lsassd', 'lwiod', 'netlogond',
+-                      'ntpd', 'sfcbd-watchdog', 'snmpd', 'vprobed', 'vpxa', 'xorg']
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
++    valid_services = [
++        'DCUI',
++        'TSM',
++        'SSH',
++        'ssh',
++        'lbtd',
++        'lsassd',
++        'lwiod',
++        'netlogond',
++        'ntpd',
++        'sfcbd-watchdog',
++        'snmpd',
++        'vprobed',
++        'vpxa',
++        'xorg',
++    ]
+     host_names = _check_hosts(service_instance, host, host_names)
+ 
+     ret = {}
+@@ -1336,7 +1367,10 @@ def get_service_policy(host, username, password, service_name, protocol=None, po
+     return ret
+ 
+ 
+-def get_service_running(host, username, password, service_name, protocol=None, port=None, host_names=None):
++def get_service_running(
++    host, username, password, service_name, protocol=None, port=None,
++    host_names=None, verify_ssl=True,
++):
+     '''
+     Get the service name's running state for a given host or list of hosts.
+ 
+@@ -1382,6 +1416,9 @@ def get_service_running(host, username, password, service_name, protocol=None, p
+         for the ``host`` location instead. This is useful for when service instance
+         connection information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -1393,13 +1430,26 @@ def get_service_running(host, username, password, service_name, protocol=None, p
+         salt '*' vsphere.get_service_running my.vcenter.location root bad-password 'ntpd' \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
+-    valid_services = ['DCUI', 'TSM', 'SSH', 'ssh', 'lbtd', 'lsassd', 'lwiod', 'netlogond',
+-                      'ntpd', 'sfcbd-watchdog', 'snmpd', 'vprobed', 'vpxa', 'xorg']
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
++    valid_services = [
++        'DCUI',
++        'TSM',
++        'SSH',
++        'ssh',
++        'lbtd',
++        'lsassd',
++        'lwiod',
++        'netlogond',
++        'ntpd',
++        'sfcbd-watchdog',
++        'snmpd',
++        'vprobed',
++        'vpxa',
++        'xorg',
++    ]
+     host_names = _check_hosts(service_instance, host, host_names)
+ 
+     ret = {}
+@@ -1441,7 +1491,10 @@ def get_service_running(host, username, password, service_name, protocol=None, p
+     return ret
+ 
+ 
+-def get_vmotion_enabled(host, username, password, protocol=None, port=None, host_names=None):
++def get_vmotion_enabled(
++    host, username, password, protocol=None, port=None, host_names=None,
++    verify_ssl=True,
++):
+     '''
+     Get the VMotion enabled status for a given host or a list of host_names. Returns ``True``
+     if VMotion is enabled, ``False`` if it is not enabled.
+@@ -1472,6 +1525,9 @@ def get_vmotion_enabled(host, username, password, protocol=None, port=None, host
+         ``host`` location instead. This is useful for when service instance
+         connection information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -1483,11 +1539,10 @@ def get_vmotion_enabled(host, username, password, protocol=None, port=None, host
+         salt '*' vsphere.get_vmotion_enabled my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     ret = {}
+     for host_name in host_names:
+@@ -1501,7 +1556,10 @@ def get_vmotion_enabled(host, username, password, protocol=None, port=None, host
+     return ret
+ 
+ 
+-def get_vsan_enabled(host, username, password, protocol=None, port=None, host_names=None):
++def get_vsan_enabled(
++    host, username, password, protocol=None, port=None, host_names=None,
++    verify_ssl=True,
++):
+     '''
+     Get the VSAN enabled status for a given host or a list of host_names. Returns ``True``
+     if VSAN is enabled, ``False`` if it is not enabled, and ``None`` if a VSAN Host Config
+@@ -1533,6 +1591,9 @@ def get_vsan_enabled(host, username, password, protocol=None, port=None, host_na
+         ``host`` location instead. This is useful for when service instance
+         connection information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -1544,11 +1605,10 @@ def get_vsan_enabled(host, username, password, protocol=None, port=None, host_na
+         salt '*' vsphere.get_vsan_enabled my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     ret = {}
+     for host_name in host_names:
+@@ -1566,7 +1626,10 @@ def get_vsan_enabled(host, username, password, protocol=None, port=None, host_na
+     return ret
+ 
+ 
+-def get_vsan_eligible_disks(host, username, password, protocol=None, port=None, host_names=None):
++def get_vsan_eligible_disks(
++    host, username, password, protocol=None, port=None, host_names=None,
++    verify_ssl=True,
++):
+     '''
+     Returns a list of VSAN-eligible disks for a given host or list of host_names.
+ 
+@@ -1596,6 +1659,9 @@ def get_vsan_eligible_disks(host, username, password, protocol=None, port=None,
+         for the ``host`` location instead. This is useful for when service instance
+         connection information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -1607,11 +1673,10 @@ def get_vsan_eligible_disks(host, username, password, protocol=None, port=None,
+         salt '*' vsphere.get_vsan_eligible_disks my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     response = _get_vsan_eligible_disks(service_instance, host, host_names)
+ 
+@@ -1639,7 +1704,7 @@ def get_vsan_eligible_disks(host, username, password, protocol=None, port=None,
+     return ret
+ 
+ 
+-def system_info(host, username, password, protocol=None, port=None):
++def system_info(host, username, password, protocol=None, port=None, verify_ssl=True):
+     '''
+     Return system information about a VMware environment.
+ 
+@@ -1660,17 +1725,19 @@ def system_info(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' vsphere.system_info 1.2.3.4 root bad-password
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     ret = salt.utils.vmware.get_inventory(service_instance).about.__dict__
+     if 'apiType' in ret:
+         if ret['apiType'] == 'HostAgent':
+@@ -1678,9 +1745,10 @@ def system_info(host, username, password, protocol=None, port=None):
+     return ret
+ 
+ 
+-def list_datacenters(host, username, password, protocol=None, port=None):
++def list_datacenters(host, username, password, protocol=None, port=None,
++                     verify_ssl=True):
+     '''
+-    Returns a list of datacenters for the the specified host.
++    Returns a list of datacenters for the specified host.
+ 
+     host
+         The location of the host.
+@@ -1699,22 +1767,27 @@ def list_datacenters(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
++    CLI Example:
++
+     .. code-block:: bash
+ 
+         salt '*' vsphere.list_datacenters 1.2.3.4 root bad-password
+ 
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     return salt.utils.vmware.list_datacenters(service_instance)
+ 
+ 
+-def list_clusters(host, username, password, protocol=None, port=None):
++def list_clusters(host, username, password, protocol=None, port=None,
++                  verify_ssl=True):
+     '''
+-    Returns a list of clusters for the the specified host.
++    Returns a list of clusters for the specified host.
+ 
+     host
+         The location of the host.
+@@ -1733,24 +1806,27 @@ def list_clusters(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
+-   CLI Example:
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
++    CLI Example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' vsphere.list_clusters 1.2.3.4 root bad-password
+ 
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     return salt.utils.vmware.list_clusters(service_instance)
+ 
+ 
+-def list_datastore_clusters(host, username, password, protocol=None, port=None):
++def list_datastore_clusters(host, username, password, protocol=None, port=None,
++                           verify_ssl=True):
+     '''
+-    Returns a list of datastore clusters for the the specified host.
++    Returns a list of datastore clusters for the specified host.
+ 
+     host
+         The location of the host.
+@@ -1769,23 +1845,26 @@ def list_datastore_clusters(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
+-   CLI Example:
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
++    CLI Example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' vsphere.list_datastore_clusters 1.2.3.4 root bad-password
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     return salt.utils.vmware.list_datastore_clusters(service_instance)
+ 
+ 
+-def list_datastores(host, username, password, protocol=None, port=None):
++def list_datastores(host, username, password, protocol=None, port=None,
++                    verify_ssl=True):
+     '''
+-    Returns a list of datastores for the the specified host.
++    Returns a list of datastores for the specified host.
+ 
+     host
+         The location of the host.
+@@ -1804,23 +1883,26 @@ def list_datastores(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
+-   CLI Example:
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
++    CLI Example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' vsphere.list_datastores 1.2.3.4 root bad-password
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     return salt.utils.vmware.list_datastores(service_instance)
+ 
+ 
+-def list_hosts(host, username, password, protocol=None, port=None):
++def list_hosts(host, username, password, protocol=None, port=None,
++               verify_ssl=True):
+     '''
+-    Returns a list of hosts for the the specified VMware environment.
++    Returns a list of hosts for the specified VMware environment.
+ 
+     host
+         The location of the host.
+@@ -1839,23 +1921,26 @@ def list_hosts(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
+-   CLI Example:
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
++    CLI Example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' vsphere.list_hosts 1.2.3.4 root bad-password
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     return salt.utils.vmware.list_hosts(service_instance)
+ 
+ 
+-def list_resourcepools(host, username, password, protocol=None, port=None):
++def list_resourcepools(host, username, password, protocol=None, port=None,
++                       verify_ssl=True):
+     '''
+-    Returns a list of resource pools for the the specified host.
++    Returns a list of resource pools for the specified host.
+ 
+     host
+         The location of the host.
+@@ -1874,23 +1959,26 @@ def list_resourcepools(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' vsphere.list_resourcepools 1.2.3.4 root bad-password
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     return salt.utils.vmware.list_resourcepools(service_instance)
+ 
+ 
+-def list_networks(host, username, password, protocol=None, port=None):
++def list_networks(host, username, password, protocol=None, port=None,
++                  verify_ssl=True):
+     '''
+-    Returns a list of networks for the the specified host.
++    Returns a list of networks for the specified host.
+ 
+     host
+         The location of the host.
+@@ -1909,23 +1997,26 @@ def list_networks(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' vsphere.list_networks 1.2.3.4 root bad-password
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     return salt.utils.vmware.list_networks(service_instance)
+ 
+ 
+-def list_vms(host, username, password, protocol=None, port=None):
++def list_vms(host, username, password, protocol=None, port=None,
++             verify_ssl=True):
+     '''
+-    Returns a list of VMs for the the specified host.
++    Returns a list of VMs for the specified host.
+ 
+     host
+         The location of the host.
+@@ -1944,23 +2035,26 @@ def list_vms(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' vsphere.list_vms 1.2.3.4 root bad-password
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     return salt.utils.vmware.list_vms(service_instance)
+ 
+ 
+-def list_folders(host, username, password, protocol=None, port=None):
++def list_folders(host, username, password, protocol=None, port=None,
++                 verify_ssl=True):
+     '''
+-    Returns a list of folders for the the specified host.
++    Returns a list of folders for the specified host.
+ 
+     host
+         The location of the host.
+@@ -1979,23 +2073,26 @@ def list_folders(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' vsphere.list_folders 1.2.3.4 root bad-password
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     return salt.utils.vmware.list_folders(service_instance)
+ 
+ 
+-def list_dvs(host, username, password, protocol=None, port=None):
++def list_dvs(host, username, password, protocol=None, port=None,
++             verify_ssl=True):
+     '''
+-    Returns a list of distributed virtual switches for the the specified host.
++    Returns a list of distributed virtual switches for the specified host.
+ 
+     host
+         The location of the host.
+@@ -2014,23 +2111,26 @@ def list_dvs(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' vsphere.list_dvs 1.2.3.4 root bad-password
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     return salt.utils.vmware.list_dvs(service_instance)
+ 
+ 
+-def list_vapps(host, username, password, protocol=None, port=None):
++def list_vapps(host, username, password, protocol=None, port=None,
++               verify_ssl=True):
+     '''
+-    Returns a list of vApps for the the specified host.
++    Returns a list of vApps for the specified host.
+ 
+     host
+         The location of the host.
+@@ -2049,6 +2149,9 @@ def list_vapps(host, username, password, protocol=None, port=None):
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2056,15 +2159,15 @@ def list_vapps(host, username, password, protocol=None, port=None):
+         # List vapps from all minions
+         salt '*' vsphere.list_vapps 1.2.3.4 root bad-password
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     return salt.utils.vmware.list_vapps(service_instance)
+ 
+ 
+-def list_ssds(host, username, password, protocol=None, port=None, host_names=None):
++def list_ssds(host, username, password, protocol=None, port=None,
++              host_names=None, verify_ssl=True):
+     '''
+     Returns a list of SSDs for the given host or list of host_names.
+ 
+@@ -2094,6 +2197,9 @@ def list_ssds(host, username, password, protocol=None, port=None, host_names=Non
+         ``host`` location instead. This is useful for when service instance
+         connection information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2105,11 +2211,10 @@ def list_ssds(host, username, password, protocol=None, port=None, host_names=Non
+         salt '*' vsphere.list_ssds my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     ret = {}
+     names = []
+@@ -2123,7 +2228,8 @@ def list_ssds(host, username, password, protocol=None, port=None, host_names=Non
+     return ret
+ 
+ 
+-def list_non_ssds(host, username, password, protocol=None, port=None, host_names=None):
++def list_non_ssds(host, username, password, protocol=None, port=None,
++                  host_names=None, verify_ssl=True):
+     '''
+     Returns a list of Non-SSD disks for the given host or list of host_names.
+ 
+@@ -2160,6 +2266,9 @@ def list_non_ssds(host, username, password, protocol=None, port=None, host_names
+         ``host`` location instead. This is useful for when service instance
+         connection information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2171,11 +2280,10 @@ def list_non_ssds(host, username, password, protocol=None, port=None, host_names
+         salt '*' vsphere.list_non_ssds my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     ret = {}
+     names = []
+@@ -2189,7 +2297,10 @@ def list_non_ssds(host, username, password, protocol=None, port=None, host_names
+     return ret
+ 
+ 
+-def set_ntp_config(host, username, password, ntp_servers, protocol=None, port=None, host_names=None):
++def set_ntp_config(
++    host, username, password, ntp_servers, protocol=None, port=None,
++    host_names=None, verify_ssl=True
++):
+     '''
+     Set NTP configuration for a given host of list of host_names.
+ 
+@@ -2223,6 +2334,9 @@ def set_ntp_config(host, username, password, ntp_servers, protocol=None, port=No
+         ``host`` location instead. This is useful for when service instance connection
+         information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2234,11 +2348,10 @@ def set_ntp_config(host, username, password, ntp_servers, protocol=None, port=No
+         salt '*' vsphere.ntp_configure my.vcenter.location root bad-password '[192.174.1.100, 192.174.1.200]' \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     if not isinstance(ntp_servers, list):
+         raise CommandExecutionError('\'ntp_servers\' must be a list.')
+ 
+@@ -2267,13 +2380,10 @@ def set_ntp_config(host, username, password, ntp_servers, protocol=None, port=No
+     return ret
+ 
+ 
+-def service_start(host,
+-                  username,
+-                  password,
+-                  service_name,
+-                  protocol=None,
+-                  port=None,
+-                  host_names=None):
++def service_start(
++    host, username, password, service_name, protocol=None, port=None,
++    host_names=None, verify_ssl=True
++):
+     '''
+     Start the named service for the given host or list of hosts.
+ 
+@@ -2319,6 +2429,9 @@ def service_start(host,
+         location instead. This is useful for when service instance connection information
+         is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2330,11 +2443,10 @@ def service_start(host,
+         salt '*' vsphere.service_start my.vcenter.location root bad-password 'ntpd' \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     valid_services = ['DCUI', 'TSM', 'SSH', 'ssh', 'lbtd', 'lsassd', 'lwiod', 'netlogond',
+                       'ntpd', 'sfcbd-watchdog', 'snmpd', 'vprobed', 'vpxa', 'xorg']
+@@ -2376,13 +2488,10 @@ def service_start(host,
+     return ret
+ 
+ 
+-def service_stop(host,
+-                 username,
+-                 password,
+-                 service_name,
+-                 protocol=None,
+-                 port=None,
+-                 host_names=None):
++def service_stop(
++    host, username, password, service_name, protocol=None, port=None,
++    host_names=None, verify_ssl=True,
++):
+     '''
+     Stop the named service for the given host or list of hosts.
+ 
+@@ -2428,6 +2537,9 @@ def service_stop(host,
+         location instead. This is useful for when service instance connection information
+         is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2439,11 +2551,10 @@ def service_stop(host,
+         salt '*' vsphere.service_stop my.vcenter.location root bad-password 'ssh' \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     valid_services = ['DCUI', 'TSM', 'SSH', 'ssh', 'lbtd', 'lsassd', 'lwiod', 'netlogond',
+                       'ntpd', 'sfcbd-watchdog', 'snmpd', 'vprobed', 'vpxa', 'xorg']
+@@ -2485,13 +2596,10 @@ def service_stop(host,
+     return ret
+ 
+ 
+-def service_restart(host,
+-                    username,
+-                    password,
+-                    service_name,
+-                    protocol=None,
+-                    port=None,
+-                    host_names=None):
++def service_restart(
++    host, username, password, service_name, protocol=None, port=None,
++    host_names=None, verify_ssl=True,
++):
+     '''
+     Restart the named service for the given host or list of hosts.
+ 
+@@ -2537,6 +2645,9 @@ def service_restart(host,
+         location instead. This is useful for when service instance connection information
+         is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2548,11 +2659,10 @@ def service_restart(host,
+         salt '*' vsphere.service_restart my.vcenter.location root bad-password 'ntpd' \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     valid_services = ['DCUI', 'TSM', 'SSH', 'ssh', 'lbtd', 'lsassd', 'lwiod', 'netlogond',
+                       'ntpd', 'sfcbd-watchdog', 'snmpd', 'vprobed', 'vpxa', 'xorg']
+@@ -2594,14 +2704,17 @@ def service_restart(host,
+     return ret
+ 
+ 
+-def set_service_policy(host,
+-                       username,
+-                       password,
+-                       service_name,
+-                       service_policy,
+-                       protocol=None,
+-                       port=None,
+-                       host_names=None):
++def set_service_policy(
++    host,
++    username,
++    password,
++    service_name,
++    service_policy,
++    protocol=None,
++    port=None,
++    host_names=None,
++    verify_ssl=True
++):
+     '''
+     Set the service name's policy for a given host or list of hosts.
+ 
+@@ -2650,6 +2763,9 @@ def set_service_policy(host,
+         for the ``host`` location instead. This is useful for when service instance
+         connection information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2661,11 +2777,10 @@ def set_service_policy(host,
+         salt '*' vsphere.set_service_policy my.vcenter.location root bad-password 'ntpd' 'automatic' \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     valid_services = ['DCUI', 'TSM', 'SSH', 'ssh', 'lbtd', 'lsassd', 'lwiod', 'netlogond',
+                       'ntpd', 'sfcbd-watchdog', 'snmpd', 'vprobed', 'vpxa', 'xorg']
+@@ -2721,7 +2836,10 @@ def set_service_policy(host,
+     return ret
+ 
+ 
+-def update_host_datetime(host, username, password, protocol=None, port=None, host_names=None):
++def update_host_datetime(
++    host, username, password, protocol=None, port=None, host_names=None,
++    verify_ssl=True
++):
+     '''
+     Update the date/time on the given host or list of host_names. This function should be
+     used with caution since network delays and execution delays can result in time skews.
+@@ -2752,6 +2870,9 @@ def update_host_datetime(host, username, password, protocol=None, port=None, hos
+         location instead. This is useful for when service instance connection
+         information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2763,11 +2884,10 @@ def update_host_datetime(host, username, password, protocol=None, port=None, hos
+         salt '*' vsphere.update_date_time my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     ret = {}
+     for host_name in host_names:
+@@ -2786,7 +2906,10 @@ def update_host_datetime(host, username, password, protocol=None, port=None, hos
+     return ret
+ 
+ 
+-def update_host_password(host, username, password, new_password, protocol=None, port=None):
++def update_host_password(
++    host, username, password, new_password, protocol=None, port=None,
++    verify_ssl=True
++):
+     '''
+     Update the password for a given host.
+ 
+@@ -2812,6 +2935,9 @@ def update_host_password(host, username, password, new_password, protocol=None,
+         Optionally set to alternate port if the host is not using the default
+         port. Default port is ``443``.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2819,11 +2945,10 @@ def update_host_password(host, username, password, new_password, protocol=None,
+         salt '*' vsphere.update_host_password my.esxi.host root original-bad-password new-bad-password
+ 
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     # Get LocalAccountManager object
+     account_manager = salt.utils.vmware.get_inventory(service_instance).accountManager
+ 
+@@ -2847,7 +2972,10 @@ def update_host_password(host, username, password, new_password, protocol=None,
+     return True
+ 
+ 
+-def vmotion_disable(host, username, password, protocol=None, port=None, host_names=None):
++def vmotion_disable(
++    host, username, password, protocol=None, port=None, host_names=None,
++    verify_ssl=True
++):
+     '''
+     Disable vMotion for a given host or list of host_names.
+ 
+@@ -2877,6 +3005,9 @@ def vmotion_disable(host, username, password, protocol=None, port=None, host_nam
+         location instead. This is useful for when service instance connection
+         information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2888,11 +3019,10 @@ def vmotion_disable(host, username, password, protocol=None, port=None, host_nam
+         salt '*' vsphere.vmotion_disable my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     ret = {}
+     for host_name in host_names:
+@@ -2914,7 +3044,10 @@ def vmotion_disable(host, username, password, protocol=None, port=None, host_nam
+     return ret
+ 
+ 
+-def vmotion_enable(host, username, password, protocol=None, port=None, host_names=None, device='vmk0'):
++def vmotion_enable(
++    host, username, password, protocol=None, port=None, host_names=None,
++    device='vmk0', verify_ssl=True
++):
+     '''
+     Enable vMotion for a given host or list of host_names.
+ 
+@@ -2948,6 +3081,9 @@ def vmotion_enable(host, username, password, protocol=None, port=None, host_name
+         The device that uniquely identifies the VirtualNic that will be used for
+         VMotion for each host. Defaults to ``vmk0``.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -2959,11 +3095,10 @@ def vmotion_enable(host, username, password, protocol=None, port=None, host_name
+         salt '*' vsphere.vmotion_enable my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     ret = {}
+     for host_name in host_names:
+@@ -2985,7 +3120,8 @@ def vmotion_enable(host, username, password, protocol=None, port=None, host_name
+     return ret
+ 
+ 
+-def vsan_add_disks(host, username, password, protocol=None, port=None, host_names=None):
++def vsan_add_disks(host, username, password, protocol=None, port=None,
++                   host_names=None, verify_ssl=True):
+     '''
+     Add any VSAN-eligible disks to the VSAN System for the given host or list of host_names.
+ 
+@@ -3016,6 +3152,9 @@ def vsan_add_disks(host, username, password, protocol=None, port=None, host_name
+         VSAN system for the ``host`` location instead. This is useful for when service
+         instance connection information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -3027,11 +3166,10 @@ def vsan_add_disks(host, username, password, protocol=None, port=None, host_name
+         salt '*' vsphere.vsan_add_disks my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     host_names = _check_hosts(service_instance, host, host_names)
+     response = _get_vsan_eligible_disks(service_instance, host, host_names)
+ 
+@@ -3087,7 +3225,8 @@ def vsan_add_disks(host, username, password, protocol=None, port=None, host_name
+     return ret
+ 
+ 
+-def vsan_disable(host, username, password, protocol=None, port=None, host_names=None):
++def vsan_disable(host, username, password, protocol=None, port=None,
++                 host_names=None, verify_ssl=True):
+     '''
+     Disable VSAN for a given host or list of host_names.
+ 
+@@ -3117,6 +3256,9 @@ def vsan_disable(host, username, password, protocol=None, port=None, host_names=
+         location instead. This is useful for when service instance connection
+         information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -3128,11 +3270,10 @@ def vsan_disable(host, username, password, protocol=None, port=None, host_names=
+         salt '*' vsphere.vsan_disable my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     # Create a VSAN Configuration Object and set the enabled attribute to True
+     vsan_config = vim.vsan.host.ConfigInfo()
+     vsan_config.enabled = False
+@@ -3170,7 +3311,8 @@ def vsan_disable(host, username, password, protocol=None, port=None, host_names=
+     return ret
+ 
+ 
+-def vsan_enable(host, username, password, protocol=None, port=None, host_names=None):
++def vsan_enable(host, username, password, protocol=None, port=None,
++                host_names=None, verify_ssl=True):
+     '''
+     Enable VSAN for a given host or list of host_names.
+ 
+@@ -3200,6 +3342,9 @@ def vsan_enable(host, username, password, protocol=None, port=None, host_names=N
+         location instead. This is useful for when service instance connection
+         information is used for a single ESXi host.
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++
+     CLI Example:
+ 
+     .. code-block:: bash
+@@ -3211,11 +3356,10 @@ def vsan_enable(host, username, password, protocol=None, port=None, host_names=N
+         salt '*' vsphere.vsan_enable my.vcenter.location root bad-password \
+         host_names='[esxi-1.host.com, esxi-2.host.com]'
+     '''
+-    service_instance = salt.utils.vmware.get_service_instance(host=host,
+-                                                              username=username,
+-                                                              password=password,
+-                                                              protocol=protocol,
+-                                                              port=port)
++    service_instance = salt.utils.vmware.get_service_instance(
++        host=host, username=username, password=password, protocol=protocol,
++        port=port, verify_ssl=verify_ssl,
++    )
+     # Create a VSAN Configuration Object and set the enabled attribute to True
+     vsan_config = vim.vsan.host.ConfigInfo()
+     vsan_config.enabled = True
+diff --git a/salt/modules/zenoss.py b/salt/modules/zenoss.py
+index deeab114c0..55b041173f 100644
+--- a/salt/modules/zenoss.py
++++ b/salt/modules/zenoss.py
+@@ -16,6 +16,8 @@ Module for working with the Zenoss API
+           hostname: https://zenoss.example.com
+           username: admin
+           password: admin123
++          verify_ssl: True
++          ca_bundle: /etc/ssl/certs/ca-certificates.crt
+ '''
+ 
+ 
+@@ -25,11 +27,12 @@ import json
+ import logging
+ 
+ try:
+-    import requests
++    import requests  # pylint: disable=unused-import
+     HAS_LIBS = True
+ except ImportError:
+     HAS_LIBS = False
+ 
++import salt.utils.http
+ 
+ # Disable INFO level logs from requests/urllib3
+ urllib3_logger = logging.getLogger('urllib3')
+@@ -68,13 +71,12 @@ def _session():
+     '''
+     Create a session to be used when connecting to Zenoss.
+     '''
+-
+     config = __salt__['config.option']('zenoss')
+-    session = requests.session()
+-    session.auth = (config.get('username'), config.get('password'))
+-    session.verify = False
+-    session.headers.update({'Content-type': 'application/json; charset=utf-8'})
+-    return session
++    return salt.utils.http.session(user=config.get("username"),
++                                   password=config.get("password"),
++                                   verify_ssl=config.get("verify_ssl", True),
++                                   ca_bundle=config.get("ca_bundle"),
++                                   headers={"Content-type": "application/json; charset=utf-8"})
+ 
+ 
+ def _router_request(router, method, data=None):
+diff --git a/salt/returners/splunk.py b/salt/returners/splunk.py
+index af3bb8054e..dad13d38ca 100644
+--- a/salt/returners/splunk.py
++++ b/salt/returners/splunk.py
+@@ -11,6 +11,7 @@ Requires the following config values to be specified in config or pillar:
+       indexer: <hostname/IP of Splunk indexer>
+       sourcetype: <Destination sourcetype for data>
+       index: <Destination index for data>
++      verify_ssl: true
+ 
+ Run a test by using ``salt-call test.ping --return splunk``
+ 
+@@ -29,7 +30,6 @@ import time
+ import logging
+ 
+ _max_content_bytes = 100000
+-http_event_collector_SSL_verify = False
+ http_event_collector_debug = False
+ 
+ log = logging.getLogger(__name__)
+@@ -58,10 +58,13 @@ def _get_options():
+         indexer = __salt__['config.get']('splunk_http_forwarder:indexer')
+         sourcetype = __salt__['config.get']('splunk_http_forwarder:sourcetype')
+         index = __salt__['config.get']('splunk_http_forwarder:index')
+-    except Exception:
++        verify_ssl = __salt__["config.get"](
++            "splunk_http_forwarder:verify_ssl", default=True
++        )
++    except Exception:  # pylint: disable=broad-except
+         log.error("Splunk HTTP Forwarder parameters not present in config.")
+         return None
+-    splunk_opts = {"token": token, "indexer": indexer, "sourcetype": sourcetype, "index": index}
++    splunk_opts = {"token": token, "indexer": indexer, "sourcetype": sourcetype, "index": index, "verify_ssl": verify_ssl}
+     return splunk_opts
+ 
+ 
+@@ -77,9 +80,10 @@ def _send_splunk(event, index_override=None, sourcetype_override=None):
+     logging.info('Options: {0}'.format(json.dumps(opts)))
+     http_event_collector_key = opts['token']
+     http_event_collector_host = opts['indexer']
+-    #Set up the collector
+-    splunk_event = http_event_collector(http_event_collector_key, http_event_collector_host)
+-    #init the payload
++    http_event_collector_verify_ssl = opts["verify_ssl"]
++    # Set up the collector
++    splunk_event = http_event_collector(http_event_collector_key, http_event_collector_host, verify_ssl=http_event_collector_verify_ssl)
++    # init the payload
+     payload = {}
+ 
+     #Set up the event metadata
+@@ -110,13 +114,15 @@ class http_event_collector(object):
+                  host="",
+                  http_event_port='8088',
+                  http_event_server_ssl=True,
+-                 max_bytes=_max_content_bytes):
++                 max_bytes=_max_content_bytes,
++                 verify_ssl=True):
+         self.token = token
+         self.batchEvents = []
+         self.maxByteLength = max_bytes
+         self.currentByteLength = 0
++        self.verify_ssl = verify_ssl
+ 
+-           # Set host to specified value or default to localhostname if no value provided
++        # Set host to specified value or default to localhostname if no value provided
+         if host:
+             self.host = host
+         else:
+@@ -156,7 +162,10 @@ class http_event_collector(object):
+         data.update(payload)
+ 
+         # send event to http event collector
+-        r = requests.post(self.server_uri, data=json.dumps(data), headers=headers, verify=http_event_collector_SSL_verify)
++        r = requests.post(self.server_uri,
++                          data=json.dumps(data),
++                          headers=headers,
++                          verify=self.verify_ssl)
+ 
+         # Print debug info if flag set
+         if http_event_collector_debug:
+@@ -195,6 +204,6 @@ class http_event_collector(object):
+ 
+         if len(self.batchEvents) > 0:
+             headers = {'Authorization': 'Splunk '+self.token}
+-            r = requests.post(self.server_uri, data=" ".join(self.batchEvents), headers=headers, verify=http_event_collector_SSL_verify)
++            r = requests.post(self.server_uri, data=" ".join(self.batchEvents), headers=headers, verify=self.verify_ssl)
+             self.batchEvents = []
+             self.currentByteLength = 0
+diff --git a/salt/runners/asam.py b/salt/runners/asam.py
+index 6746978c3c..48b83f7b34 100644
+--- a/salt/runners/asam.py
++++ b/salt/runners/asam.py
+@@ -18,9 +18,11 @@ master configuration at ``/etc/salt/master`` or ``/etc/salt/master.d/asam.conf``
+       prov1.domain.com
+         username: "testuser"
+         password: "verybadpass"
++        verify_ssl: true
+       prov2.domain.com
+         username: "testuser"
+         password: "verybadpass"
++        verify_ssl: true
+ 
+ .. note::
+ 
+@@ -96,6 +98,10 @@ def _get_asam_configuration(driver_url=''):
+                 password = service_config.get('password', None)
+                 protocol = service_config.get('protocol', 'https')
+                 port = service_config.get('port', 3451)
++                verify_ssl = service_config.get("verify_ssl")
++
++                if verify_ssl is None:
++                    verify_ssl = True
+ 
+                 if not username or not password:
+                     log.error(
+@@ -110,7 +116,8 @@ def _get_asam_configuration(driver_url=''):
+                     'platformset_edit_url': "{0}://{1}:{2}/config/PlatformSetEdit.html".format(protocol, asam_server, port),
+                     'platformset_config_url': "{0}://{1}:{2}/config/PlatformSetConfig.html".format(protocol, asam_server, port),
+                     'username': username,
+-                    'password': password
++                    'password': password,
++                    "verify_ssl": verify_ssl
+                 }
+ 
+                 if (not driver_url) or (driver_url == asam_server):
+@@ -211,8 +218,8 @@ def remove_platform(name, server_url):
+     )
+ 
+     try:
+-        html_content = _make_post_request(url, data, auth, verify=False)
+-    except Exception as exc:
++        html_content = _make_post_request(url, data, auth, verify=config["verify_ssl"])
++    except Exception as exc:  # pylint: disable=broad-except
+         err_msg = "Failed to look up existing platforms on {0}".format(server_url)
+         log.error("{0}:\n{1}".format(err_msg, exc))
+         return {name: err_msg}
+@@ -227,8 +234,8 @@ def remove_platform(name, server_url):
+         data['postType'] = 'platformRemove'
+         data['Submit'] = 'Yes'
+         try:
+-            html_content = _make_post_request(url, data, auth, verify=False)
+-        except Exception as exc:
++            html_content = _make_post_request(url, data, auth, verify=config["verify_ssl"])
++        except Exception as exc:  # pylint: disable=broad-except
+             err_msg = "Failed to delete platform from {1}".format(server_url)
+             log.error("{0}:\n{1}".format(err_msg, exc))
+             return {name: err_msg}
+@@ -269,8 +276,8 @@ def list_platforms(server_url):
+     )
+ 
+     try:
+-        html_content = _make_post_request(url, data, auth, verify=False)
+-    except Exception as exc:
++        html_content = _make_post_request(url, data, auth, verify=config["verify_ssl"])
++    except Exception as exc:  # pylint: disable=broad-except
+         err_msg = "Failed to look up existing platforms"
+         log.error("{0}:\n{1}".format(err_msg, exc))
+         return {server_url: err_msg}
+@@ -310,8 +317,8 @@ def list_platform_sets(server_url):
+     )
+ 
+     try:
+-        html_content = _make_post_request(url, data, auth, verify=False)
+-    except Exception as exc:
++        html_content = _make_post_request(url, data, auth, verify=config["verify_ssl"])
++    except Exception as exc:  # pylint: disable=broad-except
+         err_msg = "Failed to look up existing platform sets"
+         log.error("{0}:\n{1}".format(err_msg, exc))
+         return {server_url: err_msg}
+@@ -365,8 +372,8 @@ def add_platform(name, platform_set, server_url):
+     )
+ 
+     try:
+-        html_content = _make_post_request(url, data, auth, verify=False)
+-    except Exception as exc:
++        html_content = _make_post_request(url, data, auth, verify=config["verify_ssl"])
++    except Exception as exc:  # pylint: disable=broad-except
+         err_msg = "Failed to add platform on {0}".format(server_url)
+         log.error("{0}:\n{1}".format(err_msg, exc))
+         return {name: err_msg}
+diff --git a/salt/states/esxi.py b/salt/states/esxi.py
+index dd0e8d70ea..b278c6383a 100644
+--- a/salt/states/esxi.py
++++ b/salt/states/esxi.py
+@@ -645,7 +645,7 @@ def ssh_configured(name,
+                    ssh_key_file=None,
+                    service_policy=None,
+                    service_restart=False,
+-                   certificate_verify=False):
++                   certificate_verify=None):
+     '''
+     Manage the SSH configuration for a host including whether or not SSH is running or
+     the presence of a given SSH key. Note: Only one ssh key can be uploaded for root.
+@@ -685,7 +685,7 @@ def ssh_configured(name,
+ 
+     certificate_verify
+         If set to ``True``, the SSL connection must present a valid certificate.
+-        Default is ``False``.
++        Default is ``True``.
+ 
+     Example:
+ 
+@@ -704,6 +704,10 @@ def ssh_configured(name,
+            'result': False,
+            'changes': {},
+            'comment': ''}
++
++    if certificate_verify is None:
++        certificate_verify = True
++
+     esxi_cmd = 'esxi.cmd'
+     host = __pillar__['proxy']['host']
+     ssh = 'ssh'
+diff --git a/salt/utils/http.py b/salt/utils/http.py
+index b97a68bb16..c0228210fb 100644
+--- a/salt/utils/http.py
++++ b/salt/utils/http.py
+@@ -910,3 +910,23 @@ def _sanitize_url_components(comp_list, field):
+         ret = '{0}&'.format(comp_list[0])
+         comp_list.remove(comp_list[0])
+         return ret + _sanitize_url_components(comp_list, field)
++
++
++def session(user=None, password=None, verify_ssl=True, ca_bundle=None, headers=None):
++    """
++    create a requests session
++    """
++    session = requests.session()
++    if user and password:
++        session.auth = (user, password)
++    if ca_bundle and not verify_ssl:
++        log.error("You cannot use both ca_bundle and verify_ssl False together")
++        return False
++    if ca_bundle:
++        opts = {"ca_bundle": ca_bundle}
++        session.verify = get_ca_bundle(opts)
++    if not verify_ssl:
++        session.verify = False
++    if headers:
++        session.headers.update(headers)
++    return session
+diff --git a/salt/utils/templates.py b/salt/utils/templates.py
+index 37aa4c22be..3718874ee1 100644
+--- a/salt/utils/templates.py
++++ b/salt/utils/templates.py
+@@ -17,6 +17,8 @@ import sys
+ # Import third party libs
+ import jinja2
+ import jinja2.ext
++import jinja2.sandbox
++
+ 
+ # Import salt libs
+ import salt.utils
+@@ -338,9 +340,9 @@ def render_jinja_tmpl(tmplstr, context, tmplpath=None):
+         env_args['lstrip_blocks'] = True
+ 
+     if opts.get('allow_undefined', False):
+-        jinja_env = jinja2.Environment(**env_args)
++        jinja_env = jinja2.sandbox.SandboxedEnvironment(**env_args)
+     else:
+-        jinja_env = jinja2.Environment(undefined=jinja2.StrictUndefined,
++        jinja_env = jinja2.sandbox.SandboxedEnvironment(undefined=jinja2.StrictUndefined,
+                                        **env_args)
+ 
+     jinja_env.filters['strftime'] = salt.utils.date_format
+@@ -366,7 +368,8 @@ def render_jinja_tmpl(tmplstr, context, tmplpath=None):
+         template = jinja_env.from_string(tmplstr)
+         template.globals.update(decoded_context)
+         output = template.render(**decoded_context)
+-    except jinja2.exceptions.TemplateSyntaxError as exc:
++    except (jinja2.exceptions.TemplateSyntaxError,
++           jinja2.exceptions.SecurityError) as exc:
+         trace = traceback.extract_tb(sys.exc_info()[2])
+         line, out = _get_jinja_error(trace, context=decoded_context)
+         if not line:
+diff --git a/salt/utils/thin.py b/salt/utils/thin.py
+index 5abc6bcc82..59d7690ccd 100644
+--- a/salt/utils/thin.py
++++ b/salt/utils/thin.py
+@@ -199,10 +199,10 @@ def gen_thin(cachedir, extra_mods='', overwrite=False, so_mods='',
+     if _six.PY3:
+         # Let's check for the minimum python 2 version requirement, 2.6
+         py_shell_cmd = (
+-            python2_bin + ' -c \'from __future__ import print_function; import sys; '
+-            'print("{0}.{1}".format(*(sys.version_info[:2])));\''
++            python2_bin, "-c" ,"rom __future__ import print_function; import sys; "
++            "print('{0}.{1}'.format(*(sys.version_info[:2])));"
+         )
+-        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE, shell=True)
++        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE)
+         stdout, _ = cmd.communicate()
+         if cmd.returncode == 0:
+             py2_version = tuple(int(n) for n in stdout.decode('utf-8').strip().split('.'))
+@@ -219,7 +219,6 @@ def gen_thin(cachedir, extra_mods='', overwrite=False, so_mods='',
+         raise salt.exceptions.SaltSystemExit(
+             'The minimum required python version to run salt-ssh is "2.6".'
+         )
+-
+     tops_py_version_mapping = {}
+     tops = get_tops(extra_mods=extra_mods, so_mods=so_mods)
+     if _six.PY2:
+@@ -231,12 +230,12 @@ def gen_thin(cachedir, extra_mods='', overwrite=False, so_mods='',
+     #       This would reduce the thin size.
+     if _six.PY2 and sys.version_info[0] == 2:
+         # Get python 3 tops
+-        py_shell_cmd = (
+-            python3_bin + ' -c \'import sys; import json; import salt.utils.thin; '
+-            'print(json.dumps(salt.utils.thin.get_tops(**(json.loads(sys.argv[1]))))); exit(0);\' '
+-            '\'{0}\''.format(json.dumps({'extra_mods': extra_mods, 'so_mods': so_mods}))
+-        )
+-        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
++        py_shell_cmd = [
++            python3_bin, "-c", "import sys; import json; import salt.utils.thin; "
++            "print(json.dumps(salt.utils.thin.get_tops(**(json.loads(sys.argv[1]))))); exit(0);",
++            json.dumps({'extra_mods': extra_mods, 'so_mods': so_mods})
++        ]
++        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+         stdout, stderr = cmd.communicate()
+         if cmd.returncode == 0:
+             try:
+@@ -246,13 +245,13 @@ def gen_thin(cachedir, extra_mods='', overwrite=False, so_mods='',
+                 pass
+     if _six.PY3 and sys.version_info[0] == 3:
+         # Get python 2 tops
+-        py_shell_cmd = (
+-            python2_bin + ' -c \'from __future__ import print_function; '
+-            'import sys; import json; import salt.utils.thin; '
+-            'print(json.dumps(salt.utils.thin.get_tops(**(json.loads(sys.argv[1]))))); exit(0);\' '
+-            '\'{0}\''.format(json.dumps({'extra_mods': extra_mods, 'so_mods': so_mods}))
+-        )
+-        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
++        py_shell_cmd = [
++            python2_bin, "-c", "from __future__ import print_function; "
++            "import sys; import json; import salt.utils.thin; "
++            "print(json.dumps(salt.utils.thin.get_tops(**(json.loads(sys.argv[1]))))); exit(0);",
++            json.dumps({'extra_mods': extra_mods, 'so_mods': so_mods})
++        ]
++        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+         stdout, stderr = cmd.communicate()
+         if cmd.returncode == 0:
+             try:
+@@ -361,11 +360,12 @@ def gen_min(cachedir, extra_mods='', overwrite=False, so_mods='',
+             return mintar
+     if _six.PY3:
+         # Let's check for the minimum python 2 version requirement, 2.6
+-        py_shell_cmd = (
+-            python2_bin + ' -c \'from __future__ import print_function; import sys; '
+-            'print("{0}.{1}".format(*(sys.version_info[:2])));\''
+-        )
+-        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE, shell=True)
++        py_shell_cmd = [
++            python2_bin, '-c',
++            'from __future__ import print_function; import sys;print("{0}.{1}".format(*(sys.version_info[:2])));'
++        ]
++
++        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE)
+         stdout, _ = cmd.communicate()
+         if cmd.returncode == 0:
+             py2_version = tuple(int(n) for n in stdout.decode('utf-8').strip().split('.'))
+@@ -394,12 +394,12 @@ def gen_min(cachedir, extra_mods='', overwrite=False, so_mods='',
+     #       This would reduce the min size.
+     if _six.PY2 and sys.version_info[0] == 2:
+         # Get python 3 tops
+-        py_shell_cmd = (
+-            python3_bin + ' -c \'import sys; import json; import salt.utils.thin; '
+-            'print(json.dumps(salt.utils.thin.get_tops(**(json.loads(sys.argv[1]))))); exit(0);\' '
+-            '\'{0}\''.format(json.dumps({'extra_mods': extra_mods, 'so_mods': so_mods}))
+-        )
+-        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
++        py_shell_cmd = [
++            python3_bin, "-c", "import sys; import json; import salt.utils.thin; "
++            "print(json.dumps(salt.utils.thin.get_tops(**(json.loads(sys.argv[1]))))); exit(0);",
++            json.dumps({'extra_mods': extra_mods, 'so_mods': so_mods})
++        ]
++        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+         stdout, stderr = cmd.communicate()
+         if cmd.returncode == 0:
+             try:
+@@ -409,13 +409,13 @@ def gen_min(cachedir, extra_mods='', overwrite=False, so_mods='',
+                 pass
+     if _six.PY3 and sys.version_info[0] == 3:
+         # Get python 2 tops
+-        py_shell_cmd = (
+-            python2_bin + ' -c \'from __future__ import print_function; '
+-            'import sys; import json; import salt.utils.thin; '
+-            'print(json.dumps(salt.utils.thin.get_tops(**(json.loads(sys.argv[1]))))); exit(0);\' '
+-            '\'{0}\''.format(json.dumps({'extra_mods': extra_mods, 'so_mods': so_mods}))
+-        )
+-        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
++        py_shell_cmd = [
++            python2_bin, "-c", "from __future__ import print_function; "
++            "import sys; import json; import salt.utils.thin; "
++            "print(json.dumps(salt.utils.thin.get_tops(**(json.loads(sys.argv[1]))))); exit(0);",
++            json.dumps({'extra_mods': extra_mods, 'so_mods': so_mods})
++        ]
++        cmd = subprocess.Popen(py_shell_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+         stdout, stderr = cmd.communicate()
+         if cmd.returncode == 0:
+             try:
+diff --git a/salt/utils/vmware.py b/salt/utils/vmware.py
+index 9353779395..f8f222cc7e 100644
+--- a/salt/utils/vmware.py
++++ b/salt/utils/vmware.py
+@@ -173,8 +173,17 @@ def esxcli(host, user, pwd, cmd, protocol=None, port=None, esxi_host=None, creds
+     return ret
+ 
+ 
+-def _get_service_instance(host, username, password, protocol,
+-                          port, mechanism, principal, domain):
++def _get_service_instance(
++    host,
++    username,
++    password,
++    protocol,
++    port,
++    mechanism,
++    principal,
++    domain,
++    verify_ssl=True,
++):
+     '''
+     Internal method to authenticate with a vCenter server or ESX/ESXi host
+     and return the service instance object.
+@@ -202,35 +211,59 @@ def _get_service_instance(host, username, password, protocol,
+             raise salt.exceptions.CommandExecutionError(err_msg)
+     else:
+         raise salt.exceptions.CommandExecutionError(
+-            'Unsupported mechanism: \'{0}\''.format(mechanism))
++            "Unsupported mechanism: '{0}'".format(mechanism)
++        )
++
++    log.trace(
++        "Connecting using the '%s' mechanism, with username '%s'", mechanism, username,
++    )
++    default_msg = (
++        "Could not connect to host '{0}'. "
++        "Please check the debug log for more information.".format(host)
++    )
++
+     try:
+         log.trace('Connecting using the \'{0}\' mechanism, with username '
+                   '\'{1}\''.format(mechanism, username))
+-        service_instance = SmartConnect(
+-            host=host,
+-            user=username,
+-            pwd=password,
+-            protocol=protocol,
+-            port=port,
+-            b64token=token,
+-            mechanism=mechanism)
++        if verify_ssl:
++            service_instance = SmartConnect(
++                host=host,
++                user=username,
++                pwd=password,
++                protocol=protocol,
++                port=port,
++                b64token=token,
++                mechanism=mechanism,
++            )
+     except TypeError as exc:
+         if 'unexpected keyword argument' in exc.message:
+             log.error('Initial connect to the VMware endpoint failed with {0}'.format(exc.message))
+             log.error('This may mean that a version of PyVmomi EARLIER than 6.0.0.2016.6 is installed.')
+             log.error('We recommend updating to that version or later.')
+             raise
+-    except Exception as exc:
+-
+-        default_msg = 'Could not connect to host \'{0}\'. ' \
+-                      'Please check the debug log for more information.'.format(host)
++    except Exception as exc:  # pylint: disable=broad-except
++        # pyVmomi's SmartConnect() actually raises Exception in some cases.
++        if (
++            isinstance(exc, vim.fault.HostConnectFault)
++            and "[SSL: CERTIFICATE_VERIFY_FAILED]" in exc.msg
++        ) or "[SSL: CERTIFICATE_VERIFY_FAILED]" in str(exc):
++            err_msg = (
++                "Could not verify the SSL certificate. You can use "
++                "verify_ssl: False if you do not want to verify the "
++                "SSL certificate. This is not recommended as it is "
++                "considered insecure."
++            )
++        else:
++            log.exception(exc)
++            err_msg = exc.msg if hasattr(exc, "msg") else default_msg
++        raise salt.exceptions.VMwareConnectionError(err_msg)
+ 
++    if not verify_ssl:
+         try:
+             if (isinstance(exc, vim.fault.HostConnectFault) and
+                 '[SSL: CERTIFICATE_VERIFY_FAILED]' in exc.msg) or \
+                '[SSL: CERTIFICATE_VERIFY_FAILED]' in str(exc):
+ 
+-                import ssl
+                 service_instance = SmartConnect(
+                     host=host,
+                     user=username,
+@@ -270,6 +303,7 @@ def _get_service_instance(host, username, password, protocol,
+                 err_msg = exc.msg if hasattr(exc, 'msg') else default_msg
+                 log.trace(exc)
+                 raise salt.exceptions.VMwareConnectionError(err_msg)
++
+     atexit.register(Disconnect, service_instance)
+     return service_instance
+ 
+@@ -308,9 +342,17 @@ def get_datastore_ref(si, datastore_name):
+     return None
+ 
+ 
+-def get_service_instance(host, username=None, password=None, protocol=None,
+-                         port=None, mechanism='userpass', principal=None,
+-                         domain=None):
++def get_service_instance(
++    host,
++    username=None,
++    password=None,
++    protocol=None,
++    port=None,
++    mechanism="userpass",
++    principal=None,
++    domain=None,
++    verify_ssl=True,
++):
+     '''
+     Authenticate with a vCenter server or ESX/ESXi host and return the service instance object.
+ 
+@@ -342,8 +384,10 @@ def get_service_instance(host, username=None, password=None, protocol=None,
+ 
+     domain
+         Kerberos user domain. Required if mechanism is ``sspi``
+-    '''
+ 
++    verify_ssl
++        Verify the SSL certificate. Default: True
++    '''
+     if protocol is None:
+         protocol = 'https'
+     if port is None:
+@@ -363,14 +407,17 @@ def get_service_instance(host, username=None, password=None, protocol=None,
+             return service_instance
+ 
+     if not service_instance:
+-        service_instance = _get_service_instance(host,
+-                                                 username,
+-                                                 password,
+-                                                 protocol,
+-                                                 port,
+-                                                 mechanism,
+-                                                 principal,
+-                                                 domain)
++        service_instance = _get_service_instance(
++            host,
++            username,
++            password,
++            protocol,
++            port,
++            mechanism,
++            principal,
++            domain,
++            verify_ssl=verify_ssl,
++        )
+ 
+     # Test if data can actually be retrieved or connection has gone stale
+     log.trace('Checking connection is still authenticated')
+@@ -379,14 +426,17 @@ def get_service_instance(host, username=None, password=None, protocol=None,
+     except vim.fault.NotAuthenticated:
+         log.trace('Session no longer authenticating. Reconnecting')
+         Disconnect(service_instance)
+-        service_instance = _get_service_instance(host,
+-                                                 username,
+-                                                 password,
+-                                                 protocol,
+-                                                 port,
+-                                                 mechanism,
+-                                                 principal,
+-                                                 domain)
++        service_instance = _get_service_instance(
++            host,
++            username,
++            password,
++            protocol,
++            port,
++            mechanism,
++            principal,
++            domain,
++            verify_ssl=verify_ssl,
++        )
+     except vim.fault.VimFault as exc:
+         raise salt.exceptions.VMwareApiError(exc.msg)
+     except vmodl.RuntimeFault as exc:
+diff --git a/salt/wheel/__init__.py b/salt/wheel/__init__.py
+index dc6ee5010a..dfe9157180 100644
+--- a/salt/wheel/__init__.py
++++ b/salt/wheel/__init__.py
+@@ -115,8 +115,8 @@ class WheelClient(salt.client.mixins.SyncClientMixin,
+             })
+             {'jid': '20131219224744416681', 'tag': 'salt/wheel/20131219224744416681'}
+         '''
+-        fun = low.pop('fun')
+-        return self.async(fun, low)
++        fun = low.get('fun')
++        return self.async(fun, low, local=False)
+ 
+     def cmd(self, fun, arg=None, pub_data=None, kwarg=None, print_event=True, full_return=False):
+         '''
+diff --git a/salt/wheel/pillar_roots.py b/salt/wheel/pillar_roots.py
+index a86270d9ce..582204656c 100644
+--- a/salt/wheel/pillar_roots.py
++++ b/salt/wheel/pillar_roots.py
+@@ -105,7 +105,10 @@ def write(data, path, saltenv='base', index=0):
+     if os.path.isabs(path):
+         return ('The path passed in {0} is not relative to the environment '
+                 '{1}').format(path, saltenv)
+-    dest = os.path.join(__opts__['pillar_roots'][saltenv][index], path)
++    roots_dir = __opts__['pillar_roots'][saltenv][index]
++    dest = os.path.join(roots_dir, path)
++    if not salt.utils.verify.clean_path(roots_dir, dest):
++        return 'Invalid path'
+     dest_dir = os.path.dirname(dest)
+     if not os.path.isdir(dest_dir):
+         os.makedirs(dest_dir)
+-- 
+2.30.1
+
+
