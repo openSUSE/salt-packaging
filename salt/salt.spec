@@ -424,7 +424,7 @@ Patch165:     backport-commit-1b16478c51fb75c25cd8d217c80955feefb6.patch
 # PATCH-FIX_UPSTREAM: embargoed - not yet link
 Patch166:     allow-extra_filerefs-as-sanitized-kwargs-for-ssh-cli.patch
 # PATCH-FIX_UPSTREAM: embargoed - not yet link
-Patch167:     fix_regression_in_cmd_run_after_cve.patch
+Patch167:     fix-regression-on-cmd.run-when-passing-tuples-as-cmd.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59345
 Patch168:     fix-onlyif-unless-when-multiple-conditions-bsc-11808.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59354
