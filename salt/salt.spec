@@ -422,6 +422,12 @@ Patch163:     fix-recursion-false-detection-in-payload-bsc-1180101.patch
 Patch164:     implementation-of-suse_ip-execution-module-bsc-10999.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58591
 Patch165:     backport-commit-1b16478c51fb75c25cd8d217c80955feefb6.patch
+# PATCH-FIX_UPSTREAM: no PR to link to yet
+Patch166:     fix-for-some-cves-bsc1181550.patch
+# PATCH-FIX_UPSTREAM: no PR to link to yet
+Patch167:     allow-extra_filerefs-as-sanitized-kwargs-for-ssh-cli.patch
+# PATCH-FIX_UPSTREAM: no PR to link to yet
+Patch168:     fix-regression-on-cmd.run-when-passing-tuples-as-cmd.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1090,6 +1096,9 @@ cp %{S:5} ./.travis.yml
 %patch163 -p1
 %patch164 -p1
 %patch165 -p1
+%patch166 -p1
+%patch167 -p1
+%patch168 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
