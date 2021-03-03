@@ -1,0 +1,128 @@
+From b36c198453e63fe4a281825c4d0072010c9ac7a8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Tue, 19 Jan 2021 09:23:44 +0000
+Subject: [PATCH] Prevent race condition on SIGTERM for the minion
+ (bsc#1172110)
+
+Prevent race condition when handling signals by CLI clients
+
+Add test case to cover destroy race condition for minion module_refresh
+---
+ salt/loader.py            | 17 ++++++++-----
+ salt/minion.py            |  8 +++++--
+ tests/unit/test_minion.py | 50 +++++++++++++++++++++++++++++++++------
+ 3 files changed, 60 insertions(+), 15 deletions(-)
+
+diff --git a/salt/loader.py b/salt/loader.py
+index b824a70a0c..f5cd7d139b 100644
+--- a/salt/loader.py
++++ b/salt/loader.py
+@@ -1682,12 +1682,17 @@ class LazyLoader(salt.utils.lazy.LazyDict):
+             except Exception:  # pylint: disable=broad-except
+                 pass
+             else:
+-                tgt_fn = os.path.join('salt', 'utils', 'process.py')
+-                if fn_.endswith(tgt_fn) and '_handle_signals' in caller:
+-                    # Race conditon, SIGTERM or SIGINT received while loader
+-                    # was in process of loading a module. Call sys.exit to
+-                    # ensure that the process is killed.
+-                    sys.exit(salt.defaults.exitcodes.EX_OK)
++                tgt_fns = [
++                    os.path.join("salt", "utils", "process.py"),
++                    os.path.join("salt", "cli", "daemons.py"),
++                    os.path.join("salt", "cli", "api.py"),
++                ]
++                for tgt_fn in tgt_fns:
++                    if fn_.endswith(tgt_fn) and "_handle_signals" in caller:
++                        # Race conditon, SIGTERM or SIGINT received while loader
++                        # was in process of loading a module. Call sys.exit to
++                        # ensure that the process is killed.
++                        sys.exit(salt.defaults.exitcodes.EX_OK)
+             log.error(
+                 'Failed to import %s %s as the module called exit()\n',
+                 self.tag, name, exc_info=True
+diff --git a/salt/minion.py b/salt/minion.py
+index 60e34939e0..2849b8da5e 100644
+--- a/salt/minion.py
++++ b/salt/minion.py
+@@ -2190,8 +2190,12 @@ class Minion(MinionBase):
+         '''
+         Refresh the functions and returners.
+         '''
+-        log.debug('Refreshing modules. Notify=%s', notify)
+-        self.functions, self.returners, _, self.executors = self._load_modules(force_refresh, notify=notify)
++        if not hasattr(self, "schedule"):
++            return
++        log.debug("Refreshing modules. Notify=%s", notify)
++        self.functions, self.returners, _, self.executors = self._load_modules(
++            force_refresh, notify=notify
++        )
+ 
+         self.schedule.functions = self.functions
+         self.schedule.returners = self.returners
+diff --git a/tests/unit/test_minion.py b/tests/unit/test_minion.py
+index bf84f87ae5..2cfc9e0134 100644
+--- a/tests/unit/test_minion.py
++++ b/tests/unit/test_minion.py
+@@ -286,13 +286,49 @@ class MinionTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+             finally:
+                 minion.destroy()
+ 
+-    def test_when_ping_interval_is_set_the_callback_should_be_added_to_periodic_callbacks(self):
+-        with patch('salt.minion.Minion.ctx', MagicMock(return_value={})), \
+-                patch('salt.minion.Minion.sync_connect_master', MagicMock(side_effect=RuntimeError('stop execution'))), \
+-                patch('salt.utils.process.SignalHandlingProcess.start', MagicMock(return_value=True)), \
+-                patch('salt.utils.process.SignalHandlingProcess.join', MagicMock(return_value=True)):
+-            mock_opts = self.get_config('minion', from_scratch=True)
+-            mock_opts['ping_interval'] = 10
++    def test_minion_module_refresh(self):
++        """
++        Tests that the 'module_refresh' just return in case there is no 'schedule'
++        because destroy method was already called.
++        """
++        with patch("salt.minion.Minion.ctx", MagicMock(return_value={})), patch(
++            "salt.utils.process.SignalHandlingProcess.start",
++            MagicMock(return_value=True),
++        ), patch(
++            "salt.utils.process.SignalHandlingProcess.join",
++            MagicMock(return_value=True),
++        ):
++            try:
++                mock_opts = salt.config.DEFAULT_MINION_OPTS.copy()
++                minion = salt.minion.Minion(
++                    mock_opts, io_loop=salt.ext.tornado.ioloop.IOLoop(),
++                )
++                minion.schedule = salt.utils.schedule.Schedule(
++                    mock_opts, {}, returners={}
++                )
++                self.assertTrue(hasattr(minion, "schedule"))
++                minion.destroy()
++                self.assertTrue(not hasattr(minion, "schedule"))
++                self.assertTrue(not minion.module_refresh())
++            finally:
++                minion.destroy()
++
++    @pytest.mark.slow_test
++    def test_when_ping_interval_is_set_the_callback_should_be_added_to_periodic_callbacks(
++        self,
++    ):
++        with patch("salt.minion.Minion.ctx", MagicMock(return_value={})), patch(
++            "salt.minion.Minion.sync_connect_master",
++            MagicMock(side_effect=RuntimeError("stop execution")),
++        ), patch(
++            "salt.utils.process.SignalHandlingProcess.start",
++            MagicMock(return_value=True),
++        ), patch(
++            "salt.utils.process.SignalHandlingProcess.join",
++            MagicMock(return_value=True),
++        ):
++            mock_opts = self.get_config("minion", from_scratch=True)
++            mock_opts["ping_interval"] = 10
+             io_loop = salt.ext.tornado.ioloop.IOLoop()
+             io_loop.make_current()
+             minion = salt.minion.Minion(mock_opts, io_loop=io_loop)
+-- 
+2.30.1
+
+
