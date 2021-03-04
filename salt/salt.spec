@@ -502,7 +502,6 @@ Requires:       platform-python
 %else
 Requires:       python3
 %endif
-Requires:       python3-certifi
 # requirements/base.txt
 %if 0%{?rhel} || 0%{?fedora}
 Requires:       python3-jinja2
