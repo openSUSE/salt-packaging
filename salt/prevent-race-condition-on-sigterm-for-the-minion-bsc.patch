@@ -1,4 +1,4 @@
-From b36c198453e63fe4a281825c4d0072010c9ac7a8 Mon Sep 17 00:00:00 2001
+From 36331eba80b5a6c3a5d5594bfb0d894036500299 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Tue, 19 Jan 2021 09:23:44 +0000
@@ -9,10 +9,10 @@ Prevent race condition when handling signals by CLI clients
 
 Add test case to cover destroy race condition for minion module_refresh
 ---
- salt/loader.py            | 17 ++++++++-----
+ salt/loader.py            | 17 +++++++++-----
  salt/minion.py            |  8 +++++--
- tests/unit/test_minion.py | 50 +++++++++++++++++++++++++++++++++------
- 3 files changed, 60 insertions(+), 15 deletions(-)
+ tests/unit/test_minion.py | 49 +++++++++++++++++++++++++++++++++------
+ 3 files changed, 59 insertions(+), 15 deletions(-)
 
 diff --git a/salt/loader.py b/salt/loader.py
 index b824a70a0c..f5cd7d139b 100644
@@ -62,10 +62,10 @@ index 60e34939e0..2849b8da5e 100644
          self.schedule.functions = self.functions
          self.schedule.returners = self.returners
 diff --git a/tests/unit/test_minion.py b/tests/unit/test_minion.py
-index bf84f87ae5..2cfc9e0134 100644
+index bf84f87ae5..c88ae8f587 100644
 --- a/tests/unit/test_minion.py
 +++ b/tests/unit/test_minion.py
-@@ -286,13 +286,49 @@ class MinionTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+@@ -286,13 +286,48 @@ class MinionTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
              finally:
                  minion.destroy()
  
@@ -103,7 +103,6 @@ index bf84f87ae5..2cfc9e0134 100644
 +            finally:
 +                minion.destroy()
 +
-+    @pytest.mark.slow_test
 +    def test_when_ping_interval_is_set_the_callback_should_be_added_to_periodic_callbacks(
 +        self,
 +    ):
