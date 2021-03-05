@@ -560,7 +560,7 @@ BuildRequires:  python-xml
 BuildRequires:  python-sphinx
 %endif
 Requires:       python >= 2.7
-%if 0%{?rhel} < 8
+%if 0%{?rhel} && 0%{?rhel} < 8
 Requires:       python-certifi
 %endif
 # requirements/base.txt
