@@ -1,0 +1,67 @@
+From 8d4367f838131530b2038dae448efa1750939765 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Mon, 8 Mar 2021 12:35:14 +0000
+Subject: [PATCH] Do not monkey patch yaml (bsc#1177474)
+
+Add unit test to check for monkey patching
+---
+ salt/utils/yamlloader.py            | 12 ++++--------
+ tests/unit/utils/test_yamlloader.py |  6 +++++-
+ 2 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/salt/utils/yamlloader.py b/salt/utils/yamlloader.py
+index 0516647d1f..37e0625b34 100644
+--- a/salt/utils/yamlloader.py
++++ b/salt/utils/yamlloader.py
+@@ -10,13 +10,9 @@ import warnings
+ import yaml  # pylint: disable=blacklisted-import
+ from yaml.nodes import MappingNode, SequenceNode
+ from yaml.constructor import ConstructorError
+-try:
+-    yaml.Loader = yaml.CLoader
+-    yaml.Dumper = yaml.CDumper
+-    yaml.SafeLoader = yaml.CSafeLoader
+-    yaml.SafeDumper = yaml.CSafeDumper
+-except Exception:  # pylint: disable=broad-except
+-    pass
++
++# prefer C bindings over python when available
++BaseLoader = getattr(yaml, 'CSafeLoader', yaml.SafeLoader)
+ 
+ import salt.utils.stringutils
+ 
+@@ -34,7 +30,7 @@ warnings.simplefilter('always', category=DuplicateKeyWarning)
+ 
+ 
+ # with code integrated from https://gist.github.com/844388
+-class SaltYamlSafeLoader(yaml.SafeLoader):
++class SaltYamlSafeLoader(BaseLoader):
+     '''
+     Create a custom YAML loader that uses the custom constructor. This allows
+     for the YAML loading defaults to be manipulated based on needs within salt
+diff --git a/tests/unit/utils/test_yamlloader.py b/tests/unit/utils/test_yamlloader.py
+index 65d3850d58..90081934c7 100644
+--- a/tests/unit/utils/test_yamlloader.py
++++ b/tests/unit/utils/test_yamlloader.py
+@@ -10,7 +10,7 @@ import textwrap
+ 
+ # Import Salt Libs
+ from yaml.constructor import ConstructorError
+-from salt.utils.yamlloader import SaltYamlSafeLoader
++from salt.utils.yamlloader import SaltYamlSafeLoader, yaml
+ import salt.utils.files
+ from salt.ext import six
+ 
+@@ -148,3 +148,7 @@ class YamlLoaderTestCase(TestCase):
+                   b: {foo: bar, one: 1, list: [1, two, 3]}''')),
+             {'foo': {'b': {'foo': 'bar', 'one': 1, 'list': [1, 'two', 3]}}}
+         )
++
++    def test_not_yaml_monkey_patching(self):
++        if hasattr(yaml, "CSafeLoader"):
++            assert yaml.SafeLoader != yaml.CSafeLoader
+-- 
+2.30.1
+
+
