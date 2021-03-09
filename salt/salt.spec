@@ -375,6 +375,8 @@ Patch156:     allow-extra_filerefs-as-sanitized-kwargs-for-ssh-cli.patch
 Patch157:     fix-regression-on-cmd.run-when-passing-tuples-as-cmd.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59524
 Patch158:     prevent-race-condition-on-sigterm-for-the-minion-bsc.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59746
+Patch159:     do-not-monkey-patch-yaml-bsc-1177474.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -928,6 +930,7 @@ cp %{S:5} ./.travis.yml
 %patch156 -p1
 %patch157 -p1
 %patch158 -p1
+%patch159 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
