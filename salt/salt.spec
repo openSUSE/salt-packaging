@@ -377,6 +377,8 @@ Patch157:     fix-regression-on-cmd.run-when-passing-tuples-as-cmd.patch
 Patch158:     prevent-race-condition-on-sigterm-for-the-minion-bsc.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59746
 Patch159:     do-not-monkey-patch-yaml-bsc-1177474.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59536
+Patch160:     3002-set-distro-requirement-to-oldest-supported-vers.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -931,6 +933,7 @@ cp %{S:5} ./.travis.yml
 %patch157 -p1
 %patch158 -p1
 %patch159 -p1
+%patch160 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
