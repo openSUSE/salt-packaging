@@ -432,6 +432,10 @@ Patch168:     fix-regression-on-cmd.run-when-passing-tuples-as-cmd.patch
 Patch169:     prevent-race-condition-on-sigterm-for-the-minion-bsc.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59746
 Patch170:     do-not-monkey-patch-yaml-bsc-1177474.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59146
+#                     https://github.com/saltstack/salt/pull/59355
+#                     https://github.com/saltstack/salt/pull/59693
+Patch171:     opensuse-3000-virtual-network-backports-329.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1105,6 +1109,7 @@ cp %{S:5} ./.travis.yml
 %patch168 -p1
 %patch169 -p1
 %patch170 -p1
+%patch171 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
