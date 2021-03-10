@@ -441,6 +441,10 @@ Patch173:     implementation-of-suse_ip-execution-module-bsc-10999.patch
 Patch174:     prevent-race-condition-on-sigterm-for-the-minion-bsc.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59746
 Patch175:     do-not-monkey-patch-yaml-bsc-1177474.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59146
+#                     https://github.com/saltstack/salt/pull/59355
+#                     https://github.com/saltstack/salt/pull/59693
+Patch176:     opensuse-3000-virtual-network-backports-329.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1128,6 +1132,7 @@ cp %{S:5} ./.travis.yml
 %patch173 -p1
 %patch174 -p1
 %patch175 -p1
+%patch176 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
