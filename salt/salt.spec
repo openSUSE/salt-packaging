@@ -379,6 +379,8 @@ Patch158:     prevent-race-condition-on-sigterm-for-the-minion-bsc.patch
 Patch159:     do-not-monkey-patch-yaml-bsc-1177474.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59536
 Patch160:     3002-set-distro-requirement-to-oldest-supported-vers.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59693
+Patch161:     virt.network_update-handle-missing-ipv4-netmask-attr.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -934,6 +936,7 @@ cp %{S:5} ./.travis.yml
 %patch158 -p1
 %patch159 -p1
 %patch160 -p1
+%patch161 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
