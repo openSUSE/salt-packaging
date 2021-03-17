@@ -436,6 +436,8 @@ Patch170:     do-not-monkey-patch-yaml-bsc-1177474.patch
 #                     https://github.com/saltstack/salt/pull/59355
 #                     https://github.com/saltstack/salt/pull/59693
 Patch171:     opensuse-3000-virtual-network-backports-329.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/313
+Patch172:     allow-vendor-change-option-with-zypper-313.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1110,6 +1112,7 @@ cp %{S:5} ./.travis.yml
 %patch169 -p1
 %patch170 -p1
 %patch171 -p1
+%patch172 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
