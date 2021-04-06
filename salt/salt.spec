@@ -440,6 +440,8 @@ Patch171:     opensuse-3000-virtual-network-backports-329.patch
 Patch172:     allow-vendor-change-option-with-zypper-313.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59404
 Patch173:     add-almalinux-and-alibaba-cloud-linux-to-the-os-fami.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58364
+Patch174:     fix-zmq-hang-backport-of-saltstack-salt-58364.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1116,6 +1118,7 @@ cp %{S:5} ./.travis.yml
 %patch171 -p1
 %patch172 -p1
 %patch173 -p1
+%patch174 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
