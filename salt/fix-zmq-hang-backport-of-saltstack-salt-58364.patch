@@ -1,0 +1,114 @@
+From 6c5849367ae0ba2fcae8d7579b9f8b2c432fc0c6 Mon Sep 17 00:00:00 2001
+From: Alexander Graul <agraul@suse.com>
+Date: Mon, 29 Mar 2021 15:53:07 +0200
+Subject: [PATCH] Fix zmq hang (backport of saltstack/salt#58364)
+
+Fixes bsc#1181368
+
+(cherry picked from commit 4abaaee815e3e845180ad7bd1111c5ee99f219ff)
+---
+ salt/scripts.py                     | 21 ++++++++++++++++-----
+ salt/transport/zeromq.py            | 14 ++++++++++++++
+ tests/unit/transport/test_zeromq.py | 24 +++++++++++++++++++++++-
+ 3 files changed, 53 insertions(+), 6 deletions(-)
+
+diff --git a/salt/scripts.py b/salt/scripts.py
+index 401ec20553..a1ea3e6966 100644
+--- a/salt/scripts.py
++++ b/salt/scripts.py
+@@ -438,11 +438,22 @@ def salt_call():
+     salt minion to run.
+     '''
+     import salt.cli.call
+-    if '' in sys.path:
+-        sys.path.remove('')
+-    client = salt.cli.call.SaltCall()
+-    _install_signal_handlers(client)
+-    client.run()
++
++    try:
++        from salt.transport import zeromq
++    except ImportError:
++        zeromq = None
++
++    try:
++        if "" in sys.path:
++            sys.path.remove("")
++        client = salt.cli.call.SaltCall()
++        _install_signal_handlers(client)
++        client.run()
++    finally:
++        if zeromq is not None:
++            zeromq.AsyncZeroMQReqChannel.force_close_all_instances()
++
+ 
+ 
+ def salt_run():
+diff --git a/salt/transport/zeromq.py b/salt/transport/zeromq.py
+index f8098b3121..a5844e9132 100644
+--- a/salt/transport/zeromq.py
++++ b/salt/transport/zeromq.py
+@@ -213,6 +213,20 @@ class AsyncZeroMQReqChannel(salt.transport.client.ReqChannel):
+                                                         kwargs={'io_loop': self._io_loop})
+         self._closing = False
+ 
++    @classmethod
++    def force_close_all_instances(cls):
++        """
++        Will force close all instances
++
++        ZMQ can hang on quit if left to deconstruct on its own.
++        This because is deconstructs out of order.
++
++        :return: None
++        """
++        for weak_dict in list(cls.instance_map.values()):
++            for instance in list(weak_dict.values()):
++                instance.close()
++
+     def close(self):
+         '''
+         Since the message_client creates sockets and assigns them to the IOLoop we have to
+diff --git a/tests/unit/transport/test_zeromq.py b/tests/unit/transport/test_zeromq.py
+index 2e540bdff0..a68de7c21c 100644
+--- a/tests/unit/transport/test_zeromq.py
++++ b/tests/unit/transport/test_zeromq.py
+@@ -44,7 +44,7 @@ from tests.support.runtests import RUNTIME_VARS
+ from tests.support.unit import TestCase, skipIf
+ from tests.support.helpers import flaky, get_unused_localhost_port
+ from tests.support.mixins import AdaptedConfigurationTestCaseMixin
+-from tests.support.mock import MagicMock, patch
++from tests.support.mock import MagicMock, call, patch
+ from tests.unit.transport.mixins import PubChannelMixin, ReqChannelMixin, run_loop_in_thread
+ 
+ ON_SUSE = False
+@@ -676,3 +676,25 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+         gather.join()
+         server_channel.pub_close()
+         assert len(results) == send_num, (len(results), set(expect).difference(results))
++
++
++class AsyncZeroMQReqChannelTests(TestCase):
++    def test_force_close_all_instances(self):
++        zmq1 = MagicMock()
++        zmq2 = MagicMock()
++        zmq3 = MagicMock()
++        zmq_objects = {"zmq": {"1": zmq1, "2": zmq2}, "other_zmq": {"3": zmq3}}
++
++        with patch(
++            "salt.transport.zeromq.AsyncZeroMQReqChannel.instance_map", zmq_objects
++        ):
++            salt.transport.zeromq.AsyncZeroMQReqChannel.force_close_all_instances()
++
++            self.assertEqual(zmq1.mock_calls, [call.close()])
++            self.assertEqual(zmq2.mock_calls, [call.close()])
++            self.assertEqual(zmq3.mock_calls, [call.close()])
++
++            # check if instance map changed
++            self.assertIs(
++                zmq_objects, salt.transport.zeromq.AsyncZeroMQReqChannel.instance_map
++            )
+-- 
+2.30.2
+
+
