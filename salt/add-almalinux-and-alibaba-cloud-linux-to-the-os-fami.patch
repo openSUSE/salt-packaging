@@ -1,0 +1,114 @@
+From 212c22238f97ad395055dafd75f5f682ad90f354 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Julio=20Gonz=C3=A1lez=20Gil?=
+ <juliogonzalez@users.noreply.github.com>
+Date: Wed, 24 Mar 2021 14:12:57 +0100
+Subject: [PATCH] Add AlmaLinux and Alibaba Cloud Linux to the OS
+ Family list (#342)
+
+* Add AlmaLinux and Alibaba Cloud Linux to the OS Family list
+
+* Add AlmaLinux to the OS Family list
+---
+ salt/grains/core.py            |  4 ++++
+ tests/unit/grains/test_core.py | 41 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 45 insertions(+)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index 38290d034a..4eb4fed9b5 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -1453,6 +1453,7 @@ _OS_NAME_MAP = {
+     'oracleserv': 'OEL',
+     'cloudserve': 'CloudLinux',
+     'cloudlinux': 'CloudLinux',
++    'almalinux': 'AlmaLinux',
+     'pidora': 'Fedora',
+     'scientific': 'ScientificLinux',
+     'synology': 'Synology',
+@@ -1467,6 +1468,7 @@ _OS_NAME_MAP = {
+     'slesexpand': 'RES',
+     'linuxmint': 'Mint',
+     'neon': 'KDE neon',
++    'alibaba': 'Alibaba Cloud (Aliyun)',
+ }
+ 
+ # Map the 'os' grain to the 'os_family' grain
+@@ -1484,6 +1486,7 @@ _OS_FAMILY_MAP = {
+     'Scientific': 'RedHat',
+     'Amazon': 'RedHat',
+     'CloudLinux': 'RedHat',
++    'AlmaLinux': 'RedHat',
+     'OVS': 'RedHat',
+     'OEL': 'RedHat',
+     'XCP': 'RedHat',
+@@ -1540,6 +1543,7 @@ _OS_FAMILY_MAP = {
+     'AIX': 'AIX',
+     'TurnKey': 'Debian',
+     'AstraLinuxCE': 'Debian',
++    'Alibaba Cloud (Aliyun)': 'RedHat',
+ }
+ 
+ # Matches any possible format:
+diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
+index d3b6515d00..c7a9610828 100644
+--- a/tests/unit/grains/test_core.py
++++ b/tests/unit/grains/test_core.py
+@@ -568,6 +568,27 @@ class CoreGrainsTestCase(TestCase, LoaderModuleMockMixin):
+         }
+         self._run_os_grains_tests("debian-9", _os_release_map, expectation)
+ 
++    @skipIf(not salt.utils.platform.is_linux(), 'System is not Linux')
++    def test_almalinux_8_os_grains(self):
++        '''
++        Test if OS grains are parsed correctly in AlmaLinux 8
++        '''
++        _os_release_map = {
++            'linux_distribution': ('AlmaLinux', '8.3', 'Purple Manul'),
++        }
++
++        expectation = {
++            'os': 'AlmaLinux',
++            'os_family': 'RedHat',
++            'oscodename': 'Purple Manul',
++            'osfullname': 'AlmaLinux',
++            'osrelease': '8.3',
++            'osrelease_info': (8, 3,),
++            'osmajorrelease': 8,
++            'osfinger': 'AlmaLinux-8',
++        }
++        self._run_os_grains_tests(None, _os_release_map, expectation)
++
+     @skipIf(not salt.utils.platform.is_linux(), 'System is not Linux')
+     def test_ubuntu_xenial_os_grains(self):
+         '''
+@@ -628,6 +649,26 @@ class CoreGrainsTestCase(TestCase, LoaderModuleMockMixin):
+         }
+         self._run_os_grains_tests("astralinuxce-2.12.22", _os_release_map, expectation)
+ 
++    @skipIf(not salt.utils.platform.is_linux(), 'System is not Linux')
++    def test_aliyunlinux2_os_grains(self):
++        '''
++        Test if OS grains are parsed correctly in Alibaba Cloud Linux (Aliyun Linux) 2.1903 LTS
++        '''
++        _os_release_map = {
++            'linux_distribution': ('Alibaba Cloud Linux (Aliyun Linux)', '2.1903', 'Alibaba Cloud Linux (Aliyun Linux) 2.1903 LTS (Hunting Beagle)'),
++        }
++        expectation = {
++            'os': 'Alibaba Cloud (Aliyun)',
++            'os_family': 'RedHat',
++            'oscodename': 'Alibaba Cloud Linux (Aliyun Linux) 2.1903 LTS (Hunting Beagle)',
++            'osfullname': 'Alibaba Cloud Linux (Aliyun Linux)',
++            'osrelease': '2.1903',
++            'osrelease_info': (2, 1903),
++            'osmajorrelease': 2,
++            'osfinger': 'Alibaba Cloud Linux (Aliyun Linux)-2',
++        }
++        self._run_os_grains_tests(None, _os_release_map, expectation)
++
+     @skipIf(not salt.utils.platform.is_windows(), 'System is not Windows')
+     def test_windows_platform_data(self):
+         '''
+-- 
+2.30.2
+
+
