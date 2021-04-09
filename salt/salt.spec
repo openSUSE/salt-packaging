@@ -451,6 +451,8 @@ Patch177:     allow-vendor-change-option-with-zypper-313.patch
 Patch178:     add-almalinux-to-the-os-family-list-340.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58364
 Patch179:     fix-zmq-hang-backport-of-saltstack-salt-58364.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/347
+Patch180:     notify-beacon-for-debian-ubuntu-systems-347.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1142,6 +1144,7 @@ cp %{S:5} ./.travis.yml
 %patch177 -p1
 %patch178 -p1
 %patch179 -p1
+%patch180 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
