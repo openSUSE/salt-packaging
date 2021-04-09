@@ -442,6 +442,8 @@ Patch172:     allow-vendor-change-option-with-zypper-313.patch
 Patch173:     add-almalinux-and-alibaba-cloud-linux-to-the-os-fami.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58364
 Patch174:     fix-zmq-hang-backport-of-saltstack-salt-58364.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/331
+Patch175:     update-target-fix-for-salt-ssh-and-avoiding-race-con.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1119,6 +1121,7 @@ cp %{S:5} ./.travis.yml
 %patch172 -p1
 %patch173 -p1
 %patch174 -p1
+%patch175 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
