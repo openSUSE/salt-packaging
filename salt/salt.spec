@@ -383,6 +383,9 @@ Patch160:     3002-set-distro-requirement-to-oldest-supported-vers.patch
 Patch161:     virt.network_update-handle-missing-ipv4-netmask-attr.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/313
 Patch162:     allow-vendor-change-option-with-zypper-313.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59404
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/341
+Patch163:     add-almalinux-and-alibaba-cloud-linux-to-the-os-fami.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -940,6 +943,7 @@ cp %{S:5} ./.travis.yml
 %patch160 -p1
 %patch161 -p1
 %patch162 -p1
+%patch163 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
