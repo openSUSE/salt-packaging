@@ -388,6 +388,8 @@ Patch162:     allow-vendor-change-option-with-zypper-313.patch
 Patch163:     add-almalinux-and-alibaba-cloud-linux-to-the-os-fami.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/347
 Patch164:     notify-beacon-for-debian-ubuntu-systems-347.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/336
+Patch165:     update-target-fix-for-salt-ssh-to-process-targets-li.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -947,6 +949,7 @@ cp %{S:5} ./.travis.yml
 %patch162 -p1
 %patch163 -p1
 %patch164 -p1
+%patch165 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
