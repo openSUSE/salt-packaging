@@ -390,6 +390,8 @@ Patch163:     add-almalinux-and-alibaba-cloud-linux-to-the-os-fami.patch
 Patch164:     notify-beacon-for-debian-ubuntu-systems-347.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/336
 Patch165:     update-target-fix-for-salt-ssh-to-process-targets-li.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59687
+Patch166:     add-alibaba-cloud-linux-2-by-backporting-upstream-s-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -950,6 +952,7 @@ cp %{S:5} ./.travis.yml
 %patch163 -p1
 %patch164 -p1
 %patch165 -p1
+%patch166 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
