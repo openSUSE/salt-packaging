@@ -446,6 +446,8 @@ Patch174:     fix-zmq-hang-backport-of-saltstack-salt-58364.patch
 Patch175:     update-target-fix-for-salt-ssh-and-avoiding-race-con.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59687
 Patch176:     backport-of-https-github.com-saltstack-salt-pull-596.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/353
+Patch177:     regression-fix-of-salt-ssh-on-processing-targets-353.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1125,6 +1127,7 @@ cp %{S:5} ./.travis.yml
 %patch174 -p1
 %patch175 -p1
 %patch176 -p1
+%patch177 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
