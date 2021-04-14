@@ -455,6 +455,8 @@ Patch179:     fix-zmq-hang-backport-of-saltstack-salt-58364.patch
 Patch180:     notify-beacon-for-debian-ubuntu-systems-347.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/330
 Patch181:     update-target-fix-for-salt-ssh-and-avoiding-race-con.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/353
+Patch182:     regression-fix-of-salt-ssh-on-processing-targets-353.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1148,6 +1150,7 @@ cp %{S:5} ./.travis.yml
 %patch179 -p1
 %patch180 -p1
 %patch181 -p1
+%patch182 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
