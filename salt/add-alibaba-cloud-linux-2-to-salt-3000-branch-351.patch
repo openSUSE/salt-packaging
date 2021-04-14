@@ -1,0 +1,84 @@
+From ab942e6fbf6c7095e31ccdac142be60b3aeb770c Mon Sep 17 00:00:00 2001
+From: Pau Garcia Quiles <pau.garcia@suse.com>
+Date: Wed, 14 Apr 2021 13:29:22 +0200
+Subject: [PATCH] Add Alibaba Cloud Linux 2 to Salt 3000 branch (#351)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+* Add Alibaba Cloud Linux 2 by backporting https://github.com/saltstack/salt/pull/59687 and discarding my own grain
+
+* Fix broken unit test due to typo
+
+Co-authored-by: Pablo Suárez Hernández <psuarezhernandez@suse.com>
+
+Co-authored-by: Pablo Suárez Hernández <psuarezhernandez@suse.com>
+---
+ salt/grains/core.py            |  2 ++
+ tests/unit/grains/test_core.py | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index 07fe25556a..9b3f51ef40 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -1468,6 +1468,7 @@ _OS_NAME_MAP = {
+     'slesexpand': 'RES',
+     'linuxmint': 'Mint',
+     'neon': 'KDE neon',
++    'alibabaclo': 'Alinux',
+ }
+ 
+ # Map the 'os' grain to the 'os_family' grain
+@@ -1542,6 +1543,7 @@ _OS_FAMILY_MAP = {
+     'AIX': 'AIX',
+     'TurnKey': 'Debian',
+     'AstraLinuxCE': 'Debian',
++    'Alinux': 'RedHat',
+ }
+ 
+ # Matches any possible format:
+diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
+index 3f3b578f05..9ea1727058 100644
+--- a/tests/unit/grains/test_core.py
++++ b/tests/unit/grains/test_core.py
+@@ -649,6 +649,35 @@ class CoreGrainsTestCase(TestCase, LoaderModuleMockMixin):
+         }
+         self._run_os_grains_tests("astralinuxce-2.12.22", _os_release_map, expectation)
+ 
++    @skipIf(not salt.utils.platform.is_linux(), 'System is not Linux')
++    def test_alinux2_os_grains(self):
++        """
++        Test if OS grains are parsed correctly in Alibaba Cloud Linux
++        """
++        _os_release_map = {
++            "os_release_file": {
++                "NAME": "Alibaba Cloud Linux (Aliyun Linux)",
++                "VERSION": "2.1903 LTS (Hunting Beagle)",
++                "VERSION_ID": "2.1903",
++                "PRETTY_NAME": "Alibaba Cloud Linux (Aliyun Linux) 2.1903 LTS (Hunting Beagle)",
++                "ID": "alinux",
++                "ANSI_COLOR": "0;31",
++            },
++            "linux_distribution": ("alinux", "2.1903", "LTS"),
++        }
++
++        expectation = {
++            "os": "Alinux",
++            "os_family": "RedHat",
++            "oscodename": "Alibaba Cloud Linux (Aliyun Linux) 2.1903 LTS (Hunting Beagle)",
++            "osfullname": "Alibaba Cloud Linux (Aliyun Linux)",
++            "osrelease": "2.1903",
++            "osrelease_info": (2, 1903),
++            "osmajorrelease": 2,
++            "osfinger": "Alibaba Cloud Linux (Aliyun Linux)-2",
++        }
++        self._run_os_grains_tests(None, _os_release_map, expectation)
++
+     @skipIf(not salt.utils.platform.is_windows(), 'System is not Windows')
+     def test_windows_platform_data(self):
+         '''
+-- 
+2.30.2
+
+
