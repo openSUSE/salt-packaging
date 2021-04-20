@@ -394,6 +394,8 @@ Patch165:     update-target-fix-for-salt-ssh-to-process-targets-li.patch
 Patch166:     add-alibaba-cloud-linux-2-by-backporting-upstream-s-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/353
 Patch167:     regression-fix-of-salt-ssh-on-processing-targets-353.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60056
+Patch168:     improvements-on-ansiblegate-module-354.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -956,6 +958,7 @@ cp %{S:5} ./.travis.yml
 %patch165 -p1
 %patch166 -p1
 %patch167 -p1
+%patch168 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
