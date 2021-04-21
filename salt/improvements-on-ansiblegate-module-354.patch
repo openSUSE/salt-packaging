@@ -1,0 +1,349 @@
+From f7d7b2cf58e2a3d88bc14560128c12834c712f49 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Tue, 20 Apr 2021 11:01:26 +0100
+Subject: [PATCH] Improvements on "ansiblegate" module (#354)
+
+* Allow collecting Ansible Inventory from a minion
+
+* Prevent crashing if ansible-playbook doesn't return JSON
+
+* Add new 'ansible.discover_playbooks' method
+
+* Include custom inventory when discovering Ansible playbooks
+
+* Enhance 'ansible.discover_playbooks' to accept a list of locations
+
+* Remove unused constants from Ansible utils
+
+* Avoid string concatenation to calculate extra cmd args
+
+* Add unit test for ansible.targets
+
+* Improve Ansible roster targetting
+
+* Add tests for new ansiblegate module functions
+
+* Fix issue dealing with ungrouped targets on inventory
+
+* Enable ansible utils for ansible roster tests
+
+* Remove unnecessary code from Ansible utils
+
+* Fix pylint issue
+
+* Fix issue in documentation
+---
+ salt/modules/ansiblegate.py       | 168 +++++++++++++++++++++++++++++-
+ salt/roster/ansible.py            |  30 ++++--
+ salt/utils/ansible.py             |  44 ++++++++
+ tests/unit/roster/test_ansible.py |  16 ++-
+ 4 files changed, 237 insertions(+), 21 deletions(-)
+ create mode 100644 salt/utils/ansible.py
+
+diff --git a/salt/modules/ansiblegate.py b/salt/modules/ansiblegate.py
+index e76809d4ba..3507842121 100644
+--- a/salt/modules/ansiblegate.py
++++ b/salt/modules/ansiblegate.py
+@@ -383,7 +383,171 @@ def playbooks(playbook, rundir=None, check=False, diff=False, extra_vars=None,
+     }
+     ret = __salt__["cmd.run_all"](**cmd_kwargs)
+     log.debug("Ansible Playbook Return: %s", ret)
+-    retdata = json.loads(ret["stdout"])
+-    if 'retcode' in ret:
++    try:
++        retdata = json.loads(ret["stdout"])
++    except ValueError:
++        retdata = ret
++    if "retcode" in ret:
+         __context__["retcode"] = retdata["retcode"] = ret["retcode"]
+     return retdata
++
++
++def targets(**kwargs):
++    """
++    Return the inventory from an Ansible inventory_file
++
++    :param inventory:
++        The inventory file to read the inventory from. Default: "/etc/ansible/hosts"
++
++    :param yaml:
++        Return the inventory as yaml output. Default: False
++
++    :param export:
++        Return inventory as export format. Default: False
++
++    CLI Example:
++
++    .. code-block:: bash
++
++        salt 'ansiblehost' ansible.targets
++        salt 'ansiblehost' ansible.targets inventory=my_custom_inventory
++
++    """
++    return __utils__["ansible.targets"](**kwargs)
++
++
++def discover_playbooks(path=None,
++                       locations=None,
++                       playbook_extension=None,
++                       hosts_filename=None,
++                       syntax_check=False):
++    """
++    Discover Ansible playbooks stored under the given path or from multiple paths (locations)
++
++    This will search for files matching with the playbook file extension under the given
++    root path and will also look for files inside the first level of directories in this path.
++
++    The return of this function would be a dict like this:
++
++    .. code-block:: python
++
++        {
++            "/home/foobar/": {
++                "my_ansible_playbook.yml": {
++                    "fullpath": "/home/foobar/playbooks/my_ansible_playbook.yml",
++                    "custom_inventory": "/home/foobar/playbooks/hosts"
++                },
++                "another_playbook.yml": {
++                    "fullpath": "/home/foobar/playbooks/another_playbook.yml",
++                    "custom_inventory": "/home/foobar/playbooks/hosts"
++                },
++                "lamp_simple/site.yml": {
++                    "fullpath": "/home/foobar/playbooks/lamp_simple/site.yml",
++                    "custom_inventory": "/home/foobar/playbooks/lamp_simple/hosts"
++                },
++                "lamp_proxy/site.yml": {
++                    "fullpath": "/home/foobar/playbooks/lamp_proxy/site.yml",
++                    "custom_inventory": "/home/foobar/playbooks/lamp_proxy/hosts"
++                }
++            },
++            "/srv/playbooks/": {
++                "example_playbook/example.yml": {
++                    "fullpath": "/srv/playbooks/example_playbook/example.yml",
++                    "custom_inventory": "/srv/playbooks/example_playbook/hosts"
++                }
++            }
++        }
++
++    :param path:
++        Path to discover playbooks from.
++
++    :param locations:
++        List of paths to discover playbooks from.
++
++    :param playbook_extension:
++        File extension of playbooks file to search for. Default: "yml"
++
++    :param hosts_filename:
++        Filename of custom playbook inventory to search for. Default: "hosts"
++
++    :param syntax_check:
++        Skip playbooks that do not pass "ansible-playbook --syntax-check" validation. Default: False
++
++    :return:
++        The discovered playbooks under the given paths
++
++    CLI Example:
++
++    .. code-block:: bash
++
++        salt 'ansiblehost' ansible.discover_playbooks path=/srv/playbooks/
++        salt 'ansiblehost' ansible.discover_playbooks locations='["/srv/playbooks/", "/srv/foobar"]'
++
++    """
++
++    if not path and not locations:
++        raise CommandExecutionError("You have to specify either 'path' or 'locations' arguments")
++
++    if path and locations:
++        raise CommandExecutionError("You cannot specify 'path' and 'locations' at the same time")
++
++    if not playbook_extension:
++       playbook_extension = "yml"
++    if not hosts_filename:
++       hosts_filename = "hosts"
++
++    if path:
++        if not os.path.isabs(path):
++            raise CommandExecutionError("The given path is not an absolute path: {}".format(path))
++        if not os.path.isdir(path):
++            raise CommandExecutionError("The given path is not a directory: {}".format(path))
++        return {path: _explore_path(path, playbook_extension, hosts_filename, syntax_check)}
++
++    if locations:
++        all_ret = {}
++        for location in locations:
++            all_ret[location] = _explore_path(location, playbook_extension, hosts_filename, syntax_check)
++        return all_ret
++
++
++def _explore_path(path, playbook_extension, hosts_filename, syntax_check):
++    ret = {}
++
++    if not os.path.isabs(path):
++        log.error("The given path is not an absolute path: {}".format(path))
++        return ret
++    if not os.path.isdir(path):
++        log.error("The given path is not a directory: {}".format(path))
++        return ret
++
++    try:
++        # Check files in the given path
++        for _f in os.listdir(path):
++            _path = os.path.join(path, _f)
++            if os.path.isfile(_path) and _path.endswith("." + playbook_extension):
++                ret[_f] = {"fullpath": _path}
++                # Check for custom inventory file
++                if os.path.isfile(os.path.join(path, hosts_filename)):
++                    ret[_f].update({"custom_inventory": os.path.join(path, hosts_filename)})
++            elif os.path.isdir(_path):
++                # Check files in the 1st level of subdirectories
++                for _f2 in os.listdir(_path):
++                    _path2 = os.path.join(_path, _f2)
++                    if os.path.isfile(_path2) and _path2.endswith("." + playbook_extension):
++                        ret[os.path.join(_f, _f2)] = {"fullpath": _path2}
++                        # Check for custom inventory file
++                        if os.path.isfile(os.path.join(_path, hosts_filename)):
++                            ret[os.path.join(_f, _f2)].update({"custom_inventory": os.path.join(_path, hosts_filename)})
++    except Exception as exc:
++        raise CommandExecutionError("There was an exception while discovering playbooks: {}".format(exc))
++
++    # Run syntax check validation
++    if syntax_check:
++        check_command = ["ansible-playbook", "--syntax-check"]
++        try:
++            for pb in list(ret):
++               if __salt__["cmd.retcode"](check_command + [ret[pb]]):
++                   del ret[pb]
++        except Exception as exc:
++            raise CommandExecutionError("There was an exception while checking syntax of playbooks: {}".format(exc))
++    return ret
+diff --git a/salt/roster/ansible.py b/salt/roster/ansible.py
+index f4a2a23e0b..1533f81b9b 100644
+--- a/salt/roster/ansible.py
++++ b/salt/roster/ansible.py
+@@ -117,21 +117,33 @@ def targets(tgt, tgt_type='glob', **kwargs):
+     Return the targets from the ansible inventory_file
+     Default: /etc/salt/roster
+     '''
+-    inventory = __runner__['salt.cmd']('cmd.run', 'ansible-inventory -i {0} --list'.format(get_roster_file(__opts__)))
+-    __context__['inventory'] = __utils__['json.loads'](__utils__['stringutils.to_str'](inventory))
++    __context__["inventory"] = __utils__["ansible.targets"](
++        inventory=get_roster_file(__opts__), **kwargs
++    )
+ 
+-    if tgt_type == 'glob':
+-        hosts = [host for host in _get_hosts_from_group('all') if fnmatch.fnmatch(host, tgt)]
+-    elif tgt_type == 'nodegroup':
++    if tgt_type == "glob":
++        hosts = [
++            host for host in _get_hosts_from_group("all") if fnmatch.fnmatch(host, tgt)
++        ]
++    elif tgt_type == "list":
++        hosts = [host for host in _get_hosts_from_group("all") if host in tgt]
++    elif tgt_type == "nodegroup":
+         hosts = _get_hosts_from_group(tgt)
++    else:
++        hosts = []
++
+     return {host: _get_hostvars(host) for host in hosts}
+ 
+ 
+ def _get_hosts_from_group(group):
+-    inventory = __context__['inventory']
+-    hosts = [host for host in inventory[group].get('hosts', [])]
+-    for child in inventory[group].get('children', []):
+-        hosts.extend(_get_hosts_from_group(child))
++    inventory = __context__["inventory"]
++    if group not in inventory:
++        return []
++    hosts = [host for host in inventory[group].get("hosts", [])]
++    for child in inventory[group].get("children", []):
++        child_info = _get_hosts_from_group(child)
++        if child_info not in hosts:
++            hosts.extend(_get_hosts_from_group(child))
+     return hosts
+ 
+ 
+diff --git a/salt/utils/ansible.py b/salt/utils/ansible.py
+new file mode 100644
+index 0000000000..ee85cb656c
+--- /dev/null
++++ b/salt/utils/ansible.py
+@@ -0,0 +1,44 @@
++# -*- coding: utf-8 -*-
++# Import Python libs
++from __future__ import absolute_import, print_function, unicode_literals
++import logging
++import os
++
++# Import Salt libs
++import salt.utils.json
++import salt.utils.path
++import salt.utils.stringutils
++import salt.modules.cmdmod
++from salt.exceptions import CommandExecutionError
++
++__virtualname__ = "ansible"
++
++log = logging.getLogger(__name__)
++
++
++def __virtual__():  # pylint: disable=expected-2-blank-lines-found-0
++    if salt.utils.path.which("ansible-inventory"):
++        return __virtualname__
++    return (False, "Install `ansible` to use inventory")
++
++
++def targets(inventory="/etc/ansible/hosts", **kwargs):
++    """
++    Return the targets from the ansible inventory_file
++    Default: /etc/salt/roster
++    """
++    if not os.path.isfile(inventory):
++        raise CommandExecutionError("Inventory file not found: {}".format(inventory))
++
++    extra_cmd = []
++    if "export" in kwargs:
++        extra_cmd.append("--export")
++    if "yaml" in kwargs:
++        extra_cmd.append("--yaml")
++    inv = salt.modules.cmdmod.run(
++        "ansible-inventory -i {} --list {}".format(inventory, " ".join(extra_cmd))
++    )
++    if kwargs.get("yaml", False):
++        return salt.utils.stringutils.to_str(inv)
++    else:
++        return salt.utils.json.loads(salt.utils.stringutils.to_str(inv))
+diff --git a/tests/unit/roster/test_ansible.py b/tests/unit/roster/test_ansible.py
+index a2ea996324..4de39ae27c 100644
+--- a/tests/unit/roster/test_ansible.py
++++ b/tests/unit/roster/test_ansible.py
+@@ -66,16 +66,12 @@ class AnsibleRosterTestCase(TestCase, mixins.LoaderModuleMockMixin):
+         delattr(cls, 'opts')
+ 
+     def setup_loader_modules(self):
+-        opts = salt.config.master_config(os.path.join(RUNTIME_VARS.TMP_CONF_DIR, 'master'))
+-        utils = salt.loader.utils(opts, whitelist=['json', 'stringutils'])
+-        runner = salt.loader.runner(opts, utils=utils, whitelist=['salt'])
+-        return {
+-            ansible: {
+-                '__utils__': utils,
+-                '__opts__': {},
+-                '__runner__': runner
+-            }
+-        }
++        opts = salt.config.master_config(
++            os.path.join(RUNTIME_VARS.TMP_CONF_DIR, "master")
++        )
++        utils = salt.loader.utils(opts, whitelist=["json", "stringutils", "ansible"])
++        runner = salt.loader.runner(opts, utils=utils, whitelist=["salt"])
++        return {ansible: {"__utils__": utils, "__opts__": {}, "__runner__": runner}}
+ 
+     def test_ini(self):
+         self.opts['roster_file'] = os.path.join(self.roster_dir, 'roster.ini')
+-- 
+2.31.1
+
+
