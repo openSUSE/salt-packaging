@@ -997,16 +997,7 @@ for script in $DEF_PYPATH/*; do
 done
 
 ## create missing directories
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/master.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/minion.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/cloud.maps.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/cloud.profiles.d
-install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/cloud.providers.d
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/log/salt
-install -Dd -m 0755 %{buildroot}%{_sysconfdir}/logrotate.d/
-install -Dd -m 0755 %{buildroot}%{_sbindir}
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/log/salt
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/minion/extmod
+install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/cloud
 install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master
 install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/jobs
 install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/proc
@@ -1014,12 +1005,8 @@ install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/queues
 install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/roots
 install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/syndics
 install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/master/tokens
-install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/cloud
-install -Dd -m 0750 %{buildroot}/var/lib/salt
-install -Dd -m 0750 %{buildroot}/srv/salt
-install -Dd -m 0750 %{buildroot}/srv/pillar
-install -Dd -m 0750 %{buildroot}/srv/spm
-install -Dd -m 0755 %{buildroot}%{_docdir}/salt
+install -Dd -m 0750 %{buildroot}%{_localstatedir}/cache/salt/minion/extmod
+install -Dd -m 0750 %{buildroot}%{_localstatedir}/log/salt
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/cloud.maps.d
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/cloud.profiles.d
@@ -1034,6 +1021,13 @@ install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_denied
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_pre
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_rejected
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/minion
+install -Dd -m 0750 %{buildroot}/srv/pillar
+install -Dd -m 0750 %{buildroot}/srv/salt
+install -Dd -m 0750 %{buildroot}/srv/spm
+install -Dd -m 0750 %{buildroot}/var/lib/salt
+install -Dd -m 0755 %{buildroot}%{_docdir}/salt
+install -Dd -m 0755 %{buildroot}%{_sbindir}
+install -Dd -m 0755 %{buildroot}%{_sysconfdir}/logrotate.d/
 
 # Install salt-support profiles
 install -Dpm 0644 salt/cli/support/profiles/* %{buildroot}%{python3_sitelib}/salt/cli/support/profiles
