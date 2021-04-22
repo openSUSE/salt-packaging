@@ -79,6 +79,7 @@ Source2:        salt-tmpfiles.d
 Source3:        html.tar.bz2
 Source4:        update-documentation.sh
 Source5:        travis.yml
+Source6:        transactional_update.conf
 
 Patch1:         run-salt-master-as-dedicated-salt-user.patch
 Patch2:         run-salt-api-as-user-salt-bsc-1064520.patch
@@ -829,6 +830,9 @@ than serially.
 Summary:        The client component for Saltstack
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
+%if 0%{?suse_version} > 1500 || 0%{?sle_version} > 150000
+Requires:       (%{name}-transactional-update = %{version}-%{release} if read-only-root-fs)
+%endif
 
 %if %{with systemd}
 %{?systemd_requires}
@@ -967,12 +971,24 @@ Conflicts:      otherproviders(salt-formulas-configuration)
 %description standalone-formulas-configuration
 This package adds the standalone configuration for the Salt master in order to make the packaged Salt formulas available on the Salt master
 
+%package transactional-update
+Summary:        Transactional update executor configuration
+Group:          System/Management
+Requires:       %{name} = %{version}-%{release}
+Requires:       %{name}-minion = %{version}-%{release}
+
+%description transactional-update
+For transactional systems, like MicroOS, Salt can operate
+transparently if the executor "transactional-update" is registered in
+list of active executors.  This package add the configuration file.
+
 
 %prep
 # %setup -q -n salt-%{version}
 %setup -q -n salt-3000-suse
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
+cp %{S:6} .
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
@@ -1314,6 +1330,7 @@ install -Dpm 0640 conf/roster %{buildroot}%{_sysconfdir}/salt/roster
 install -Dpm 0640 conf/cloud %{buildroot}%{_sysconfdir}/salt/cloud
 install -Dpm 0640 conf/cloud.profiles %{buildroot}%{_sysconfdir}/salt/cloud.profiles
 install -Dpm 0640 conf/cloud.providers %{buildroot}%{_sysconfdir}/salt/cloud.providers
+install -Dpm 0640 transactional_update.conf %{buildroot}%{_sysconfdir}/salt/minion.d/transactional_update.conf
 #
 ## install logrotate file (for RHEL6 we use without sudo)
 %if 0%{?rhel} > 6 || 0%{?suse_version}
@@ -1884,6 +1901,11 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/
 %dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/states/
 %dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/metadata/
+
+%files transactional-update
+%defattr(-,root,root)
+%config(noreplace) %attr(0640, root, root) %{_sysconfdir}/salt/minion.d/transactional_update.conf
+
 
 %changelog
 
