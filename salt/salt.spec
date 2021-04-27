@@ -451,6 +451,8 @@ Patch176:     backport-of-https-github.com-saltstack-salt-pull-596.patch
 Patch177:     regression-fix-of-salt-ssh-on-processing-targets-353.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60056
 Patch178:     improvements-on-ansiblegate-module-354.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
+Patch179:     transactional_update-detect-recursion-in-the-executo.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1147,6 +1149,7 @@ cp %{S:6} .
 %patch176 -p1
 %patch177 -p1
 %patch178 -p1
+%patch179 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
