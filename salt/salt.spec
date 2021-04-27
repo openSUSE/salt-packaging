@@ -464,6 +464,8 @@ Patch183:     add-alibaba-cloud-linux-2-to-salt-3000-branch-351.patch
 Patch184:     improvements-on-ansiblegate-module-354.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
 Patch185:     transactional_update-detect-recursion-in-the-executo.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59648
+Patch186:     prevent-command-injection-in-the-snapper-module-bsc-.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1176,6 +1178,7 @@ cp %{S:6} .
 %patch183 -p1
 %patch184 -p1
 %patch185 -p1
+%patch186 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
