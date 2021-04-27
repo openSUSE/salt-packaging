@@ -252,6 +252,8 @@ Patch95:        allow-extra_filerefs-as-sanitized-kwargs-for-ssh-cli.patch
 Patch96:        fix-regression-on-cmd.run-when-passing-tuples-as-cmd.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59354
 Patch97:        do-not-crash-when-unexpected-cmd-output-at-listing-p.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59648
+Patch98:        prevent-command-injection-in-the-snapper-module-bsc-.patch
 
 
 
@@ -713,6 +715,7 @@ cp %{S:5} ./.travis.yml
 %patch95 -p1
 %patch96 -p1
 %patch97 -p1
+%patch98 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build

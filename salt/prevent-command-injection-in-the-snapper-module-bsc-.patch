@@ -1,0 +1,41 @@
+From 240b2ed6cff1751bca682cc85496dc17640dd1de Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Tue, 27 Apr 2021 11:14:20 +0100
+Subject: [PATCH] Prevent command injection in the snapper module
+ (bsc#1185281) (CVE-2021-31607)
+
+---
+ salt/modules/snapper.py | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/salt/modules/snapper.py b/salt/modules/snapper.py
+index bb5ee3e63b..1f9e7fa76d 100644
+--- a/salt/modules/snapper.py
++++ b/salt/modules/snapper.py
+@@ -19,6 +19,7 @@ import logging
+ import os
+ import time
+ import difflib
++import subprocess
+ try:
+     from pwd import getpwuid
+     HAS_PWD = True
+@@ -520,7 +521,12 @@ def _is_text_file(filename):
+     '''
+     Checks if a file is a text file
+     '''
+-    type_of_file = os.popen('file -bi {0}'.format(filename), 'r').read()
++    type_of_file = subprocess.run(
++        ["file", "-bi", filename],
++        check=False,
++        stdout=subprocess.PIPE,
++        universal_newlines=True,
++    ).stdout
+     return type_of_file.startswith('text')
+ 
+ 
+-- 
+2.31.1
+
+
