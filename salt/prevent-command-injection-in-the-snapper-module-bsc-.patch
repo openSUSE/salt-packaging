@@ -1,4 +1,4 @@
-From be98f62ee28974056ab1d2eb8cb7419ae1cd75c6 Mon Sep 17 00:00:00 2001
+From ea02e9398160fad03dd662635ec038b95db2c04a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Tue, 27 Apr 2021 11:14:20 +0100
@@ -10,7 +10,7 @@ Subject: [PATCH] Prevent command injection in the snapper module
  1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/salt/modules/snapper.py b/salt/modules/snapper.py
-index 1df3ce9368..9c29368619 100644
+index 1df3ce9368..6954c3b544 100644
 --- a/salt/modules/snapper.py
 +++ b/salt/modules/snapper.py
 @@ -18,6 +18,7 @@ from __future__ import absolute_import, print_function, unicode_literals
@@ -30,7 +30,7 @@ index 1df3ce9368..9c29368619 100644
 +    type_of_file = subprocess.run(
 +        ["file", "-bi", filename],
 +        check=False,
-+        stdout=subprocess.STDOUT,
++        stdout=subprocess.PIPE,
 +        universal_newlines=True,
 +    ).stdout
 +    return type_of_file.startswith('text')
