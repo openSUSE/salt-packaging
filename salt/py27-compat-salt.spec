@@ -581,7 +581,6 @@ Python 2.7 compatible salt library used for thin generation.
 %setup -q -n salt-%{version}-suse
 cp %{S:1} .
 cp %{S:5} ./.travis.yml
-cp %{S:6} .
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
