@@ -403,6 +403,8 @@ Patch169:     transactional_update-detect-recursion-in-the-executo.patch
 Patch170:     prevent-command-injection-in-the-snapper-module-bsc-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60056
 Patch171:     fix-issue-parsing-errors-in-ansiblegate-state-module.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57881
+Patch172:     parsing-epoch-out-of-version-provided-during-pkg-rem.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -984,6 +986,7 @@ cp %{S:6} .
 %patch169 -p1
 %patch170 -p1
 %patch171 -p1
+%patch172 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
