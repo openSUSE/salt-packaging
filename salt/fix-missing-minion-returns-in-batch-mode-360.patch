@@ -1,0 +1,30 @@
+From cc662c2de9518152c406f07b324b83e610f3dbd9 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ond=C5=99ej=20Hole=C4=8Dek?= <oholecek@aaannz.eu>
+Date: Mon, 10 May 2021 16:23:19 +0200
+Subject: [PATCH] Fix missing minion returns in batch mode (#360)
+
+Don't close pub if there are pending events, otherwise events will be lost
+resulting in empty minion returns.
+
+Co-authored-by: Denis V. Meltsaykin <dmeltsaykin@mirantis.com>
+---
+ salt/client/__init__.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/client/__init__.py b/salt/client/__init__.py
+index a48d79ef8d..69d544584f 100644
+--- a/salt/client/__init__.py
++++ b/salt/client/__init__.py
+@@ -891,7 +891,7 @@ class LocalClient(object):
+ 
+                 self._clean_up_subscriptions(pub_data['jid'])
+         finally:
+-            if not was_listening:
++            if not was_listening and not self.event.pending_events:
+                 self.event.close_pub()
+ 
+     def cmd_full_return(
+-- 
+2.31.1
+
+

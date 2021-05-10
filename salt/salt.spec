@@ -470,6 +470,8 @@ Patch186:     prevent-command-injection-in-the-snapper-module-bsc-.patch
 Patch187:     fix-issue-parsing-errors-in-ansiblegate-state-module.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57881
 Patch188:     parsing-epoch-out-of-version-provided-during-pkg-rem.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58503
+Patch189:     fix-missing-minion-returns-in-batch-mode-360.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1185,6 +1187,7 @@ cp %{S:6} .
 %patch186 -p1
 %patch187 -p1
 %patch188 -p1
+%patch189 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
