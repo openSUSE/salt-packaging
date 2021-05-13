@@ -413,6 +413,7 @@ BuildRequires:  fdupes
 %endif
 
 Requires:       python3-%{name} = %{version}-%{release}
+Obsoletes:      python2-%{name}
 
 Requires(pre):  %{_sbindir}/groupadd
 Requires(pre):  %{_sbindir}/useradd
