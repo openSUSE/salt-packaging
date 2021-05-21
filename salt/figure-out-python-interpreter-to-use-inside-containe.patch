@@ -1,0 +1,171 @@
+From ca3b25ab751a0cc30f404d270ebb0acebe972305 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Wed, 19 May 2021 16:24:27 +0100
+Subject: [PATCH] Figure out Python interpreter to use inside
+ containers
+
+Fix unit test for dockermod.call function
+---
+ salt/modules/dockermod.py            | 72 +++++++++++++++++++++-------
+ tests/unit/modules/test_dockermod.py | 42 +++++++++-------
+ 2 files changed, 81 insertions(+), 33 deletions(-)
+
+diff --git a/salt/modules/dockermod.py b/salt/modules/dockermod.py
+index 119e9eb170..100eff5ff9 100644
+--- a/salt/modules/dockermod.py
++++ b/salt/modules/dockermod.py
+@@ -217,7 +217,6 @@ import pipes
+ import re
+ import shutil
+ import string
+-import sys
+ import time
+ import uuid
+ import subprocess
+@@ -6740,28 +6739,67 @@ def call(name, function, *args, **kwargs):
+     )
+     ret = copy_to(name, thin_path, os.path.join(thin_dest_path, os.path.basename(thin_path)))
+ 
++    # figure out available python interpreter inside the container
++    pycmds = (
++        "python3",
++        "/usr/libexec/platform-python",
++        "python27",
++        "python2.7",
++        "python26",
++        "python2.6",
++        "python2",
++        "python",
++    )
++    container_python_bin = None
++    for py_cmd in pycmds:
++        cmd = [py_cmd] + ["--version"]
++        ret = run_all(name, subprocess.list2cmdline(cmd))
++        if ret["retcode"] == 0:
++            container_python_bin = py_cmd
++            break
++    if not container_python_bin:
++        raise CommandExecutionError(
++            "Python interpreter cannot be found inside the container. Make sure Python is installed in the container"
++        )
++
+     # untar archive
+-    untar_cmd = ["python", "-c", (
+-                     "import tarfile; "
+-                     "tarfile.open(\"{0}/{1}\").extractall(path=\"{0}\")"
+-                 ).format(thin_dest_path, os.path.basename(thin_path))]
++    untar_cmd = [
++        container_python_bin,
++        "-c",
++        "import tarfile; "
++        'tarfile.open("{0}/{1}").extractall(path="{0}")'.format(
++            thin_dest_path, os.path.basename(thin_path)
++        ),
++    ]
+     ret = run_all(name, subprocess.list2cmdline(untar_cmd))
+     if ret['retcode'] != 0:
+         return {'result': False, 'comment': ret['stderr']}
+ 
+     try:
+-        salt_argv = [
+-            'python{0}'.format(sys.version_info[0]),
+-            os.path.join(thin_dest_path, 'salt-call'),
+-            '--metadata',
+-            '--local',
+-            '--log-file', os.path.join(thin_dest_path, 'log'),
+-            '--cachedir', os.path.join(thin_dest_path, 'cache'),
+-            '--out', 'json',
+-            '-l', 'quiet',
+-            '--',
+-            function
+-        ] + list(args) + ['{0}={1}'.format(key, value) for (key, value) in kwargs.items() if not key.startswith('__')]
++        salt_argv = (
++            [
++                container_python_bin,
++                os.path.join(thin_dest_path, "salt-call"),
++                "--metadata",
++                "--local",
++                "--log-file",
++                os.path.join(thin_dest_path, "log"),
++                "--cachedir",
++                os.path.join(thin_dest_path, "cache"),
++                "--out",
++                "json",
++                "-l",
++                "quiet",
++                "--",
++                function,
++            ]
++            + list(args)
++            + [
++                "{}={}".format(key, value)
++                for (key, value) in kwargs.items()
++                if not key.startswith("__")
++            ]
++        )
+ 
+         ret = run_all(name, subprocess.list2cmdline(map(str, salt_argv)))
+         # python not found
+diff --git a/tests/unit/modules/test_dockermod.py b/tests/unit/modules/test_dockermod.py
+index 8f4ead2867..eec2be5c73 100644
+--- a/tests/unit/modules/test_dockermod.py
++++ b/tests/unit/modules/test_dockermod.py
+@@ -890,27 +890,37 @@ class DockerTestCase(TestCase, LoaderModuleMockMixin):
+         # Check that the directory is different each time
+         # [ call(name, [args]), ...
+         self.maxDiff = None
+-        self.assertIn('mkdir', docker_run_all_mock.mock_calls[0][1][1])
+-        self.assertIn('mkdir', docker_run_all_mock.mock_calls[4][1][1])
+-        self.assertNotEqual(docker_run_all_mock.mock_calls[0][1][1],
+-                            docker_run_all_mock.mock_calls[4][1][1])
++        self.assertIn("mkdir", docker_run_all_mock.mock_calls[0][1][1])
++        self.assertIn("mkdir", docker_run_all_mock.mock_calls[5][1][1])
++        self.assertNotEqual(
++            docker_run_all_mock.mock_calls[0][1][1],
++            docker_run_all_mock.mock_calls[5][1][1],
++        )
++
++        self.assertEqual("python3 --version", docker_run_all_mock.mock_calls[1][1][1])
+ 
+-        self.assertIn('salt-call', docker_run_all_mock.mock_calls[2][1][1])
+-        self.assertIn('salt-call', docker_run_all_mock.mock_calls[6][1][1])
+-        self.assertNotEqual(docker_run_all_mock.mock_calls[2][1][1],
+-                            docker_run_all_mock.mock_calls[6][1][1])
++        self.assertIn("salt-call", docker_run_all_mock.mock_calls[3][1][1])
++        self.assertIn("salt-call", docker_run_all_mock.mock_calls[8][1][1])
++        self.assertNotEqual(
++            docker_run_all_mock.mock_calls[3][1][1],
++            docker_run_all_mock.mock_calls[8][1][1],
++        )
+ 
+         # check thin untar
+-        self.assertIn('tarfile', docker_run_all_mock.mock_calls[1][1][1])
+-        self.assertIn('tarfile', docker_run_all_mock.mock_calls[5][1][1])
+-        self.assertNotEqual(docker_run_all_mock.mock_calls[1][1][1],
+-                            docker_run_all_mock.mock_calls[5][1][1])
++        self.assertIn("tarfile", docker_run_all_mock.mock_calls[2][1][1])
++        self.assertIn("tarfile", docker_run_all_mock.mock_calls[7][1][1])
++        self.assertNotEqual(
++            docker_run_all_mock.mock_calls[2][1][1],
++            docker_run_all_mock.mock_calls[7][1][1],
++        )
+ 
+         # check directory cleanup
+-        self.assertIn('rm -rf', docker_run_all_mock.mock_calls[3][1][1])
+-        self.assertIn('rm -rf', docker_run_all_mock.mock_calls[7][1][1])
+-        self.assertNotEqual(docker_run_all_mock.mock_calls[3][1][1],
+-                            docker_run_all_mock.mock_calls[7][1][1])
++        self.assertIn("rm -rf", docker_run_all_mock.mock_calls[4][1][1])
++        self.assertIn("rm -rf", docker_run_all_mock.mock_calls[9][1][1])
++        self.assertNotEqual(
++            docker_run_all_mock.mock_calls[4][1][1],
++            docker_run_all_mock.mock_calls[9][1][1],
++        )
+ 
+         self.assertEqual({"retcode": 0, "comment": "container cmd"}, ret)
+ 
+-- 
+2.31.1
+
+
