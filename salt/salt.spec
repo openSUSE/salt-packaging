@@ -474,6 +474,8 @@ Patch188:     parsing-epoch-out-of-version-provided-during-pkg-rem.patch
 Patch189:     fix-missing-minion-returns-in-batch-mode-360.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
 Patch190:     grains.extra-support-old-non-x86-kernels-bsc-1180650.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60133
+Patch191:     handle-volumes-on-stopped-pools-in-virt.vm_info-374.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1191,6 +1193,7 @@ cp %{S:6} .
 %patch188 -p1
 %patch189 -p1
 %patch190 -p1
+%patch191 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
