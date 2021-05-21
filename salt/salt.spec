@@ -411,6 +411,8 @@ Patch173:     fix-missing-minion-returns-in-batch-mode-360.patch
 Patch174:     grains.extra-support-old-non-intel-kernels-bsc-11806.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60133
 Patch175:     handle-volumes-on-stopped-pools-in-virt.vm_info-373.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60229
+Patch176:     figure-out-python-interpreter-to-use-inside-containe.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -997,6 +999,7 @@ cp %{S:6} .
 %patch173 -p1
 %patch174 -p1
 %patch175 -p1
+%patch176 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
