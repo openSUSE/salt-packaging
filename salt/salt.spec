@@ -403,16 +403,18 @@ Patch169:     transactional_update-detect-recursion-in-the-executo.patch
 Patch170:     prevent-command-injection-in-the-snapper-module-bsc-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60056
 Patch171:     fix-issue-parsing-errors-in-ansiblegate-state-module.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/376
+Patch172:     check-if-dpkgnotify-is-executable-bsc-1186674-376.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57881
-Patch172:     parsing-epoch-out-of-version-provided-during-pkg-rem.patch
+Patch173:     parsing-epoch-out-of-version-provided-during-pkg-rem.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58503
-Patch173:     fix-missing-minion-returns-in-batch-mode-360.patch
+Patch174:     fix-missing-minion-returns-in-batch-mode-360.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
-Patch174:     grains.extra-support-old-non-intel-kernels-bsc-11806.patch
+Patch175:     grains.extra-support-old-non-intel-kernels-bsc-11806.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60133
-Patch175:     handle-volumes-on-stopped-pools-in-virt.vm_info-373.patch
+Patch176:     handle-volumes-on-stopped-pools-in-virt.vm_info-373.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60229
-Patch176:     figure-out-python-interpreter-to-use-inside-containe.patch
+Patch177:     figure-out-python-interpreter-to-use-inside-containe.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1000,6 +1002,7 @@ cp %{S:6} .
 %patch174 -p1
 %patch175 -p1
 %patch176 -p1
+%patch177 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
