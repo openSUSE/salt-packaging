@@ -480,6 +480,8 @@ Patch191:     handle-volumes-on-stopped-pools-in-virt.vm_info-374.patch
 Patch192:     figure-out-python-interpreter-to-use-inside-containe.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/376
 Patch193:     check-if-dpkgnotify-is-executable-bsc-1186674-365.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60402
+Patch194:     enhance-logging-when-inotify-beacon-is-missing-pyino.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -762,6 +764,7 @@ Suggests:       python3-gnupg
 Requires:       python3-xml
 Suggests:       python3-Mako
 Recommends:     python3-netaddr
+Recommends:     python3-pyinotify
 %endif
 
 %description -n python3-salt
@@ -1200,6 +1203,7 @@ cp %{S:6} .
 %patch191 -p1
 %patch192 -p1
 %patch193 -p1
+%patch194 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
