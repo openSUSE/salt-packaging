@@ -467,6 +467,8 @@ Patch184:     grains.extra-support-old-non-intel-kernels-bsc-11806.patch
 Patch185:     handle-volumes-on-stopped-pools-in-virt.vm_info-375.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60229
 Patch186:     figure-out-python-interpreter-to-use-inside-containe.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60402
+Patch187:     enhance-logging-when-inotify-beacon-is-missing-pyino.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -631,6 +633,7 @@ Requires:       python-pyzmq >= 2.2.0
 Requires:       python-xml
 Suggests:       python-Mako
 Recommends:     python-netaddr
+Recommends:     python-pyinotify
 %endif
 
 %description -n python2-salt
@@ -1171,6 +1174,7 @@ cp %{S:6} .
 %patch184 -p1
 %patch185 -p1
 %patch186 -p1
+%patch187 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
