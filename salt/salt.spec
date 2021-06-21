@@ -595,6 +595,7 @@ Recommends:     python3-netaddr
 Recommends:     python3-pyinotify
 %endif
 
+Provides:       bundled(python3-tornado) = 4.5.3
 
 %description -n python3-salt
 Python3 specific files for salt
