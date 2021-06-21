@@ -636,6 +636,8 @@ Recommends:     python-netaddr
 Recommends:     python-pyinotify
 %endif
 
+Provides:       bundled(python-tornado) = 4.5.3
+
 %description -n python2-salt
 Python2 specific files for salt
 
@@ -745,6 +747,8 @@ Requires:       python3-xml
 Suggests:       python3-Mako
 Recommends:     python3-netaddr
 %endif
+
+Provides:       bundled(python3-tornado) = 4.5.3
 
 %description -n python3-salt
 Python3 specific files for salt
