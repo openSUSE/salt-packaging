@@ -475,6 +475,8 @@ Patch188:     move-vendor-change-logic-to-zypper-class-355.patch
 Patch189:     virt-use-dev-kvm-to-detect-kvm-385.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60358
 Patch190:     fix-save-for-iptables-state-module-bsc-1185131-371.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60356
+Patch191:     fix-exception-in-yumpkg.remove-for-not-installed-pac.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1188,6 +1190,7 @@ cp %{S:6} .
 %patch188 -p1
 %patch189 -p1
 %patch190 -p1
+%patch191 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
