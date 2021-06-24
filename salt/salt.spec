@@ -132,299 +132,299 @@ Patch40:        async-batch-implementation.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52527
 Patch41:        calculate-fqdns-in-parallel-to-avoid-blockings-bsc-1.patch
 #PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/139
-Patch42:       fix-async-batch-race-conditions.patch
+Patch42:        fix-async-batch-race-conditions.patch
 #PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/141
-Patch43:       add-batch_presence_ping_timeout-and-batch_presence_p.patch
+Patch43:        add-batch_presence_ping_timeout-and-batch_presence_p.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52527
-Patch44:       use-threadpool-from-multiprocessing.pool-to-avoid-le.patch
+Patch44:        use-threadpool-from-multiprocessing.pool-to-avoid-le.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/52888
-Patch45:       do-not-crash-when-there-are-ipv6-established-connect.patch
+Patch45:        do-not-crash-when-there-are-ipv6-established-connect.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/144
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52855
-Patch46:       fix-async-batch-multiple-done-events.patch
+Patch46:        fix-async-batch-multiple-done-events.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/52743
-Patch47:       switch-firewalld-state-to-use-change_interface.patch
+Patch47:        switch-firewalld-state-to-use-change_interface.patch
 # PATCH-FIX_OPENSUSE
-Patch48:       add-standalone-configuration-file-for-enabling-packa.patch
+Patch48:        add-standalone-configuration-file-for-enabling-packa.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53293
-Patch49:       do-not-break-repo-files-with-multiple-line-values-on.patch
+Patch49:        do-not-break-repo-files-with-multiple-line-values-on.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53159
-Patch50:       batch.py-avoid-exception-when-minion-does-not-respon.patch
+Patch50:        batch.py-avoid-exception-when-minion-does-not-respon.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53471
-Patch51:       fix-zypper-pkg.list_pkgs-expectation-and-dpkg-mockin.patch
+Patch51:        fix-zypper-pkg.list_pkgs-expectation-and-dpkg-mockin.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/161
-Patch52:       provide-the-missing-features-required-for-yomi-yet-o.patch
+Patch52:        provide-the-missing-features-required-for-yomi-yet-o.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53661
-Patch53:       do-not-make-ansiblegate-to-crash-on-python3-minions.patch
+Patch53:        do-not-make-ansiblegate-to-crash-on-python3-minions.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53693
-Patch54:       allow-passing-kwargs-to-pkg.list_downloaded-bsc-1140.patch
+Patch54:        allow-passing-kwargs-to-pkg.list_downloaded-bsc-1140.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53661
-Patch55:       prevent-ansiblegate-unit-tests-to-fail-on-ubuntu.patch
+Patch55:        prevent-ansiblegate-unit-tests-to-fail-on-ubuntu.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54048
-Patch56:       avoid-traceback-when-http.query-request-cannot-be-pe.patch
+Patch56:        avoid-traceback-when-http.query-request-cannot-be-pe.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53992
 #                     https://github.com/saltstack/salt/pull/53996
 #                     https://github.com/saltstack/salt/pull/54022
 #                     https://github.com/saltstack/salt/pull/54024
-Patch57:       accumulated-changes-required-for-yomi-165.patch
+Patch57:        accumulated-changes-required-for-yomi-165.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/159
-Patch58:       move-server_id-deprecation-warning-to-reduce-log-spa.patch
+Patch58:        move-server_id-deprecation-warning-to-reduce-log-spa.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54077
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/166
-Patch59:       fix-aptpkg-systemd-call-bsc-1143301.patch
+Patch59:        fix-aptpkg-systemd-call-bsc-1143301.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/170
-Patch60:       strip-trailing-from-repo.uri-when-comparing-repos-in.patch
+Patch60:        strip-trailing-from-repo.uri-when-comparing-repos-in.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/177
-Patch61:       restore-default-behaviour-of-pkg-list-return.patch
+Patch61:        restore-default-behaviour-of-pkg-list-return.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/172
-Patch62:       implement-network.fqdns-module-function-bsc-1134860-.patch
+Patch62:        implement-network.fqdns-module-function-bsc-1134860-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/6af07030a502c427781991fc9a2b994fa04ef32e
-Patch63:       fix-memory-leak-produced-by-batch-async-find_jobs-me.patch
+Patch63:        fix-memory-leak-produced-by-batch-async-find_jobs-me.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/002543df392f65d95dbc127dc058ac897f2035ed
-Patch64:       improve-batch_async-to-release-consumed-memory-bsc-1.patch
+Patch64:        improve-batch_async-to-release-consumed-memory-bsc-1.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54077
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/44a91c2ce6df78d93ce0ef659dedb0e41b1c2e04
-Patch65:       prevent-systemd-run-description-issue-when-running-a.patch
+Patch65:        prevent-systemd-run-description-issue-when-running-a.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/55d8a777d6a9b19c959e14a4060e5579e92cd106
-Patch66:       use-current-ioloop-for-the-localclient-instance-of-b.patch
+Patch66:        use-current-ioloop-for-the-localclient-instance-of-b.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/8378bb24a5a53973e8dba7658b8b3465d967329f
-Patch67:       fix-failing-unit-tests-for-batch-async.patch
+Patch67:        fix-failing-unit-tests-for-batch-async.patch
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53326
 # PATCH_FIX_UPSTREAM: https://github.com/saltstack/salt/pull/54954
-Patch68:       accumulated-changes-from-yomi-167.patch
+Patch68:        accumulated-changes-from-yomi-167.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/180
-Patch69:       fix-a-wrong-rebase-in-test_core.py-180.patch
+Patch69:        fix-a-wrong-rebase-in-test_core.py-180.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/182
-Patch70:       remove-unnecessary-yield-causing-badyielderror-bsc-1.patch
+Patch70:        remove-unnecessary-yield-causing-badyielderror-bsc-1.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/186
-Patch71:       read-repo-info-without-using-interpolation-bsc-11356.patch
+Patch71:        read-repo-info-without-using-interpolation-bsc-11356.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53293
-Patch72:       prevent-test_mod_del_repo_multiline_values-to-fail.patch
-Patch73:       fix-for-log-checking-in-x509-test.patch
+Patch72:        prevent-test_mod_del_repo_multiline_values-to-fail.patch
+Patch73:        fix-for-log-checking-in-x509-test.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/190
-Patch74:       fixing-streamclosed-issue.patch
-Patch75:       fix-batch_async-obsolete-test.patch
+Patch74:        fixing-streamclosed-issue.patch
+Patch75:        fix-batch_async-obsolete-test.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/191
-Patch76:       let-salt-ssh-use-platform-python-binary-in-rhel8-191.patch
+Patch76:        let-salt-ssh-use-platform-python-binary-in-rhel8-191.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/193
-Patch77:       xfs-do-not-fails-if-type-is-not-present.patch
+Patch77:        xfs-do-not-fails-if-type-is-not-present.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55245
-Patch78:      virt-adding-kernel-boot-parameters-to-libvirt-xml-55.patch
+Patch78:        virt-adding-kernel-boot-parameters-to-libvirt-xml-55.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/200
-Patch79:      support-for-btrfs-and-xfs-in-parted-and-mkfs.patch
+Patch79:        support-for-btrfs-and-xfs-in-parted-and-mkfs.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56125
-Patch80:      add-astra-linux-common-edition-to-the-os-family-list.patch
+Patch80:        add-astra-linux-common-edition-to-the-os-family-list.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/211
-Patch81:      apply-patch-from-upstream-to-support-python-3.8.patch
+Patch81:        apply-patch-from-upstream-to-support-python-3.8.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/217
-Patch82:      batch_async-avoid-using-fnmatch-to-match-event-217.patch
+Patch82:        batch_async-avoid-using-fnmatch-to-match-event-217.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/8a23030d347b7487328c0395f5e30ef29daf1455
-Patch83:      batch-async-catch-exceptions-and-safety-unregister-a.patch
+Patch83:        batch-async-catch-exceptions-and-safety-unregister-a.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/a38adfa2efe40c2b1508b685af0b5d28a6bbcfc8
-Patch84:      fix-unit-tests-for-batch-async-after-refactor.patch
+Patch84:        fix-unit-tests-for-batch-async-after-refactor.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/b4c401cfe6031b61e27f7795bfa1aca6e8341e52
-Patch85:      changed-imports-to-vendored-tornado.patch
+Patch85:        changed-imports-to-vendored-tornado.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/25b4e3ea983b2606b2fb3d3c0e42f9840208bf84
-Patch86:      remove-deprecated-usage-of-no_mock-and-no_mock_reaso.patch
+Patch86:        remove-deprecated-usage-of-no_mock-and-no_mock_reaso.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/a8f0a15e4067ec278c8a2d690e3bf815523286ca
-Patch87:      fix-wrong-test_mod_del_repo_multiline_values-test-af.patch
+Patch87:        fix-wrong-test_mod_del_repo_multiline_values-test-af.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55814
-Patch88:      opensuse-3000-virt-defined-states-222.patch
+Patch88:        opensuse-3000-virt-defined-states-222.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/223
-Patch89:      fix-for-temp-folder-definition-in-loader-unit-test.patch
+Patch89:        fix-for-temp-folder-definition-in-loader-unit-test.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56392
-Patch90:      virt._get_domain-don-t-raise-an-exception-if-there-i.patch
+Patch90:        virt._get_domain-don-t-raise-an-exception-if-there-i.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/226
-Patch91:      re-adding-function-to-test-for-root.patch
+Patch91:        re-adding-function-to-test-for-root.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/227
-Patch92:     loop-fix-variable-names-for-until_no_eval.patch
+Patch92:        loop-fix-variable-names-for-until_no_eval.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/226
-Patch93:     make-setup.py-script-to-not-require-setuptools-9.1.patch
+Patch93:        make-setup.py-script-to-not-require-setuptools-9.1.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50453
 #                     https://github.com/saltstack/salt/commit/e20362f6f053eaa4144583604e6aac3d62838419
 # Can be dropped one pull/50453 is in released version.
-Patch94:     reintroducing-reverted-changes.patch
+Patch94:        reintroducing-reverted-changes.patch
 # PATCH_FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/b713d0b3031faadc17cd9cf09977ccc19e50bef7
-Patch95:     add-new-custom-suse-capability-for-saltutil-state-mo.patch
+Patch95:        add-new-custom-suse-capability-for-saltutil-state-mo.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56491
-Patch96:     sanitize-grains-loaded-from-roster_grains.json.patch
+Patch96:        sanitize-grains-loaded-from-roster_grains.json.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/228
-Patch97:     adds-explicit-type-cast-for-port.patch
+Patch97:        adds-explicit-type-cast-for-port.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/53882
-Patch98:     fixed-bug-lvm-has-no-parttion-type.-the-scipt-later-.patch
+Patch98:        fixed-bug-lvm-has-no-parttion-type.-the-scipt-later-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/4f80e969e31247a4755d98d25f29b5d8b1b916c3
-Patch99:     remove-vendored-backports-abc-from-requirements.patch
+Patch99:        remove-vendored-backports-abc-from-requirements.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57123
-Patch100:     prevent-logging-deadlock-on-salt-api-subprocesses-bs.patch
+Patch100:       prevent-logging-deadlock-on-salt-api-subprocesses-bs.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/235
-Patch101:     python3.8-compatibility-pr-s-235.patch
+Patch101:       python3.8-compatibility-pr-s-235.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56419
-Patch102:     option-to-en-disable-force-refresh-in-zypper-215.patch
+Patch102:       option-to-en-disable-force-refresh-in-zypper-215.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/229
-Patch103:     fix-a-test-and-some-variable-names-229.patch
+Patch103:       fix-a-test-and-some-variable-names-229.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56439
-Patch104:     add-docker-logout-237.patch
+Patch104:       add-docker-logout-237.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57392
-Patch105:     zypperpkg-filter-patterns-that-start-with-dot-244.patch
+Patch105:       zypperpkg-filter-patterns-that-start-with-dot-244.patch
 # PATCH-FIX_OPENSUSE: hhttps://github.com/openSUSE/salt/commit/da936daeebd701e147707ad814c07bfc259d4be
-Patch106:     add-publish_batch-to-clearfuncs-exposed-methods.patch
+Patch106:       add-publish_batch-to-clearfuncs-exposed-methods.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57779
-Patch107:     info_installed-works-without-status-attr-now.patch
+Patch107:       info_installed-works-without-status-attr-now.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57491
-Patch108:     opensuse-3000.3-spacewalk-runner-parse-command-250.patch
+Patch108:       opensuse-3000.3-spacewalk-runner-parse-command-250.patch
 # PATCH-FIX_UPSTREAM: https://github.com/openSUSE/salt/pull/251
-Patch109:     opensuse-3000-libvirt-engine-fixes-251.patch
+Patch109:       opensuse-3000-libvirt-engine-fixes-251.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58013
-Patch110:     fix-__mount_device-wrapper-254.patch
+Patch110:       fix-__mount_device-wrapper-254.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58214
-Patch111:     ansiblegate-take-care-of-failed-skipped-and-unreacha.patch
+Patch111:       ansiblegate-take-care-of-failed-skipped-and-unreacha.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58301
-Patch112:     do-not-raise-streamclosederror-traceback-but-only-lo.patch
+Patch112:       do-not-raise-streamclosederror-traceback-but-only-lo.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/257
-Patch113:     opensuse-3000.2-virt-backports-236-257.patch
+Patch113:       opensuse-3000.2-virt-backports-236-257.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/256
-Patch114:     backport-virt-patches-from-3001-256.patch
+Patch114:       backport-virt-patches-from-3001-256.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/262
-Patch115:     fix-the-removed-six.itermitems-and-six.-_type-262.patch
+Patch115:       fix-the-removed-six.itermitems-and-six.-_type-262.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/263
-Patch116:     fix-virt.update-with-cpu-defined-263.patch
+Patch116:       fix-virt.update-with-cpu-defined-263.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/261
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57571
-Patch117:     remove-msgpack-1.0.0-requirement-in-the-installed-me.patch
+Patch117:       remove-msgpack-1.0.0-requirement-in-the-installed-me.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/bc20f38d0fa492af70321fef7fe2530937dfc86a
-Patch118:     prevent-import-errors-when-running-test_btrfs-unit-t.patch
+Patch118:       prevent-import-errors-when-running-test_btrfs-unit-t.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58529
-Patch119:     invalidate-file-list-cache-when-cache-file-modified-.patch
+Patch119:       invalidate-file-list-cache-when-cache-file-modified-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58400
-Patch120:     xen-disk-fixes-264.patch
+Patch120:       xen-disk-fixes-264.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58552
-Patch121:     zypperpkg-ignore-retcode-104-for-search-bsc-1176697-.patch
+Patch121:       zypperpkg-ignore-retcode-104-for-search-bsc-1176697-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
-Patch122:     support-transactional-systems-microos-271.patch
+Patch122:       support-transactional-systems-microos-271.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/272
-Patch123:     backport-a-few-virt-prs-272.patch
+Patch123:       backport-a-few-virt-prs-272.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/275
-Patch124:     bsc-1176024-fix-file-directory-user-and-group-owners.patch
+Patch124:       bsc-1176024-fix-file-directory-user-and-group-owners.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/277
-Patch125:     fix-grains.test_core-unit-test-277.patch
+Patch125:       fix-grains.test_core-unit-test-277.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/e2c3b1cb72b796fe12f94af64baa2e64cbe5db0b
-Patch126:     drop-wrong-mock-from-chroot-unit-test.patch
+Patch126:       drop-wrong-mock-from-chroot-unit-test.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/280
-Patch127:     ensure-virt.update-stop_on_reboot-is-updated-with-it.patch
+Patch127:       ensure-virt.update-stop_on_reboot-is-updated-with-it.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/281
-Patch128:     path-replace-functools.wraps-with-six.wraps-bsc-1177.patch
+Patch128:       path-replace-functools.wraps-with-six.wraps-bsc-1177.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58560
-Patch129:     fix-novendorchange-option-284.patch
+Patch129:       fix-novendorchange-option-284.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58871
-Patch130:     fix-cve-2020-25592-and-add-tests-bsc-1178319.patch
+Patch130:       fix-cve-2020-25592-and-add-tests-bsc-1178319.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/286
-Patch131:     grains-master-can-read-grains.patch
+Patch131:       grains-master-can-read-grains.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58784
-Patch132:     add-migrated-state-and-gpg-key-management-functions-.patch
+Patch132:       add-migrated-state-and-gpg-key-management-functions-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/292
-Patch133:     transactional_update-unify-with-chroot.call.patch
+Patch133:       transactional_update-unify-with-chroot.call.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/295
-Patch134:     pkgrepo-support-python-2.7-function-call-295.patch
+Patch134:       pkgrepo-support-python-2.7-function-call-295.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/79ae019ac7515614c6fbc620e66575f015bc447
-Patch135:     drop-wrong-virt-capabilities-code-after-rebasing-pat.patch
+Patch135:       drop-wrong-virt-capabilities-code-after-rebasing-pat.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/5ea2f10b15684dd417bad858642faafc92cd382
 #                     (revert https://github.com/saltstack/salt/pull/58655)
-Patch136:     revert-fixing-a-use-case-when-multiple-inotify-beaco.patch
+Patch136:       revert-fixing-a-use-case-when-multiple-inotify-beaco.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59269
-Patch137:     fix-aptpkg.normalize_name-when-package-arch-is-all.patch
+Patch137:       fix-aptpkg.normalize_name-when-package-arch-is-all.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/310
-Patch138:     open-suse-3002.2-bigvm-310.patch
+Patch138:       open-suse-3002.2-bigvm-310.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59146
-Patch139:     open-suse-3002.2-virt-network-311.patch
+Patch139:       open-suse-3002.2-virt-network-311.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/298
-Patch140:     fix-salt.utils.stringutils.to_str-calls-to-make-it-w.patch
+Patch140:       fix-salt.utils.stringutils.to_str-calls-to-make-it-w.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58262
-Patch141:     add-pkg.services_need_restart-302.patch
+Patch141:       add-pkg.services_need_restart-302.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/301
-Patch142:     add-patch-support-for-allow-vendor-change-option-wit.patch
+Patch142:       add-patch-support-for-allow-vendor-change-option-wit.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/304
-Patch143:     force-zyppnotify-to-prefer-packages.db-than-packages.patch
+Patch143:       force-zyppnotify-to-prefer-packages.db-than-packages.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/4028fd6e84d882b6dcee695d409c7e1ed6c83bdc
-Patch144:     revert-add-patch-support-for-allow-vendor-change-opt.patch
+Patch144:       revert-add-patch-support-for-allow-vendor-change-opt.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/73e357d7eee19a73cade22becb30d9689cae27ba
-Patch145:     remove-deprecated-warning-that-breaks-miniion-execut.patch
+Patch145:       remove-deprecated-warning-that-breaks-miniion-execut.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59345
-Patch146:     fix-onlyif-unless-when-multiple-conditions-bsc-11808.patch
+Patch146:       fix-onlyif-unless-when-multiple-conditions-bsc-11808.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59354
-Patch147:     do-not-crash-when-unexpected-cmd-output-at-listing-p.patch
+Patch147:       do-not-crash-when-unexpected-cmd-output-at-listing-p.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59189
-Patch148:     virt-uefi-fix-backport-312.patch
+Patch148:       virt-uefi-fix-backport-312.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59355
 #                     https://github.com/saltstack/salt/pull/59417
-Patch149:     3002.2-xen-spicevmc-dns-srv-records-backports-314.patch
+Patch149:       3002.2-xen-spicevmc-dns-srv-records-backports-314.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59485
-Patch150:     open-suse-3002.2-xen-grub-316.patch
+Patch150:       open-suse-3002.2-xen-grub-316.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/320
-Patch151:     async-batch-implementation-fix-320.patch
+Patch151:       async-batch-implementation-fix-320.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56173
-Patch152:     fixes-56144-to-enable-hotadd-profile-support.patch
+Patch152:       fixes-56144-to-enable-hotadd-profile-support.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/307
-Patch153:     add-sleep-on-exception-handling-on-minion-connection.patch
+Patch153:       add-sleep-on-exception-handling-on-minion-connection.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/323
-Patch154:     implementation-of-suse_ip-execution-module-bsc-10999.patch
+Patch154:       implementation-of-suse_ip-execution-module-bsc-10999.patch
 # PATCH-FIX_UPSTREAM: no PR to link to yet
-Patch155:     fix-for-some-cves-bsc1181550.patch
+Patch155:       fix-for-some-cves-bsc1181550.patch
 # PATCH-FIX_UPSTREAM: no PR to link to yet
-Patch156:     allow-extra_filerefs-as-sanitized-kwargs-for-ssh-cli.patch
+Patch156:       allow-extra_filerefs-as-sanitized-kwargs-for-ssh-cli.patch
 # PATCH-FIX_UPSTREAM: no PR to link to yet
-Patch157:     fix-regression-on-cmd.run-when-passing-tuples-as-cmd.patch
+Patch157:       fix-regression-on-cmd.run-when-passing-tuples-as-cmd.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59524
-Patch158:     prevent-race-condition-on-sigterm-for-the-minion-bsc.patch
+Patch158:       prevent-race-condition-on-sigterm-for-the-minion-bsc.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59746
-Patch159:     do-not-monkey-patch-yaml-bsc-1177474.patch
+Patch159:       do-not-monkey-patch-yaml-bsc-1177474.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59536
-Patch160:     3002-set-distro-requirement-to-oldest-supported-vers.patch
+Patch160:       3002-set-distro-requirement-to-oldest-supported-vers.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59693
-Patch161:     virt.network_update-handle-missing-ipv4-netmask-attr.patch
+Patch161:       virt.network_update-handle-missing-ipv4-netmask-attr.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/313
-Patch162:     allow-vendor-change-option-with-zypper-313.patch
+Patch162:       allow-vendor-change-option-with-zypper-313.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59404
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/341
-Patch163:     add-almalinux-and-alibaba-cloud-linux-to-the-os-fami.patch
+Patch163:       add-almalinux-and-alibaba-cloud-linux-to-the-os-fami.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/347
-Patch164:     notify-beacon-for-debian-ubuntu-systems-347.patch
+Patch164:       notify-beacon-for-debian-ubuntu-systems-347.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/336
-Patch165:     update-target-fix-for-salt-ssh-to-process-targets-li.patch
+Patch165:       update-target-fix-for-salt-ssh-to-process-targets-li.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59687
-Patch166:     add-alibaba-cloud-linux-2-by-backporting-upstream-s-.patch
+Patch166:       add-alibaba-cloud-linux-2-by-backporting-upstream-s-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/353
-Patch167:     regression-fix-of-salt-ssh-on-processing-targets-353.patch
+Patch167:       regression-fix-of-salt-ssh-on-processing-targets-353.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60056
-Patch168:     improvements-on-ansiblegate-module-354.patch
+Patch168:       improvements-on-ansiblegate-module-354.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
-Patch169:     transactional_update-detect-recursion-in-the-executo.patch
+Patch169:       transactional_update-detect-recursion-in-the-executo.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59648
-Patch170:     prevent-command-injection-in-the-snapper-module-bsc-.patch
+Patch170:       prevent-command-injection-in-the-snapper-module-bsc-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60056
-Patch171:     fix-issue-parsing-errors-in-ansiblegate-state-module.patch
+Patch171:       fix-issue-parsing-errors-in-ansiblegate-state-module.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/376
-Patch172:     check-if-dpkgnotify-is-executable-bsc-1186674-376.patch
+Patch172:       check-if-dpkgnotify-is-executable-bsc-1186674-376.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57881
-Patch173:     parsing-epoch-out-of-version-provided-during-pkg-rem.patch
+Patch173:       parsing-epoch-out-of-version-provided-during-pkg-rem.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58503
-Patch174:     fix-missing-minion-returns-in-batch-mode-360.patch
+Patch174:       fix-missing-minion-returns-in-batch-mode-360.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
-Patch175:     grains.extra-support-old-non-intel-kernels-bsc-11806.patch
+Patch175:       grains.extra-support-old-non-intel-kernels-bsc-11806.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60133
-Patch176:     handle-volumes-on-stopped-pools-in-virt.vm_info-373.patch
+Patch176:       handle-volumes-on-stopped-pools-in-virt.vm_info-373.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60229
-Patch177:     figure-out-python-interpreter-to-use-inside-containe.patch
+Patch177:       figure-out-python-interpreter-to-use-inside-containe.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60402
-Patch178:     enhance-logging-when-inotify-beacon-is-missing-pyino.patch
+Patch178:       enhance-logging-when-inotify-beacon-is-missing-pyino.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60421
-Patch179:     move-vendor-change-logic-to-zypper-class-355.patch
+Patch179:       move-vendor-change-logic-to-zypper-class-355.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60420
-Patch180:     virt-use-dev-kvm-to-detect-kvm-383.patch
+Patch180:       virt-use-dev-kvm-to-detect-kvm-383.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60358
-Patch181:     fix-save-for-iptables-state-module-bsc-1185131-372.patch
+Patch181:       fix-save-for-iptables-state-module-bsc-1185131-372.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60356
-Patch182:     fix-exception-in-yumpkg.remove-for-not-installed-pac.patch
+Patch182:       fix-exception-in-yumpkg.remove-for-not-installed-pac.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
