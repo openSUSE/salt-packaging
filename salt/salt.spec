@@ -484,6 +484,8 @@ Patch193:     check-if-dpkgnotify-is-executable-bsc-1186674-365.patch
 Patch194:     enhance-logging-when-inotify-beacon-is-missing-pyino.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60421
 Patch195:     move-vendor-change-logic-to-zypper-class-355.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60420
+Patch196:     virt-use-dev-kvm-to-detect-kvm-384.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1211,6 +1213,7 @@ cp %{S:6} .
 %patch193 -p1
 %patch194 -p1
 %patch195 -p1
+%patch196 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
