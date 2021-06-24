@@ -421,6 +421,8 @@ Patch178:     enhance-logging-when-inotify-beacon-is-missing-pyino.patch
 Patch179:     move-vendor-change-logic-to-zypper-class-355.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60420
 Patch180:     virt-use-dev-kvm-to-detect-kvm-383.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60358
+Patch181:     fix-save-for-iptables-state-module-bsc-1185131-372.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1015,6 +1017,7 @@ cp %{S:6} .
 %patch178 -p1
 %patch179 -p1
 %patch180 -p1
+%patch181 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
