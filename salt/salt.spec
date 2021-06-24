@@ -471,6 +471,8 @@ Patch186:     figure-out-python-interpreter-to-use-inside-containe.patch
 Patch187:     enhance-logging-when-inotify-beacon-is-missing-pyino.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60421
 Patch188:     move-vendor-change-logic-to-zypper-class-355.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60420
+Patch189:     virt-use-dev-kvm-to-detect-kvm-385.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1182,6 +1184,7 @@ cp %{S:6} .
 %patch186 -p1
 %patch187 -p1
 %patch188 -p1
+%patch189 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
