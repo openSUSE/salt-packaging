@@ -482,6 +482,8 @@ Patch192:     figure-out-python-interpreter-to-use-inside-containe.patch
 Patch193:     check-if-dpkgnotify-is-executable-bsc-1186674-365.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60402
 Patch194:     enhance-logging-when-inotify-beacon-is-missing-pyino.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60421
+Patch195:     move-vendor-change-logic-to-zypper-class-355.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1208,6 +1210,7 @@ cp %{S:6} .
 %patch192 -p1
 %patch193 -p1
 %patch194 -p1
+%patch195 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
