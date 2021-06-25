@@ -425,6 +425,8 @@ Patch180:       virt-use-dev-kvm-to-detect-kvm-383.patch
 Patch181:       fix-save-for-iptables-state-module-bsc-1185131-372.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60356
 Patch182:       fix-exception-in-yumpkg.remove-for-not-installed-pac.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59535
+Patch183:       backport-thread.is_alive-fix-390.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1021,6 +1023,7 @@ cp %{S:6} .
 %patch180 -p1
 %patch181 -p1
 %patch182 -p1
+%patch183 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
