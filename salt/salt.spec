@@ -615,7 +615,7 @@ Summary:        The api for Salt a parallel remote execution system
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
-Requires:       python3-CherryPy >= 3.2.2
+Requires:       (python3-CherryPy >= 3.2.2 or python3-cherrypy >= 3.2.2)
 
 %description api
 salt-api is a modular interface on top of Salt that can provide a variety of entry points into a running Salt system.
