@@ -430,6 +430,8 @@ Patch183:       backport-thread.is_alive-fix-390.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56935
 #                     https://github.com/saltstack/salt/pull/60432
 Patch184:       implementation-of-held-unheld-functions-for-state-pk.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59682
+Patch185:       adding-preliminary-support-for-rocky.-59682-391.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1028,6 +1030,7 @@ cp %{S:6} .
 %patch182 -p1
 %patch183 -p1
 %patch184 -p1
+%patch185 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
