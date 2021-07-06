@@ -493,6 +493,8 @@ Patch198:       fix-exception-in-yumpkg.remove-for-not-installed-pac.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/56935
 #                     https://github.com/saltstack/salt/pull/60432
 Patch199:       implementation-of-held-unheld-functions-for-state-pk.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60492
+Patch200:       virt-pass-emulator-when-getting-domain-capabilities-.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1224,6 +1226,7 @@ cp %{S:6} .
 %patch197 -p1
 %patch198 -p1
 %patch199 -p1
+%patch200 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
