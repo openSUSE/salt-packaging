@@ -434,6 +434,8 @@ Patch184:       implementation-of-held-unheld-functions-for-state-pk.patch
 Patch185:       adding-preliminary-support-for-rocky.-59682-391.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60492
 Patch186:       virt-pass-emulator-when-getting-domain-capabilities-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59756
+Patch187:       enhance-openscap-module-add-xccdf_eval-call-386.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1034,6 +1036,7 @@ cp %{S:6} .
 %patch184 -p1
 %patch185 -p1
 %patch186 -p1
+%patch187 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
