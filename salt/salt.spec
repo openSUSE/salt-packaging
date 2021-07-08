@@ -497,6 +497,8 @@ Patch199:       implementation-of-held-unheld-functions-for-state-pk.patch
 Patch200:       virt-pass-emulator-when-getting-domain-capabilities-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59756
 Patch201:       enhance-openscap-module-add-xccdf_eval-call-396.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
+Patch202:       handle-master-tops-data-when-states-are-applied-by-t.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1230,6 +1232,7 @@ cp %{S:6} .
 %patch199 -p1
 %patch200 -p1
 %patch201 -p1
+%patch202 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
