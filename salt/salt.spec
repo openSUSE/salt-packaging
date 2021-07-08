@@ -482,6 +482,8 @@ Patch191:       fix-exception-in-yumpkg.remove-for-not-installed-pac.patch
 Patch192:       implementation-of-held-unheld-functions-for-state-pk.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60492
 Patch193:       virt-pass-emulator-when-getting-domain-capabilities-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59756
+Patch194:       enhance-openscap-module-add-xccdf_eval-call-395.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1198,6 +1200,7 @@ cp %{S:6} .
 %patch191 -p1
 %patch192 -p1
 %patch193 -p1
+%patch194 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
