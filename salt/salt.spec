@@ -486,6 +486,8 @@ Patch193:       virt-pass-emulator-when-getting-domain-capabilities-.patch
 Patch194:       enhance-openscap-module-add-xccdf_eval-call-395.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
 Patch195:       handle-master-tops-data-when-states-are-applied-by-t.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
+Patch196:       do-noop-for-services-states-when-running-systemd-in-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1204,6 +1206,7 @@ cp %{S:6} .
 %patch193 -p1
 %patch194 -p1
 %patch195 -p1
+%patch196 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
