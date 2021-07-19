@@ -1,4 +1,4 @@
-From 173b70f9b4152c718c294071fee9991770b33ba5 Mon Sep 17 00:00:00 2001
+From 6837044f5a207cf39f3064428b0ed276226a5e39 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Fri, 9 Jul 2021 09:05:55 +0100
@@ -14,13 +14,18 @@ Fix unit tests for transactional_updates module
 Add unit tests to cover queue cases on transaction_update states
 
 Refactor offline checkers and add unit tests
+
+Fix regression that always consider offline mode
+
+Add proper mocking and skip tests when running in offline mode
 ---
  salt/modules/systemd_service.py               |   5 +
  salt/modules/transactional_update.py          |  56 +++-
  salt/states/service.py                        |  14 +
+ tests/integration/states/test_service.py      |   4 +
  .../unit/modules/test_transactional_update.py | 264 +++++++++++++++++-
- tests/unit/states/test_service.py             |  36 +++
- 5 files changed, 368 insertions(+), 7 deletions(-)
+ tests/unit/states/test_service.py             |  43 ++-
+ 6 files changed, 377 insertions(+), 9 deletions(-)
 
 diff --git a/salt/modules/systemd_service.py b/salt/modules/systemd_service.py
 index 49e5bd813f..8d495433f8 100644
@@ -181,7 +186,7 @@ index 9cdaddb91a..3af9d91822 100644
      # pillar, instead the one delegated
      pillar = copy.deepcopy(__pillar__)
 diff --git a/salt/states/service.py b/salt/states/service.py
-index 4ea36a78f6..b426fc5f42 100644
+index 4ea36a78f6..3a216920f4 100644
 --- a/salt/states/service.py
 +++ b/salt/states/service.py
 @@ -342,6 +342,10 @@ def _disable(name, started, result=True, **kwargs):
@@ -189,7 +194,7 @@ index 4ea36a78f6..b426fc5f42 100644
  
  
 +def _offline():
-+    return "service.offline" in __salt__ and __salt__["service.offline"]
++    return "service.offline" in __salt__ and __salt__["service.offline"]()
 +
 +
  def _available(name, ret):
@@ -219,6 +224,28 @@ index 4ea36a78f6..b426fc5f42 100644
      # Check if the service is available
      try:
          if not _available(name, ret):
+diff --git a/tests/integration/states/test_service.py b/tests/integration/states/test_service.py
+index 81359d44ea..9c89d2cfd0 100644
+--- a/tests/integration/states/test_service.py
++++ b/tests/integration/states/test_service.py
+@@ -26,6 +26,7 @@ class ServiceTest(ModuleCase, SaltReturnAssertsMixin):
+         cmd_name = "crontab"
+         os_family = self.run_function("grains.get", ["os_family"])
+         os_release = self.run_function("grains.get", ["osrelease"])
++        is_systemd = self.run_function("grains.get", ["systemd"])
+         self.stopped = False
+         self.running = True
+         if os_family == "RedHat":
+@@ -53,6 +54,9 @@ class ServiceTest(ModuleCase, SaltReturnAssertsMixin):
+         if os_family != "Windows" and salt.utils.path.which(cmd_name) is None:
+             self.skipTest("{} is not installed".format(cmd_name))
+ 
++        if is_systemd and self.run_function("service.offline"):
++            self.skipTest("systemd is OFFLINE")
++
+     def tearDown(self):
+         if self.post_srv_disable:
+             self.run_function("service.disable", name=self.service_name)
 diff --git a/tests/unit/modules/test_transactional_update.py b/tests/unit/modules/test_transactional_update.py
 index 2d30f296d7..6f8587baa0 100644
 --- a/tests/unit/modules/test_transactional_update.py
@@ -531,7 +558,7 @@ index 2d30f296d7..6f8587baa0 100644
 +            assert tu.single("pkg.installed", name="emacs", queue=True) == "result"
 +            _create_and_execute_salt_state.assert_called_once()
 diff --git a/tests/unit/states/test_service.py b/tests/unit/states/test_service.py
-index 51755fc5a1..e8a1677e93 100644
+index 51755fc5a1..de09f2f8ab 100644
 --- a/tests/unit/states/test_service.py
 +++ b/tests/unit/states/test_service.py
 @@ -304,6 +304,24 @@ class ServiceTestCase(TestCase, LoaderModuleMockMixin):
@@ -584,6 +611,20 @@ index 51755fc5a1..e8a1677e93 100644
      def test_enabled(self):
          """
              Test to verify that the service is enabled
+@@ -567,8 +603,11 @@ class ServiceTestCaseFunctional(TestCase, LoaderModuleMockMixin):
+     @slowTest
+     def test_running_with_reload(self):
+         with patch.dict(service.__opts__, {"test": False}):
+-            service.dead(self.service_name, enable=False)
+-            result = service.running(name=self.service_name, enable=True, reload=False)
++            with patch("salt.utils.systemd.offline", MagicMock(return_value=False)):
++                service.dead(self.service_name, enable=False)
++                result = service.running(
++                    name=self.service_name, enable=True, reload=False
++                )
+ 
+         if salt.utils.platform.is_windows():
+             comment = "Started Service {}".format(self.service_name)
 -- 
 2.32.0
 
