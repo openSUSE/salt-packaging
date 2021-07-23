@@ -854,7 +854,7 @@ Summary:        The client component for Saltstack
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 %if 0%{?suse_version} > 1500 || 0%{?sle_version} > 150000
-Requires:       (%{name}-transactional-update = %{version}-%{release} if read-only-root-fs)
+Recommends:     (%{name}-transactional-update = %{version}-%{release} if read-only-root-fs)
 %endif
 
 %if %{with systemd}
