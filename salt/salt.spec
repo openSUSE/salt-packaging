@@ -829,8 +829,7 @@ Zsh command line completion support for %{name}.
 %package standalone-formulas-configuration
 Summary:        Standalone Salt configuration to make the packaged formulas available for the Salt master
 Group:          System/Management
-Requires:       %{name} = %{version}-%{release}
-Requires:       %{name}-master = %{version}-%{release}
+Requires:       %{name}
 Provides:       salt-formulas-configuration
 Conflicts:      otherproviders(salt-formulas-configuration)
 
@@ -1207,6 +1206,7 @@ install -Dd -m 0750 %{buildroot}%{_prefix}/share/salt-formulas
 install -Dd -m 0750 %{buildroot}%{_prefix}/share/salt-formulas/states
 install -Dd -m 0750 %{buildroot}%{_prefix}/share/salt-formulas/metadata
 install -Dpm 0640 conf/suse/standalone-formulas-configuration.conf %{buildroot}%{_sysconfdir}/salt/master.d
+install -Dpm 0640 conf/suse/standalone-formulas-configuration.conf %{buildroot}%{_sysconfdir}/salt/minion.d
 
 %if 0%{?suse_version} > 1020
 %fdupes %{buildroot}%{_docdir}
@@ -1711,7 +1711,10 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 
 %files standalone-formulas-configuration
 %defattr(-,root,root)
+%dir               %attr(0755, root, salt) %{_sysconfdir}/salt/master.d/
 %config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/master.d/standalone-formulas-configuration.conf
+%dir               %attr(0750, root, root) %{_sysconfdir}/salt/minion.d/
+%config(noreplace) %attr(0640, root, root) %{_sysconfdir}/salt/minion.d/standalone-formulas-configuration.conf
 %dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/
 %dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/states/
 %dir               %attr(0755, root, salt) %{_prefix}/share/salt-formulas/metadata/
