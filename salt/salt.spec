@@ -1,7 +1,7 @@
 #
 # spec file for package salt
 #
-# Copyright (c) 2019 SUSE LINUX GmbH, Nuernberg, Germany.
+# Copyright (c) 2021 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -1659,12 +1659,9 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %{_mandir}/man1/salt-call.1.gz
 %{_mandir}/man1/spm.1.gz
 %config(noreplace) %{_sysconfdir}/logrotate.d/salt
-%if 0%{?suse_version} < 1500
-%doc LICENSE AUTHORS README.rst HACKING.rst README.SUSE
-%else
+%{!?_licensedir:%global license %doc}
 %license LICENSE
 %doc AUTHORS README.rst HACKING.rst README.SUSE
-%endif
 #
 %dir        %attr(0750, root, salt) %{_sysconfdir}/salt
 %dir        %attr(0750, root, salt) %{_sysconfdir}/salt/pki
