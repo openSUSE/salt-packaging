@@ -834,6 +834,8 @@ rm -f /var/cache/salt/master/thin/thin.tgz
 %config /etc/salt/master.d/py27-compat-salt.conf
 
 %{compatdir}
-%doc LICENSE AUTHORS README.rst HACKING.rst README.SUSE
+%{!?_licensedir:%global license %doc}
+%license LICENSE
+%doc AUTHORS README.rst HACKING.rst README.SUSE
 
 %changelog
