@@ -501,6 +501,9 @@ Patch201:       enhance-openscap-module-add-xccdf_eval-call-396.patch
 Patch202:       handle-master-tops-data-when-states-are-applied-by-t.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
 Patch203:       do-noop-for-services-states-when-running-systemd-in-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60662
+#                     https://github.com/saltstack/salt/pull/60688
+Patch204:       better-handling-of-bad-public-keys-from-minions-bsc-.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1235,6 +1238,7 @@ cp %{S:6} .
 %patch201 -p1
 %patch202 -p1
 %patch203 -p1
+%patch204 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
