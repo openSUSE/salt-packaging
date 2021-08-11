@@ -256,6 +256,8 @@ Patch97:        do-not-crash-when-unexpected-cmd-output-at-listing-p.patch
 Patch98:        prevent-command-injection-in-the-snapper-module-bsc-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59756
 Patch99:        enhance-openscap-module-add-xccdf_eval-call-397.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59756
+Patch100:       fix-error-handling-in-openscap-module-bsc-1188647-41.patch
 
 
 
@@ -719,6 +721,7 @@ cp %{S:5} ./.travis.yml
 %patch97 -p1
 %patch98 -p1
 %patch99 -p1
+%patch100 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build
