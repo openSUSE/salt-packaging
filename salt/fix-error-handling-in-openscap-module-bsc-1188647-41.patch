@@ -1,0 +1,40 @@
+From 4d25189a64d9b435a0ab335e6e3c5ae5732e601e Mon Sep 17 00:00:00 2001
+From: Vladimir Nadvornik <nadvornik@suse.cz>
+Date: Wed, 11 Aug 2021 12:18:54 +0200
+Subject: [PATCH] Fix error handling in openscap module (bsc#1188647)
+ (#412)
+
+---
+ salt/modules/openscap.py | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/salt/modules/openscap.py b/salt/modules/openscap.py
+index b44df3154e..5a3d4e757b 100644
+--- a/salt/modules/openscap.py
++++ b/salt/modules/openscap.py
+@@ -162,7 +162,9 @@ def xccdf_eval(xccdffile, ovalfiles=None, **kwargs):
+         tempdir = tempfile.mkdtemp()
+         proc = Popen(cmd_opts, stdout=PIPE, stderr=PIPE, cwd=tempdir)
+         (stdoutdata, error) = proc.communicate()
+-        success = _OSCAP_EXIT_CODES_MAP[proc.returncode]
++        success = _OSCAP_EXIT_CODES_MAP.get(proc.returncode, False)
++        if proc.returncode < 0:
++            error += "\nKilled by signal {}\n".format(proc.returncode).encode('ascii')
+         returncode = proc.returncode
+         if success:
+             __salt__["cp.push_dir"](tempdir)
+@@ -212,7 +214,9 @@ def xccdf(params):
+         proc = Popen(
+             shlex.split(cmd), stdout=PIPE, stderr=PIPE, cwd=tempdir)
+         (stdoutdata, error) = proc.communicate()
+-        success = _OSCAP_EXIT_CODES_MAP[proc.returncode]
++        success = _OSCAP_EXIT_CODES_MAP.get(proc.returncode, False)
++        if proc.returncode < 0:
++            error += "\nKilled by signal {}\n".format(proc.returncode).encode('ascii')
+         returncode = proc.returncode
+         if success:
+             __salt__['cp.push_dir'](tempdir)
+-- 
+2.32.0
+
+
