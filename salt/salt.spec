@@ -491,6 +491,8 @@ Patch196:       do-noop-for-services-states-when-running-systemd-in-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60662
 #                     https://github.com/saltstack/salt/pull/60688
 Patch197:       better-handling-of-bad-public-keys-from-minions-bsc-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59756
+Patch198:       fix-error-handling-in-openscap-module-bsc-1188647-41.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1210,6 +1212,7 @@ cp %{S:6} .
 %patch195 -p1
 %patch196 -p1
 %patch197 -p1
+%patch198 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
