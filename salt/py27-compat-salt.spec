@@ -1,7 +1,7 @@
 #
 # spec file for package py27-compat-salt
 #
-# Copyright (c) 2019 SUSE LINUX GmbH, Nuernberg, Germany.
+# Copyright (c) 2021 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -466,6 +466,13 @@ Patch194:       enhance-openscap-module-add-xccdf_eval-call-395.patch
 Patch195:       handle-master-tops-data-when-states-are-applied-by-t.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
 Patch196:       do-noop-for-services-states-when-running-systemd-in-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60662
+#                     https://github.com/saltstack/salt/pull/60688
+Patch197:       better-handling-of-bad-public-keys-from-minions-bsc-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59756
+Patch198:       fix-error-handling-in-openscap-module-bsc-1188647-41.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
+Patch199:       fix-failing-unit-tests-for-systemd.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -807,6 +814,9 @@ cp %{S:5} ./.travis.yml
 %patch194 -p1
 %patch195 -p1
 %patch196 -p1
+%patch197 -p1
+%patch198 -p1
+%patch199 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
