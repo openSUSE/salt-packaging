@@ -603,7 +603,7 @@ BuildRequires:  python-markupsafe
 %else
 BuildRequires:  python-Jinja2
 BuildRequires:  python-PyYAML
-BuildRequires:  python-MarkupSafe
+BuildRequires:  python-MarkupSafe >= 0.23
 %endif
 
 BuildRequires:  python-futures >= 2.0
@@ -648,7 +648,7 @@ Requires:       yum-plugin-security
 %else
 Requires:       python-Jinja2
 Requires:       python-PyYAML
-Requires:       python-MarkupSafe
+Requires:       python-MarkupSafe >= 0.23
 %endif
 
 Requires:       python-futures >= 2.0
@@ -710,7 +710,7 @@ BuildRequires:  python3-zmq >= 2.2.0
 BuildRequires:  python3-m2crypto
 %else
 BuildRequires:  python3-Jinja2
-BuildRequires:  python3-MarkupSafe
+BuildRequires:  python3-MarkupSafe >= 0.23
 BuildRequires:  python3-msgpack-python > 0.3
 BuildRequires:  python3-pyzmq >= 2.2.0
 %if 0%{?suse_version} >= 1500
@@ -763,7 +763,7 @@ Requires:       yum-plugin-security
 %endif
 %else
 Requires:       python3-Jinja2
-Requires:       python3-MarkupSafe
+Requires:       python3-MarkupSafe >= 0.23
 Requires:       python3-msgpack-python > 0.3
 %if 0%{?suse_version} >= 1500
 Requires:       python3-M2Crypto
