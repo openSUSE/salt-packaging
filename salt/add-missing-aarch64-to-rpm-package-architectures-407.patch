@@ -1,0 +1,58 @@
+From d8bcecf9a939f3ecead541164ebd7c42380bb213 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
+Date: Wed, 18 Aug 2021 15:15:03 +0300
+Subject: [PATCH] Add missing aarch64 to rpm package architectures
+ (#407)
+
+Required to prevent false negative results on using pkg.installed
+with architecture specification in package name (ex. `bash.aarch64`)
+---
+ salt/utils/pkg/rpm.py                |  2 +-
+ tests/unit/modules/test_zypperpkg.py | 20 ++++++++++++++++++++
+ 2 files changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/salt/utils/pkg/rpm.py b/salt/utils/pkg/rpm.py
+index cb85eb99fe..b6859c73df 100644
+--- a/salt/utils/pkg/rpm.py
++++ b/salt/utils/pkg/rpm.py
+@@ -30,7 +30,7 @@ ARCHES_ALPHA = (
+     'alpha', 'alphaev4', 'alphaev45', 'alphaev5', 'alphaev56',
+     'alphapca56', 'alphaev6', 'alphaev67', 'alphaev68', 'alphaev7'
+ )
+-ARCHES_ARM = ('armv5tel', 'armv5tejl', 'armv6l', 'armv7l')
++ARCHES_ARM = ('armv5tel', 'armv5tejl', 'armv6l', 'armv7l', 'aarch64')
+ ARCHES_SH = ('sh3', 'sh4', 'sh4a')
+ 
+ ARCHES = ARCHES_64 + ARCHES_32 + ARCHES_PPC + ARCHES_S390 + \
+diff --git a/tests/unit/modules/test_zypperpkg.py b/tests/unit/modules/test_zypperpkg.py
+index 10d90660c6..e1ddd7a1b0 100644
+--- a/tests/unit/modules/test_zypperpkg.py
++++ b/tests/unit/modules/test_zypperpkg.py
+@@ -2125,3 +2125,23 @@ pattern() = package-c"""
+             ret = zypper.list_holds()
+             assert len(ret) == 1
+             assert "bar-2:2.3.4-2.1.*" in ret
++
++    def test_normalize_name(self):
++        """
++        Test that package is normalized only when it should be
++        """
++        with patch.dict(zypper.__grains__, {"osarch": "x86_64"}):
++            result = zypper.normalize_name("foo")
++            assert result == "foo", result
++            result = zypper.normalize_name("foo.x86_64")
++            assert result == "foo", result
++            result = zypper.normalize_name("foo.noarch")
++            assert result == "foo", result
++
++        with patch.dict(zypper.__grains__, {"osarch": "aarch64"}):
++            result = zypper.normalize_name("foo")
++            assert result == "foo", result
++            result = zypper.normalize_name("foo.aarch64")
++            assert result == "foo", result
++            result = zypper.normalize_name("foo.noarch")
++            assert result == "foo", result
+-- 
+2.32.0
+
+
