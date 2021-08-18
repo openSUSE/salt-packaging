@@ -1,0 +1,2598 @@
+From 669497556eea0250383e374861bdd97a94348c30 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
+Date: Wed, 18 Aug 2021 13:23:32 +0300
+Subject: [PATCH] Consolidate some state requisites (#55974)
+ (bsc#1188641) - 3000 (#402)
+
+* Consolidate some state requisites (#55974) (bsc#1188641)
+
+* add cmd state features to state.py
+also dry git state
+
+* dry docker_container
+
+* update docker test
+
+* correct integration test
+
+* clarity improvement
+
+* lint and test fixes
+
+* correct test
+
+* global req updates
+
+* doc update
+
+* doc updates
+
+* remove unused mac requisite implementation
+
+* other macpackage cleanup
+
+* handle missing user in runas
+
+* add test cases unless/onlyif exception handling
+
+* fix macpackage tests
+
+* fix typo
+
+* Fix failing integration tests
+
+* Fix unless logic and failing tests
+
+* Revert some of the changes in the onlyif code
+
+* Reorder test functions back to original
+
+Co-authored-by: Christian McHugh <mchugh19@hotmail.com>
+Co-authored-by: twangboy <slee@saltstack.com>
+---
+ doc/ref/states/requisites.rst                 |  36 +-
+ doc/topics/releases/sodium.rst                |  11 +
+ salt/modules/state.py                         |   2 +-
+ salt/state.py                                 | 148 +++++--
+ salt/states/cmd.py                            | 394 ++++++-----------
+ salt/states/docker_container.py               | 125 +-----
+ salt/states/git.py                            | 218 +++-------
+ salt/states/macpackage.py                     |  71 +--
+ salt/states/pkg.py                            |  28 +-
+ .../files/file/base/issue-35384.sls           |   7 +
+ .../states/test_docker_container.py           |  63 +--
+ tests/unit/states/test_cmd.py                 |  78 +---
+ tests/unit/states/test_macpackage.py          | 406 +++++++++---------
+ tests/unit/test_state.py                      | 202 ++++++++-
+ 14 files changed, 832 insertions(+), 957 deletions(-)
+
+diff --git a/doc/ref/states/requisites.rst b/doc/ref/states/requisites.rst
+index fd03e6d963..f025302ace 100644
+--- a/doc/ref/states/requisites.rst
++++ b/doc/ref/states/requisites.rst
+@@ -1039,8 +1039,40 @@ if the gluster commands return a 0 ret value.
+                 - /etc/crontab
+                 - 'entry1'
+ 
+-runas
+-~~~~~
++.. _creates-requisite:
++
++Creates
++-------
++
++.. versionadded:: Sodium
++
++The ``creates`` requisite specifies that a state should only run when any of
++the specified files do not already exist. Like ``unless``, ``creates`` requisite
++operates as NAND and is useful in giving more granular control over when a state
++should execute. This was previously used by the :mod:`cmd <salt.states.cmd>` and
++:mod:`docker_container <salt.states.docker_container>` states.
++
++    .. code-block:: yaml
++
++      contrived creates example:
++        file.touch:
++          - name: /path/to/file
++          - creates: /path/to/file
++
++``creates`` also accepts a list of files, in which case this state will
++run if **any** of the files do not exist:
++
++    .. code-block:: yaml
++
++      creates list:
++        file.cmd:
++          - name: /path/to/command
++          - creates:
++              - /path/file
++              - /path/file2
++
++listen
++~~~~~~
+ 
+ .. versionadded:: 2014.7.0
+ 
+diff --git a/doc/topics/releases/sodium.rst b/doc/topics/releases/sodium.rst
+index 2bd871e846..66612923dc 100644
+--- a/doc/topics/releases/sodium.rst
++++ b/doc/topics/releases/sodium.rst
+@@ -27,3 +27,14 @@ in the salt mine function definition itself (or when calling :py:func:`mine.send
+ This targeting works the same as the generic minion targeting as specified
+ :ref:`here <targeting>`. The parameters used are ``allow_tgt`` and ``allow_tgt_type``.
+ See also :ref:`the documentation of the Salt Mine <mine_minion-side-acl>`.
++
++
++State updates
++=============
++
++The ``creates`` state requisite has been migrated from the
++:mod:`docker_container <salt.states.docker_container>` and :mod:`cmd <salt.states.cmd>`
++states to become a global option. This acts similar to an equivalent
++``unless: test -f filename`` but can also accept a list of filenames. This allows
++all states to take advantage of the enhanced functionality released in Neon, of allowing
++salt execution modules for requisite checks.
+diff --git a/salt/modules/state.py b/salt/modules/state.py
+index a4f3f8c370..a1effd884e 100644
+--- a/salt/modules/state.py
++++ b/salt/modules/state.py
+@@ -343,7 +343,7 @@ def orchestrate(mods,
+     .. seealso:: More Orchestrate documentation
+ 
+         * :ref:`Full Orchestrate Tutorial <orchestrate-runner>`
+-        * :py:mod:`Docs for the ``salt`` state module <salt.states.saltmod>`
++        * Docs for the salt state module :py:mod:`salt.states.saltmod`
+ 
+     CLI Examples:
+ 
+diff --git a/salt/state.py b/salt/state.py
+index f5df82fce2..ddea13ad5e 100644
+--- a/salt/state.py
++++ b/salt/state.py
+@@ -56,6 +56,7 @@ from salt.exceptions import (
+ from salt.utils.odict import OrderedDict, DefaultOrderedDict
+ # Explicit late import to avoid circular import. DO NOT MOVE THIS.
+ import salt.utils.yamlloader as yamlloader
++from salt.exceptions import CommandExecutionError, SaltRenderError, SaltReqTimeoutError
+ 
+ # Import third party libs
+ # pylint: disable=import-error,no-name-in-module,redefined-builtin
+@@ -97,6 +98,7 @@ STATE_RUNTIME_KEYWORDS = frozenset([
+     'failhard',
+     'onlyif',
+     'unless',
++    'creates',
+     'retry',
+     'order',
+     'parallel',
+@@ -868,6 +870,14 @@ class State(object):
+                 # If either result is True, the returned result should be True
+                 ret['skip_watch'] = _ret['skip_watch'] or ret['skip_watch']
+ 
++        if "creates" in low_data:
++            _ret = self._run_check_creates(low_data)
++            ret["result"] = _ret["result"] or ret["result"]
++            ret["comment"].append(_ret["comment"])
++            if "skip_watch" in _ret:
++                # If either result is True, the returned result should be True
++                ret["skip_watch"] = _ret["skip_watch"] or ret["skip_watch"]
++
+         return ret
+ 
+     def _run_check_function(self, entry):
+@@ -882,31 +892,43 @@ class State(object):
+         return self.functions[fun](*cdata['args'], **cdata['kwargs'])
+ 
+     def _run_check_onlyif(self, low_data, cmd_opts):
+-        '''
+-        Check that unless doesn't return 0, and that onlyif returns a 0.
+-        '''
+-        ret = {'result': False}
++        """
++        Make sure that all commands return True for the state to run. If any
++        command returns False (non 0), the state will not run
++        """
++        ret = {"result": False}
+ 
+         if not isinstance(low_data['onlyif'], list):
+             low_data_onlyif = [low_data['onlyif']]
+         else:
+             low_data_onlyif = low_data['onlyif']
+ 
++        # If any are False the state will NOT run
+         def _check_cmd(cmd):
+-            if cmd != 0 and ret['result'] is False:
+-                ret.update({'comment': 'onlyif condition is false',
+-                            'skip_watch': True,
+-                            'result': True})
++            # Don't run condition (False)
++            if cmd != 0 and ret["result"] is False:
++                ret.update(
++                    {
++                        "comment": "onlyif condition is false",
++                        "skip_watch": True,
++                        "result": True,
++                    }
++                )
+                 return False
+             elif cmd == 0:
+-                ret.update({'comment': 'onlyif condition is true', 'result': False})
++                ret.update({"comment": "onlyif condition is true", "result": False})
+             return True
+ 
+         for entry in low_data_onlyif:
+             if isinstance(entry, six.string_types):
+-                cmd = self.functions['cmd.retcode'](
+-                    entry, ignore_retcode=True, python_shell=True, **cmd_opts)
+-                log.debug('Last command return code: %s', cmd)
++                try:
++                    cmd = self.functions["cmd.retcode"](
++                        entry, ignore_retcode=True, python_shell=True, **cmd_opts
++                    )
++                except CommandExecutionError:
++                    # Command failed, notify onlyif to skip running the item
++                    cmd = 100
++                log.debug("Last command return code: %s", cmd)
+                 if not _check_cmd(cmd):
+                     return ret
+             elif isinstance(entry, dict):
+@@ -934,31 +956,45 @@ class State(object):
+         return ret
+ 
+     def _run_check_unless(self, low_data, cmd_opts):
+-        '''
+-        Check that unless doesn't return 0, and that onlyif returns a 0.
+-        '''
+-        ret = {'result': False}
++        """
++        Check if any of the commands return False (non 0). If any are False the
++        state will run.
++        """
++        ret = {"result": False}
+ 
+         if not isinstance(low_data['unless'], list):
+             low_data_unless = [low_data['unless']]
+         else:
+             low_data_unless = low_data['unless']
+ 
++        # If any are False the state will run
+         def _check_cmd(cmd):
+-            if cmd == 0 and ret['result'] is False:
+-                ret.update({'comment': 'unless condition is true',
+-                            'skip_watch': True,
+-                            'result': True})
++            # Don't run condition
++            if cmd == 0:
++                ret.update(
++                    {
++                        "comment": "unless condition is true",
++                        "skip_watch": True,
++                        "result": True,
++                    }
++                )
+                 return False
+-            elif cmd != 0:
+-                ret.update({'comment': 'unless condition is false', 'result': False})
+-            return True
++            else:
++                ret.pop("skip_watch", None)
++                ret.update({"comment": "unless condition is false", "result": False})
++                return True
+ 
+         for entry in low_data_unless:
+             if isinstance(entry, six.string_types):
+-                cmd = self.functions['cmd.retcode'](entry, ignore_retcode=True, python_shell=True, **cmd_opts)
+-                log.debug('Last command return code: %s', cmd)
+-                if not _check_cmd(cmd):
++                try:
++                    cmd = self.functions["cmd.retcode"](
++                        entry, ignore_retcode=True, python_shell=True, **cmd_opts
++                    )
++                    log.debug("Last command return code: %s", cmd)
++                except CommandExecutionError:
++                    # Command failed, so notify unless to skip the item
++                    cmd = 0
++                if _check_cmd(cmd):
+                     return ret
+             elif isinstance(entry, dict):
+                 if 'fun' not in entry:
+@@ -967,20 +1003,29 @@ class State(object):
+                     return ret
+ 
+                 result = self._run_check_function(entry)
+-                if self.state_con.get('retcode', 0):
+-                    if not _check_cmd(self.state_con['retcode']):
++                if self.state_con.get("retcode", 0):
++                    if _check_cmd(self.state_con["retcode"]):
+                         return ret
+                 elif result:
+-                    ret.update({'comment': 'unless condition is true',
+-                                'skip_watch': True,
+-                                'result': True})
+-                    return ret
++                    ret.update(
++                        {
++                            "comment": "unless condition is true",
++                            "skip_watch": True,
++                            "result": True,
++                        }
++                    )
+                 else:
+-                    ret.update({'comment': 'unless condition is false',
+-                                'result': False})
++                    ret.update(
++                        {"comment": "unless condition is false", "result": False}
++                    )
++                    return ret
+             else:
+-                ret.update({'comment': 'unless condition is false, bad type passed', 'result': False})
+-                return ret
++                ret.update(
++                    {
++                        "comment": "unless condition is false, bad type passed",
++                        "result": False,
++                    }
++                )
+ 
+         # No reason to stop, return ret
+         return ret
+@@ -1004,6 +1049,30 @@ class State(object):
+                 return ret
+         return ret
+ 
++    def _run_check_creates(self, low_data):
++        """
++        Check that listed files exist
++        """
++        ret = {"result": False}
++
++        if isinstance(low_data["creates"], six.string_types) and os.path.exists(
++            low_data["creates"]
++        ):
++            ret["comment"] = "{0} exists".format(low_data["creates"])
++            ret["result"] = True
++            ret["skip_watch"] = True
++        elif isinstance(low_data["creates"], list) and all(
++            [os.path.exists(path) for path in low_data["creates"]]
++        ):
++            ret["comment"] = "All files in creates exist"
++            ret["result"] = True
++            ret["skip_watch"] = True
++        else:
++            ret["comment"] = "Creates files not found"
++            ret["result"] = False
++
++        return ret
++
+     def reset_run_num(self):
+         '''
+         Rest the run_num value to 0
+@@ -1953,8 +2022,11 @@ class State(object):
+             # that's not found in cdata, we look for what we're being passed in
+             # the original data, namely, the special dunder __env__. If that's
+             # not found we default to 'base'
+-            if ('unless' in low and '{0[state]}.mod_run_check'.format(low) not in self.states) or \
+-                    ('onlyif' in low and '{0[state]}.mod_run_check'.format(low) not in self.states):
++            req_list = ("unless", "onlyif", "creates")
++            if (
++                any(req in low for req in req_list)
++                and "{0[state]}.mod_run_check".format(low) not in self.states
++            ):
+                 ret.update(self._run_check(low))
+ 
+             if not self.opts.get('lock_saltenv', False):
+diff --git a/salt/states/cmd.py b/salt/states/cmd.py
+index d611e9d390..783b6760c4 100644
+--- a/salt/states/cmd.py
++++ b/salt/states/cmd.py
+@@ -46,7 +46,8 @@ run if **any** of the files do not exist:
+ 
+ .. note::
+ 
+-    The ``creates`` option was added to version 2014.7.0
++    The ``creates`` option was added to the cmd state in version 2014.7.0,
++    and made a global requisite in Sodium.
+ 
+ Sometimes when running a command that starts up a daemon, the init script
+ doesn't return properly which causes Salt to wait indefinitely for a response.
+@@ -324,97 +325,22 @@ def _is_true(val):
+     raise ValueError('Failed parsing boolean value: {0}'.format(val))
+ 
+ 
+-def mod_run_check(cmd_kwargs, onlyif, unless, creates):
+-    '''
+-    Execute the onlyif and unless logic.
+-    Return a result dict if:
+-    * onlyif failed (onlyif != 0)
+-    * unless succeeded (unless == 0)
+-    else return True
+-    '''
+-    # never use VT for onlyif/unless executions because this will lead
+-    # to quote problems
+-    cmd_kwargs = copy.deepcopy(cmd_kwargs)
+-    cmd_kwargs['use_vt'] = False
+-    cmd_kwargs['bg'] = False
+-
+-    if onlyif is not None:
+-        if isinstance(onlyif, six.string_types):
+-            cmd = __salt__['cmd.retcode'](onlyif, ignore_retcode=True, python_shell=True, **cmd_kwargs)
+-            log.debug('Last command return code: {0}'.format(cmd))
+-            if cmd != 0:
+-                return {'comment': 'onlyif condition is false',
+-                        'skip_watch': True,
+-                        'result': True}
+-        elif isinstance(onlyif, list):
+-            for entry in onlyif:
+-                cmd = __salt__['cmd.retcode'](entry, ignore_retcode=True, python_shell=True, **cmd_kwargs)
+-                log.debug('Last command \'{0}\' return code: {1}'.format(entry, cmd))
+-                if cmd != 0:
+-                    return {'comment': 'onlyif condition is false: {0}'.format(entry),
+-                            'skip_watch': True,
+-                            'result': True}
+-        elif not isinstance(onlyif, six.string_types):
+-            if not onlyif:
+-                log.debug('Command not run: onlyif did not evaluate to string_type')
+-                return {'comment': 'onlyif condition is false',
+-                        'skip_watch': True,
+-                        'result': True}
+-
+-    if unless is not None:
+-        if isinstance(unless, six.string_types):
+-            cmd = __salt__['cmd.retcode'](unless, ignore_retcode=True, python_shell=True, **cmd_kwargs)
+-            log.debug('Last command return code: {0}'.format(cmd))
+-            if cmd == 0:
+-                return {'comment': 'unless condition is true',
+-                        'skip_watch': True,
+-                        'result': True}
+-        elif isinstance(unless, list):
+-            cmd = []
+-            for entry in unless:
+-                cmd.append(__salt__['cmd.retcode'](entry, ignore_retcode=True, python_shell=True, **cmd_kwargs))
+-                log.debug('Last command return code: {0}'.format(cmd))
+-            if all([c == 0 for c in cmd]):
+-                return {'comment': 'unless condition is true',
+-                        'skip_watch': True,
+-                        'result': True}
+-        elif not isinstance(unless, six.string_types):
+-            if unless:
+-                log.debug('Command not run: unless did not evaluate to string_type')
+-                return {'comment': 'unless condition is true',
+-                        'skip_watch': True,
+-                        'result': True}
+-
+-    if isinstance(creates, six.string_types) and os.path.exists(creates):
+-        return {'comment': '{0} exists'.format(creates),
+-                'result': True}
+-    elif isinstance(creates, list) and all([
+-        os.path.exists(path) for path in creates
+-    ]):
+-        return {'comment': 'All files in creates exist',
+-                'result': True}
+-
+-    # No reason to stop, return True
+-    return True
+-
+-
+-def wait(name,
+-         onlyif=None,
+-         unless=None,
+-         creates=None,
+-         cwd=None,
+-         root=None,
+-         runas=None,
+-         shell=None,
+-         env=(),
+-         stateful=False,
+-         umask=None,
+-         output_loglevel='debug',
+-         hide_output=False,
+-         use_vt=False,
+-         success_retcodes=None,
+-         **kwargs):
+-    '''
++def wait(
++    name,
++    cwd=None,
++    root=None,
++    runas=None,
++    shell=None,
++    env=(),
++    stateful=False,
++    umask=None,
++    output_loglevel="debug",
++    hide_output=False,
++    use_vt=False,
++    success_retcodes=None,
++    **kwargs
++):
++    """
+     Run the given command only if the watch statement calls it.
+ 
+     .. note::
+@@ -426,14 +352,6 @@ def wait(name,
+         The command to execute, remember that the command will execute with the
+         path and permissions of the salt-minion.
+ 
+-    onlyif
+-        A command to run as a check, run the named command only if the command
+-        passed to the ``onlyif`` option returns true
+-
+-    unless
+-        A command to run as a check, only run the named command if the command
+-        passed to the ``unless`` option returns false
+-
+     cwd
+         The current working directory to execute the command in, defaults to
+         /root
+@@ -530,7 +448,7 @@ def wait(name,
+         the return code will be overridden with zero.
+ 
+       .. versionadded:: 2019.2.0
+-    '''
++    """
+     # Ignoring our arguments is intentional.
+     return {'name': name,
+             'changes': {},
+@@ -539,25 +457,25 @@ def wait(name,
+ 
+ 
+ # Alias "cmd.watch" to "cmd.wait", as this is a common misconfiguration
+-watch = salt.utils.functools.alias_function(wait, 'watch')
+-
+-
+-def wait_script(name,
+-                source=None,
+-                template=None,
+-                onlyif=None,
+-                unless=None,
+-                cwd=None,
+-                runas=None,
+-                shell=None,
+-                env=None,
+-                stateful=False,
+-                umask=None,
+-                use_vt=False,
+-                output_loglevel='debug',
+-                hide_output=False,
+-                **kwargs):
+-    '''
++watch = salt.utils.functools.alias_function(wait, "watch")
++
++
++def wait_script(
++    name,
++    source=None,
++    template=None,
++    cwd=None,
++    runas=None,
++    shell=None,
++    env=None,
++    stateful=False,
++    umask=None,
++    use_vt=False,
++    output_loglevel="debug",
++    hide_output=False,
++    **kwargs
++):
++    """
+     Download a script from a remote source and execute it only if a watch
+     statement calls it.
+ 
+@@ -576,14 +494,6 @@ def wait_script(name,
+         The command to execute, remember that the command will execute with the
+         path and permissions of the salt-minion.
+ 
+-    onlyif
+-        A command to run as a check, run the named command only if the command
+-        passed to the ``onlyif`` option returns true
+-
+-    unless
+-        A command to run as a check, only run the named command if the command
+-        passed to the ``unless`` option returns false
+-
+     cwd
+         The current working directory to execute the command in, defaults to
+         /root
+@@ -669,34 +579,30 @@ def wait_script(name,
+         the return code will be overridden with zero.
+ 
+       .. versionadded:: 2019.2.0
+-    '''
++    """
+     # Ignoring our arguments is intentional.
+-    return {'name': name,
+-            'changes': {},
+-            'result': True,
+-            'comment': ''}
+-
+-
+-def run(name,
+-        onlyif=None,
+-        unless=None,
+-        creates=None,
+-        cwd=None,
+-        root=None,
+-        runas=None,
+-        shell=None,
+-        env=None,
+-        prepend_path=None,
+-        stateful=False,
+-        umask=None,
+-        output_loglevel='debug',
+-        hide_output=False,
+-        timeout=None,
+-        ignore_timeout=False,
+-        use_vt=False,
+-        success_retcodes=None,
+-        **kwargs):
+-    '''
++    return {"name": name, "changes": {}, "result": True, "comment": ""}
++
++
++def run(
++    name,
++    cwd=None,
++    root=None,
++    runas=None,
++    shell=None,
++    env=None,
++    prepend_path=None,
++    stateful=False,
++    umask=None,
++    output_loglevel="debug",
++    hide_output=False,
++    timeout=None,
++    ignore_timeout=False,
++    use_vt=False,
++    success_retcodes=None,
++    **kwargs
++):
++    """
+     Run a command if certain circumstances are met.  Use ``cmd.wait`` if you
+     want to use the ``watch`` requisite.
+ 
+@@ -704,14 +610,6 @@ def run(name,
+         The command to execute, remember that the command will execute with the
+         path and permissions of the salt-minion.
+ 
+-    onlyif
+-        A command to run as a check, run the named command only if the command
+-        passed to the ``onlyif`` option returns a zero exit status
+-
+-    unless
+-        A command to run as a check, only run the named command if the command
+-        passed to the ``unless`` option returns a non-zero exit status
+-
+     cwd
+         The current working directory to execute the command in, defaults to
+         /root
+@@ -850,7 +748,7 @@ def run(name,
+                   - file: /usr/local/sbin/get-pip.py
+                 - reload_modules: True
+ 
+-    '''
++    """
+     ### NOTE: The keyword arguments in **kwargs are passed directly to the
+     ###       ``cmd.run_all`` function and cannot be removed from the function
+     ###       definition, otherwise the use of unsupported arguments in a
+@@ -889,14 +787,9 @@ def run(name,
+                        'hide_output': hide_output,
+                        'success_retcodes': success_retcodes})
+ 
+-    cret = mod_run_check(cmd_kwargs, onlyif, unless, creates)
+-    if isinstance(cret, dict):
+-        ret.update(cret)
+-        return ret
+-
+-    if __opts__['test'] and not test_name:
+-        ret['result'] = None
+-        ret['comment'] = 'Command "{0}" would have been executed'.format(name)
++    if __opts__["test"] and not test_name:
++        ret["result"] = None
++        ret["comment"] = 'Command "{0}" would have been executed'.format(name)
+         return _reinterpreted_state(ret) if stateful else ret
+ 
+     if cwd and not os.path.isdir(cwd):
+@@ -934,27 +827,26 @@ def run(name,
+     return ret
+ 
+ 
+-def script(name,
+-           source=None,
+-           template=None,
+-           onlyif=None,
+-           unless=None,
+-           creates=None,
+-           cwd=None,
+-           runas=None,
+-           shell=None,
+-           env=None,
+-           stateful=False,
+-           umask=None,
+-           timeout=None,
+-           use_vt=False,
+-           output_loglevel='debug',
+-           hide_output=False,
+-           defaults=None,
+-           context=None,
+-           success_retcodes=None,
+-           **kwargs):
+-    '''
++def script(
++    name,
++    source=None,
++    template=None,
++    cwd=None,
++    runas=None,
++    shell=None,
++    env=None,
++    stateful=False,
++    umask=None,
++    timeout=None,
++    use_vt=False,
++    output_loglevel="debug",
++    hide_output=False,
++    defaults=None,
++    context=None,
++    success_retcodes=None,
++    **kwargs
++):
++    """
+     Download a script and execute it with specified arguments.
+ 
+     source
+@@ -971,14 +863,6 @@ def script(name,
+         Either "cmd arg1 arg2 arg3..." (cmd is not used) or a source
+         "salt://...".
+ 
+-    onlyif
+-        Run the named command only if the command passed to the ``onlyif``
+-        option returns true
+-
+-    unless
+-        Run the named command only if the command passed to the ``unless``
+-        option returns false
+-
+     cwd
+         The current working directory to execute the command in, defaults to
+         /root
+@@ -1095,7 +979,7 @@ def script(name,
+ 
+       .. versionadded:: 2019.2.0
+ 
+-    '''
++    """
+     test_name = None
+     if not isinstance(stateful, list):
+         stateful = stateful is True
+@@ -1130,21 +1014,23 @@ def script(name,
+         tmpctx.update(context)
+ 
+     cmd_kwargs = copy.deepcopy(kwargs)
+-    cmd_kwargs.update({'runas': runas,
+-                       'shell': shell or __grains__['shell'],
+-                       'env': env,
+-                       'onlyif': onlyif,
+-                       'unless': unless,
+-                       'cwd': cwd,
+-                       'template': template,
+-                       'umask': umask,
+-                       'timeout': timeout,
+-                       'output_loglevel': output_loglevel,
+-                       'hide_output': hide_output,
+-                       'use_vt': use_vt,
+-                       'context': tmpctx,
+-                       'saltenv': __env__,
+-                       'success_retcodes': success_retcodes})
++    cmd_kwargs.update(
++        {
++            "runas": runas,
++            "shell": shell or __grains__["shell"],
++            "env": env,
++            "cwd": cwd,
++            "template": template,
++            "umask": umask,
++            "timeout": timeout,
++            "output_loglevel": output_loglevel,
++            "hide_output": hide_output,
++            "use_vt": use_vt,
++            "context": tmpctx,
++            "saltenv": __env__,
++            "success_retcodes": success_retcodes,
++        }
++    )
+ 
+     run_check_cmd_kwargs = {
+         'cwd': cwd,
+@@ -1160,17 +1046,9 @@ def script(name,
+     if not cmd_kwargs.get('args', None) and len(name.split()) > 1:
+         cmd_kwargs.update({'args': name.split(' ', 1)[1]})
+ 
+-    cret = mod_run_check(
+-        run_check_cmd_kwargs, onlyif, unless, creates
+-    )
+-    if isinstance(cret, dict):
+-        ret.update(cret)
+-        return ret
+-
+-    if __opts__['test'] and not test_name:
+-        ret['result'] = None
+-        ret['comment'] = 'Command \'{0}\' would have been ' \
+-                         'executed'.format(name)
++    if __opts__["test"] and not test_name:
++        ret["result"] = None
++        ret["comment"] = "Command '{0}' would have been " "executed".format(name)
+         return _reinterpreted_state(ret) if stateful else ret
+ 
+     if cwd and not os.path.isdir(cwd):
+@@ -1204,29 +1082,21 @@ def script(name,
+     return ret
+ 
+ 
+-def call(name,
+-         func,
+-         args=(),
+-         kws=None,
+-         onlyif=None,
+-         unless=None,
+-         creates=None,
+-         output_loglevel='debug',
+-         hide_output=False,
+-         use_vt=False,
+-         **kwargs):
+-    '''
++def call(
++    name,
++    func,
++    args=(),
++    kws=None,
++    output_loglevel="debug",
++    hide_output=False,
++    use_vt=False,
++    **kwargs
++):
++    """
+     Invoke a pre-defined Python function with arguments specified in the state
+     declaration. This function is mainly used by the
+     :mod:`salt.renderers.pydsl` renderer.
+ 
+-    The interpretation of ``onlyif`` and ``unless`` arguments are identical to
+-    those of :mod:`cmd.run <salt.states.cmd.run>`, and all other
+-    arguments(``cwd``, ``runas``, ...) allowed by :mod:`cmd.run
+-    <salt.states.cmd.run>` are allowed here, except that their effects apply
+-    only to the commands specified in `onlyif` and `unless` rather than to the
+-    function to be invoked.
+-
+     In addition, the ``stateful`` argument has no effects here.
+ 
+     The return value of the invoked function will be interpreted as follows.
+@@ -1246,7 +1116,7 @@ def call(name,
+             'result': True if result is None else bool(result),
+             'comment': result if isinstance(result, six.string_types) else ''
+         }
+-    '''
++    """
+     ret = {'name': name,
+            'changes': {},
+            'result': False,
+@@ -1261,11 +1131,6 @@ def call(name,
+                   'hide_output': hide_output,
+                   'umask': kwargs.get('umask')}
+ 
+-    cret = mod_run_check(cmd_kwargs, onlyif, unless, creates)
+-    if isinstance(cret, dict):
+-        ret.update(cret)
+-        return ret
+-
+     if not kws:
+         kws = {}
+     result = func(*args, **kws)
+@@ -1281,18 +1146,17 @@ def call(name,
+         return ret
+ 
+ 
+-def wait_call(name,
+-              func,
+-              args=(),
+-              kws=None,
+-              onlyif=None,
+-              unless=None,
+-              creates=None,
+-              stateful=False,
+-              use_vt=False,
+-              output_loglevel='debug',
+-              hide_output=False,
+-              **kwargs):
++def wait_call(
++    name,
++    func,
++    args=(),
++    kws=None,
++    stateful=False,
++    use_vt=False,
++    output_loglevel="debug",
++    hide_output=False,
++    **kwargs
++):
+     # Ignoring our arguments is intentional.
+     return {'name': name,
+             'changes': {},
+diff --git a/salt/states/docker_container.py b/salt/states/docker_container.py
+index 2b4c6b56ab..8e51058c95 100644
+--- a/salt/states/docker_container.py
++++ b/salt/states/docker_container.py
+@@ -48,7 +48,6 @@ configuration remains unchanged.
+ from __future__ import absolute_import, print_function, unicode_literals
+ import copy
+ import logging
+-import os
+ 
+ # Import Salt libs
+ from salt.exceptions import CommandExecutionError
+@@ -2096,21 +2095,20 @@ def running(name,
+     return _format_comments(ret, comments)
+ 
+ 
+-def run(name,
+-        image=None,
+-        onlyif=None,
+-        unless=None,
+-        creates=None,
+-        bg=False,
+-        failhard=True,
+-        replace=False,
+-        force=False,
+-        skip_translate=None,
+-        ignore_collisions=False,
+-        validate_ip_addrs=True,
+-        client_timeout=salt.utils.docker.CLIENT_TIMEOUT,
+-        **kwargs):
+-    '''
++def run(
++    name,
++    image=None,
++    bg=False,
++    failhard=True,
++    replace=False,
++    force=False,
++    skip_translate=None,
++    ignore_collisions=False,
++    validate_ip_addrs=True,
++    client_timeout=salt.utils.dockermod.CLIENT_TIMEOUT,
++    **kwargs
++):
++    """
+     .. versionadded:: 2018.3.0
+ 
+     .. note::
+@@ -2135,15 +2133,6 @@ def run(name,
+ 
+     Additionally, the following arguments are supported:
+ 
+-    onlyif
+-        A command or list of commands to run as a check. The container will
+-        only run if any of the specified commands returns a zero exit status.
+-
+-    unless
+-        A command or list of commands to run as a check. The container will
+-        only run if any of the specified commands returns a non-zero exit
+-        status.
+-
+     creates
+         A path or list of paths. Only run if one or more of the specified paths
+         do not exist on the minion.
+@@ -2200,7 +2189,7 @@ def run(name,
+               - mynet
+             - require:
+               - docker_network: mynet
+-    '''
++    """
+     ret = {'name': name,
+            'changes': {},
+            'result': True,
+@@ -2222,11 +2211,6 @@ def run(name,
+     elif not isinstance(image, six.string_types):
+         image = six.text_type(image)
+ 
+-    cret = mod_run_check(onlyif, unless, creates)
+-    if isinstance(cret, dict):
+-        ret.update(cret)
+-        return ret
+-
+     try:
+         if 'networks' in kwargs and kwargs['networks'] is not None:
+             kwargs['networks'] = _parse_networks(kwargs['networks'])
+@@ -2239,15 +2223,10 @@ def run(name,
+             ret['comment'] = exc.__str__()
+             return ret
+ 
+-    cret = mod_run_check(onlyif, unless, creates)
+-    if isinstance(cret, dict):
+-        ret.update(cret)
+-        return ret
+-
+-    if __opts__['test']:
+-        ret['result'] = None
+-        ret['comment'] = 'Container would be run{0}'.format(
+-            ' in the background' if bg else ''
++    if __opts__["test"]:
++        ret["result"] = None
++        ret["comment"] = "Container would be run{0}".format(
++            " in the background" if bg else ""
+         )
+         return ret
+ 
+@@ -2548,72 +2527,6 @@ def absent(name, force=False):
+     return ret
+ 
+ 
+-def mod_run_check(onlyif, unless, creates):
+-    '''
+-    Execute the onlyif/unless/creates logic. Returns a result dict if any of
+-    the checks fail, otherwise returns True
+-    '''
+-    cmd_kwargs = {'use_vt': False, 'bg': False}
+-
+-    if onlyif is not None:
+-        if isinstance(onlyif, six.string_types):
+-            onlyif = [onlyif]
+-        if not isinstance(onlyif, list) \
+-                or not all(isinstance(x, six.string_types) for x in onlyif):
+-            return {'comment': 'onlyif is not a string or list of strings',
+-                    'skip_watch': True,
+-                    'result': True}
+-        for entry in onlyif:
+-            retcode = __salt__['cmd.retcode'](
+-                entry,
+-                ignore_retcode=True,
+-                python_shell=True)
+-            if retcode != 0:
+-                return {
+-                    'comment': 'onlyif command {0} returned exit code of {1}'
+-                               .format(entry, retcode),
+-                    'skip_watch': True,
+-                    'result': True
+-                }
+-
+-    if unless is not None:
+-        if isinstance(unless, six.string_types):
+-            unless = [unless]
+-        if not isinstance(unless, list) \
+-                or not all(isinstance(x, six.string_types) for x in unless):
+-            return {'comment': 'unless is not a string or list of strings',
+-                    'skip_watch': True,
+-                    'result': True}
+-        for entry in unless:
+-            retcode = __salt__['cmd.retcode'](
+-                entry,
+-                ignore_retcode=True,
+-                python_shell=True)
+-            if retcode == 0:
+-                return {
+-                    'comment': 'unless command {0} returned exit code of {1}'
+-                               .format(entry, retcode),
+-                    'skip_watch': True,
+-                    'result': True
+-                }
+-
+-    if creates is not None:
+-        if isinstance(creates, six.string_types):
+-            creates = [creates]
+-        if not isinstance(creates, list) \
+-                or not all(isinstance(x, six.string_types) for x in creates):
+-            return {'comment': 'creates is not a string or list of strings',
+-                    'skip_watch': True,
+-                    'result': True}
+-        if all(os.path.exists(x) for x in creates):
+-            return {'comment': 'All specified paths in \'creates\' '
+-                               'argument exist',
+-                    'result': True}
+-
+-    # No reason to stop, return True
+-    return True
+-
+-
+ def mod_watch(name, sfun=None, **kwargs):
+     '''
+     The docker_container watcher, called to invoke the watch command.
+diff --git a/salt/states/git.py b/salt/states/git.py
+index ce6455ee71..f9296397eb 100644
+--- a/salt/states/git.py
++++ b/salt/states/git.py
+@@ -13,7 +13,6 @@ States to manage git repositories and git configuration
+ from __future__ import absolute_import, print_function, unicode_literals
+ 
+ # Import python libs
+-import copy
+ import errno
+ import logging
+ import os
+@@ -263,34 +262,34 @@ def _not_fast_forward(ret, rev, pre, post, branch, local_branch,
+     )
+ 
+ 
+-def latest(name,
+-           rev='HEAD',
+-           target=None,
+-           branch=None,
+-           user=None,
+-           password=None,
+-           update_head=True,
+-           force_checkout=False,
+-           force_clone=False,
+-           force_fetch=False,
+-           force_reset=False,
+-           submodules=False,
+-           bare=False,
+-           mirror=False,
+-           remote='origin',
+-           fetch_tags=True,
+-           sync_tags=True,
+-           depth=None,
+-           identity=None,
+-           https_user=None,
+-           https_pass=None,
+-           onlyif=None,
+-           unless=None,
+-           refspec_branch='*',
+-           refspec_tag='*',
+-           output_encoding=None,
+-           **kwargs):
+-    '''
++def latest(
++    name,
++    rev="HEAD",
++    target=None,
++    branch=None,
++    user=None,
++    password=None,
++    update_head=True,
++    force_checkout=False,
++    force_clone=False,
++    force_fetch=False,
++    force_reset=False,
++    submodules=False,
++    bare=False,
++    mirror=False,
++    remote="origin",
++    fetch_tags=True,
++    sync_tags=True,
++    depth=None,
++    identity=None,
++    https_user=None,
++    https_pass=None,
++    refspec_branch="*",
++    refspec_tag="*",
++    output_encoding=None,
++    **kwargs
++):
++    """
+     Make sure the repository is cloned to the given directory and is
+     up-to-date.
+ 
+@@ -545,14 +544,6 @@ def latest(name,
+ 
+         .. versionadded:: 2015.5.0
+ 
+-    onlyif
+-        A command to run as a check, run the named command only if the command
+-        passed to the ``onlyif`` option returns true
+-
+-    unless
+-        A command to run as a check, only run the named command if the command
+-        passed to the ``unless`` option returns false
+-
+     refspec_branch : *
+         A glob expression defining which branches to retrieve when fetching.
+         See `git-fetch(1)`_ for more information on how refspecs work.
+@@ -627,7 +618,7 @@ def latest(name,
+                 - require:
+                   - pkg: git
+                   - ssh_known_hosts: gitlab.example.com
+-    '''
++    """
+     ret = {'name': name, 'result': True, 'comment': '', 'changes': {}}
+ 
+     kwargs = salt.utils.args.clean_kwargs(**kwargs)
+@@ -745,18 +736,14 @@ def latest(name,
+     if 'shell' in __grains__:
+         run_check_cmd_kwargs['shell'] = __grains__['shell']
+ 
+-    # check if git.latest should be applied
+-    cret = mod_run_check(
+-        run_check_cmd_kwargs, onlyif, unless
++    refspecs = (
++        [
++            "refs/heads/{0}:refs/remotes/{1}/{0}".format(refspec_branch, remote),
++            "+refs/tags/{0}:refs/tags/{0}".format(refspec_tag),
++        ]
++        if fetch_tags
++        else []
+     )
+-    if isinstance(cret, dict):
+-        ret.update(cret)
+-        return ret
+-
+-    refspecs = [
+-        'refs/heads/{0}:refs/remotes/{1}/{0}'.format(refspec_branch, remote),
+-        '+refs/tags/{0}:refs/tags/{0}'.format(refspec_tag)
+-    ] if fetch_tags else []
+ 
+     log.info('Checking remote revision for %s', name)
+     try:
+@@ -2235,25 +2222,25 @@ def present(name,
+     return ret
+ 
+ 
+-def detached(name,
+-           rev,
+-           target=None,
+-           remote='origin',
+-           user=None,
+-           password=None,
+-           force_clone=False,
+-           force_checkout=False,
+-           fetch_remote=True,
+-           hard_reset=False,
+-           submodules=False,
+-           identity=None,
+-           https_user=None,
+-           https_pass=None,
+-           onlyif=None,
+-           unless=None,
+-           output_encoding=None,
+-           **kwargs):
+-    '''
++def detached(
++    name,
++    rev,
++    target=None,
++    remote="origin",
++    user=None,
++    password=None,
++    force_clone=False,
++    force_checkout=False,
++    fetch_remote=True,
++    hard_reset=False,
++    submodules=False,
++    identity=None,
++    https_user=None,
++    https_pass=None,
++    output_encoding=None,
++    **kwargs
++):
++    """
+     .. versionadded:: 2016.3.0
+ 
+     Make sure a repository is cloned to the given target directory and is
+@@ -2322,14 +2309,6 @@ def detached(name,
+     https_pass
+         HTTP Basic Auth password for HTTPS (only) clones
+ 
+-    onlyif
+-        A command to run as a check, run the named command only if the command
+-        passed to the ``onlyif`` option returns true
+-
+-    unless
+-        A command to run as a check, only run the named command if the command
+-        passed to the ``unless`` option returns false
+-
+     output_encoding
+         Use this option to specify which encoding to use to decode the output
+         from any git commands which are run. This should not be needed in most
+@@ -2341,7 +2320,7 @@ def detached(name,
+             Unicode characters.
+ 
+         .. versionadded:: 2018.3.1
+-    '''
++    """
+ 
+     ret = {'name': name, 'result': True, 'comment': '', 'changes': {}}
+ 
+@@ -2428,17 +2407,6 @@ def detached(name,
+ 
+     redacted_fetch_url = salt.utils.url.redact_http_basic_auth(desired_fetch_url)
+ 
+-    # Check if onlyif or unless conditions match
+-    run_check_cmd_kwargs = {'runas': user}
+-    if 'shell' in __grains__:
+-        run_check_cmd_kwargs['shell'] = __grains__['shell']
+-    cret = mod_run_check(
+-        run_check_cmd_kwargs, onlyif, unless
+-    )
+-    if isinstance(cret, dict):
+-        ret.update(cret)
+-        return ret
+-
+     # Determine if supplied ref is a hash
+     remote_rev_type = 'ref'
+     if len(rev) <= 40 \
+@@ -3436,77 +3404,3 @@ def config_set(name,
+         value_comment
+     )
+     return ret
+-
+-
+-def mod_run_check(cmd_kwargs, onlyif, unless):
+-    '''
+-    Execute the onlyif and unless logic. Return a result dict if:
+-
+-    * onlyif failed (onlyif != 0)
+-    * unless succeeded (unless == 0)
+-
+-    Otherwise, returns ``True``
+-    '''
+-    cmd_kwargs = copy.deepcopy(cmd_kwargs)
+-    cmd_kwargs.update({
+-        'use_vt': False,
+-        'bg': False,
+-        'ignore_retcode': True,
+-        'python_shell': True,
+-    })
+-
+-    if onlyif is not None:
+-        if not isinstance(onlyif, list):
+-            onlyif = [onlyif]
+-
+-        for command in onlyif:
+-            if not isinstance(command, six.string_types) and command:
+-                # Boolean or some other non-string which resolves to True
+-                continue
+-            try:
+-                if __salt__['cmd.retcode'](command, **cmd_kwargs) == 0:
+-                    # Command exited with a zero retcode
+-                    continue
+-            except Exception as exc:  # pylint: disable=broad-except
+-                log.exception(
+-                    'The following onlyif command raised an error: %s',
+-                    command
+-                )
+-                return {
+-                    'comment': 'onlyif raised error ({0}), see log for '
+-                               'more details'.format(exc),
+-                    'result': False
+-                }
+-
+-            return {'comment': 'onlyif condition is false',
+-                    'skip_watch': True,
+-                    'result': True}
+-
+-    if unless is not None:
+-        if not isinstance(unless, list):
+-            unless = [unless]
+-
+-        for command in unless:
+-            if not isinstance(command, six.string_types) and not command:
+-                # Boolean or some other non-string which resolves to False
+-                break
+-            try:
+-                if __salt__['cmd.retcode'](command, **cmd_kwargs) != 0:
+-                    # Command exited with a non-zero retcode
+-                    break
+-            except Exception as exc:  # pylint: disable=broad-except
+-                log.exception(
+-                    'The following unless command raised an error: %s',
+-                    command
+-                )
+-                return {
+-                    'comment': 'unless raised error ({0}), see log for '
+-                               'more details'.format(exc),
+-                    'result': False
+-                }
+-        else:
+-            return {'comment': 'unless condition is true',
+-                    'skip_watch': True,
+-                    'result': True}
+-
+-    return True
+diff --git a/salt/states/macpackage.py b/salt/states/macpackage.py
+index e3318303c0..7072d4b1b8 100644
+--- a/salt/states/macpackage.py
++++ b/salt/states/macpackage.py
+@@ -43,12 +43,21 @@ def __virtual__():
+     '''
+     if salt.utils.platform.is_darwin():
+         return __virtualname__
+-    return False
+-
+-
+-def installed(name, target="LocalSystem", dmg=False, store=False, app=False, mpkg=False, user=None, onlyif=None,
+-              unless=None, force=False, allow_untrusted=False, version_check=None):
+-    '''
++    return (False, "Only supported on Mac OS")
++
++
++def installed(
++    name,
++    target="LocalSystem",
++    dmg=False,
++    store=False,
++    app=False,
++    mpkg=False,
++    force=False,
++    allow_untrusted=False,
++    version_check=None,
++):
++    """
+     Install a Mac OS Package from a pkg or dmg file, if given a dmg file it
+     will first be mounted in a temporary location
+ 
+@@ -71,17 +80,6 @@ def installed(name, target="LocalSystem", dmg=False, store=False, app=False, mpk
+     mpkg
+         Is the file a .mpkg? If so then we'll check all of the .pkg files found are installed
+ 
+-    user
+-        Name of the user performing the unless or onlyif checks
+-
+-    onlyif
+-        A command to run as a check, run the named command only if the command
+-        passed to the ``onlyif`` option returns true
+-
+-    unless
+-        A command to run as a check, only run the named command if the command
+-        passed to the ``unless`` option returns false
+-
+     force
+         Force the package to be installed even if its already been found installed
+ 
+@@ -95,7 +93,7 @@ def installed(name, target="LocalSystem", dmg=False, store=False, app=False, mpk
+ 
+             version_check: python --version_check=2.7.[0-9]
+ 
+-    '''
++    """
+     ret = {'name': name,
+            'result': True,
+            'comment': '',
+@@ -105,17 +103,6 @@ def installed(name, target="LocalSystem", dmg=False, store=False, app=False, mpk
+ 
+     real_pkg = name
+ 
+-    # Check onlyif, unless first
+-    run_check_cmd_kwargs = {'runas': user, 'python_shell': True}
+-    if 'shell' in __grains__:
+-        run_check_cmd_kwargs['shell'] = __grains__['shell']
+-
+-    cret = _mod_run_check(run_check_cmd_kwargs, onlyif, unless)
+-
+-    if isinstance(cret, dict):
+-        ret.update(cret)
+-        return ret
+-
+     # Check version info
+     if version_check is not None:
+         split = version_check.split("=")
+@@ -171,7 +158,7 @@ def installed(name, target="LocalSystem", dmg=False, store=False, app=False, mpk
+                 pkg_ids = [os.path.basename(name)]
+                 mount_point = os.path.dirname(name)
+ 
+-            if onlyif is None and unless is None and version_check is None:
++            if version_check is None:
+                 for p in pkg_ids:
+                     if target[-4:] == ".app":
+                         install_dir = target
+@@ -243,27 +230,3 @@ def installed(name, target="LocalSystem", dmg=False, store=False, app=False, mpk
+             __salt__['macpackage.unmount'](mount_point)
+ 
+     return ret
+-
+-
+-def _mod_run_check(cmd_kwargs, onlyif, unless):
+-    '''
+-    Execute the onlyif and unless logic.
+-    Return a result dict if:
+-    * onlyif failed (onlyif != 0)
+-    * unless succeeded (unless == 0)
+-    else return True
+-    '''
+-    if onlyif:
+-        if __salt__['cmd.retcode'](onlyif, **cmd_kwargs) != 0:
+-            return {'comment': 'onlyif condition is false',
+-                    'skip_watch': True,
+-                    'result': True}
+-
+-    if unless:
+-        if __salt__['cmd.retcode'](unless, **cmd_kwargs) == 0:
+-            return {'comment': 'unless condition is true',
+-                    'skip_watch': True,
+-                    'result': True}
+-
+-    # No reason to stop, return True
+-    return True
+diff --git a/salt/states/pkg.py b/salt/states/pkg.py
+index 4d3b9f14bf..25b51aaf14 100644
+--- a/salt/states/pkg.py
++++ b/salt/states/pkg.py
+@@ -1514,10 +1514,20 @@ def installed(
+ 
+     .. seealso:: unless and onlyif
+ 
+-        You can use the :ref:`unless <unless-requisite>` or
+-        :ref:`onlyif <onlyif-requisite>` syntax to skip a full package run.
+-        This can be helpful in large environments with multiple states that
+-        include requisites for packages to be installed.
++        If running pkg commands together with :ref:`aggregate <mod-aggregate-state>`
++        isn't an option, you can use the :ref:`creates <creates-requisite>`,
++        :ref:`unless <unless-requisite>`, or :ref:`onlyif <onlyif-requisite>`
++        syntax to skip a full package run. This can be helpful in large environments
++        with multiple states that include requisites for packages to be installed.
++
++        .. code-block:: yaml
++
++            # Using creates for a simple single-factor check
++            install_nginx:
++              pkg.installed:
++                - name: nginx
++                - creates:
++                  - /etc/nginx/nginx.conf
+ 
+         .. code-block:: yaml
+ 
+@@ -1530,6 +1540,12 @@ def installed(
+                     args:
+                       - /etc/nginx/nginx.conf
+ 
++            # Using unless with a shell test
++            install_nginx:
++              pkg.installed:
++                - name: nginx
++                - unless: test -f /etc/nginx/nginx.conf
++
+         .. code-block:: yaml
+ 
+             # Using file.search for a two-factor check
+@@ -1542,11 +1558,11 @@ def installed(
+                       - /etc/nginx/nginx.conf
+                       - 'user www-data;'
+ 
+-        The above examples use two different methods to reasonably ensure
++        The above examples use different methods to reasonably ensure
+         that a package has already been installed. First, with checking for a
+         file that would be created with the package. Second, by checking for
+         specific text within a file that would be created or managed by salt.
+-        With these requisists satisfied, unless will return ``True`` and the
++        With these requisists satisfied, creates/unless will return ``True`` and the
+         ``pkg.installed`` state will be skipped.
+ 
+         .. code-block:: bash
+diff --git a/tests/integration/files/file/base/issue-35384.sls b/tests/integration/files/file/base/issue-35384.sls
+index 3c41617ca8..2aa436bb37 100644
+--- a/tests/integration/files/file/base/issue-35384.sls
++++ b/tests/integration/files/file/base/issue-35384.sls
+@@ -2,5 +2,12 @@ cmd_run_unless_multiple:
+   cmd.run:
+     - name: echo "hello"
+     - unless:
++  {% if grains["os"] ==  "Windows" %}
++      - "exit 0"
++      - "exit 1"
++      - "exit 0"
++  {% else %}
+       - "$(which true)"
+       - "$(which false)"
++      - "$(which true)"
++  {% endif %}
+diff --git a/tests/integration/states/test_docker_container.py b/tests/integration/states/test_docker_container.py
+index f5d822dfe7..60ef206ae6 100644
+--- a/tests/integration/states/test_docker_container.py
++++ b/tests/integration/states/test_docker_container.py
+@@ -919,13 +919,9 @@ class DockerContainerTestCase(ModuleCase, SaltReturnAssertsMixin):
+                 onlyif=cmd)
+             self.assertSaltTrueReturn(ret)
+             ret = ret[next(iter(ret))]
+-            self.assertFalse(ret['changes'])
+-            self.assertTrue(
+-                ret['comment'].startswith(
+-                    'onlyif command /bin/false returned exit code of'
+-                )
+-            )
+-            self.run_function('docker.rm', [name], force=True)
++            self.assertFalse(ret["changes"])
++            self.assertTrue(ret["comment"].startswith("onlyif condition is false"))
++            self.run_function("docker.rm", [name], force=True)
+ 
+         for cmd in ('/bin/true', ['/bin/true', 'ls /']):
+             log.debug('Trying %s', cmd)
+@@ -962,12 +958,9 @@ class DockerContainerTestCase(ModuleCase, SaltReturnAssertsMixin):
+                 unless=cmd)
+             self.assertSaltTrueReturn(ret)
+             ret = ret[next(iter(ret))]
+-            self.assertFalse(ret['changes'])
+-            self.assertEqual(
+-                ret['comment'],
+-                'unless command /bin/true returned exit code of 0'
+-            )
+-            self.run_function('docker.rm', [name], force=True)
++            self.assertFalse(ret["changes"])
++            self.assertEqual(ret["comment"], "unless condition is true")
++            self.run_function("docker.rm", [name], force=True)
+ 
+         for cmd in ('/bin/false', ['/bin/false', 'ls /paththatdoesnotexist']):
+             log.debug('Trying %s', cmd)
+@@ -1008,22 +1001,34 @@ class DockerContainerTestCase(ModuleCase, SaltReturnAssertsMixin):
+         good_file1 = _mkstemp()
+         good_file2 = _mkstemp()
+ 
+-        for path in (good_file1, [good_file1, good_file2]):
+-            log.debug('Trying %s', path)
+-            ret = self.run_state(
+-                'docker_container.run',
+-                name=name,
+-                image=self.image,
+-                command='whoami',
+-                creates=path)
+-            self.assertSaltTrueReturn(ret)
+-            ret = ret[next(iter(ret))]
+-            self.assertFalse(ret['changes'])
+-            self.assertEqual(
+-                ret['comment'],
+-                'All specified paths in \'creates\' argument exist'
+-            )
+-            self.run_function('docker.rm', [name], force=True)
++        log.debug("Trying %s", good_file1)
++        ret = self.run_state(
++            "docker_container.run",
++            name=name,
++            image=self.image,
++            command="whoami",
++            creates=good_file1,
++        )
++        self.assertSaltTrueReturn(ret)
++        ret = ret[next(iter(ret))]
++        self.assertFalse(ret["changes"])
++        self.assertEqual(ret["comment"], "{0} exists".format(good_file1))
++        self.run_function("docker.rm", [name], force=True)
++
++        path = [good_file1, good_file2]
++        log.debug("Trying %s", path)
++        ret = self.run_state(
++            "docker_container.run",
++            name=name,
++            image=self.image,
++            command="whoami",
++            creates=path,
++        )
++        self.assertSaltTrueReturn(ret)
++        ret = ret[next(iter(ret))]
++        self.assertFalse(ret["changes"])
++        self.assertEqual(ret["comment"], "All files in creates exist")
++        self.run_function("docker.rm", [name], force=True)
+ 
+         for path in (bad_file, [good_file1, bad_file]):
+             log.debug('Trying %s', path)
+diff --git a/tests/unit/states/test_cmd.py b/tests/unit/states/test_cmd.py
+index 738fcdad6b..906995538a 100644
+--- a/tests/unit/states/test_cmd.py
++++ b/tests/unit/states/test_cmd.py
+@@ -4,7 +4,10 @@
+ '''
+ # Import Python libs
+ from __future__ import absolute_import, print_function, unicode_literals
+-import os.path
++
++# Import Salt Libs
++import salt.states.cmd as cmd
++from salt.exceptions import CommandExecutionError
+ 
+ # Import Salt Testing Libs
+ from tests.support.mixins import LoaderModuleMockMixin
+@@ -26,51 +29,6 @@ class CmdTestCase(TestCase, LoaderModuleMockMixin):
+     def setup_loader_modules(self):
+         return {cmd: {'__env__': 'base'}}
+ 
+-    # 'mod_run_check' function tests: 1
+-
+-    def test_mod_run_check(self):
+-        '''
+-        Test to execute the onlyif and unless logic.
+-        '''
+-        cmd_kwargs = {}
+-        creates = '/tmp'
+-
+-        mock = MagicMock(return_value=1)
+-        with patch.dict(cmd.__salt__, {'cmd.retcode': mock}):
+-            with patch.dict(cmd.__opts__, {'test': True}):
+-                ret = {'comment': 'onlyif condition is false', 'result': True,
+-                       'skip_watch': True}
+-                self.assertDictEqual(cmd.mod_run_check(cmd_kwargs, '', '', creates), ret)
+-
+-                self.assertDictEqual(cmd.mod_run_check(cmd_kwargs, {}, '', creates), ret)
+-
+-        mock = MagicMock(return_value=1)
+-        with patch.dict(cmd.__salt__, {'cmd.retcode': mock}):
+-            with patch.dict(cmd.__opts__, {'test': True}):
+-                ret = {'comment': 'onlyif condition is false: ', 'result': True,
+-                       'skip_watch': True}
+-                self.assertDictEqual(cmd.mod_run_check(cmd_kwargs, [''], '', creates), ret)
+-
+-        mock = MagicMock(return_value=0)
+-        with patch.dict(cmd.__salt__, {'cmd.retcode': mock}):
+-            ret = {'comment': 'unless condition is true', 'result': True,
+-                   'skip_watch': True}
+-            self.assertDictEqual(cmd.mod_run_check(cmd_kwargs, None, '', creates), ret)
+-
+-            self.assertDictEqual(cmd.mod_run_check(cmd_kwargs, None, [''], creates), ret)
+-
+-            self.assertDictEqual(cmd.mod_run_check(cmd_kwargs, None, True, creates), ret)
+-
+-        with patch.object(os.path, 'exists',
+-                          MagicMock(sid_effect=[True, True, False])):
+-            ret = {'comment': '/tmp exists', 'result': True}
+-            self.assertDictEqual(cmd.mod_run_check(cmd_kwargs, None, None, creates), ret)
+-
+-            ret = {'comment': 'All files in creates exist', 'result': True}
+-            self.assertDictEqual(cmd.mod_run_check(cmd_kwargs, None, None, [creates]), ret)
+-
+-            self.assertTrue(cmd.mod_run_check(cmd_kwargs, None, None, {}))
+-
+     # 'wait' function tests: 1
+ 
+     def test_wait(self):
+@@ -137,14 +95,6 @@ class CmdTestCase(TestCase, LoaderModuleMockMixin):
+                 ret.update({'comment': comt, 'result': None, 'changes': {}})
+                 self.assertDictEqual(cmd.run(name), ret)
+ 
+-            mock = MagicMock(return_value=1)
+-            with patch.dict(cmd.__salt__, {'cmd.retcode': mock}):
+-                with patch.dict(cmd.__opts__, {'test': False}):
+-                    comt = ('onlyif condition is false')
+-                    ret.update({'comment': comt, 'result': True,
+-                                'skip_watch': True})
+-                    self.assertDictEqual(cmd.run(name, onlyif=''), ret)
+-
+     def test_run_root(self):
+         '''
+         Test to run a command with a different root
+@@ -203,14 +153,6 @@ class CmdTestCase(TestCase, LoaderModuleMockMixin):
+                                 'result': False, 'changes': {'retcode': 1}})
+                     self.assertDictEqual(cmd.script(name), ret)
+ 
+-            mock = MagicMock(return_value=1)
+-            with patch.dict(cmd.__salt__, {'cmd.retcode': mock}):
+-                with patch.dict(cmd.__opts__, {'test': False}):
+-                    comt = ('onlyif condition is false')
+-                    ret.update({'comment': comt, 'result': True,
+-                                'skip_watch': True, 'changes': {}})
+-                    self.assertDictEqual(cmd.script(name, onlyif=''), ret)
+-
+     # 'call' function tests: 1
+ 
+     def test_call(self):
+@@ -242,19 +184,9 @@ class CmdTestCase(TestCase, LoaderModuleMockMixin):
+             self.assertDictEqual(cmd.call(name, func), ret)
+ 
+             flag = False
+-            comt = ('onlyif condition is false')
+-            ret.update({'comment': '', 'result': False,
+-                        'changes': {'retval': []}})
++            ret.update({"comment": "", "result": False, "changes": {"retval": []}})
+             self.assertDictEqual(cmd.call(name, func), ret)
+ 
+-            mock = MagicMock(return_value=1)
+-            with patch.dict(cmd.__salt__, {'cmd.retcode': mock}):
+-                with patch.dict(cmd.__opts__, {'test': True}):
+-                    comt = ('onlyif condition is false')
+-                    ret.update({'comment': comt, 'skip_watch': True,
+-                                'result': True, 'changes': {}})
+-                    self.assertDictEqual(cmd.call(name, func, onlyif=''), ret)
+-
+     # 'wait_call' function tests: 1
+ 
+     def test_wait_call(self):
+diff --git a/tests/unit/states/test_macpackage.py b/tests/unit/states/test_macpackage.py
+index 2d8e167bf7..8ea70f1e0e 100644
+--- a/tests/unit/states/test_macpackage.py
++++ b/tests/unit/states/test_macpackage.py
+@@ -22,185 +22,218 @@ class MacPackageTestCase(TestCase, LoaderModuleMockMixin):
+         return {macpackage: {}}
+ 
+     def test_installed_pkg(self):
+-        '''
++        """
+             Test installing a PKG file
+-        '''
+-        with patch('salt.states.macpackage._mod_run_check') as _mod_run_check_mock:
+-            expected = {
+-                'changes': {'installed': ['some.other.id']},
+-                'comment': '/path/to/file.pkg installed',
+-                'name': '/path/to/file.pkg',
+-                'result': True
+-            }
++        """
++        expected = {
++            "changes": {"installed": ["some.other.id"]},
++            "comment": "/path/to/file.pkg installed",
++            "name": "/path/to/file.pkg",
++            "result": True,
++        }
+ 
+-            installed_mock = MagicMock(return_value=['com.apple.id'])
+-            get_pkg_id_mock = MagicMock(return_value=['some.other.id'])
+-            install_mock = MagicMock(return_value={'retcode': 0})
+-            _mod_run_check_mock.return_value = True
+-
+-            with patch.dict(macpackage.__salt__, {'macpackage.installed_pkgs': installed_mock,
+-                                                  'macpackage.get_pkg_id': get_pkg_id_mock,
+-                                                  'macpackage.install': install_mock}):
+-                out = macpackage.installed('/path/to/file.pkg')
+-                installed_mock.assert_called_once_with()
+-                get_pkg_id_mock.assert_called_once_with('/path/to/file.pkg')
+-                install_mock.assert_called_once_with('/path/to/file.pkg', 'LocalSystem', False, False)
+-                self.assertEqual(out, expected)
++        installed_mock = MagicMock(return_value=["com.apple.id"])
++        get_pkg_id_mock = MagicMock(return_value=["some.other.id"])
++        install_mock = MagicMock(return_value={"retcode": 0})
++
++        with patch.dict(
++            macpackage.__salt__,
++            {
++                "macpackage.installed_pkgs": installed_mock,
++                "macpackage.get_pkg_id": get_pkg_id_mock,
++                "macpackage.install": install_mock,
++            },
++        ):
++            out = macpackage.installed("/path/to/file.pkg")
++            installed_mock.assert_called_once_with()
++            get_pkg_id_mock.assert_called_once_with("/path/to/file.pkg")
++            install_mock.assert_called_once_with(
++                "/path/to/file.pkg", "LocalSystem", False, False
++            )
++            self.assertEqual(out, expected)
+ 
+     def test_installed_pkg_exists(self):
+-        '''
++        """
+             Test installing a PKG file where it's already installed
+-        '''
+-        with patch('salt.states.macpackage._mod_run_check') as _mod_run_check_mock:
+-            expected = {
+-                'changes': {},
+-                'comment': '',
+-                'name': '/path/to/file.pkg',
+-                'result': True
+-            }
++        """
++        expected = {
++            "changes": {},
++            "comment": "",
++            "name": "/path/to/file.pkg",
++            "result": True,
++        }
+ 
+-            installed_mock = MagicMock(return_value=['com.apple.id', 'some.other.id'])
+-            get_pkg_id_mock = MagicMock(return_value=['some.other.id'])
+-            install_mock = MagicMock(return_value={'retcode': 0})
+-            _mod_run_check_mock.return_value = True
+-
+-            with patch.dict(macpackage.__salt__, {'macpackage.installed_pkgs': installed_mock,
+-                                                  'macpackage.get_pkg_id': get_pkg_id_mock,
+-                                                  'macpackage.install': install_mock}):
+-                out = macpackage.installed('/path/to/file.pkg')
+-                installed_mock.assert_called_once_with()
+-                get_pkg_id_mock.assert_called_once_with('/path/to/file.pkg')
+-                assert not install_mock.called
+-                self.assertEqual(out, expected)
++        installed_mock = MagicMock(return_value=["com.apple.id", "some.other.id"])
++        get_pkg_id_mock = MagicMock(return_value=["some.other.id"])
++        install_mock = MagicMock(return_value={"retcode": 0})
++
++        with patch.dict(
++            macpackage.__salt__,
++            {
++                "macpackage.installed_pkgs": installed_mock,
++                "macpackage.get_pkg_id": get_pkg_id_mock,
++                "macpackage.install": install_mock,
++            },
++        ):
++            out = macpackage.installed("/path/to/file.pkg")
++            installed_mock.assert_called_once_with()
++            get_pkg_id_mock.assert_called_once_with("/path/to/file.pkg")
++            assert not install_mock.called
++            self.assertEqual(out, expected)
+ 
+     def test_installed_pkg_version_succeeds(self):
+-        '''
++        """
+             Test installing a PKG file where the version number matches the current installed version
+-        '''
+-        with patch('salt.states.macpackage._mod_run_check') as _mod_run_check_mock:
+-            expected = {
+-                'changes': {},
+-                'comment': 'Version already matches .*5\\.1\\.[0-9]',
+-                'name': '/path/to/file.pkg',
+-                'result': True
+-            }
+-
+-            installed_mock = MagicMock(return_value=['com.apple.id', 'some.other.id'])
+-            get_pkg_id_mock = MagicMock(return_value=['some.other.id'])
+-            install_mock = MagicMock(return_value={'retcode': 0})
+-            cmd_mock = MagicMock(return_value='Version of this: 5.1.9')
+-            _mod_run_check_mock.return_value = True
++        """
++        expected = {
++            "changes": {},
++            "comment": "Version already matches .*5\\.1\\.[0-9]",
++            "name": "/path/to/file.pkg",
++            "result": True,
++        }
+ 
+-            with patch.dict(macpackage.__salt__, {'macpackage.installed_pkgs': installed_mock,
+-                                                  'macpackage.get_pkg_id': get_pkg_id_mock,
+-                                                  'macpackage.install': install_mock,
+-                                                  'cmd.run': cmd_mock}):
+-                out = macpackage.installed('/path/to/file.pkg', version_check=r'/usr/bin/runme --version=.*5\.1\.[0-9]')
+-                cmd_mock.assert_called_once_with('/usr/bin/runme --version', output_loglevel="quiet", ignore_retcode=True)
+-                assert not installed_mock.called
+-                assert not get_pkg_id_mock.called
+-                assert not install_mock.called
+-                self.assertEqual(out, expected)
++        installed_mock = MagicMock(return_value=["com.apple.id", "some.other.id"])
++        get_pkg_id_mock = MagicMock(return_value=["some.other.id"])
++        install_mock = MagicMock(return_value={"retcode": 0})
++        cmd_mock = MagicMock(return_value="Version of this: 5.1.9")
++
++        with patch.dict(
++            macpackage.__salt__,
++            {
++                "macpackage.installed_pkgs": installed_mock,
++                "macpackage.get_pkg_id": get_pkg_id_mock,
++                "macpackage.install": install_mock,
++                "cmd.run": cmd_mock,
++            },
++        ):
++            out = macpackage.installed(
++                "/path/to/file.pkg",
++                version_check=r"/usr/bin/runme --version=.*5\.1\.[0-9]",
++            )
++            cmd_mock.assert_called_once_with(
++                "/usr/bin/runme --version", output_loglevel="quiet", ignore_retcode=True
++            )
++            assert not installed_mock.called
++            assert not get_pkg_id_mock.called
++            assert not install_mock.called
++            self.assertEqual(out, expected)
+ 
+     def test_installed_pkg_version_fails(self):
+-        '''
++        """
+             Test installing a PKG file where the version number if different from the expected one
+-        '''
+-        with patch('salt.states.macpackage._mod_run_check') as _mod_run_check_mock:
+-            expected = {
+-                'changes': {'installed': ['some.other.id']},
+-                'comment': 'Version Version of this: 1.8.9 doesn\'t match .*5\\.1\\.[0-9]. /path/to/file.pkg installed',
+-                'name': '/path/to/file.pkg',
+-                'result': True
+-            }
+-
+-            installed_mock = MagicMock(return_value=['com.apple.id'])
+-            get_pkg_id_mock = MagicMock(return_value=['some.other.id'])
+-            install_mock = MagicMock(return_value={'retcode': 0})
+-            cmd_mock = MagicMock(return_value='Version of this: 1.8.9')
+-            _mod_run_check_mock.return_value = True
++        """
++        expected = {
++            "changes": {"installed": ["some.other.id"]},
++            "comment": "Version Version of this: 1.8.9 doesn't match .*5\\.1\\.[0-9]. /path/to/file.pkg installed",
++            "name": "/path/to/file.pkg",
++            "result": True,
++        }
+ 
+-            with patch.dict(macpackage.__salt__, {'macpackage.installed_pkgs': installed_mock,
+-                                                  'macpackage.get_pkg_id': get_pkg_id_mock,
+-                                                  'macpackage.install': install_mock,
+-                                                  'cmd.run': cmd_mock}):
+-                out = macpackage.installed('/path/to/file.pkg', version_check=r'/usr/bin/runme --version=.*5\.1\.[0-9]')
+-                cmd_mock.assert_called_once_with('/usr/bin/runme --version', output_loglevel="quiet", ignore_retcode=True)
+-                installed_mock.assert_called_once_with()
+-                get_pkg_id_mock.assert_called_once_with('/path/to/file.pkg')
+-                install_mock.assert_called_once_with('/path/to/file.pkg', 'LocalSystem', False, False)
+-                self.assertEqual(out, expected)
++        installed_mock = MagicMock(return_value=["com.apple.id"])
++        get_pkg_id_mock = MagicMock(return_value=["some.other.id"])
++        install_mock = MagicMock(return_value={"retcode": 0})
++        cmd_mock = MagicMock(return_value="Version of this: 1.8.9")
++
++        with patch.dict(
++            macpackage.__salt__,
++            {
++                "macpackage.installed_pkgs": installed_mock,
++                "macpackage.get_pkg_id": get_pkg_id_mock,
++                "macpackage.install": install_mock,
++                "cmd.run": cmd_mock,
++            },
++        ):
++            out = macpackage.installed(
++                "/path/to/file.pkg",
++                version_check=r"/usr/bin/runme --version=.*5\.1\.[0-9]",
++            )
++            cmd_mock.assert_called_once_with(
++                "/usr/bin/runme --version", output_loglevel="quiet", ignore_retcode=True
++            )
++            installed_mock.assert_called_once_with()
++            get_pkg_id_mock.assert_called_once_with("/path/to/file.pkg")
++            install_mock.assert_called_once_with(
++                "/path/to/file.pkg", "LocalSystem", False, False
++            )
++            self.assertEqual(out, expected)
+ 
+     def test_installed_dmg(self):
+-        '''
++        """
+             Test installing a DMG file
+-        '''
+-        with patch('salt.states.macpackage._mod_run_check') as _mod_run_check_mock:
+-            expected = {
+-                'changes': {'installed': ['some.other.id']},
+-                'comment': '/path/to/file.dmg installed',
+-                'name': '/path/to/file.dmg',
+-                'result': True
+-            }
+-
+-            mount_mock = MagicMock(return_value=['success', '/tmp/dmg-X'])
+-            unmount_mock = MagicMock()
+-            installed_mock = MagicMock(return_value=['com.apple.id'])
+-            get_pkg_id_mock = MagicMock(return_value=['some.other.id'])
+-            install_mock = MagicMock(return_value={'retcode': 0})
+-            _mod_run_check_mock.return_value = True
++        """
++        expected = {
++            "changes": {"installed": ["some.other.id"]},
++            "comment": "/path/to/file.dmg installed",
++            "name": "/path/to/file.dmg",
++            "result": True,
++        }
+ 
+-            with patch.dict(macpackage.__salt__, {'macpackage.mount': mount_mock,
+-                                                  'macpackage.unmount': unmount_mock,
+-                                                  'macpackage.installed_pkgs': installed_mock,
+-                                                  'macpackage.get_pkg_id': get_pkg_id_mock,
+-                                                  'macpackage.install': install_mock}):
+-                out = macpackage.installed('/path/to/file.dmg', dmg=True)
+-                mount_mock.assert_called_once_with('/path/to/file.dmg')
+-                unmount_mock.assert_called_once_with('/tmp/dmg-X')
+-                installed_mock.assert_called_once_with()
+-                get_pkg_id_mock.assert_called_once_with('/tmp/dmg-X/*.pkg')
+-                install_mock.assert_called_once_with('/tmp/dmg-X/*.pkg', 'LocalSystem', False, False)
+-                self.assertEqual(out, expected)
++        mount_mock = MagicMock(return_value=["success", "/tmp/dmg-X"])
++        unmount_mock = MagicMock()
++        installed_mock = MagicMock(return_value=["com.apple.id"])
++        get_pkg_id_mock = MagicMock(return_value=["some.other.id"])
++        install_mock = MagicMock(return_value={"retcode": 0})
++
++        with patch.dict(
++            macpackage.__salt__,
++            {
++                "macpackage.mount": mount_mock,
++                "macpackage.unmount": unmount_mock,
++                "macpackage.installed_pkgs": installed_mock,
++                "macpackage.get_pkg_id": get_pkg_id_mock,
++                "macpackage.install": install_mock,
++            },
++        ):
++            out = macpackage.installed("/path/to/file.dmg", dmg=True)
++            mount_mock.assert_called_once_with("/path/to/file.dmg")
++            unmount_mock.assert_called_once_with("/tmp/dmg-X")
++            installed_mock.assert_called_once_with()
++            get_pkg_id_mock.assert_called_once_with("/tmp/dmg-X/*.pkg")
++            install_mock.assert_called_once_with(
++                "/tmp/dmg-X/*.pkg", "LocalSystem", False, False
++            )
++            self.assertEqual(out, expected)
+ 
+     def test_installed_dmg_exists(self):
+-        '''
++        """
+             Test installing a DMG file when the package already exists
+-        '''
+-        with patch('salt.states.macpackage._mod_run_check') as _mod_run_check_mock:
+-            expected = {
+-                'changes': {},
+-                'comment': '',
+-                'name': '/path/to/file.dmg',
+-                'result': True
+-            }
+-
+-            mount_mock = MagicMock(return_value=['success', '/tmp/dmg-X'])
+-            unmount_mock = MagicMock()
+-            installed_mock = MagicMock(return_value=['com.apple.id', 'some.other.id'])
+-            get_pkg_id_mock = MagicMock(return_value=['some.other.id'])
+-            install_mock = MagicMock(return_value={'retcode': 0})
+-            _mod_run_check_mock.return_value = True
++        """
++        expected = {
++            "changes": {},
++            "comment": "",
++            "name": "/path/to/file.dmg",
++            "result": True,
++        }
+ 
+-            with patch.dict(macpackage.__salt__, {'macpackage.mount': mount_mock,
+-                                                  'macpackage.unmount': unmount_mock,
+-                                                  'macpackage.installed_pkgs': installed_mock,
+-                                                  'macpackage.get_pkg_id': get_pkg_id_mock,
+-                                                  'macpackage.install': install_mock}):
+-                out = macpackage.installed('/path/to/file.dmg', dmg=True)
+-                mount_mock.assert_called_once_with('/path/to/file.dmg')
+-                unmount_mock.assert_called_once_with('/tmp/dmg-X')
+-                installed_mock.assert_called_once_with()
+-                get_pkg_id_mock.assert_called_once_with('/tmp/dmg-X/*.pkg')
+-                assert not install_mock.called
+-                self.assertEqual(out, expected)
++        mount_mock = MagicMock(return_value=["success", "/tmp/dmg-X"])
++        unmount_mock = MagicMock()
++        installed_mock = MagicMock(return_value=["com.apple.id", "some.other.id"])
++        get_pkg_id_mock = MagicMock(return_value=["some.other.id"])
++        install_mock = MagicMock(return_value={"retcode": 0})
++
++        with patch.dict(
++            macpackage.__salt__,
++            {
++                "macpackage.mount": mount_mock,
++                "macpackage.unmount": unmount_mock,
++                "macpackage.installed_pkgs": installed_mock,
++                "macpackage.get_pkg_id": get_pkg_id_mock,
++                "macpackage.install": install_mock,
++            },
++        ):
++            out = macpackage.installed("/path/to/file.dmg", dmg=True)
++            mount_mock.assert_called_once_with("/path/to/file.dmg")
++            unmount_mock.assert_called_once_with("/tmp/dmg-X")
++            installed_mock.assert_called_once_with()
++            get_pkg_id_mock.assert_called_once_with("/tmp/dmg-X/*.pkg")
++            assert not install_mock.called
++            self.assertEqual(out, expected)
+ 
+     def test_installed_app(self):
+-        '''
++        """
+             Test installing an APP file
+-        '''
+-        with patch('salt.states.macpackage._mod_run_check') as _mod_run_check_mock, \
+-                patch('os.path.exists') as exists_mock:
++        """
++        with patch("os.path.exists") as exists_mock:
+             expected = {
+                 'changes': {'installed': ['file.app']},
+                 'comment': 'file.app installed',
+@@ -209,7 +242,6 @@ class MacPackageTestCase(TestCase, LoaderModuleMockMixin):
+             }
+ 
+             install_mock = MagicMock()
+-            _mod_run_check_mock.return_value = True
+             exists_mock.return_value = False
+ 
+             with patch.dict(macpackage.__salt__, {'macpackage.install_app': install_mock}):
+@@ -219,11 +251,10 @@ class MacPackageTestCase(TestCase, LoaderModuleMockMixin):
+                 self.assertEqual(out, expected)
+ 
+     def test_installed_app_exists(self):
+-        '''
++        """
+             Test installing an APP file that already exists
+-        '''
+-        with patch('salt.states.macpackage._mod_run_check') as _mod_run_check_mock, \
+-                patch('os.path.exists') as exists_mock:
++        """
++        with patch("os.path.exists") as exists_mock:
+             expected = {
+                 'changes': {},
+                 'comment': '',
+@@ -232,7 +263,6 @@ class MacPackageTestCase(TestCase, LoaderModuleMockMixin):
+             }
+ 
+             install_mock = MagicMock()
+-            _mod_run_check_mock.return_value = True
+             exists_mock.return_value = True
+ 
+             with patch.dict(macpackage.__salt__, {'macpackage.install_app': install_mock}):
+@@ -242,11 +272,10 @@ class MacPackageTestCase(TestCase, LoaderModuleMockMixin):
+                 self.assertEqual(out, expected)
+ 
+     def test_installed_app_dmg(self):
+-        '''
++        """
+             Test installing an APP file contained in a DMG file
+-        '''
+-        with patch('salt.states.macpackage._mod_run_check') as _mod_run_check_mock, \
+-                patch('os.path.exists') as exists_mock:
++        """
++        with patch("os.path.exists") as exists_mock:
+             expected = {
+                 'changes': {'installed': ['file.app']},
+                 'comment': 'file.app installed',
+@@ -257,8 +286,7 @@ class MacPackageTestCase(TestCase, LoaderModuleMockMixin):
+             install_mock = MagicMock()
+             mount_mock = MagicMock(return_value=['success', '/tmp/dmg-X'])
+             unmount_mock = MagicMock()
+-            cmd_mock = MagicMock(return_value='file.app')
+-            _mod_run_check_mock.return_value = True
++            cmd_mock = MagicMock(return_value="file.app")
+             exists_mock.return_value = False
+ 
+             with patch.dict(macpackage.__salt__, {'macpackage.install_app': install_mock,
+@@ -274,11 +302,10 @@ class MacPackageTestCase(TestCase, LoaderModuleMockMixin):
+                 self.assertEqual(out, expected)
+ 
+     def test_installed_app_dmg_exists(self):
+-        '''
++        """
+             Test installing an APP file contained in a DMG file where the file exists
+-        '''
+-        with patch('salt.states.macpackage._mod_run_check') as _mod_run_check_mock, \
+-                patch('os.path.exists') as exists_mock:
++        """
++        with patch("os.path.exists") as exists_mock:
+             expected = {
+                 'changes': {},
+                 'comment': '',
+@@ -289,8 +316,7 @@ class MacPackageTestCase(TestCase, LoaderModuleMockMixin):
+             install_mock = MagicMock()
+             mount_mock = MagicMock(return_value=['success', '/tmp/dmg-X'])
+             unmount_mock = MagicMock()
+-            cmd_mock = MagicMock(return_value='file.app')
+-            _mod_run_check_mock.return_value = True
++            cmd_mock = MagicMock(return_value="file.app")
+             exists_mock.return_value = True
+ 
+             with patch.dict(macpackage.__salt__, {'macpackage.install_app': install_mock,
+@@ -330,39 +356,3 @@ class MacPackageTestCase(TestCase, LoaderModuleMockMixin):
+             get_pkg_id_mock.assert_called_once_with('/path/to/file.pkg')
+             install_mock.assert_called_once_with('/path/to/file.pkg', 'LocalSystem', False, False)
+             self.assertEqual(out, expected)
+-
+-    def test_installed_pkg_onlyif_fail(self,):
+-        '''
+-            Test installing a PKG file where the onlyif call fails
+-        '''
+-        expected = {
+-            'changes': {},
+-            'comment': 'onlyif condition is false',
+-            'skip_watch': True,
+-            'result': True,
+-            'name': '/path/to/file.pkg',
+-        }
+-
+-        mock = MagicMock(return_value=1)
+-
+-        with patch.dict(macpackage.__salt__, {'cmd.retcode': mock}):
+-            out = macpackage.installed('/path/to/file.pkg', onlyif='some command')
+-            self.assertEqual(out, expected)
+-
+-    def test_installed_pkg_unless_fail(self,):
+-        '''
+-            Test installing a PKG file where the unless run fails
+-        '''
+-        expected = {
+-            'changes': {},
+-            'comment': 'unless condition is true',
+-            'skip_watch': True,
+-            'result': True,
+-            'name': '/path/to/file.pkg',
+-        }
+-
+-        mock = MagicMock(return_value=0)
+-
+-        with patch.dict(macpackage.__salt__, {'cmd.retcode': mock}):
+-            out = macpackage.installed('/path/to/file.pkg', unless='some command')
+-            self.assertEqual(out, expected)
+diff --git a/tests/unit/test_state.py b/tests/unit/test_state.py
+index 6769141614..25bc675665 100644
+--- a/tests/unit/test_state.py
++++ b/tests/unit/test_state.py
+@@ -25,6 +25,16 @@ from salt.utils.odict import OrderedDict
+ from salt.utils.decorators import state as statedecorators
+ import salt.utils.files
+ import salt.utils.platform
++from salt.exceptions import CommandExecutionError
++from salt.utils.decorators import state as statedecorators
++from salt.utils.odict import OrderedDict
++from tests.support.helpers import with_tempfile
++from tests.support.mixins import AdaptedConfigurationTestCaseMixin
++from tests.support.mock import MagicMock, patch
++from tests.support.runtests import RUNTIME_VARS
++
++# Import Salt Testing libs
++from tests.support.unit import TestCase, skipIf
+ 
+ try:
+     import pytest
+@@ -105,6 +115,70 @@ class StateCompilerTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+             return_result = state_obj._run_check_onlyif(low_data, '')
+             self.assertEqual(expected_result, return_result)
+ 
++    def test_verify_onlyif_cmd_error(self):
++        """
++        Simulates a failure in cmd.retcode from onlyif
++        This could occur if runas is specified with a user that does not exist
++        """
++        low_data = {
++            "onlyif": "somecommand",
++            "runas" "doesntexist" "name": "echo something",
++            "state": "cmd",
++            "__id__": "this is just a test",
++            "fun": "run",
++            "__env__": "base",
++            "__sls__": "sometest",
++            "order": 10000,
++        }
++        expected_result = {
++            "comment": "onlyif condition is false",
++            "result": True,
++            "skip_watch": True,
++        }
++
++        with patch("salt.state.State._gather_pillar") as state_patch:
++            minion_opts = self.get_temp_config("minion")
++            state_obj = salt.state.State(minion_opts)
++            mock = MagicMock(side_effect=CommandExecutionError("Boom!"))
++            with patch.dict(state_obj.functions, {"cmd.retcode": mock}):
++                #  The mock handles the exception, but the runas dict is being passed as it would actually be
++                return_result = state_obj._run_check_onlyif(
++                    low_data, {"runas": "doesntexist"}
++                )
++                self.assertEqual(expected_result, return_result)
++
++    def test_verify_unless_cmd_error(self):
++        """
++        Simulates a failure in cmd.retcode from unless
++        This could occur if runas is specified with a user that does not exist
++        """
++        low_data = {
++            "unless": "somecommand",
++            "runas" "doesntexist" "name": "echo something",
++            "state": "cmd",
++            "__id__": "this is just a test",
++            "fun": "run",
++            "__env__": "base",
++            "__sls__": "sometest",
++            "order": 10000,
++        }
++        expected_result = {
++            "comment": "unless condition is true",
++            "result": True,
++            "skip_watch": True,
++        }
++
++        with patch("salt.state.State._gather_pillar") as state_patch:
++            minion_opts = self.get_temp_config("minion")
++            state_obj = salt.state.State(minion_opts)
++            mock = MagicMock(side_effect=CommandExecutionError("Boom!"))
++            with patch.dict(state_obj.functions, {"cmd.retcode": mock}):
++                #  The mock handles the exception, but the runas dict is being passed as it would actually be
++                return_result = state_obj._run_check_unless(
++                    low_data, {"runas": "doesntexist"}
++                )
++                self.assertEqual(expected_result, return_result)
++
+     def test_verify_unless_parse(self):
+         low_data = {
+             "unless": [
+@@ -138,6 +212,72 @@ class StateCompilerTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+             return_result = state_obj._run_check_unless(low_data, '')
+             self.assertEqual(expected_result, return_result)
+ 
++    def test_verify_creates(self):
++        low_data = {
++            "state": "cmd",
++            "name": 'echo "something"',
++            "__sls__": "tests.creates",
++            "__env__": "base",
++            "__id__": "do_a_thing",
++            "creates": "/tmp/thing",
++            "order": 10000,
++            "fun": "run",
++        }
++
++        with patch("salt.state.State._gather_pillar") as state_patch:
++            minion_opts = self.get_temp_config("minion")
++            state_obj = salt.state.State(minion_opts)
++            with patch("os.path.exists") as path_mock:
++                path_mock.return_value = True
++                expected_result = {
++                    "comment": "/tmp/thing exists",
++                    "result": True,
++                    "skip_watch": True,
++                }
++                return_result = state_obj._run_check_creates(low_data)
++                self.assertEqual(expected_result, return_result)
++
++                path_mock.return_value = False
++                expected_result = {
++                    "comment": "Creates files not found",
++                    "result": False,
++                }
++                return_result = state_obj._run_check_creates(low_data)
++                self.assertEqual(expected_result, return_result)
++
++    def test_verify_creates_list(self):
++        low_data = {
++            "state": "cmd",
++            "name": 'echo "something"',
++            "__sls__": "tests.creates",
++            "__env__": "base",
++            "__id__": "do_a_thing",
++            "creates": ["/tmp/thing", "/tmp/thing2"],
++            "order": 10000,
++            "fun": "run",
++        }
++
++        with patch("salt.state.State._gather_pillar") as state_patch:
++            minion_opts = self.get_temp_config("minion")
++            state_obj = salt.state.State(minion_opts)
++            with patch("os.path.exists") as path_mock:
++                path_mock.return_value = True
++                expected_result = {
++                    "comment": "All files in creates exist",
++                    "result": True,
++                    "skip_watch": True,
++                }
++                return_result = state_obj._run_check_creates(low_data)
++                self.assertEqual(expected_result, return_result)
++
++                path_mock.return_value = False
++                expected_result = {
++                    "comment": "Creates files not found",
++                    "result": False,
++                }
++                return_result = state_obj._run_check_creates(low_data)
++                self.assertEqual(expected_result, return_result)
++
+     def _expand_win_path(self, path):
+         """
+         Expand C:/users/admini~1/appdata/local/temp/salt-tests-tmpdir/...
+@@ -185,6 +325,28 @@ class StateCompilerTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+             return_result = state_obj._run_check_onlyif(low_data, '')
+             self.assertEqual(expected_result, return_result)
+ 
++    def test_verify_onlyif_list_cmd(self):
++        low_data = {
++            "state": "cmd",
++            "name": 'echo "something"',
++            "__sls__": "tests.cmd",
++            "__env__": "base",
++            "__id__": "check onlyif",
++            "onlyif": ["/bin/true", "/bin/false"],
++            "order": 10001,
++            "fun": "run",
++        }
++        expected_result = {
++            "comment": "onlyif condition is false",
++            "result": True,
++            "skip_watch": True,
++        }
++        with patch("salt.state.State._gather_pillar") as state_patch:
++            minion_opts = self.get_temp_config("minion")
++            state_obj = salt.state.State(minion_opts)
++            return_result = state_obj._run_check_onlyif(low_data, {})
++            self.assertEqual(expected_result, return_result)
++
+     @with_tempfile()
+     def test_verify_unless_parse_slots(self, name):
+         with salt.utils.files.fopen(name, 'w') as fp:
+@@ -222,20 +384,23 @@ class StateCompilerTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+             self.assertEqual(expected_result, return_result)
+ 
+     def test_verify_unless_list_cmd(self):
++        """
++        If any of the unless commands return False (non 0) then the state should
++        run (no skip_watch).
++        """
+         low_data = {
+             "state": "cmd",
+             "name": 'echo "something"',
+             "__sls__": "tests.cmd",
+             "__env__": "base",
+             "__id__": "check unless",
+-            "unless": ["/bin/true", "/bin/false"],
++            "unless": ["exit 0", "exit 1"],
+             "order": 10001,
+             "fun": "run",
+         }
+         expected_result = {
+-            "comment": "unless condition is true",
+-            "result": True,
+-            "skip_watch": True,
++            "comment": "unless condition is false",
++            "result": False,
+         }
+         with patch("salt.state.State._gather_pillar") as state_patch:
+             minion_opts = self.get_temp_config("minion")
+@@ -244,20 +409,23 @@ class StateCompilerTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+             self.assertEqual(expected_result, return_result)
+ 
+     def test_verify_unless_list_cmd_different_order(self):
++        """
++        If any of the unless commands return False (non 0) then the state should
++        run (no skip_watch). The order shouldn't matter.
++        """
+         low_data = {
+             "state": "cmd",
+             "name": 'echo "something"',
+             "__sls__": "tests.cmd",
+             "__env__": "base",
+             "__id__": "check unless",
+-            "unless": ["/bin/false", "/bin/true"],
++            "unless": ["exit 1", "exit 0"],
+             "order": 10001,
+             "fun": "run",
+         }
+         expected_result = {
+-            "comment": "unless condition is true",
+-            "result": True,
+-            "skip_watch": True,
++            "comment": "unless condition is false",
++            "result": False,
+         }
+         with patch("salt.state.State._gather_pillar") as state_patch:
+             minion_opts = self.get_temp_config("minion")
+@@ -272,7 +440,7 @@ class StateCompilerTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+             "__sls__": "tests.cmd",
+             "__env__": "base",
+             "__id__": "check onlyif",
+-            "onlyif": ["/bin/false", "/bin/true"],
++            "onlyif": ["exit 1", "exit 0"],
+             "order": 10001,
+             "fun": "run",
+         }
+@@ -288,13 +456,17 @@ class StateCompilerTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+             self.assertEqual(expected_result, return_result)
+ 
+     def test_verify_unless_list_cmd_valid(self):
++        """
++        If any of the unless commands return False (non 0) then the state should
++        run (no skip_watch). This tests all commands return False.
++        """
+         low_data = {
+             "state": "cmd",
+             "name": 'echo "something"',
+             "__sls__": "tests.cmd",
+             "__env__": "base",
+             "__id__": "check unless",
+-            "unless": ["/bin/false", "/bin/false"],
++            "unless": ["exit 1", "exit 1"],
+             "order": 10001,
+             "fun": "run",
+         }
+@@ -312,7 +484,7 @@ class StateCompilerTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+             "__sls__": "tests.cmd",
+             "__env__": "base",
+             "__id__": "check onlyif",
+-            "onlyif": ["/bin/true", "/bin/true"],
++            "onlyif": ["exit 0", "exit 0"],
+             "order": 10001,
+             "fun": "run",
+         }
+@@ -324,13 +496,17 @@ class StateCompilerTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+             self.assertEqual(expected_result, return_result)
+ 
+     def test_verify_unless_list_cmd_invalid(self):
++        """
++        If any of the unless commands return False (non 0) then the state should
++        run (no skip_watch). This tests all commands return True
++        """
+         low_data = {
+             "state": "cmd",
+             "name": 'echo "something"',
+             "__sls__": "tests.cmd",
+             "__env__": "base",
+             "__id__": "check unless",
+-            "unless": ["/bin/true", "/bin/true"],
++            "unless": ["exit 0", "exit 0"],
+             "order": 10001,
+             "fun": "run",
+         }
+@@ -352,7 +528,7 @@ class StateCompilerTestCase(TestCase, AdaptedConfigurationTestCaseMixin):
+             "__sls__": "tests.cmd",
+             "__env__": "base",
+             "__id__": "check onlyif",
+-            "onlyif": ["/bin/false", "/bin/false"],
++            "onlyif": ["exit 1", "exit 1"],
+             "order": 10001,
+             "fun": "run",
+         }
+-- 
+2.32.0
+
+
