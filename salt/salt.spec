@@ -447,6 +447,8 @@ Patch190:       better-handling-of-bad-public-keys-from-minions-bsc-.patch
 Patch191:       fix-error-handling-in-openscap-module-bsc-1188647-40.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
 Patch192:       fix-failing-unit-tests-for-systemd.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59492
+Patch193:       backport-of-upstream-pr59492-to-3002.2-404.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1052,6 +1054,7 @@ cp %{S:6} .
 %patch190 -p1
 %patch191 -p1
 %patch192 -p1
+%patch193 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
