@@ -510,6 +510,8 @@ Patch205:       fix-error-handling-in-openscap-module-bsc-1188647-41.patch
 Patch206:       fix-failing-unit-tests-for-systemd.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55974
 Patch207:       consolidate-some-state-requisites-55974-bsc-1188641-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60650
+Patch208:       add-missing-aarch64-to-rpm-package-architectures-406.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1248,6 +1250,7 @@ cp %{S:6} .
 %patch205 -p1
 %patch206 -p1
 %patch207 -p1
+%patch208 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
