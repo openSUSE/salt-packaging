@@ -473,6 +473,10 @@ Patch197:       better-handling-of-bad-public-keys-from-minions-bsc-.patch
 Patch198:       fix-error-handling-in-openscap-module-bsc-1188647-41.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/58520
 Patch199:       fix-failing-unit-tests-for-systemd.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/55974
+Patch200:       consolidate-some-state-requisites-55974-bsc-1188641-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60650
+Patch201:       add-missing-aarch64-to-rpm-package-architectures-407.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -817,6 +821,8 @@ cp %{S:5} ./.travis.yml
 %patch197 -p1
 %patch198 -p1
 %patch199 -p1
+%patch200 -p1
+%patch201 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
