@@ -453,6 +453,8 @@ Patch193:       backport-of-upstream-pr59492-to-3002.2-404.patch
 Patch194:       add-missing-aarch64-to-rpm-package-architectures-405.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/413
 Patch195:       don-t-use-shell-sbin-nologin-in-requisites.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60811
+Patch196:       templates-move-the-globals-up-to-the-environment-jin.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1061,6 +1063,7 @@ cp %{S:6} .
 %patch193 -p1
 %patch194 -p1
 %patch195 -p1
+%patch196 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
