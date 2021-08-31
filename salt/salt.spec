@@ -512,6 +512,8 @@ Patch206:       fix-failing-unit-tests-for-systemd.patch
 Patch207:       consolidate-some-state-requisites-55974-bsc-1188641-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60650
 Patch208:       add-missing-aarch64-to-rpm-package-architectures-406.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60811
+Patch209:       templates-move-the-globals-up-to-the-environment-jin.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1251,6 +1253,7 @@ cp %{S:6} .
 %patch206 -p1
 %patch207 -p1
 %patch208 -p1
+%patch209 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
