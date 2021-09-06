@@ -702,6 +702,7 @@ Summary:        Transactional update executor configuration
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-minion = %{version}-%{release}
+Requires:       tar
 
 %description transactional-update
 For transactional systems, like MicroOS, Salt can operate
