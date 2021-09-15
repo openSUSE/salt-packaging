@@ -455,6 +455,8 @@ Patch194:       add-missing-aarch64-to-rpm-package-architectures-405.patch
 Patch195:       don-t-use-shell-sbin-nologin-in-requisites.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60811
 Patch196:       templates-move-the-globals-up-to-the-environment-jin.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/0b75ba190fda9c04cc026ad1aa4a6d572f40349b
+Patch197:       exclude-the-full-path-of-a-download-url-to-prevent-i.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1064,6 +1066,7 @@ cp %{S:6} .
 %patch194 -p1
 %patch195 -p1
 %patch196 -p1
+%patch197 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
