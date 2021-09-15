@@ -258,6 +258,8 @@ Patch98:        prevent-command-injection-in-the-snapper-module-bsc-.patch
 Patch99:        enhance-openscap-module-add-xccdf_eval-call-397.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59756
 Patch100:       fix-error-handling-in-openscap-module-bsc-1188647-41.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/0b75ba190fda9c04cc026ad1aa4a6d572f40349b
+Patch101:       exclude-the-full-path-of-a-download-url-to-prevent-i.patch
 
 
 
@@ -722,6 +724,7 @@ cp %{S:5} ./.travis.yml
 %patch98 -p1
 %patch99 -p1
 %patch100 -p1
+%patch101 -p1
 
 %build
 %{__python} setup.py --with-salt-version=%{version} --salt-transport=both build

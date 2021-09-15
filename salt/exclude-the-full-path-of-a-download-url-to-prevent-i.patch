@@ -1,0 +1,74 @@
+From fcd31806bef3e0e0ec2fb84d2f100c9cffe03faf Mon Sep 17 00:00:00 2001
+From: Joe Eacott <jeacott@vmware.com>
+Date: Mon, 28 Jun 2021 16:46:35 -0600
+Subject: [PATCH] Exclude the full path of a download URL to prevent
+ injection of malicious code (bsc#1190265) (CVE-2021-21996)
+
+---
+ salt/fileclient.py            |  7 +++++++
+ tests/unit/fileclient_test.py | 19 +++++++++++++++++++
+ 2 files changed, 26 insertions(+)
+
+diff --git a/salt/fileclient.py b/salt/fileclient.py
+index 8729a0c64a..c01a09af28 100644
+--- a/salt/fileclient.py
++++ b/salt/fileclient.py
+@@ -33,6 +33,7 @@ import salt.utils.http
+ import salt.ext.six as six
+ from salt.utils.locales import sdecode
+ from salt.utils.openstack.swift import SaltSwift
++import salt.utils.verify
+ 
+ # pylint: disable=no-name-in-module,import-error
+ import salt.ext.six.moves.BaseHTTPServer as BaseHTTPServer
+@@ -734,6 +735,12 @@ class Client(object):
+         else:
+             file_name = url_data.path
+ 
++        # clean_path returns an empty string if the check fails
++        root_path = salt.utils.path_join(cachedir, "extrn_files", saltenv, netloc)
++        new_path = os.path.sep.join([root_path, file_name])
++        if not salt.utils.verify.clean_path(root_path, new_path, subdir=True):
++            return "Invalid path"
++
+         return salt.utils.path_join(
+             cachedir,
+             'extrn_files',
+diff --git a/tests/unit/fileclient_test.py b/tests/unit/fileclient_test.py
+index 05f5baf65b..646549402e 100644
+--- a/tests/unit/fileclient_test.py
++++ b/tests/unit/fileclient_test.py
+@@ -6,6 +6,7 @@
+ # Import Python libs
+ from __future__ import absolute_import
+ import errno
++import os
+ from mock import Mock
+ 
+ # Import Salt Testing libs
+@@ -52,3 +53,21 @@ class FileclientTestCase(TestCase):
+                 with self.assertRaises(OSError):
+                     with Client(self.opts)._cache_loc('testfile') as c_ref_itr:
+                         assert c_ref_itr == '/__test__/files/base/testfile'
++
++    def test_cache_extrn_path_valid(self):
++        """
++        Tests for extrn_filepath for a given url
++        """
++        file_name = "http://localhost:8000/test/location/src/dev/usr/file"
++
++        ret = Client(self.opts)._extrn_path(file_name, "base")
++        assert ret == os.path.join("__test__", "extrn_files", "base", ret)
++
++    def test_cache_extrn_path_invalid(self):
++        """
++        Tests for extrn_filepath for a given url
++        """
++        file_name = "http://localhost:8000/../../../../../usr/bin/bad"
++
++        ret = Client(self.opts)._extrn_path(file_name, "base")
++        assert ret == "Invalid path"
+-- 
+2.33.0
+
+
