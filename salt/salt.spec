@@ -1383,7 +1383,7 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %config(noreplace) %{_sysconfdir}/logrotate.d/salt
 %{!?_licensedir:%global license %doc}
 %license LICENSE
-%doc AUTHORS README.rst HACKING.rst README.SUSE
+%doc AUTHORS README.rst README.SUSE
 #
 %dir        %attr(0750, root, salt) %{_sysconfdir}/salt
 %dir        %attr(0750, root, salt) %{_sysconfdir}/salt/pki
