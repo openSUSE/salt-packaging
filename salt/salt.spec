@@ -441,6 +441,7 @@ Requires:       python3-PyYAML
 Requires:       python3-psutil
 Requires:       python3-requests >= 1.0.0
 Requires:       python3-distro
+Requires:       python3-contextvars
 %if 0%{?suse_version}
 # required for zypper.py
 Requires:       python3-rpm
