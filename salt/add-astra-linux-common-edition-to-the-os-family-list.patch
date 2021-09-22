@@ -1,4 +1,4 @@
-From 2a33d3eb349025c09343e5a4b5e905d89f094e41 Mon Sep 17 00:00:00 2001
+From 30366101c20eefd2411482138edfa0ca0c8a3b06 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Julio=20Gonz=C3=A1lez=20Gil?=
  <juliogonzalez@users.noreply.github.com>
 Date: Wed, 12 Feb 2020 10:05:45 +0100
@@ -23,7 +23,7 @@ index e007f40c92..19937f008e 100644
  
  # Matches any possible format:
 diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
-index 7173f04979..1aafdd8f9e 100644
+index 7173f04979..e8845e2dfa 100644
 --- a/tests/unit/grains/test_core.py
 +++ b/tests/unit/grains/test_core.py
 @@ -826,6 +826,26 @@ class CoreGrainsTestCase(TestCase, LoaderModuleMockMixin):
@@ -36,7 +36,7 @@ index 7173f04979..1aafdd8f9e 100644
 +        Test if OS grains are parsed correctly in Astra Linux CE 2.12.22 "orel"
 +        """
 +        _os_release_map = {
-+            "linux_distribution": ("AstraLinuxCE", "2.12.22", "orel"),
++            "_linux_distribution": ("AstraLinuxCE", "2.12.22", "orel"),
 +        }
 +        expectation = {
 +            "os": "AstraLinuxCE",
