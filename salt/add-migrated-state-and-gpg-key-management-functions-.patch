@@ -1,4 +1,4 @@
-From 5071fb6f0ef19589d87b3b5aea0c0b9ce70b1012 Mon Sep 17 00:00:00 2001
+From acd8fbfd7b2c1fdf84b0250e245418d8c6e387ec Mon Sep 17 00:00:00 2001
 From: Alberto Planas <aplanas@suse.com>
 Date: Tue, 20 Oct 2020 11:43:09 +0200
 Subject: [PATCH] Add "migrated" state and GPG key management functions
@@ -26,13 +26,13 @@ Convert test to pytests
  salt/modules/yumpkg.py                       |   89 +-
  salt/modules/zypperpkg.py                    |   88 +
  salt/states/pkgrepo.py                       |  207 +++
- tests/pytests/unit/modules/test_yumpkg.py    |   89 +-
+ tests/pytests/unit/modules/test_yumpkg.py    |   87 +-
  tests/pytests/unit/modules/test_zypperpkg.py |   66 +-
  tests/pytests/unit/states/test_pkgrepo.py    |  448 +++++
  tests/unit/modules/test_rpm_lowpkg.py        |  232 ++-
  tests/unit/modules/test_yumpkg.py            | 1754 ------------------
  tests/unit/modules/test_zypperpkg.py         |   44 +-
- 12 files changed, 1401 insertions(+), 1775 deletions(-)
+ 12 files changed, 1399 insertions(+), 1775 deletions(-)
  create mode 100644 changelog/58782.added
  delete mode 100644 tests/unit/modules/test_yumpkg.py
 
@@ -658,7 +658,7 @@ index c8c75e3244..e3d7f7084e 100644
 +
 +    return ret
 diff --git a/tests/pytests/unit/modules/test_yumpkg.py b/tests/pytests/unit/modules/test_yumpkg.py
-index 66c86972a0..a241b49dcd 100644
+index 66c86972a0..ef7100fe9d 100644
 --- a/tests/pytests/unit/modules/test_yumpkg.py
 +++ b/tests/pytests/unit/modules/test_yumpkg.py
 @@ -7,7 +7,7 @@ import salt.modules.rpm_lowpkg as rpm
@@ -670,12 +670,10 @@ index 66c86972a0..a241b49dcd 100644
  
  try:
      import pytest
-@@ -1683,6 +1683,93 @@ def test_get_repo_with_non_existent_repo(list_repos_var):
+@@ -1683,6 +1683,91 @@ def test_get_repo_with_non_existent_repo(list_repos_var):
      assert ret == expected, ret
  
  
-+<<<<<<< HEAD
-+=======
 +def test_get_repo_keys():
 +    salt_mock = {"lowpkg.list_gpg_keys": MagicMock(return_value=True)}
 +    with patch.dict(yumpkg.__salt__, salt_mock):
@@ -748,9 +746,10 @@ index 66c86972a0..a241b49dcd 100644
 +                "--quiet",
 +                "-y",
 +                "--setopt",
-+                "plugins=0",
++                "obsoletes=0",
 +                "--setopt",
-+                "obsoletes=False",
++                "plugins=0",
++                "--obsoletes=False",
 +                "upgrade",
 +                "foo",
 +            ],
@@ -760,7 +759,6 @@ index 66c86972a0..a241b49dcd 100644
 +        )
 +
 +
-+>>>>>>> 215402bd60 (Convert test to pytests)
  def test_call_yum_default():
      """
      Call default Yum/Dnf.
@@ -3309,10 +3307,10 @@ index fd57faad32..0000000000
 -        """Test that yumpkg.services_need_restart raises an error if DNF is unavailable."""
 -        pytest.raises(CommandExecutionError, yumpkg.services_need_restart)
 diff --git a/tests/unit/modules/test_zypperpkg.py b/tests/unit/modules/test_zypperpkg.py
-index ed49e873f7..2d7e5f0858 100644
+index 78fe226914..2440954d89 100644
 --- a/tests/unit/modules/test_zypperpkg.py
 +++ b/tests/unit/modules/test_zypperpkg.py
-@@ -10,11 +10,9 @@ import salt.modules.pkg_resource as pkg_resource
+@@ -12,11 +12,9 @@ import salt.modules.pkg_resource as pkg_resource
  import salt.modules.zypperpkg as zypper
  import salt.utils.files
  import salt.utils.pkg
@@ -3326,7 +3324,7 @@ index ed49e873f7..2d7e5f0858 100644
  from tests.support.unit import TestCase
  
  
-@@ -2439,3 +2437,41 @@ pattern() = package-c"""
+@@ -2441,3 +2439,41 @@ pattern() = package-c"""
                  python_shell=False,
                  env={"ZYPP_READONLY_HACK": "1"},
              )
