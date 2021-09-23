@@ -1,4 +1,4 @@
-From ca78b94192fd4a6d08e3dd40636f146a19f96d26 Mon Sep 17 00:00:00 2001
+From c25ee8158000770cb667b914de62f802467c204e Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Fri, 16 Nov 2018 17:05:29 +0100
 Subject: [PATCH] Async batch implementation
@@ -72,14 +72,14 @@ Async batch implementation fix (#320)
 Remove deprecated usage of NO_MOCK and NO_MOCK_REASON
 ---
  salt/auth/__init__.py              |   2 +
- salt/cli/batch.py                  | 108 ++++++--
+ salt/cli/batch.py                  | 109 ++++++--
  salt/cli/batch_async.py            | 315 +++++++++++++++++++++++
  salt/client/__init__.py            |  51 ++--
  salt/master.py                     |  20 ++
  salt/transport/ipc.py              |   9 +-
  salt/utils/event.py                |   8 +-
  tests/unit/cli/test_batch_async.py | 386 +++++++++++++++++++++++++++++
- 8 files changed, 838 insertions(+), 61 deletions(-)
+ 8 files changed, 839 insertions(+), 61 deletions(-)
  create mode 100644 salt/cli/batch_async.py
  create mode 100644 tests/unit/cli/test_batch_async.py
 
@@ -97,7 +97,7 @@ index 3b73c2ec08..6f300fe7c4 100644
  )
  
 diff --git a/salt/cli/batch.py b/salt/cli/batch.py
-index 2a692e13f8..bab9feeaa3 100644
+index 2a692e13f8..828a1ded5b 100644
 --- a/salt/cli/batch.py
 +++ b/salt/cli/batch.py
 @@ -13,9 +13,88 @@ import salt.exceptions
@@ -189,7 +189,15 @@ index 2a692e13f8..bab9feeaa3 100644
  class Batch:
      """
      Manage the execution of batch runs
-@@ -51,7 +130,7 @@ class Batch:
+@@ -39,6 +118,7 @@ class Batch:
+         self.pub_kwargs = eauth if eauth else {}
+         self.quiet = quiet
+         self.options = _parser
++        self.minions = set()
+         # Passing listen True to local client will prevent it from purging
+         # cahced events while iterating over the batches.
+         self.local = salt.client.get_local_client(opts["conf_file"], listen=True)
+@@ -51,7 +131,7 @@ class Batch:
              self.opts["tgt"],
              "test.ping",
              [],
@@ -198,7 +206,7 @@ index 2a692e13f8..bab9feeaa3 100644
          ]
  
          selected_target_option = self.opts.get("selected_target_option", None)
-@@ -62,7 +141,12 @@ class Batch:
+@@ -62,7 +142,12 @@ class Batch:
  
          self.pub_kwargs["yield_pub_data"] = True
          ping_gen = self.local.cmd_iter(
@@ -212,7 +220,7 @@ index 2a692e13f8..bab9feeaa3 100644
          )
  
          # Broadcast to targets
-@@ -87,25 +171,7 @@ class Batch:
+@@ -87,25 +172,7 @@ class Batch:
          return (list(fret), ping_gen, nret.difference(fret))
  
      def get_bnum(self):
