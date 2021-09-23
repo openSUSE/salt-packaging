@@ -1,4 +1,4 @@
-From b21ddc41afbab1906d7beed9a4e061d436f976a4 Mon Sep 17 00:00:00 2001
+From eb15f772aa7aa6c9553bb4f24c709e941e6f3413 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
 Date: Wed, 22 Jan 2020 08:19:55 +0000
@@ -10,9 +10,9 @@ Subject: [PATCH] Prevent logging deadlock on salt-api subprocesses
  salt/client/ssh/__init__.py   | 12 +++++-
  salt/client/ssh/client.py     |  9 +++-
  salt/client/ssh/wrapper/cp.py |  2 +-
- salt/loader.py                |  2 +-
+ salt/loader.py                |  6 +--
  salt/utils/lazy.py            | 10 ++---
- 6 files changed, 69 insertions(+), 46 deletions(-)
+ 6 files changed, 71 insertions(+), 48 deletions(-)
 
 diff --git a/salt/_logging/impl.py b/salt/_logging/impl.py
 index afb0027eeb..ad46c10e01 100644
@@ -232,7 +232,7 @@ index 020dadfa35..af7d4f73f4 100644
  import salt.utils.stringutils
  import salt.utils.templates
 diff --git a/salt/loader.py b/salt/loader.py
-index 491768a028..12565602c9 100644
+index 491768a028..cdcec70262 100644
 --- a/salt/loader.py
 +++ b/salt/loader.py
 @@ -10,7 +10,6 @@ import importlib
@@ -251,6 +251,22 @@ index 491768a028..12565602c9 100644
  import salt.syspaths
  import salt.utils.args
  import salt.utils.context
+@@ -2195,7 +2195,7 @@ class LazyLoader(salt.utils.lazy.LazyDict):
+                             mod.__name__, exc
+                         )
+                     )
+-                    log.error(error_reason, exc_info_on_loglevel=logging.DEBUG)
++                    log.error(error_reason, exc_info_on_loglevel=logging.logging.DEBUG)
+                     virtual = None
+                 # Get the module's virtual name
+                 virtualname = getattr(mod, "__virtualname__", virtual)
+@@ -2341,5 +2341,5 @@ def catch_entry_points_exception(entry_point):
+             entry_point_details.name,
+             entry_point_details.version,
+             exc,
+-            exc_info_on_loglevel=logging.DEBUG,
++            exc_info_on_loglevel=logging.logging.DEBUG,
+         )
 diff --git a/salt/utils/lazy.py b/salt/utils/lazy.py
 index 8fc538164a..c828dd2c32 100644
 --- a/salt/utils/lazy.py
