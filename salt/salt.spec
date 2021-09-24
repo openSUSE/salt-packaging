@@ -516,6 +516,8 @@ Patch208:       add-missing-aarch64-to-rpm-package-architectures-406.patch
 Patch209:       templates-move-the-globals-up-to-the-environment-jin.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/0b75ba190fda9c04cc026ad1aa4a6d572f40349b
 Patch210:       exclude-the-full-path-of-a-download-url-to-prevent-i.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/59777
+Patch211:       3000-postgresql-json-support-in-pillar-426.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1257,6 +1259,7 @@ cp %{S:6} .
 %patch208 -p1
 %patch209 -p1
 %patch210 -p1
+%patch211 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
