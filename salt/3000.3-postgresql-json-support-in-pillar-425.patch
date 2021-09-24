@@ -1,0 +1,598 @@
+From 3ab66641add45b75f56e36f7357dc695f8198b69 Mon Sep 17 00:00:00 2001
+From: Cedric Bosdonnat <cedric.bosdonnat@free.fr>
+Date: Fri, 24 Sep 2021 17:02:01 +0200
+Subject: [PATCH] 3000.3 - postgresql JSON support in pillar (#425)
+
+* Allow single field returns from SQL pillar
+
+Several SQL databases support native JSON storage. When storing
+pillars in this way, SQL query result already returns dict and
+without the need to have key column.
+
+* Add and adapt tests for as_json sql mode
+
+* Add missing entries to rest of sql pillar tests
+
+* Add changelog entry
+
+* Fix the sql_base pillar merge for as_json
+
+Use salt.utils.update() to recursively merge the JSON dicts of the
+returned SQL queries.
+
+Co-authored-by: Ondrej Holecek <oholecek@suse.com>
+---
+ changelog/60905.added                      |  1 +
+ salt/pillar/sql_base.py                    | 38 +++++++++++
+ tests/pytests/unit/pillar/test_sql_base.py | 43 +++++++++++++
+ tests/unit/pillar/test_mysql.py            | 75 ++++++++++++----------
+ tests/unit/pillar/test_sqlcipher.py        | 64 +++++++++---------
+ tests/unit/pillar/test_sqlite3.py          | 64 +++++++++---------
+ 6 files changed, 187 insertions(+), 98 deletions(-)
+ create mode 100644 changelog/60905.added
+ create mode 100644 tests/pytests/unit/pillar/test_sql_base.py
+
+diff --git a/changelog/60905.added b/changelog/60905.added
+new file mode 100644
+index 0000000000..3fe39286a8
+--- /dev/null
++++ b/changelog/60905.added
+@@ -0,0 +1 @@
++Support querying for JSON data in SQL external pillar
+diff --git a/salt/pillar/sql_base.py b/salt/pillar/sql_base.py
+index eeb2269f77..8a1febb24f 100644
+--- a/salt/pillar/sql_base.py
++++ b/salt/pillar/sql_base.py
+@@ -137,6 +137,33 @@ These columns define list grouping
+ The range for with_lists is 1 to number_of_fields, inclusive.
+ Numbers outside this range are ignored.
+ 
++If you specify `as_json: True` in the mapping expression and query only for
++single value, returned data are considered in JSON format and will be merged
++directly.
++
++.. code-block:: yaml
++
++  ext_pillar:
++    - sql_base:
++        - query: "SELECT json_pillar FROM pillars WHERE minion_id = %s"
++          as_json: True
++
++The processed JSON entries are recursively merged in a single dictionary.
++Additionnaly if `as_list` is set to `True` the lists will be merged in case of collision.
++
++For instance the following rows:
++
++    {"a": {"b": [1, 2]}, "c": 3}
++    {"a": {"b": [1, 3]}, "d": 4}
++
++will result in the following pillar with `as_list=False`
++
++    {"a": {"b": [1, 3], "c": 3, "d": 4}
++
++and in with `as_list=True`
++
++    {"a": {"b": [1, 2, 3], "c": 3, "d": 4}
++
+ Finally, if you pass the queries in via a mapping, the key will be the
+ first level name where as passing them in as a list will place them in the
+ root.  This isolates the query results into their own subtrees.
+@@ -180,6 +207,7 @@ import logging
+ import abc  # Added in python2.6 so always available
+ 
+ # Import Salt libs
++from salt.utils.dictupdate import update
+ from salt.utils.odict import OrderedDict
+ from salt.ext.six.moves import range
+ from salt.ext import six
+@@ -205,6 +233,7 @@ class SqlBaseExtPillar(six.with_metaclass(abc.ABCMeta, object)):
+     num_fields = 0
+     depth = 0
+     as_list = False
++    as_json = False
+     with_lists = None
+     ignore_null = False
+ 
+@@ -261,6 +290,7 @@ class SqlBaseExtPillar(six.with_metaclass(abc.ABCMeta, object)):
+             defaults = {'query': '',
+                         'depth': 0,
+                         'as_list': False,
++                        'as_json': False,
+                         'with_lists': None,
+                         'ignore_null': False
+                         }
+@@ -316,6 +346,13 @@ class SqlBaseExtPillar(six.with_metaclass(abc.ABCMeta, object)):
+         for ret in rows:
+             # crd is the Current Return Data level, to make this non-recursive.
+             crd = self.focus
++
++            # We have just one field without any key, assume returned row is already a dict
++            # aka JSON storage
++            if self.as_json and self.num_fields == 1:
++                crd = update(crd, ret[0], merge_lists=self.as_list)
++                continue
++
+             # Walk and create dicts above the final layer
+             for i in range(0, self.depth-1):
+                 # At the end we'll use listify to find values to make a list of
+@@ -438,6 +475,7 @@ class SqlBaseExtPillar(six.with_metaclass(abc.ABCMeta, object)):
+                 self.process_fields([row[0] for row in cursor.description], details['depth'])
+                 self.enter_root(root)
+                 self.as_list = details['as_list']
++                self.as_json = details['as_json']
+                 if details['with_lists']:
+                     self.with_lists = details['with_lists']
+                 else:
+diff --git a/tests/pytests/unit/pillar/test_sql_base.py b/tests/pytests/unit/pillar/test_sql_base.py
+new file mode 100644
+index 0000000000..0d44c2d608
+--- /dev/null
++++ b/tests/pytests/unit/pillar/test_sql_base.py
+@@ -0,0 +1,43 @@
++import pytest
++import salt.pillar.sql_base as sql_base
++from tests.support.mock import MagicMock
++
++
++class FakeExtPillar(sql_base.SqlBaseExtPillar):
++    """
++    Mock SqlBaseExtPillar implementation for testing purpose
++    """
++
++    @classmethod
++    def _db_name(cls):
++        return "fake"
++
++    def _get_cursor(self):
++        return MagicMock()
++
++
++@pytest.mark.parametrize("as_list", [True, False])
++def test_process_results_as_json(as_list):
++    """
++    Validates merging of dict values returned from JSON datatype.
++    """
++    return_data = FakeExtPillar()
++    return_data.as_list = as_list
++    return_data.as_json = True
++    return_data.with_lists = None
++    return_data.enter_root(None)
++    return_data.process_fields(["json_data"], 0)
++    test_dicts = [
++        ({"a": [1]},),
++        ({"b": [2, 3]},),
++        ({"a": [4]},),
++        ({"c": {"d": [4, 5], "e": 6}},),
++        ({"f": [{"g": 7, "h": "test"}], "c": {"g": 8}},),
++    ]
++    return_data.process_results(test_dicts)
++    assert return_data.result == {
++        "a": [1, 4] if as_list else [4],
++        "b": [2, 3],
++        "c": {"d": [4, 5], "e": 6, "g": 8},
++        "f": [{"g": 7, "h": "test"}],
++    }
+diff --git a/tests/unit/pillar/test_mysql.py b/tests/unit/pillar/test_mysql.py
+index 94ecde8c20..52472eb675 100644
+--- a/tests/unit/pillar/test_mysql.py
++++ b/tests/unit/pillar/test_mysql.py
+@@ -20,7 +20,7 @@ class MysqlPillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             [None, {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}]
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_002_extract_queries_list(self):
+@@ -34,28 +34,31 @@ class MysqlPillarTestCase(TestCase):
+             {'query': 'SELECT blah6', 'depth': 2},
+             {'query': 'SELECT blah7', 'as_list': True},
+             {'query': 'SELECT blah8', 'with_lists': '1'},
+-            {'query': 'SELECT blah9', 'with_lists': '1,2'}
++            {'query': 'SELECT blah9', 'with_lists': '1,2'},
++            {'query': 'SELECT json1', 'as_json': True}
+         ], {}
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             [None, {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah3', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah4', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah5', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah6', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah7', 'depth': 0, 'as_list': True,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah8', 'depth': 0, 'as_list': False,
+-                    'with_lists': [1], 'ignore_null': False}],
++                    'as_json': False, 'with_lists': [1], 'ignore_null': False}],
+             [None, {'query': 'SELECT blah9', 'depth': 0, 'as_list': False,
+-                    'with_lists': [1, 2], 'ignore_null': False}]
++                    'as_json': False, 'with_lists': [1, 2], 'ignore_null': False}],
++            [None, {'query': 'SELECT json1', 'depth': 0, 'as_list': False,
++                    'as_json': True, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_003_extract_queries_kwarg(self):
+@@ -68,23 +71,26 @@ class MysqlPillarTestCase(TestCase):
+             '5': {'query': 'SELECT blah5'},
+             '6': {'query': 'SELECT blah6', 'depth': 2},
+             '7': {'query': 'SELECT blah7', 'as_list': True},
++            '8': {'query': 'SELECT json1', 'as_json': True},
+         }
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             ['1', {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['2', {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['3', {'query': 'SELECT blah3', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['4', {'query': 'SELECT blah4', 'depth': 2, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['5', {'query': 'SELECT blah5', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['6', {'query': 'SELECT blah6', 'depth': 2, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['7', {'query': 'SELECT blah7', 'depth': 0, 'as_list': True,
+-                   'with_lists': None, 'ignore_null': False}]
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
++            ['8', {'query': 'SELECT json1', 'depth': 0, 'as_list': False,
++                   'as_json': True, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_004_extract_queries_mixed(self):
+@@ -101,17 +107,17 @@ class MysqlPillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             [None, {'query': 'SELECT blah1', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah2', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah3', 'depth': 0, 'as_list': True,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['1', {'query': 'SELECT blah1', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['2', {'query': 'SELECT blah2', 'depth': 2, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['3', {'query': 'SELECT blah3', 'depth': 0, 'as_list': True,
+-                   'with_lists': None, 'ignore_null': False}]
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_005_extract_queries_bogus_list(self):
+@@ -135,21 +141,21 @@ class MysqlPillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             [None, {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah3', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah4', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah5', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah6', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah7', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah8', 'depth': 0, 'as_list': True,
+-                    'with_lists': None, 'ignore_null': False}]
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_006_extract_queries_bogus_kwargs(self):
+@@ -163,9 +169,9 @@ class MysqlPillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             ['1', {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['3', {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}]
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_011_enter_root(self):
+@@ -622,3 +628,4 @@ class MysqlPillarTestCase(TestCase):
+                         )
+             else:
+                 raise ValueError("Unexpected value {0}".format(x))
++
+diff --git a/tests/unit/pillar/test_sqlcipher.py b/tests/unit/pillar/test_sqlcipher.py
+index 84382a90aa..6e2e7e49ec 100644
+--- a/tests/unit/pillar/test_sqlcipher.py
++++ b/tests/unit/pillar/test_sqlcipher.py
+@@ -29,23 +29,23 @@ class SQLCipherPillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             [None, {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah3', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah4', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah5', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah6', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah7', 'depth': 0, 'as_list': True,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah8', 'depth': 0, 'as_list': False,
+-                    'with_lists': [1], 'ignore_null': False}],
++                    'as_json': False, 'with_lists': [1], 'ignore_null': False}],
+             [None, {'query': 'SELECT blah9', 'depth': 0, 'as_list': False,
+-                    'with_lists': [1, 2], 'ignore_null': False}]
++                    'as_json': False, 'with_lists': [1, 2], 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_002_extract_queries_kwarg(self):
+@@ -62,19 +62,19 @@ class SQLCipherPillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             ['1', {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['2', {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['3', {'query': 'SELECT blah3', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['4', {'query': 'SELECT blah4', 'depth': 2, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['5', {'query': 'SELECT blah5', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['6', {'query': 'SELECT blah6', 'depth': 2, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['7', {'query': 'SELECT blah7', 'depth': 0, 'as_list': True,
+-                   'with_lists': None, 'ignore_null': False}]
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_003_extract_queries_mixed(self):
+@@ -91,17 +91,17 @@ class SQLCipherPillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             [None, {'query': 'SELECT blah1', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah2', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah3', 'depth': 0, 'as_list': True,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['1', {'query': 'SELECT blah1', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['2', {'query': 'SELECT blah2', 'depth': 2, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['3', {'query': 'SELECT blah3', 'depth': 0, 'as_list': True,
+-                   'with_lists': None, 'ignore_null': False}]
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_004_extract_queries_bogus_list(self):
+@@ -125,21 +125,21 @@ class SQLCipherPillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             [None, {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah3', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah4', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah5', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah6', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah7', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah8', 'depth': 0, 'as_list': True,
+-                    'with_lists': None, 'ignore_null': False}]
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_005_extract_queries_bogus_kwargs(self):
+@@ -153,9 +153,9 @@ class SQLCipherPillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             ['1', {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['3', {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}]
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_011_enter_root(self):
+diff --git a/tests/unit/pillar/test_sqlite3.py b/tests/unit/pillar/test_sqlite3.py
+index f22423b6e5..4f906836f7 100644
+--- a/tests/unit/pillar/test_sqlite3.py
++++ b/tests/unit/pillar/test_sqlite3.py
+@@ -29,23 +29,23 @@ class SQLite3PillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             [None, {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah3', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah4', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah5', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah6', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah7', 'depth': 0, 'as_list': True,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah8', 'depth': 0, 'as_list': False,
+-                    'with_lists': [1], 'ignore_null': False}],
++                    'as_json': False, 'with_lists': [1], 'ignore_null': False}],
+             [None, {'query': 'SELECT blah9', 'depth': 0, 'as_list': False,
+-                    'with_lists': [1, 2], 'ignore_null': False}]
++                    'as_json': False, 'with_lists': [1, 2], 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_002_extract_queries_kwarg(self):
+@@ -62,19 +62,19 @@ class SQLite3PillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             ['1', {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['2', {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['3', {'query': 'SELECT blah3', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['4', {'query': 'SELECT blah4', 'depth': 2, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['5', {'query': 'SELECT blah5', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['6', {'query': 'SELECT blah6', 'depth': 2, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['7', {'query': 'SELECT blah7', 'depth': 0, 'as_list': True,
+-                   'with_lists': None, 'ignore_null': False}]
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_003_extract_queries_mixed(self):
+@@ -91,17 +91,17 @@ class SQLite3PillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             [None, {'query': 'SELECT blah1', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah2', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah3', 'depth': 0, 'as_list': True,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['1', {'query': 'SELECT blah1', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['2', {'query': 'SELECT blah2', 'depth': 2, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['3', {'query': 'SELECT blah3', 'depth': 0, 'as_list': True,
+-                   'with_lists': None, 'ignore_null': False}]
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_004_extract_queries_bogus_list(self):
+@@ -125,21 +125,21 @@ class SQLite3PillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             [None, {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah3', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah4', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah5', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah6', 'depth': 0, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah7', 'depth': 2, 'as_list': False,
+-                    'with_lists': None, 'ignore_null': False}],
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             [None, {'query': 'SELECT blah8', 'depth': 0, 'as_list': True,
+-                    'with_lists': None, 'ignore_null': False}]
++                    'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_005_extract_queries_bogus_kwargs(self):
+@@ -153,9 +153,9 @@ class SQLite3PillarTestCase(TestCase):
+         qbuffer = return_data.extract_queries(args, kwargs)
+         self.assertEqual([
+             ['1', {'query': 'SELECT blah', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}],
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}],
+             ['3', {'query': 'SELECT blah2', 'depth': 0, 'as_list': False,
+-                   'with_lists': None, 'ignore_null': False}]
++                   'as_json': False, 'with_lists': None, 'ignore_null': False}]
+         ], qbuffer)
+ 
+     def test_011_enter_root(self):
+-- 
+2.33.0
+
+
