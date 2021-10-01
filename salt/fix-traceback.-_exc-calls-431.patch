@@ -1,0 +1,95 @@
+From a7408ec47f165b55cde18b51950b578fb528eed0 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
+Date: Fri, 1 Oct 2021 13:21:30 +0300
+Subject: [PATCH] Fix traceback.*_exc() calls (#431)
+
+They use the current exception context instead.
+Fixes #60330
+
+Co-authored-by: OrangeDog <675056+OrangeDog@users.noreply.github.com>
+---
+ changelog/60330.fixed               | 1 +
+ salt/modules/zcbuildout.py          | 2 +-
+ salt/utils/parsers.py               | 6 +++---
+ tests/unit/states/test_pip_state.py | 6 +++---
+ 4 files changed, 8 insertions(+), 7 deletions(-)
+ create mode 100644 changelog/60330.fixed
+
+diff --git a/changelog/60330.fixed b/changelog/60330.fixed
+new file mode 100644
+index 0000000000..4ac98e16c7
+--- /dev/null
++++ b/changelog/60330.fixed
+@@ -0,0 +1 @@
++Avoid exceptions when handling some exception cases.
+diff --git a/salt/modules/zcbuildout.py b/salt/modules/zcbuildout.py
+index 24d462d99b..25b8999487 100644
+--- a/salt/modules/zcbuildout.py
++++ b/salt/modules/zcbuildout.py
+@@ -120,7 +120,7 @@ def _salt_callback(func, **kwargs):
+                                              comment=out.get('comment', ''),
+                                              out=out.get('out', out))
+         except Exception:  # pylint: disable=broad-except
+-            trace = traceback.format_exc(None)
++            trace = traceback.format_exc()
+             LOG.error(trace)
+             _invalid(status)
+         LOG.clear()
+diff --git a/salt/utils/parsers.py b/salt/utils/parsers.py
+index 5f98c73291..e701b2b53d 100644
+--- a/salt/utils/parsers.py
++++ b/salt/utils/parsers.py
+@@ -225,7 +225,7 @@ class OptionParser(optparse.OptionParser, object):
+                 logger.exception(err)
+                 self.error(
+                     'Error while processing {0}: {1}'.format(
+-                        process_option_func, traceback.format_exc(err)
++                        process_option_func, traceback.format_exc()
+                     )
+                 )
+ 
+@@ -237,7 +237,7 @@ class OptionParser(optparse.OptionParser, object):
+                 logger.exception(err)
+                 self.error(
+                     'Error while processing {0}: {1}'.format(
+-                        mixin_after_parsed_func, traceback.format_exc(err)
++                        mixin_after_parsed_func, traceback.format_exc()
+                     )
+                 )
+ 
+@@ -278,7 +278,7 @@ class OptionParser(optparse.OptionParser, object):
+                 logger.exception(err)
+                 logger.error('Error while processing %s: %s',
+                              six.text_type(mixin_before_exit_func),
+-                             traceback.format_exc(err))
++                             traceback.format_exc())
+         if self._setup_mp_logging_listener_ is True:
+             # Stop logging through the queue
+             log.shutdown_multiprocessing_logging()
+diff --git a/tests/unit/states/test_pip_state.py b/tests/unit/states/test_pip_state.py
+index 13c158b309..7d0ccce0bf 100644
+--- a/tests/unit/states/test_pip_state.py
++++ b/tests/unit/states/test_pip_state.py
+@@ -413,15 +413,15 @@ class PipStateInstallationErrorTest(TestCase):
+             import salt.states.pip_state
+             salt.states.pip_state.InstallationError
+         except ImportError as exc:
+-            traceback.print_exc(exc, file=sys.stdout)
++            traceback.print_exc(file=sys.stdout)
+             sys.stdout.flush()
+             sys.exit(1)
+         except AttributeError as exc:
+-            traceback.print_exc(exc, file=sys.stdout)
++            traceback.print_exc(file=sys.stdout)
+             sys.stdout.flush()
+             sys.exit(2)
+         except Exception as exc:
+-            traceback.print_exc(exc, file=sys.stdout)
++            traceback.print_exc(file=sys.stdout)
+             sys.stdout.flush()
+             sys.exit(3)
+         sys.exit(0)
+-- 
+2.33.0
+
+
