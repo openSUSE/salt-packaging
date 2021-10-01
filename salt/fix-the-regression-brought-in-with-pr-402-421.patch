@@ -1,0 +1,26 @@
+From 1b5be4d86bf2a66cc131314a18a0fb3bc75cf531 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
+Date: Fri, 1 Oct 2021 13:21:58 +0300
+Subject: [PATCH] Fix the regression brought in with PR#402 (#421)
+
+---
+ salt/states/docker_container.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/states/docker_container.py b/salt/states/docker_container.py
+index 8e51058c95..a1ee3fde67 100644
+--- a/salt/states/docker_container.py
++++ b/salt/states/docker_container.py
+@@ -2105,7 +2105,7 @@ def run(
+     skip_translate=None,
+     ignore_collisions=False,
+     validate_ip_addrs=True,
+-    client_timeout=salt.utils.dockermod.CLIENT_TIMEOUT,
++    client_timeout=salt.utils.docker.CLIENT_TIMEOUT,
+     **kwargs
+ ):
+     """
+-- 
+2.33.0
+
+
