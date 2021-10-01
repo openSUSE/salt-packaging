@@ -457,8 +457,10 @@ Patch195:       don-t-use-shell-sbin-nologin-in-requisites.patch
 Patch196:       templates-move-the-globals-up-to-the-environment-jin.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/0b75ba190fda9c04cc026ad1aa4a6d572f40349b
 Patch197:       exclude-the-full-path-of-a-download-url-to-prevent-i.patch
-# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/59777
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59777
 Patch198:       3002.2-postgresql-json-support-in-pillar-424.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60342
+Patch199:       fix-traceback.-_exc-calls-429.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1070,6 +1072,7 @@ cp %{S:6} .
 %patch196 -p1
 %patch197 -p1
 %patch198 -p1
+%patch199 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this

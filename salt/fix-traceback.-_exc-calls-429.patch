@@ -1,0 +1,157 @@
+From ce81e7765d321a0116de99636990876cc743a60c Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
+Date: Fri, 1 Oct 2021 13:21:17 +0300
+Subject: [PATCH] Fix traceback.*_exc() calls (#429)
+
+They use the current exception context instead.
+Fixes #60330
+
+Co-authored-by: OrangeDog <675056+OrangeDog@users.noreply.github.com>
+---
+ changelog/60330.fixed                 | 1 +
+ salt/modules/zcbuildout.py            | 2 +-
+ salt/netapi/rest_cherrypy/app.py      | 2 +-
+ salt/states/zcbuildout.py             | 2 +-
+ salt/utils/parsers.py                 | 6 +++---
+ tests/unit/modules/test_zcbuildout.py | 6 +-----
+ tests/unit/states/test_pip_state.py   | 6 +++---
+ tests/unit/states/test_zcbuildout.py  | 4 +---
+ 8 files changed, 12 insertions(+), 17 deletions(-)
+ create mode 100644 changelog/60330.fixed
+
+diff --git a/changelog/60330.fixed b/changelog/60330.fixed
+new file mode 100644
+index 0000000000..4ac98e16c7
+--- /dev/null
++++ b/changelog/60330.fixed
+@@ -0,0 +1 @@
++Avoid exceptions when handling some exception cases.
+diff --git a/salt/modules/zcbuildout.py b/salt/modules/zcbuildout.py
+index 2e88a84047..b801444138 100644
+--- a/salt/modules/zcbuildout.py
++++ b/salt/modules/zcbuildout.py
+@@ -121,7 +121,7 @@ def _salt_callback(func, **kwargs):
+                             out=out.get("out", out),
+                         )
+         except Exception:  # pylint: disable=broad-except
+-            trace = traceback.format_exc(None)
++            trace = traceback.format_exc()
+             LOG.error(trace)
+             _invalid(status)
+         LOG.clear()
+diff --git a/salt/netapi/rest_cherrypy/app.py b/salt/netapi/rest_cherrypy/app.py
+index 5dfbadf759..81e0f2280a 100644
+--- a/salt/netapi/rest_cherrypy/app.py
++++ b/salt/netapi/rest_cherrypy/app.py
+@@ -894,7 +894,7 @@ def hypermedia_handler(*args, **kwargs):
+ 
+         ret = {
+             "status": cherrypy.response.status,
+-            "return": "{}".format(traceback.format_exc(exc))
++            "return": "{}".format(traceback.format_exc())
+             if cherrypy.config["debug"]
+             else "An unexpected error occurred",
+         }
+diff --git a/salt/states/zcbuildout.py b/salt/states/zcbuildout.py
+index 2678eb5fc9..29fb4c6e09 100644
+--- a/salt/states/zcbuildout.py
++++ b/salt/states/zcbuildout.py
+@@ -58,7 +58,7 @@ def __virtual__():
+     return (False, "buildout module could not be loaded")
+ 
+ 
+-INVALID_RESPONSE = "We did not get any expectable answer from docker"
++INVALID_RESPONSE = "Unexpected response from docker"
+ VALID_RESPONSE = ""
+ NOTSET = object()
+ MAPPING_CACHE = {}
+diff --git a/salt/utils/parsers.py b/salt/utils/parsers.py
+index cea59b387e..db2d6a8ac5 100644
+--- a/salt/utils/parsers.py
++++ b/salt/utils/parsers.py
+@@ -200,7 +200,7 @@ class OptionParser(optparse.OptionParser):
+                 logger.exception(err)
+                 self.error(
+                     "Error while processing {}: {}".format(
+-                        process_option_func, traceback.format_exc(err)
++                        process_option_func, traceback.format_exc()
+                     )
+                 )
+ 
+@@ -214,7 +214,7 @@ class OptionParser(optparse.OptionParser):
+                 logger.exception(err)
+                 self.error(
+                     "Error while processing {}: {}".format(
+-                        mixin_after_parsed_func, traceback.format_exc(err)
++                        mixin_after_parsed_func, traceback.format_exc()
+                     )
+                 )
+ 
+@@ -260,7 +260,7 @@ class OptionParser(optparse.OptionParser):
+                 logger.error(
+                     "Error while processing %s: %s",
+                     str(mixin_before_exit_func),
+-                    traceback.format_exc(err),
++                    traceback.format_exc(),
+                 )
+         if self._setup_mp_logging_listener_ is True:
+             # Stop logging through the queue
+diff --git a/tests/unit/modules/test_zcbuildout.py b/tests/unit/modules/test_zcbuildout.py
+index 267225b564..71a1538eec 100644
+--- a/tests/unit/modules/test_zcbuildout.py
++++ b/tests/unit/modules/test_zcbuildout.py
+@@ -199,11 +199,7 @@ class BuildoutTestCase(Base):
+         ret2 = buildout._salt_callback(callback2)(2, b=6)
+         self.assertEqual(ret2["status"], False)
+         self.assertTrue(ret2["logs_by_level"]["error"][0].startswith("Traceback"))
+-        self.assertTrue(
+-            "We did not get any "
+-            "expectable answer "
+-            "from buildout" in ret2["comment"]
+-        )
++        self.assertTrue("Unexpected response from buildout" in ret2["comment"])
+         self.assertEqual(ret2["out"], None)
+         for l in buildout.LOG.levels:
+             self.assertTrue(0 == len(buildout.LOG.by_level[l]))
+diff --git a/tests/unit/states/test_pip_state.py b/tests/unit/states/test_pip_state.py
+index ec9fd64866..424c305f84 100644
+--- a/tests/unit/states/test_pip_state.py
++++ b/tests/unit/states/test_pip_state.py
+@@ -450,15 +450,15 @@ class PipStateInstallationErrorTest(TestCase):
+             import salt.states.pip_state
+             salt.states.pip_state.InstallationError
+         except ImportError as exc:
+-            traceback.print_exc(exc, file=sys.stdout)
++            traceback.print_exc(file=sys.stdout)
+             sys.stdout.flush()
+             sys.exit(1)
+         except AttributeError as exc:
+-            traceback.print_exc(exc, file=sys.stdout)
++            traceback.print_exc(file=sys.stdout)
+             sys.stdout.flush()
+             sys.exit(2)
+         except Exception as exc:
+-            traceback.print_exc(exc, file=sys.stdout)
++            traceback.print_exc(file=sys.stdout)
+             sys.stdout.flush()
+             sys.exit(3)
+         sys.exit(0)
+diff --git a/tests/unit/states/test_zcbuildout.py b/tests/unit/states/test_zcbuildout.py
+index 078c1a6108..d2f078223e 100644
+--- a/tests/unit/states/test_zcbuildout.py
++++ b/tests/unit/states/test_zcbuildout.py
+@@ -56,9 +56,7 @@ class BuildoutTestCase(Base):
+     def test_error(self):
+         b_dir = os.path.join(self.tdir, "e")
+         ret = buildout.installed(b_dir, python=self.py_st)
+-        self.assertTrue(
+-            "We did not get any expectable answer from buildout" in ret["comment"]
+-        )
++        self.assertTrue("Unexpected response from buildout" in ret["comment"])
+         self.assertFalse(ret["result"])
+ 
+     @slowTest
+-- 
+2.33.0
+
+
