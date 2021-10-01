@@ -520,6 +520,8 @@ Patch210:       exclude-the-full-path-of-a-download-url-to-prevent-i.patch
 Patch211:       3000-postgresql-json-support-in-pillar-426.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/421
 Patch212:       fix-the-regression-brought-in-with-pr-402-421.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60342
+Patch213:       fix-traceback.-_exc-calls-430.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1263,6 +1265,7 @@ cp %{S:6} .
 %patch210 -p1
 %patch211 -p1
 %patch212 -p1
+%patch213 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
