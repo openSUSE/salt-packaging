@@ -286,6 +286,8 @@ Patch68:        templates-move-the-globals-up-to-the-environment-jin.patch
 Patch69:        3003.3-postgresql-json-support-in-pillar-423.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/60980
 Patch70:        do-not-break-master_tops-for-minion-with-version-low.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/60983
+Patch71:        3003.3-do-not-consider-skipped-targets-as-failed-for.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -771,6 +773,7 @@ cp %{S:6} .
 %patch68 -p1
 %patch69 -p1
 %patch70 -p1
+%patch71 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
