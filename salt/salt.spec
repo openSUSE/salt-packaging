@@ -291,6 +291,8 @@ Patch70:        do-not-break-master_tops-for-minion-with-version-low.patch
 Patch71:        3003.3-do-not-consider-skipped-targets-as-failed-for.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/61017
 Patch72:        fix-crash-when-calling-manage.not_alive-runners.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/61014
+Patch73:        fix-issues-with-salt-ssh-s-extra-filerefs.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -778,6 +780,7 @@ cp %{S:6} .
 %patch70 -p1
 %patch71 -p1
 %patch72 -p1
+%patch73 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
