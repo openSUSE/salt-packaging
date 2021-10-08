@@ -170,6 +170,7 @@ Patch29:        fix-wrong-test_mod_del_repo_multiline_values-test-af.patch
 # PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/commit/a18ac47b75550bd55f4ca91dc221ed408881984c
 Patch30:        make-setup.py-script-to-not-require-setuptools-9.1.patch
 # PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/228 (missing upstream PR)
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/61017
 Patch31:        adds-explicit-type-cast-for-port.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/57123
 Patch32:        prevent-logging-deadlock-on-salt-api-subprocesses-bs.patch
@@ -288,6 +289,8 @@ Patch69:        3003.3-postgresql-json-support-in-pillar-423.patch
 Patch70:        do-not-break-master_tops-for-minion-with-version-low.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/60983
 Patch71:        3003.3-do-not-consider-skipped-targets-as-failed-for.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/61017
+Patch72:        fix-crash-when-calling-manage.not_alive-runners.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -774,6 +777,7 @@ cp %{S:6} .
 %patch69 -p1
 %patch70 -p1
 %patch71 -p1
+%patch72 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
