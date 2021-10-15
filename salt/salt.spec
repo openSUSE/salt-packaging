@@ -47,6 +47,15 @@
 %endif
 %define pythonX %{?default_py3: python3}%{!?default_py3: python2}
 
+%if 0%{?build_py2}
+%if 0%{?rhel} >= 8
+%global __python /usr/bin/python2
+%define pythonX python2
+%else
+%define pythonX python
+%endif
+%endif
+
 %if 0%{?suse_version} > 1210 || 0%{?rhel} >= 7 || 0%{?fedora} >=28
 %bcond_without systemd
 %else
@@ -590,92 +599,116 @@ servers, handle them quickly and through a simple and manageable interface.
 Summary:        python2 library for salt
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
-BuildRequires:  python >= 2.7
-BuildRequires:  python-devel >= 2.7
-BuildRequires:  python-setuptools
+BuildRequires:  %{pythonX} >= 2.7
+BuildRequires:  %{pythonX}-devel >= 2.7
+BuildRequires:  %{pythonX}-setuptools
 # requirements/base.txt
 %if 0%{?rhel} || 0%{?fedora}
-BuildRequires:  python-jinja2
-BuildRequires:  python-yaml
-BuildRequires:  python-markupsafe
+BuildRequires:  %{pythonX}-jinja2
+BuildRequires:  %{pythonX}-yaml
+BuildRequires:  %{pythonX}-markupsafe
 %else
-BuildRequires:  python-Jinja2
-BuildRequires:  python-PyYAML
-BuildRequires:  python-MarkupSafe
+BuildRequires:  %{pythonX}-Jinja2
+BuildRequires:  %{pythonX}-PyYAML
+BuildRequires:  %{pythonX}-MarkupSafe
 %endif
 
-BuildRequires:  python-futures >= 2.0
-BuildRequires:  python-msgpack-python > 0.3
-BuildRequires:  python-psutil
-BuildRequires:  python-requests >= 1.0.0
-BuildRequires:  python-singledispatch
+BuildRequires:  %{pythonX}-futures >= 2.0
+%if 0%{?rhel} >= 8
+BuildRequires:  %{pythonX}-msgpack > 0.3
+%else
+BuildRequires:  %{pythonX}-msgpack-python > 0.3
+%endif
+BuildRequires:  %{pythonX}-psutil
+BuildRequires:  %{pythonX}-requests >= 1.0.0
+BuildRequires:  %{pythonX}-singledispatch
 
 # requirements/zeromq.txt
 %if 0%{?suse_version} >= 1500
 BuildRequires:       python2-M2Crypto
 %else
-BuildRequires:       python-pycrypto >= 2.6.1
+%if 0%{?rhel} >= 8
+BuildRequires:       %{pythonX}-m2crypto
+%else
+BuildRequires:       %{pythonX}-pycrypto >= 2.6.1
 %endif
-BuildRequires:  python-pyzmq >= 2.2.0
+%endif
+%if 0%{?rhel} >= 8
+BuildRequires:       %{pythonX}-zmq >= 2.2.0
+%else
+BuildRequires:       python-pyzmq >= 2.2.0
+%endif
 %if %{with test}
 # requirements/dev_python27.txt
-BuildRequires:  python-boto >= 2.32.1
-BuildRequires:  python-mock
-BuildRequires:  python-moto >= 0.3.6
-BuildRequires:  python-pip
-BuildRequires:  python-salt-testing >= 2015.2.16
-BuildRequires:  python-unittest2
-BuildRequires:  python-xml
+BuildRequires:  %{pythonX}-boto >= 2.32.1
+BuildRequires:  %{pythonX}-mock
+BuildRequires:  %{pythonX}-moto >= 0.3.6
+BuildRequires:  %{pythonX}-pip
+BuildRequires:  %{pythonX}-salt-testing >= 2015.2.16
+BuildRequires:  %{pythonX}-unittest2
+BuildRequires:  %{pythonX}-xml
 %endif
 %if %{with builddocs}
-BuildRequires:  python-sphinx
+BuildRequires:  %{pythonX}-sphinx
 %endif
-Requires:       python >= 2.7
-Requires:       python-certifi
+Requires:       %{pythonX} >= 2.7
+Requires:       %{pythonX}-certifi
 # requirements/base.txt
 %if 0%{?rhel} || 0%{?fedora}
-Requires:       python-jinja2
-Requires:       python-yaml
-Requires:       python-markupsafe
+Requires:       %{pythonX}-jinja2
+Requires:       %{pythonX}-yaml
+Requires:       %{pythonX}-markupsafe
 Requires:       yum
 %if 0%{?rhel} == 6
 Requires:       yum-plugin-security
 %endif
 %else
-Requires:       python-Jinja2
-Requires:       python-PyYAML
-Requires:       python-MarkupSafe
+Requires:       %{pythonX}-Jinja2
+Requires:       %{pythonX}-PyYAML
+Requires:       %{pythonX}-MarkupSafe
 %endif
 
-Requires:       python-futures >= 2.0
-Requires:       python-msgpack-python > 0.3
-Requires:       python-psutil
-Requires:       python-requests >= 1.0.0
-Requires:       python-singledispatch
+Requires:       %{pythonX}-futures >= 2.0
+%if 0%{?rhel} >= 8
+Requires:  %{pythonX}-msgpack > 0.3
+%else
+Requires:       %{pythonX}-msgpack-python > 0.3
+%endif
+Requires:       %{pythonX}-psutil
+Requires:       %{pythonX}-requests >= 1.0.0
+Requires:       %{pythonX}-singledispatch
 %if 0%{?suse_version}
 # required for zypper.py
 Requires:       rpm-python
 Requires(pre):  libzypp(plugin:system) >= 0
 Requires:       zypp-plugin-python
 # requirements/opt.txt (not all)
-# Suggests:     python-MySQL-python  ## Disabled for now, originally Recommended
-Suggests:       python-timelib
-Suggests:       python-gnupg
+# Suggests:     %{pythonX}-MySQL-python  ## Disabled for now, originally Recommended
+Suggests:       %{pythonX}-timelib
+Suggests:       %{pythonX}-gnupg
 # requirements/zeromq.txt
 %endif
 %if 0%{?suse_version} >= 1500
 Requires:       python2-M2Crypto
 %else
-Requires:       python-pycrypto >= 2.6.1
+%if 0%{?rhel} >= 8
+Requires:       %{pythonX}-m2crypto
+%else
+Requires:       %{pythonX}-pycrypto >= 2.6.1
 %endif
+%endif
+%if 0%{?rhel} >= 8
+Requires:       %{pythonX}-zmq >= 2.2.0
+%else
 Requires:       python-pyzmq >= 2.2.0
+%endif
 #
 %if 0%{?suse_version}
 # python-xml is part of python-base in all rhel versions
-Requires:       python-xml
-Suggests:       python-Mako
-Recommends:     python-netaddr
-Recommends:     python-pyinotify
+Requires:       %{pythonX}-xml
+Suggests:       %{pythonX}-Mako
+Recommends:     %{pythonX}-netaddr
+Recommends:     %{pythonX}-pyinotify
 %endif
 
 Provides:       bundled(python-tornado) = 4.5.3
@@ -1249,7 +1282,7 @@ cp %{S:6} .
 export PATH=/usr/bin:$PATH
 %endif
 %if 0%{?build_py2}
-python setup.py --with-salt-version=%{version} --salt-transport=both build
+%{pythonX} setup.py --with-salt-version=%{version} --salt-transport=both build
 cp ./build/lib/salt/_version.py ./salt
 mv build _build.python2
 %endif
@@ -1275,7 +1308,7 @@ cd doc && make html && rm _build/html/.buildinfo && rm _build/html/_images/proxy
 %install
 %if 0%{?build_py2}
 mv _build.python2 build
-python setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot}
+%{pythonX} setup.py --salt-transport=both install --prefix=%{_prefix} --root=%{buildroot}
 mv build _build.python2
 %endif
 %if 0%{?build_py3}
