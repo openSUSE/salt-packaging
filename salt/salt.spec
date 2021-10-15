@@ -463,6 +463,8 @@ Patch198:       3002.2-postgresql-json-support-in-pillar-424.patch
 Patch199:       fix-traceback.-_exc-calls-429.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60983
 Patch200:       3002.2-do-not-consider-skipped-targets-as-failed-for.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61061
+Patch201:       fix-ip6_interface-grain-to-not-leak-secondary-ipv4-a.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1081,6 +1083,7 @@ cp %{S:6} .
 %patch198 -p1
 %patch199 -p1
 %patch200 -p1
+%patch201 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
