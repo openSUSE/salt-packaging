@@ -520,6 +520,8 @@ Patch205:       fix-the-regression-brought-in-with-pr-402-422.patch
 Patch206:       fix-traceback.-_exc-calls-431.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60983
 Patch207:       3000.3-do-not-consider-skipped-targets-as-failed-for.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61061
+Patch208:       fix-ip6_interface-grain-to-not-leak-secondary-ipv4-a.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1273,6 +1275,7 @@ cp %{S:6} .
 %patch205 -p1
 %patch206 -p1
 %patch207 -p1
+%patch208 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
