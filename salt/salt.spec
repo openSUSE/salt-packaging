@@ -301,6 +301,8 @@ Patch75:        fix-traceback.print_exc-calls-for-test_pip_state-432.patch
 Patch76:        prevent-pkg-plugins-errors-on-missing-cookie-path-bs.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60815
 Patch77:        add-rpm_vercmp-python-library-for-version-comparison.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61180
+Patch78:        dnfnotify-pkgset-plugin-implementation-3002.2-450.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -798,6 +800,7 @@ cp %{S:6} .
 %patch75 -p1
 %patch76 -p1
 %patch77 -p1
+%patch78 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
