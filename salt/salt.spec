@@ -528,6 +528,8 @@ Patch214:       3000-do-not-consider-skipped-targets-as-failed-for-a.patch
 Patch215:       fix-ip6_interface-grain-to-not-leak-secondary-ipv4-a.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/427
 Patch216:       fix-file.find-tracebacks-with-non-utf8-file-names-bs.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/451
+Patch217:       prevent-tracebacks-if-directory-for-cookie-is-missin.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1275,6 +1277,7 @@ cp %{S:6} .
 %patch214 -p1
 %patch215 -p1
 %patch216 -p1
+%patch217 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
