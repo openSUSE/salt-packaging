@@ -303,6 +303,8 @@ Patch76:        prevent-pkg-plugins-errors-on-missing-cookie-path-bs.patch
 Patch77:        add-rpm_vercmp-python-library-for-version-comparison.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61180
 Patch78:        dnfnotify-pkgset-plugin-implementation-3002.2-450.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60324
+Patch79:        mock-ip_addrs-in-utils-minions.py-unit-test-443.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -801,6 +803,7 @@ cp %{S:6} .
 %patch76 -p1
 %patch77 -p1
 %patch78 -p1
+%patch79 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
