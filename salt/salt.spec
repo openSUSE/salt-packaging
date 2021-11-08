@@ -469,6 +469,8 @@ Patch201:       fix-ip6_interface-grain-to-not-leak-secondary-ipv4-a.patch
 Patch202:       mock-ip_addrs-in-utils-minions.py-unit-test-444.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/415
 Patch203:       prevent-pkg-plugins-errors-on-missing-cookie-path-bs.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60815
+Patch204:       add-rpm_vercmp-python-library-for-version-comparison.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1090,6 +1092,7 @@ cp %{S:6} .
 %patch201 -p1
 %patch202 -p1
 %patch203 -p1
+%patch204 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
