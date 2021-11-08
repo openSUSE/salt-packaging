@@ -524,6 +524,8 @@ Patch207:       3000.3-do-not-consider-skipped-targets-as-failed-for.patch
 Patch208:       fix-ip6_interface-grain-to-not-leak-secondary-ipv4-a.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/428
 Patch209:       fix-file.find-tracebacks-with-non-utf8-file-names-bs.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/454
+Patch210:       remove-wrong-_parse_cpe_name-from-grains.core-454.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1279,6 +1281,7 @@ cp %{S:6} .
 %patch207 -p1
 %patch208 -p1
 %patch209 -p1
+%patch210 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
