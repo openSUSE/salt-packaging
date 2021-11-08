@@ -465,6 +465,8 @@ Patch199:       fix-traceback.-_exc-calls-429.patch
 Patch200:       3002.2-do-not-consider-skipped-targets-as-failed-for.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61061
 Patch201:       fix-ip6_interface-grain-to-not-leak-secondary-ipv4-a.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60324
+Patch202:       mock-ip_addrs-in-utils-minions.py-unit-test-444.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1084,6 +1086,7 @@ cp %{S:6} .
 %patch199 -p1
 %patch200 -p1
 %patch201 -p1
+%patch202 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
