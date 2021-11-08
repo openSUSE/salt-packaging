@@ -887,10 +887,22 @@ sed -i '1s=^#!/usr/bin/\(python\|env python\)[0-9.]*=#!/usr/bin/python3=' %{buil
 
 # Install Yum plugins only on RH machines
 %if 0%{?fedora} || 0%{?rhel}
+%if 0%{?fedora} >= 22 || 0%{?rhel} >= 8
+install -Dd %{buildroot}%{python3_sitelib}/dnf-plugins
+install -Dd %{buildroot}%{python3_sitelib}/dnf-plugins/__pycache__
+install -Dd %{buildroot}%{_sysconfdir}/dnf/plugins
+%{__install} scripts/suse/dnf/plugins/dnfnotify.py %{buildroot}%{python3_sitelib}/dnf-plugins
+%{__install} scripts/suse/dnf/plugins/dnfnotify.conf %{buildroot}%{_sysconfdir}/dnf/plugins
+%{__python3} -m compileall -d %{python3_sitelib}/dnf-plugins %{buildroot}%{python3_sitelib}/dnf-plugins/dnfnotify.py
+%{__python3} -O -m compileall -d %{python3_sitelib}/dnf-plugins %{buildroot}%{python3_sitelib}/dnf-plugins/dnfnotify.py
+%else
 install -Dd %{buildroot}%{_prefix}/share/yum-plugins
-install -Dd %{buildroot}/etc/yum/pluginconf.d
+install -Dd %{buildroot}%{_sysconfdir}/yum/pluginconf.d
 %{__install} scripts/suse/yum/plugins/yumnotify.py %{buildroot}%{_prefix}/share/yum-plugins
-%{__install} scripts/suse/yum/plugins/yumnotify.conf %{buildroot}/etc/yum/pluginconf.d
+%{__install} scripts/suse/yum/plugins/yumnotify.conf %{buildroot}%{_sysconfdir}/yum/pluginconf.d
+%{__python} -m compileall -d %{_prefix}/share/yum-plugins %{buildroot}%{_prefix}/share/yum-plugins/yumnotify.py
+%{__python} -O -m compileall -d %{_prefix}/share/yum-plugins %{buildroot}%{_prefix}/share/yum-plugins/yumnotify.py
+%endif
 %endif
 
 ## install init and systemd scripts
@@ -1346,8 +1358,14 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 
 # Install Yum plugins only on RH machines
 %if 0%{?fedora} || 0%{?rhel}
-%{_prefix}/share/yum-plugins/
-/etc/yum/pluginconf.d/yumnotify.conf
+%if 0%{?fedora} >= 22 || 0%{?rhel} >= 8
+%{python3_sitelib}/dnf-plugins/dnfnotify.py
+%{python3_sitelib}/dnf-plugins/__pycache__/dnfnotify.*
+%{_sysconfdir}/dnf/plugins/dnfnotify.conf
+%else
+%{_prefix}/share/yum-plugins/yumnotify.*
+%{_sysconfdir}/yum/pluginconf.d/yumnotify.conf
+%endif
 %endif
 
 %if %{with systemd}
