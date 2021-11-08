@@ -297,6 +297,8 @@ Patch73:        fix-issues-with-salt-ssh-s-extra-filerefs.patch
 Patch74:        fix-ip6_interface-grain-to-not-leak-secondary-ipv4-a.patch
 # PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/432 (missing upstream PR)
 Patch75:        fix-traceback.print_exc-calls-for-test_pip_state-432.patch
+# PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/pull/415 (missing upstream PR)
+Patch76:        prevent-pkg-plugins-errors-on-missing-cookie-path-bs.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -792,6 +794,7 @@ cp %{S:6} .
 %patch73 -p1
 %patch74 -p1
 %patch75 -p1
+%patch76 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
