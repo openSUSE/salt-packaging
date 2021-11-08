@@ -1,0 +1,76 @@
+From 5de7213d27b69d6ae573c4b571df3860952e58d7 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
+Date: Mon, 8 Nov 2021 18:13:27 +0300
+Subject: [PATCH] Remove wrong _parse_cpe_name from grains.core (#452)
+
+---
+ salt/grains/core.py            | 30 ------------------------------
+ tests/unit/grains/test_core.py | 10 ++++++++++
+ 2 files changed, 10 insertions(+), 30 deletions(-)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index 9e7d57b987..875d6f6b50 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -1748,36 +1748,6 @@ def _parse_cpe_name(cpe):
+     return ret
+ 
+ 
+-def _parse_cpe_name(cpe):
+-    """
+-    Parse CPE_NAME data from the os-release
+-
+-    Info: https://csrc.nist.gov/projects/security-content-automation-protocol/scap-specifications/cpe
+-
+-    :param cpe:
+-    :return:
+-    """
+-    part = {
+-        "o": "operating system",
+-        "h": "hardware",
+-        "a": "application",
+-    }
+-    ret = {}
+-    cpe = (cpe or "").split(":")
+-    if len(cpe) > 4 and cpe[0] == "cpe":
+-        if cpe[1].startswith("/"):  # WFN to URI
+-            ret["vendor"], ret["product"], ret["version"] = cpe[2:5]
+-            ret["phase"] = cpe[5] if len(cpe) > 5 else None
+-            ret["part"] = part.get(cpe[1][1:])
+-        elif len(cpe) == 13 and cpe[1] == "2.3":  # WFN to a string
+-            ret["vendor"], ret["product"], ret["version"], ret["phase"] = [
+-                x if x != "*" else None for x in cpe[3:7]
+-            ]
+-            ret["part"] = part.get(cpe[2])
+-
+-    return ret
+-
+-
+ def os_data():
+     """
+     Return grains pertaining to the operating system
+diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
+index 61a6956e32..e73fc0730d 100644
+--- a/tests/unit/grains/test_core.py
++++ b/tests/unit/grains/test_core.py
+@@ -151,6 +151,16 @@ class CoreGrainsTestCase(TestCase, LoaderModuleMockMixin):
+                     "part": None,
+                 },
+             ),
++            (
++                "cpe:2.3:o:amazon:amazon_linux:2",
++                {
++                    "phase": None,
++                    "version": "2",
++                    "product": "amazon_linux",
++                    "vendor": "amazon",
++                    "part": "operating system",
++                },
++            ),
+         ]:
+             ret = core._parse_cpe_name(cpe)
+             for key in cpe_ret:
+-- 
+2.33.1
+
+
