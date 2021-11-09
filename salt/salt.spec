@@ -475,6 +475,8 @@ Patch204:       add-rpm_vercmp-python-library-for-version-comparison.patch
 Patch205:       dnfnotify-pkgset-plugin-implementation-3002.2-450.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/452
 Patch206:       remove-wrong-_parse_cpe_name-from-grains.core-452.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/456
+Patch207:       fix-the-regression-for-yumnotify-plugin-456.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1099,6 +1101,7 @@ cp %{S:6} .
 %patch204 -p1
 %patch205 -p1
 %patch206 -p1
+%patch207 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
