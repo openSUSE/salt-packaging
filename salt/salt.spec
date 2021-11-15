@@ -528,6 +528,8 @@ Patch209:       fix-file.find-tracebacks-with-non-utf8-file-names-bs.patch
 Patch210:       remove-wrong-_parse_cpe_name-from-grains.core-454.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/455
 Patch211:       fix-the-regression-with-invalid-syntax-in-test_parse.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61188
+Patch212:       refactor-and-improvements-for-transactional-updates-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1285,6 +1287,7 @@ cp %{S:6} .
 %patch209 -p1
 %patch210 -p1
 %patch211 -p1
+%patch212 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
