@@ -1,6 +1,6 @@
-From 42386395be62bfa71862675aa0225f3b27ccb82f Mon Sep 17 00:00:00 2001
-From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
-Date: Mon, 8 Nov 2021 18:06:54 +0300
+From 0ccc9aa260032ba86481f121132a10f439a20700 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <vzhestkov@suse.com>
+Date: Mon, 15 Nov 2021 17:22:35 +0300
 Subject: [PATCH] Add rpm_vercmp python library for version comparison -
  3003.3 (#448)
 
@@ -13,25 +13,10 @@ Subject: [PATCH] Add rpm_vercmp python library for version comparison -
 Co-authored-by: Megan Wilhite <mwilhite@vmware.com>
 ---
  changelog/60814.added                         |   1 +
- requirements/static/ci/py3.5/linux.txt        |   1 +
- requirements/static/ci/py3.6/docs.txt         |   2 +
- requirements/static/ci/py3.6/linux.txt        |   2 +
- requirements/static/ci/py3.7/docs.txt         |   1 +
- requirements/static/ci/py3.7/linux.txt        |   1 +
- requirements/static/ci/py3.8/docs.txt         |   2 +
- requirements/static/ci/py3.8/linux.txt        |   1 +
- requirements/static/ci/py3.9/docs.txt         |   1 +
- requirements/static/ci/py3.9/linux.txt        |   1 +
- requirements/static/pkg/linux.in              |   1 +
- requirements/static/pkg/py3.5/linux.txt       |   1 +
- requirements/static/pkg/py3.6/linux.txt       |   1 +
- requirements/static/pkg/py3.7/linux.txt       |   1 +
- requirements/static/pkg/py3.8/linux.txt       |   1 +
- requirements/static/pkg/py3.9/linux.txt       |   1 +
  salt/modules/rpm_lowpkg.py                    |  21 +-
  tests/pytests/unit/modules/test_rpm_lowpkg.py | 545 ++++++++++++++++++
  tests/unit/modules/test_rpm_lowpkg.py         | 478 ---------------
- 19 files changed, 584 insertions(+), 479 deletions(-)
+ 4 files changed, 566 insertions(+), 479 deletions(-)
  create mode 100644 changelog/60814.added
  create mode 100644 tests/pytests/unit/modules/test_rpm_lowpkg.py
  delete mode 100644 tests/unit/modules/test_rpm_lowpkg.py
