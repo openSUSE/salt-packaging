@@ -479,6 +479,10 @@ Patch206:       remove-wrong-_parse_cpe_name-from-grains.core-452.patch
 Patch207:       fix-the-regression-for-yumnotify-plugin-456.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61188
 Patch208:       refactor-and-improvements-for-transactional-updates-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61189
+Patch209:       state.apply-don-t-check-for-cached-pillar-errors.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/461
+Patch210:       vendor-stateresult.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1105,6 +1109,8 @@ cp %{S:6} .
 %patch206 -p1
 %patch207 -p1
 %patch208 -p1
+%patch209 -p1
+%patch210 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
