@@ -309,6 +309,10 @@ Patch79:        mock-ip_addrs-in-utils-minions.py-unit-test-443.patch
 Patch80:        fix-the-regression-for-yumnotify-plugin-456.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61188
 Patch81:        refactor-and-improvements-for-transactional-updates-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61189
+Patch82:       state.apply-don-t-check-for-cached-pillar-errors.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/466
+Patch83:       vendor-stateresult.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -810,6 +814,8 @@ cp %{S:6} .
 %patch79 -p1
 %patch80 -p1
 %patch81 -p1
+%patch82 -p1
+%patch83 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
