@@ -35,6 +35,12 @@
 %bcond_without docs
 %bcond_with    builddocs
 
+%if 0%{?suse_version}
+%global serverdir /srv
+%else
+%global serverdir %{_localstatedir}
+%endif
+
 Name:           salt
 Version:        3003.3
 Release:        0
@@ -878,9 +884,9 @@ install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_denied
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_pre
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/master/minions_rejected
 install -Dd -m 0750 %{buildroot}%{_sysconfdir}/salt/pki/minion
-install -Dd -m 0750 %{buildroot}/srv/pillar
-install -Dd -m 0750 %{buildroot}/srv/salt
-install -Dd -m 0750 %{buildroot}/srv/spm
+install -Dd -m 0750 %{buildroot}%{serverdir}/pillar
+install -Dd -m 0750 %{buildroot}%{serverdir}/salt
+install -Dd -m 0750 %{buildroot}%{serverdir}/spm
 install -Dd -m 0750 %{buildroot}/var/lib/salt
 install -Dd -m 0755 %{buildroot}%{_docdir}/salt
 install -Dd -m 0755 %{buildroot}%{_sbindir}
@@ -1431,8 +1437,8 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %dir               %attr(0750, salt, salt) %{_sysconfdir}/salt/pki/master/minions_pre/
 %dir               %attr(0750, salt, salt) %{_sysconfdir}/salt/pki/master/minions_rejected/
 %dir               %attr(0755, salt, salt) /var/lib/salt
-%dir               %attr(0755, root, salt) /srv/salt
-%dir               %attr(0755, root, salt) /srv/pillar
+%dir               %attr(0755, root, salt) %{serverdir}/salt
+%dir               %attr(0755, root, salt) %{serverdir}/pillar
 %dir               %attr(0750, salt, salt) %{_localstatedir}/cache/salt/master/
 %dir               %attr(0750, salt, salt) %{_localstatedir}/cache/salt/master/jobs/
 %dir               %attr(0750, salt, salt) %{_localstatedir}/cache/salt/master/proc/
@@ -1459,7 +1465,7 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %dir        %attr(0750, root, salt) %{_sysconfdir}/salt/pki
 %dir        %attr(0750, salt, salt) %{_localstatedir}/log/salt
 %dir        %attr(0750, root, salt) %{_localstatedir}/cache/salt
-%dir        %attr(0750, root, salt) /srv/spm
+%dir        %attr(0750, root, salt) %{serverdir}/spm
 %if %{with systemd}
 /usr/lib/tmpfiles.d/salt.conf
 %endif
