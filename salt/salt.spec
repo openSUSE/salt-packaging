@@ -536,6 +536,10 @@ Patch218:       remove-wrong-_parse_cpe_name-from-grains.core-453.patch
 Patch219:       fix-the-regression-with-invalid-syntax-in-test_parse.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61188
 Patch220:       refactor-and-improvements-for-transactional-updates-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61189
+Patch221:       state.apply-don-t-check-for-cached-pillar-errors.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/470
+Patch222:       vendor-stateresult.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1287,6 +1291,8 @@ cp %{S:6} .
 %patch218 -p1
 %patch219 -p1
 %patch220 -p1
+%patch221 -p1
+%patch222 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
