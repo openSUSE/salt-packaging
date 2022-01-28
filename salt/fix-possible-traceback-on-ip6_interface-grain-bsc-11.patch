@@ -1,0 +1,27 @@
+From 64099e0d0877b5d92297de98c809f9b2347b7e56 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <vzhestkov@suse.com>
+Date: Fri, 28 Jan 2022 16:36:48 +0300
+Subject: [PATCH] Fix possible traceback on ip6_interface grain
+ (bsc#1193565) (#464)
+
+---
+ salt/grains/core.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index 8642ee80ff..de838c04b7 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -2377,7 +2377,7 @@ def ip6_interfaces():
+                 try:
+                     socket.inet_pton(socket.AF_INET6, secondary["address"])
+                     iface_ips.append(secondary["address"])
+-                except OSError:
++                except (OSError, socket.error):
+                     pass
+         ret[face] = iface_ips
+     return {'ip6_interfaces': ret}
+-- 
+2.34.1
+
+
