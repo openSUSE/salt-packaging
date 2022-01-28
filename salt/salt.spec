@@ -534,6 +534,8 @@ Patch212:       refactor-and-improvements-for-transactional-updates-.patch
 Patch213:       state.apply-don-t-check-for-cached-pillar-errors.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/471
 Patch214:       vendor-stateresult.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/465
+Patch215:       fix-possible-traceback-on-ip6_interface-grain-bsc-11.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1294,6 +1296,7 @@ cp %{S:6} .
 %patch212 -p1
 %patch213 -p1
 %patch214 -p1
+%patch215 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
