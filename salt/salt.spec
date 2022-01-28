@@ -536,6 +536,8 @@ Patch213:       state.apply-don-t-check-for-cached-pillar-errors.patch
 Patch214:       vendor-stateresult.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/465
 Patch215:       fix-possible-traceback-on-ip6_interface-grain-bsc-11.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61530
+Patch216:       fix-inspector-module-export-function-bsc-1097531-479.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1297,6 +1299,7 @@ cp %{S:6} .
 %patch213 -p1
 %patch214 -p1
 %patch215 -p1
+%patch216 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this

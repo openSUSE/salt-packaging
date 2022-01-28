@@ -1,0 +1,41 @@
+From ef3256621d1dff90bb0e18b407ac323fbe5e94b3 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <vzhestkov@suse.com>
+Date: Fri, 28 Jan 2022 16:45:06 +0300
+Subject: [PATCH] Fix inspector module export function (bsc#1097531)
+ (#479)
+
+---
+ salt/modules/inspectlib/kiwiproc.py | 2 +-
+ salt/modules/inspectlib/query.py    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/salt/modules/inspectlib/kiwiproc.py b/salt/modules/inspectlib/kiwiproc.py
+index c9b42344da..7b6f790415 100644
+--- a/salt/modules/inspectlib/kiwiproc.py
++++ b/salt/modules/inspectlib/kiwiproc.py
+@@ -75,7 +75,7 @@ class KiwiExporter(object):
+         self._set_packages(root)
+ 
+         return '\n'.join([line for line in minidom.parseString(
+-            etree.tostring(root, encoding='UTF-8', pretty_print=True)).toprettyxml(indent="  ").split("\n")
++            etree.tostring(root, encoding='UTF-8')).toprettyxml(indent="  ").split("\n")
+                           if line.strip()])
+ 
+     def _get_package_manager(self):
+diff --git a/salt/modules/inspectlib/query.py b/salt/modules/inspectlib/query.py
+index 2ce33ce845..bdd5ff5aab 100644
+--- a/salt/modules/inspectlib/query.py
++++ b/salt/modules/inspectlib/query.py
+@@ -72,7 +72,7 @@ class SysInfo(object):
+         for dev, dev_data in salt.utils.fsutils._blkid().items():
+             dev = self._get_disk_size(dev)
+             device = dev.pop('device')
+-            dev['type'] = dev_data['type']
++            dev['type'] = dev_data.get('type', 'UNKNOWN')
+             data[device] = dev
+ 
+         return data
+-- 
+2.34.1
+
+
