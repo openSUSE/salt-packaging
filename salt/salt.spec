@@ -271,6 +271,8 @@ Patch65:        refactor-and-improvements-for-transactional-updates-.patch
 Patch66:        state.apply-don-t-check-for-cached-pillar-errors.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61393
 Patch67:        wipe-notify_socket-from-env-in-cmdmod-bsc-1193357-30.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61530
+Patch68:        fix-inspector-module-export-function-bsc-1097531-481.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
