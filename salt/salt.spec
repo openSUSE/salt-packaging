@@ -483,6 +483,8 @@ Patch208:       refactor-and-improvements-for-transactional-updates-.patch
 Patch209:       state.apply-don-t-check-for-cached-pillar-errors.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/461
 Patch210:       vendor-stateresult.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61393
+Patch211:       wipe-notify_socket-from-env-in-cmdmod-bsc-1193357-30.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1111,6 +1113,7 @@ cp %{S:6} .
 %patch208 -p1
 %patch209 -p1
 %patch210 -p1
+%patch211 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this

@@ -1,0 +1,85 @@
+From 02479e90c220181013cf15813c2d7a3b86abec4c Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <vzhestkov@suse.com>
+Date: Fri, 28 Jan 2022 16:39:38 +0300
+Subject: [PATCH] Wipe NOTIFY_SOCKET from env in cmdmod (bsc#1193357) -
+ 3002.2 (#472)
+
+* Remove NOTIFY_SOCKET env variable from cmd.run calls
+
+* Add test for NOTIFY_SOCKET env variable wiping
+---
+ salt/modules/cmdmod.py            |  3 +++
+ tests/unit/modules/test_cmdmod.py | 42 +++++++++++++++++++++++++++++++
+ 2 files changed, 45 insertions(+)
+
+diff --git a/salt/modules/cmdmod.py b/salt/modules/cmdmod.py
+index f24e7cc9ae..624e5a2bfb 100644
+--- a/salt/modules/cmdmod.py
++++ b/salt/modules/cmdmod.py
+@@ -606,6 +606,9 @@ def _run(
+     if prepend_path:
+         run_env["PATH"] = ":".join((prepend_path, run_env["PATH"]))
+ 
++    if "NOTIFY_SOCKET" not in env:
++        run_env.pop("NOTIFY_SOCKET", None)
++
+     if python_shell is None:
+         python_shell = False
+ 
+diff --git a/tests/unit/modules/test_cmdmod.py b/tests/unit/modules/test_cmdmod.py
+index 15b97f8568..b84ae6c281 100644
+--- a/tests/unit/modules/test_cmdmod.py
++++ b/tests/unit/modules/test_cmdmod.py
+@@ -351,6 +351,48 @@ class CMDMODTestCase(TestCase, LoaderModuleMockMixin):
+                     if not salt.utils.platform.is_darwin():
+                         getpwnam_mock.assert_called_with("foobar")
+ 
++    @skipIf(salt.utils.platform.is_windows(), "Do not run on Windows")
++    def test_os_environment_do_not_pass_notify_socket(self):
++        """
++        Make sure NOTIFY_SOCKET environment variable is not passed
++        to the command if not explicitly set with env parameter.
++        """
++        with patch("pwd.getpwnam") as getpwnam_mock:
++            new_env = os.environ.copy()
++            new_env.update({"NOTIFY_SOCKET": "/run/systemd/notify"})
++            with patch("subprocess.Popen") as popen_mock, patch(
++                "os.environ.copy", return_value=new_env
++            ):
++                popen_mock.return_value = Mock(
++                    communicate=lambda *args, **kwags: [b"", None],
++                    pid=lambda: 1,
++                    retcode=0,
++                )
++
++                with patch.dict(cmdmod.__grains__, {"os": "SUSE", "os_family": "Suse"}):
++                    if sys.platform.startswith(("freebsd", "openbsd")):
++                        shell = "/bin/sh"
++                    else:
++                        shell = "/bin/bash"
++
++                    cmdmod._run("ls", cwd=tempfile.gettempdir(), shell=shell)
++
++                    self.assertTrue(
++                        "NOTIFY_SOCKET" not in popen_mock.call_args_list[0][1]["env"]
++                    )
++
++                    cmdmod._run(
++                        "ls",
++                        cwd=tempfile.gettempdir(),
++                        shell=shell,
++                        env={"NOTIFY_SOCKET": "/run/systemd/notify.new"},
++                    )
++
++                    self.assertEqual(
++                        popen_mock.call_args_list[1][1]["env"]["NOTIFY_SOCKET"],
++                        "/run/systemd/notify.new",
++                    )
++
+     @skipIf(not salt.utils.platform.is_darwin(), "applicable to macOS only")
+     def test_shell_properly_handled_on_macOS(self):
+         """
+-- 
+2.34.1
+
+
