@@ -1,0 +1,184 @@
+From 5e6580d424ef25c3a68a7858d1443b62028a6c82 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <vzhestkov@suse.com>
+Date: Fri, 28 Jan 2022 16:43:23 +0300
+Subject: [PATCH] Add all ssh kwargs to sanitize_kwargs method - 3002.2
+ (#475)
+
+* Add all ssh kwargs to sanitize_kwargs method
+
+* Add tests for ssh kwargs to sanitize_kwargs
+
+* Remove lock causing deadlock
+
+* Fix test_ssh.py test
+---
+ salt/client/ssh/client.py             | 30 +++++++---
+ tests/pytests/unit/client/test_ssh.py | 80 +++++++++++++++++++++++++++
+ 2 files changed, 102 insertions(+), 8 deletions(-)
+
+diff --git a/salt/client/ssh/client.py b/salt/client/ssh/client.py
+index 3631c3bb67..7e2fbe2675 100644
+--- a/salt/client/ssh/client.py
++++ b/salt/client/ssh/client.py
+@@ -1,6 +1,5 @@
+ import copy
+ import logging
+-import multiprocessing
+ import os
+ import random
+ import time
+@@ -12,8 +11,6 @@ from salt.exceptions import SaltClientError  # Temporary
+ 
+ log = logging.getLogger(__name__)
+ 
+-_LOCK = multiprocessing.Lock()
+-
+ 
+ class SSHClient:
+     """
+@@ -56,11 +53,32 @@ class SSHClient:
+             ("ssh_identities_only", bool),
+             ("ssh_remote_port_forwards", str),
+             ("ssh_options", list),
++            ("ssh_max_procs", int),
++            ("ssh_askpass", bool),
++            ("ssh_key_deploy", bool),
++            ("ssh_update_roster", bool),
++            ("ssh_scan_ports", str),
++            ("ssh_scan_timeout", int),
++            ("ssh_timeout", int),
++            ("ssh_log_file", str),
++            ("raw_shell", bool),
++            ("refresh_cache", bool),
++            ("roster", str),
+             ("roster_file", str),
+             ("rosters", list),
+             ("ignore_host_keys", bool),
+             ("raw_shell", bool),
+             ("extra_filerefs", str),
++            ("min_extra_mods", str),
++            ("thin_extra_mods", str),
++            ("verbose", bool),
++            ("static", bool),
++            ("ssh_wipe", bool),
++            ("rand_thin_dir", bool),
++            ("regen_thin", bool),
++            ("ssh_run_pre_flight", bool),
++            ("no_host_keys", bool),
++            ("saltfile", str),
+         ]
+         sane_kwargs = {}
+         for name, kind in roster_vals:
+@@ -105,11 +123,7 @@ class SSHClient:
+         opts["selected_target_option"] = tgt_type
+         opts["tgt"] = tgt
+         opts["arg"] = arg
+-        _LOCK.acquire()
+-        ret = salt.client.ssh.SSH(opts)
+-        time.sleep(0.01)
+-        _LOCK.release()
+-        return ret
++        return salt.client.ssh.SSH(opts)
+ 
+     def cmd_iter(
+         self,
+diff --git a/tests/pytests/unit/client/test_ssh.py b/tests/pytests/unit/client/test_ssh.py
+index b006e7e02f..d64238ff0e 100644
+--- a/tests/pytests/unit/client/test_ssh.py
++++ b/tests/pytests/unit/client/test_ssh.py
+@@ -1,7 +1,14 @@
++import pathlib
++
+ import pytest
++import salt.client.ssh.client
+ import salt.utils.msgpack
+ from salt.client import ssh
+ from tests.support.mock import MagicMock, patch
++from tests.support.runtests import RUNTIME_VARS
++
++
++pytestmark = [pytest.mark.skip_if_binaries_missing("ssh", "ssh-keygen", check_all=True)]
+ 
+ 
+ @pytest.fixture
+@@ -57,3 +64,76 @@ def test_cmd_block_python_version_error(ssh_target):
+     with patch_shim:
+         ret = single.cmd_block()
+         assert "ERROR: Python version error. Recommendation(s) follow:" in ret[0]
++
++
++@pytest.mark.parametrize(
++    "test_opts",
++    [
++        ("extra_filerefs", "salt://foobar", True),
++        ("host", "testhost", False),
++        ("ssh_user", "testuser", True),
++        ("ssh_passwd", "testpasswd", True),
++        ("ssh_port", 23, False),
++        ("ssh_sudo", True, True),
++        ("ssh_sudo_user", "sudouser", False),
++        ("ssh_priv", "test_priv", True),
++        ("ssh_priv_passwd", "sshpasswd", True),
++        ("ssh_identities_only", True, True),
++        ("ssh_remote_port_forwards", "test", True),
++        ("ssh_options", ["test1", "test2"], True),
++        ("ssh_max_procs", 2, True),
++        ("ssh_askpass", True, True),
++        ("ssh_key_deploy", True, True),
++        ("ssh_update_roster", True, True),
++        ("ssh_scan_ports", "test", True),
++        ("ssh_scan_timeout", 1.0, True),
++        ("ssh_timeout", 1, False),
++        ("ssh_log_file", "/tmp/test", True),
++        ("raw_shell", True, True),
++        ("refresh_cache", True, True),
++        ("roster", "/test", True),
++        ("roster_file", "/test1", True),
++        ("rosters", ["test1"], False),
++        ("ignore_host_keys", True, True),
++        ("min_extra_mods", "test", True),
++        ("thin_extra_mods", "test1", True),
++        ("verbose", True, True),
++        ("static", True, True),
++        ("ssh_wipe", True, True),
++        ("rand_thin_dir", True, True),
++        ("regen_thin", True, True),
++        ("python2_bin", "python2", True),
++        ("python3_bin", "python3", True),
++        ("ssh_run_pre_flight", True, True),
++        ("no_host_keys", True, True),
++        ("saltfile", "/tmp/test", True),
++        ("doesnotexist", None, False),
++    ],
++)
++def test_ssh_kwargs(test_opts):
++    """
++    test all ssh kwargs are not excluded from kwargs
++    when preparing the SSH opts
++    """
++    opt_key = test_opts[0]
++    opt_value = test_opts[1]
++    # Is the kwarg in salt.utils.parsers?
++    in_parser = test_opts[2]
++
++    opts = {
++        "eauth": "auto",
++        "username": "test",
++        "password": "test",
++        "client": "ssh",
++        "tgt": "localhost",
++        "fun": "test.ping",
++        opt_key: opt_value,
++    }
++    client = salt.client.ssh.client.SSHClient(disable_custom_roster=True)
++    if in_parser:
++        ssh_kwargs = salt.utils.parsers.SaltSSHOptionParser().defaults
++        assert opt_key in ssh_kwargs
++
++    with patch("salt.roster.get_roster_file", MagicMock(return_value="")):
++        ssh_obj = client._prep_ssh(**opts)
++        assert ssh_obj.opts.get(opt_key, None) == opt_value
+-- 
+2.34.1
+
+

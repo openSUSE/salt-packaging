@@ -485,6 +485,8 @@ Patch209:       state.apply-don-t-check-for-cached-pillar-errors.patch
 Patch210:       vendor-stateresult.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61393
 Patch211:       wipe-notify_socket-from-env-in-cmdmod-bsc-1193357-30.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/59748
+Patch212:       add-all-ssh-kwargs-to-sanitize_kwargs-method-3002.2-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1114,6 +1116,7 @@ cp %{S:6} .
 %patch209 -p1
 %patch210 -p1
 %patch211 -p1
+%patch212 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
