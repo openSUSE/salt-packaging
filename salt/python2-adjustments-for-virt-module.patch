@@ -1,0 +1,53 @@
+From 71b8e466cdf7dddb83abf9a83bec199b3ab586c3 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?C=C3=A9dric=20Bosdonnat?= <cbosdonnat@suse.com>
+Date: Thu, 3 Feb 2022 11:48:00 +0100
+Subject: [PATCH] python2 adjustments for virt module
+
+os.SEEK_DATA and os.SEEK_HOLE are only available starting with python 3.3.
+
+Libvirt python binding may not be able to upload sparse disks with older
+libvirts.
+---
+ salt/modules/virt.py | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/salt/modules/virt.py b/salt/modules/virt.py
+index d680da612a..365e4c3d6d 100644
+--- a/salt/modules/virt.py
++++ b/salt/modules/virt.py
+@@ -8823,8 +8823,11 @@ def _volume_upload(conn, pool, volume, file, offset=0, length=0, sparse=False):
+         fd = opaque
+         cur = os.lseek(fd, 0, os.SEEK_CUR)
+ 
++        SEEK_DATA = getattr(os, "SEEK_DATA", 3)
++        SEEK_HOLE = getattr(os, "SEEK_HOLE", 4)
++
+         try:
+-            data = os.lseek(fd, cur, os.SEEK_DATA)
++            data = os.lseek(fd, cur, SEEK_DATA)
+         except OSError as e:
+             if e.errno != 6:
+                 raise e
+@@ -8843,7 +8846,7 @@ def _volume_upload(conn, pool, volume, file, offset=0, length=0, sparse=False):
+             else:
+                 inData = True
+ 
+-                hole = os.lseek(fd, data, os.SEEK_HOLE)
++                hole = os.lseek(fd, data, SEEK_HOLE)
+                 if hole < 0:
+                     raise RuntimeError("No trailing hole")
+ 
+@@ -8864,6 +8867,9 @@ def _volume_upload(conn, pool, volume, file, offset=0, length=0, sparse=False):
+         pool_obj = conn.storagePoolLookupByName(pool)
+         vol_obj = pool_obj.storageVolLookupByName(volume)
+ 
++        if not hasattr(libvirt, "VIR_STORAGE_VOL_UPLOAD_SPARSE_STREAM"):
++            sparse = False
++
+         stream = conn.newStream()
+         fd = os.open(file, os.O_RDONLY)
+         vol_obj.upload(
+-- 
+2.34.1
+
+
