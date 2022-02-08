@@ -275,6 +275,8 @@ Patch67:        wipe-notify_socket-from-env-in-cmdmod-bsc-1193357-30.patch
 Patch68:        fix-inspector-module-export-function-bsc-1097531-481.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/482
 Patch69:        drop-serial-from-event.unpack-in-cli.batch_async.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/485
+Patch70:        add-missing-ansible-module-functions-to-whitelist-in.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
