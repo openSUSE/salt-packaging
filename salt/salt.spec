@@ -279,6 +279,8 @@ Patch69:        drop-serial-from-event.unpack-in-cli.batch_async.patch
 Patch70:        add-missing-ansible-module-functions-to-whitelist-in.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/61256
 Patch71:        fix-salt-call-event.send-call-with-grains-and-pillar.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/61093
+Patch72:        state.orchestrate_single-does-not-pass-pillar-none-4.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
