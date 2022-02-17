@@ -548,6 +548,8 @@ Patch224:       wipe-notify_socket-from-env-in-cmdmod-bsc-1193357-30.patch
 Patch225:       fix-inspector-module-export-function-bsc-1097531-478.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/484
 Patch226:       python2-adjustments-for-virt-module.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61093
+Patch227:       fix-state.orchestrate_single-to-not-pass-pillar-none.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1305,6 +1307,7 @@ cp %{S:6} .
 %patch224 -p1
 %patch225 -p1
 %patch226 -p1
+%patch227 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
