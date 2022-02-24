@@ -282,6 +282,12 @@ Patch71:        fix-salt-call-event.send-call-with-grains-and-pillar.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/61093
 Patch72:        state.orchestrate_single-does-not-pass-pillar-none-4.patch
 
+### SALT-SSH WITH SALT BUNDLE ###
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61715 (ssh_pre_flight_args)
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/493
+Patch73:        add-salt-ssh-support-with-venv-salt-minion-3004-493.patch
+###############
+
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
