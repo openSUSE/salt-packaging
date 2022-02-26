@@ -347,15 +347,11 @@ Requires:       python-Jinja2
 %endif
 Requires:       %{pythonX}-futures >= 2.0
 Requires:       %{pythonX}-markupsafe
-%if 0%{?suse_version} >= 1500
+%if 0%{?suse_version} >= 1500 || 0%{?rhel} >= 8
 Requires:       py26-compat-msgpack-python
 Requires:       py26-compat-tornado
 %else
-%if 0%{?rhel} >= 8
-Requires:       %{pythonX}-msgpack > 0.3
-%else
 Requires:       python-msgpack-python > 0.3
-%endif
 Requires:       %{pythonX}-tornado >= 4.2.1
 %endif
 Requires:       %{pythonX}-psutil
