@@ -285,7 +285,9 @@ Patch72:        state.orchestrate_single-does-not-pass-pillar-none-4.patch
 ### SALT-SSH WITH SALT BUNDLE ###
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61715 (ssh_pre_flight_args)
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/493
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/497
 Patch73:        add-salt-ssh-support-with-venv-salt-minion-3004-493.patch
+Patch74:        prevent-shell-injection-via-pre_flight_script_args-4.patch
 ###############
 
 
