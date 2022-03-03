@@ -493,6 +493,9 @@ Patch213:       fix-inspector-module-export-function-bsc-1097531-480.patch
 Patch214:       fix-state.orchestrate_single-to-not-pass-pillar-none.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/490
 Patch215:       remove-duplicated-method-definitions-in-salt.netapi-.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/476
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61715
+Patch216:       add-salt-ssh-support-with-venv-salt-minion-3002.2-47.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1126,6 +1129,7 @@ cp %{S:6} .
 %patch213 -p1
 %patch214 -p1
 %patch215 -p1
+%patch216 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
