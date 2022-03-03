@@ -552,6 +552,8 @@ Patch226:       python2-adjustments-for-virt-module.patch
 Patch227:       fix-state.orchestrate_single-to-not-pass-pillar-none.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60513
 Patch228:       handle-old-qemu-img-not-supporting-u-parameter-bsc-1.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60130
+Patch229:       clear-network-interface-cache-when-grains-are-reques.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1311,6 +1313,7 @@ cp %{S:6} .
 %patch226 -p1
 %patch227 -p1
 %patch228 -p1
+%patch229 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
