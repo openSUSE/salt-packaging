@@ -1,0 +1,92 @@
+From 93f4644e55eb85bd7c639f4654ab4eced1d922f9 Mon Sep 17 00:00:00 2001
+From: Cedric Bosdonnat <cedric.bosdonnat@free.fr>
+Date: Thu, 3 Mar 2022 17:19:14 +0100
+Subject: [PATCH] Handle old qemu-img not supporting -U parameter
+ (bsc#1195221)
+
+---
+ salt/modules/virt.py            | 19 ++++++++++++-------
+ tests/unit/modules/test_virt.py | 15 ++++++---------
+ 2 files changed, 18 insertions(+), 16 deletions(-)
+
+diff --git a/salt/modules/virt.py b/salt/modules/virt.py
+index 365e4c3d6d..c8225ff292 100644
+--- a/salt/modules/virt.py
++++ b/salt/modules/virt.py
+@@ -579,7 +579,7 @@ def _get_disks(conn, dom):
+                 elif elem.get("device", "disk") != "cdrom":
+                     # Extract disk sizes, snapshots, backing files
+                     try:
+-                        stdout = subprocess.Popen(
++                        process = subprocess.Popen(
+                             [
+                                 "qemu-img",
+                                 "info",
+@@ -591,12 +591,17 @@ def _get_disks(conn, dom):
+                             ],
+                             shell=False,
+                             stdout=subprocess.PIPE,
+-                        ).communicate()[0]
+-                        qemu_output = salt.utils.stringutils.to_str(stdout)
+-                        output = _parse_qemu_img_info(qemu_output)
+-                        extra_properties = output
+-                    except TypeError:
+-                        disk.update({"file": "Does not exist"})
++                            stderr=subprocess.PIPE,
++                        )
++                        stdout, stderr = process.communicate()
++                        if process.returncode == 0:
++                            qemu_output = salt.utils.stringutils.to_str(stdout)
++                            output = _parse_qemu_img_info(qemu_output)
++                            extra_properties = output
++                        else:
++                            extra_properties = {"error": stderr}
++                    except OSError:
++                        extra_properties = {"error": "qemu-img not found"}
+             elif disk_type == "block":
+                 qemu_target = source.get("dev", "")
+                 # If the qemu_target is a known path, output a volume
+diff --git a/tests/unit/modules/test_virt.py b/tests/unit/modules/test_virt.py
+index f0bd956d73..f175213205 100644
+--- a/tests/unit/modules/test_virt.py
++++ b/tests/unit/modules/test_virt.py
+@@ -4310,9 +4310,8 @@ class VirtTestCase(TestCase, LoaderModuleMockMixin):
+             "dirty-flag": false
+         }]"""
+ 
+-        self.mock_popen.communicate.return_value = [
+-            qemu_infos
+-        ]  # pylint: disable=no-member
++        self.mock_popen.communicate.return_value = [qemu_infos, ""]
++        self.mock_popen.returncode = 0
+ 
+         with patch.dict(os.path.__dict__, {"exists": MagicMock(return_value=True)}):
+             res = virt.purge("test-vm")
+@@ -4501,9 +4500,8 @@ class VirtTestCase(TestCase, LoaderModuleMockMixin):
+             "dirty-flag": false
+         }]"""
+ 
+-        self.mock_popen.communicate.return_value = [
+-            qemu_infos
+-        ]  # pylint: disable=no-member
++        self.mock_popen.communicate.return_value = [qemu_infos, ""]
++        self.mock_popen.returncode = 0
+ 
+         with patch.dict(os.path.__dict__, {"exists": MagicMock(return_value=True)}):
+             res = virt.purge("test-vm", removables=True)
+@@ -5840,9 +5838,8 @@ class VirtTestCase(TestCase, LoaderModuleMockMixin):
+             "dirty-flag": false
+         }]"""
+ 
+-        self.mock_popen.communicate.return_value = [
+-            qemu_infos
+-        ]  # pylint: disable=no-member
++        self.mock_popen.communicate.return_value = [qemu_infos, ""]
++        self.mock_popen.returncode = 0
+ 
+         self.mock_conn.getInfo = MagicMock(
+             return_value=["x86_64", 4096, 8, 2712, 1, 2, 4, 2]
+-- 
+2.35.1
+
+

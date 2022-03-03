@@ -550,6 +550,8 @@ Patch225:       fix-inspector-module-export-function-bsc-1097531-478.patch
 Patch226:       python2-adjustments-for-virt-module.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61093
 Patch227:       fix-state.orchestrate_single-to-not-pass-pillar-none.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60513
+Patch228:       handle-old-qemu-img-not-supporting-u-parameter-bsc-1.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1308,6 +1310,7 @@ cp %{S:6} .
 %patch225 -p1
 %patch226 -p1
 %patch227 -p1
+%patch228 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
