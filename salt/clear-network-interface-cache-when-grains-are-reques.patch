@@ -1,0 +1,216 @@
+From 32b31c7b897b48a427336e1a16776a71e66960e2 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <vzhestkov@suse.com>
+Date: Thu, 3 Mar 2022 19:11:39 +0300
+Subject: [PATCH] Clear network interface cache when grains are
+ requested or refreshed (#60130) (#494)
+
+* test patch
+
+* pre commit
+
+* Add tests for network interfaces cache
+
+* Document test better
+
+* pre commit and changes
+
+Co-authored-by: Joe Eacott <jeacott@vmware.com>
+Co-authored-by: Daniel A. Wozniak <dwozniak@saltstack.com>
+
+Co-authored-by: Joe Eacott <31625359+xeacott@users.noreply.github.com>
+Co-authored-by: Joe Eacott <jeacott@vmware.com>
+Co-authored-by: Daniel A. Wozniak <dwozniak@saltstack.com>
+---
+ changelog/59490.fixed          |  1 +
+ salt/grains/core.py            |  6 ++-
+ salt/utils/network.py          | 25 ++++++----
+ tests/unit/grains/test_core.py | 90 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 112 insertions(+), 10 deletions(-)
+ create mode 100644 changelog/59490.fixed
+
+diff --git a/changelog/59490.fixed b/changelog/59490.fixed
+new file mode 100644
+index 0000000000..a523fff36d
+--- /dev/null
++++ b/changelog/59490.fixed
+@@ -0,0 +1 @@
++Clear the cached network interface grains during minion init and grains refresh
+diff --git a/salt/grains/core.py b/salt/grains/core.py
+index 875d6f6b50..202a8e61f1 100644
+--- a/salt/grains/core.py
++++ b/salt/grains/core.py
+@@ -43,7 +43,7 @@ import salt.utils.platform
+ import salt.utils.stringutils
+ import salt.utils.versions
+ from salt.ext.six.moves import range
+-from salt.utils.network import _get_interfaces
++from salt.utils.network import _clear_interfaces, _get_interfaces
+ 
+ # pylint: disable=import-error
+ try:
+@@ -111,6 +111,10 @@ HOST_NOT_FOUND = 1
+ NO_DATA = 4
+ 
+ 
++def __init__(opts):
++    _clear_interfaces()
++
++
+ def _windows_cpudata():
+     """
+     Return some CPU information on Windows minions
+diff --git a/salt/utils/network.py b/salt/utils/network.py
+index 1705a5809d..47883f3d0d 100644
+--- a/salt/utils/network.py
++++ b/salt/utils/network.py
+@@ -46,18 +46,25 @@ except (ImportError, OSError, AttributeError, TypeError):
+     pass
+ 
+ 
+-_INTERFACES = {}
++class Interfaces:
++    __slots__ = ("interfaces",)
+ 
++    def __init__(self, interfaces=None):
++        if interfaces is None:
++            interfaces = {}
++        self.interfaces = interfaces
++
++    def __call__(self, *args, **kwargs):
++        if not self.interfaces:
++            self.interfaces = interfaces()
++        return self.interfaces
++
++    def clear(self):
++        self.interfaces = {}
+ 
+-def _get_interfaces():  #! function
+-    """
+-    Provide a dict of the connected interfaces and their ip addresses
+-    """
+ 
+-    global _INTERFACES
+-    if not _INTERFACES:
+-        _INTERFACES = interfaces()
+-    return _INTERFACES
++_get_interfaces = Interfaces()
++_clear_interfaces = _get_interfaces.clear
+ 
+ 
+ def sanitize_host(host):
+diff --git a/tests/unit/grains/test_core.py b/tests/unit/grains/test_core.py
+index e73fc0730d..4773ef3b4d 100644
+--- a/tests/unit/grains/test_core.py
++++ b/tests/unit/grains/test_core.py
+@@ -6,6 +6,7 @@ import logging
+ import os
+ import platform
+ import socket
++import tempfile
+ import textwrap
+ 
+ import salt.grains.core as core
+@@ -21,6 +22,7 @@ from salt._compat import ipaddress
+ from salt.ext import six
+ from tests.support.mixins import LoaderModuleMockMixin
+ from tests.support.mock import MagicMock, Mock, mock_open, patch
++from tests.support.runtests import RUNTIME_VARS
+ from tests.support.unit import TestCase, skipIf
+ 
+ try:
+@@ -2336,3 +2338,91 @@ class CoreGrainsTestCase(TestCase, LoaderModuleMockMixin):
+ 
+         with patch.dict(core.__opts__, {"id": "otherid"}):
+             assert core.get_server_id() != expected
++
++    def test_network_grains_cache(self):
++        """
++        Network interfaces are cache is cleared by the loader
++        """
++        call_1 = {
++            "lo": {
++                "up": True,
++                "hwaddr": "00:00:00:00:00:00",
++                "inet": [
++                    {
++                        "address": "127.0.0.1",
++                        "netmask": "255.0.0.0",
++                        "broadcast": None,
++                        "label": "lo",
++                    }
++                ],
++                "inet6": [],
++            },
++            "wlo1": {
++                "up": True,
++                "hwaddr": "29:9f:9f:e9:67:f4",
++                "inet": [
++                    {
++                        "address": "172.16.13.85",
++                        "netmask": "255.255.248.0",
++                        "broadcast": "172.16.15.255",
++                        "label": "wlo1",
++                    }
++                ],
++                "inet6": [],
++            },
++        }
++        call_2 = {
++            "lo": {
++                "up": True,
++                "hwaddr": "00:00:00:00:00:00",
++                "inet": [
++                    {
++                        "address": "127.0.0.1",
++                        "netmask": "255.0.0.0",
++                        "broadcast": None,
++                        "label": "lo",
++                    }
++                ],
++                "inet6": [],
++            },
++            "wlo1": {
++                "up": True,
++                "hwaddr": "29:9f:9f:e9:67:f4",
++                "inet": [
++                    {
++                        "address": "172.16.13.86",
++                        "netmask": "255.255.248.0",
++                        "broadcast": "172.16.15.255",
++                        "label": "wlo1",
++                    }
++                ],
++                "inet6": [],
++            },
++        }
++        tmp_path = tempfile.mkdtemp(dir=RUNTIME_VARS.TMP)
++        cache_dir = os.path.join(tmp_path, "cache")
++        extmods = os.path.join(tmp_path, "extmods")
++        opts = {
++            "cachedir": str(cache_dir),
++            "extension_modules": str(extmods),
++            "optimization_order": [0],
++        }
++        with patch(
++            "salt.utils.network.interfaces", side_effect=[call_1, call_2]
++        ) as interfaces:
++            grains = salt.loader.grain_funcs(opts)
++            assert interfaces.call_count == 0
++            ret = grains["core.ip_interfaces"]()
++            # interfaces has been called
++            assert interfaces.call_count == 1
++            assert ret["ip_interfaces"]["wlo1"] == ["172.16.13.85"]
++            # interfaces has been cached
++            ret = grains["core.ip_interfaces"]()
++            assert interfaces.call_count == 1
++            assert ret["ip_interfaces"]["wlo1"] == ["172.16.13.85"]
++
++            grains = salt.loader.grain_funcs(opts)
++            ret = grains["core.ip_interfaces"]()
++            # A new loader clears the cache and interfaces is called again
++            assert interfaces.call_count == 2
++            assert ret["ip_interfaces"]["wlo1"] == ["172.16.13.86"]
+-- 
+2.35.1
+
+

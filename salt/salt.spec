@@ -496,6 +496,8 @@ Patch215:       remove-duplicated-method-definitions-in-salt.netapi-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/476
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61715
 Patch216:       add-salt-ssh-support-with-venv-salt-minion-3002.2-47.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60130
+Patch217:       clear-network-interface-cache-when-grains-are-reques.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1130,6 +1132,7 @@ cp %{S:6} .
 %patch214 -p1
 %patch215 -p1
 %patch216 -p1
+%patch217 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
