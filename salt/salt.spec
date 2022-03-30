@@ -489,15 +489,17 @@ Patch211:       wipe-notify_socket-from-env-in-cmdmod-bsc-1193357-30.patch
 Patch212:       add-all-ssh-kwargs-to-sanitize_kwargs-method-3002.2-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61530
 Patch213:       fix-inspector-module-export-function-bsc-1097531-480.patch
+# PATCH-FIX_UPSTREAM: implemented at 3004.1 release (no PR)
+Patch214:       fix-multiple-security-issues-bsc-1197417.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61093
-Patch214:       fix-state.orchestrate_single-to-not-pass-pillar-none.patch
+Patch215:       fix-state.orchestrate_single-to-not-pass-pillar-none.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/490
-Patch215:       remove-duplicated-method-definitions-in-salt.netapi-.patch
+Patch216:       remove-duplicated-method-definitions-in-salt.netapi-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/476
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61715
-Patch216:       add-salt-ssh-support-with-venv-salt-minion-3002.2-47.patch
+Patch217:       add-salt-ssh-support-with-venv-salt-minion-3002.2-47.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60130
-Patch217:       clear-network-interface-cache-when-grains-are-reques.patch
+Patch218:       clear-network-interface-cache-when-grains-are-reques.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1133,6 +1135,7 @@ cp %{S:6} .
 %patch215 -p1
 %patch216 -p1
 %patch217 -p1
+%patch218 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this

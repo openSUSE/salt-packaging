@@ -1,0 +1,3728 @@
+From 0afba71c57c72a95d11cc2fea84aac20a4861324 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
+ <psuarezhernandez@suse.com>
+Date: Wed, 23 Mar 2022 11:07:00 +0000
+Subject: [PATCH] Fix multiple security issues (bsc#1197417)
+
+* Sign authentication replies to prevent MiTM (CVE-2020-22935)
+* Sign pillar data to prevent MiTM attacks. (CVE-2022-22934)
+* Prevent job and fileserver replays (CVE-2022-22936)
+* Fixed targeting bug, especially visible when using syndic and user auth. (CVE-2022-22941)
+---
+ .pre-commit-config.yaml                     |    5 +
+ requirements/static/ci/linux.in             |    6 +-
+ requirements/static/ci/py3.5/linux.txt      |   20 +-
+ requirements/static/ci/py3.5/windows.txt    |   15 +-
+ requirements/static/ci/py3.6/linux.txt      |    6 +-
+ requirements/static/ci/py3.6/windows.txt    |   15 +-
+ requirements/static/ci/py3.7/linux.txt      |    6 +-
+ requirements/static/ci/py3.7/windows.txt    |   16 +-
+ requirements/static/ci/py3.8/linux.txt      |    6 +-
+ requirements/static/ci/py3.9/linux.txt      |    6 +-
+ requirements/static/ci/windows.in           |    2 +-
+ requirements/static/pkg/py3.5/windows.txt   |    8 +-
+ requirements/static/pkg/py3.6/windows.txt   |    8 +-
+ requirements/static/pkg/py3.7/windows.txt   |    8 +-
+ requirements/windows.txt                    |    4 +-
+ salt/crypt.py                               |  278 +++--
+ salt/master.py                              |   64 +-
+ salt/minion.py                              |    1 +
+ salt/pillar/__init__.py                     |    4 +
+ salt/transport/mixins/auth.py               |  117 ++-
+ salt/transport/tcp.py                       |  106 +-
+ salt/transport/zeromq.py                    |   94 +-
+ salt/utils/minions.py                       |   19 +-
+ tests/pytests/conftest.py                   |   77 ++
+ tests/pytests/unit/test_crypt.py            |  149 +++
+ tests/pytests/unit/transport/test_zeromq.py | 1042 +++++++++++++++++++
+ tests/pytests/unit/utils/test_minions.py    |   59 ++
+ tests/unit/transport/mixins.py              |   18 +-
+ tests/unit/transport/test_tcp.py            |   52 +-
+ tests/unit/transport/test_zeromq.py         |   89 +-
+ 30 files changed, 1931 insertions(+), 369 deletions(-)
+ create mode 100644 tests/pytests/unit/transport/test_zeromq.py
+
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+index 65b4fff1ff..38d148ffc1 100644
+--- a/.pre-commit-config.yaml
++++ b/.pre-commit-config.yaml
+@@ -285,6 +285,7 @@ repos:
+           - --platform=linux
+           - --include=requirements/static/pkg/py{py_version}/linux.txt
+           - --include=requirements/pytest.txt
++          - --passthrough-line-from-input=^git\+https(.*)$
+           - requirements/static/ci/linux.in
+ 
+       - id: pip-tools-compile
+@@ -298,6 +299,7 @@ repos:
+           - --platform=linux
+           - --include=requirements/static/pkg/py{py_version}/linux.txt
+           - --include=requirements/pytest.txt
++          - --passthrough-line-from-input=^git\+https(.*)$
+           - requirements/static/ci/linux.in
+ 
+       - id: pip-tools-compile
+@@ -311,6 +313,7 @@ repos:
+           - --platform=linux
+           - --include=requirements/static/pkg/py{py_version}/linux.txt
+           - --include=requirements/pytest.txt
++          - --passthrough-line-from-input=^git\+https(.*)$
+           - requirements/static/ci/linux.in
+ 
+       - id: pip-tools-compile
+@@ -324,6 +327,7 @@ repos:
+           - --platform=linux
+           - --include=requirements/static/pkg/py{py_version}/linux.txt
+           - --include=requirements/pytest.txt
++          - --passthrough-line-from-input=^git\+https(.*)$
+           - requirements/static/ci/linux.in
+ 
+       - id: pip-tools-compile
+@@ -337,6 +341,7 @@ repos:
+           - --platform=linux
+           - --include=requirements/static/pkg/py{py_version}/linux.txt
+           - --include=requirements/pytest.txt
++          - --passthrough-line-from-input=^git\+https(.*)$
+           - requirements/static/ci/linux.in
+ 
+       - id: pip-tools-compile
+diff --git a/requirements/static/ci/linux.in b/requirements/static/ci/linux.in
+index 99e10fbc0b..fc54661b90 100644
+--- a/requirements/static/ci/linux.in
++++ b/requirements/static/ci/linux.in
+@@ -1,5 +1,5 @@
+ apache-libcloud==2.0.0
+-azure>=4.0.0
++azure==4.0.0; sys_platform != "win32"
+ boto3>=1.13.5
+ boto>=2.46.0
+ certifi
+@@ -19,10 +19,10 @@ keyring==5.7.1
+ kubernetes<4.0
+ libnacl>=1.7.1
+ mock>=3.0.5
+-moto
++moto; python_version >= '3.6'
+ napalm; python_version >= '3.6'
+ passlib
+-paramiko>=2.1.6
++paramiko>=2.1.6; python_version >= '3.6'
+ pycurl
+ pygit2<=0.28.2; python_version < '3.8'
+ pygit2>=1.2.0; python_version >= '3.8'
+diff --git a/requirements/static/ci/py3.5/linux.txt b/requirements/static/ci/py3.5/linux.txt
+index 82450fa2be..4ce3cf2d50 100644
+--- a/requirements/static/ci/py3.5/linux.txt
++++ b/requirements/static/ci/py3.5/linux.txt
+@@ -10,7 +10,6 @@ appdirs==1.4.4            # via virtualenv
+ argh==0.26.2              # via watchdog
+ asn1crypto==1.3.0         # via certvalidator, oscrypto
+ attrs==19.1.0             # via pytest
+-aws-xray-sdk==0.95        # via moto
+ azure-applicationinsights==0.1.0  # via azure
+ azure-batch==4.1.3        # via azure
+ azure-common==1.1.18      # via azure-applicationinsights, azure-batch, azure-cosmosdb-table, azure-eventgrid, azure-graphrbac, azure-keyvault, azure-loganalytics, azure-mgmt-advisor, azure-mgmt-applicationinsights, azure-mgmt-authorization, azure-mgmt-batch, azure-mgmt-batchai, azure-mgmt-billing, azure-mgmt-cdn, azure-mgmt-cognitiveservices, azure-mgmt-commerce, azure-mgmt-compute, azure-mgmt-consumption, azure-mgmt-containerinstance, azure-mgmt-containerregistry, azure-mgmt-containerservice, azure-mgmt-cosmosdb, azure-mgmt-datafactory, azure-mgmt-datalake-analytics, azure-mgmt-datalake-store, azure-mgmt-datamigration, azure-mgmt-devspaces, azure-mgmt-devtestlabs, azure-mgmt-dns, azure-mgmt-eventgrid, azure-mgmt-eventhub, azure-mgmt-hanaonazure, azure-mgmt-iotcentral, azure-mgmt-iothub, azure-mgmt-iothubprovisioningservices, azure-mgmt-keyvault, azure-mgmt-loganalytics, azure-mgmt-logic, azure-mgmt-machinelearningcompute, azure-mgmt-managementgroups, azure-mgmt-managementpartner, azure-mgmt-maps, azure-mgmt-marketplaceordering, azure-mgmt-media, azure-mgmt-monitor, azure-mgmt-msi, azure-mgmt-network, azure-mgmt-notificationhubs, azure-mgmt-policyinsights, azure-mgmt-powerbiembedded, azure-mgmt-rdbms, azure-mgmt-recoveryservices, azure-mgmt-recoveryservicesbackup, azure-mgmt-redis, azure-mgmt-relay, azure-mgmt-reservations, azure-mgmt-resource, azure-mgmt-scheduler, azure-mgmt-search, azure-mgmt-servicebus, azure-mgmt-servicefabric, azure-mgmt-signalr, azure-mgmt-sql, azure-mgmt-storage, azure-mgmt-subscription, azure-mgmt-trafficmanager, azure-mgmt-web, azure-servicebus, azure-servicefabric, azure-servicemanagement-legacy, azure-storage-blob, azure-storage-common, azure-storage-file, azure-storage-queue
+@@ -92,13 +91,13 @@ azure-storage-blob==1.5.0  # via azure
+ azure-storage-common==1.4.0  # via azure-cosmosdb-table, azure-storage-blob, azure-storage-file, azure-storage-queue
+ azure-storage-file==1.4.0  # via azure
+ azure-storage-queue==1.4.0  # via azure
+-azure==4.0.0
++azure==4.0.0 ; sys_platform != "win32"
+ backports.functools-lru-cache==1.5
+ backports.ssl-match-hostname==3.7.0.1 ; python_version < "3.7"
+ bcrypt==3.1.6             # via paramiko
+ boto3==1.13.5
+ boto==2.49.0
+-botocore==1.16.26         # via boto3, moto, s3transfer
++botocore==1.16.26         # via boto3, s3transfer
+ cachetools==3.1.0         # via google-auth
+ cassandra-driver==3.23.0
+ certifi==2020.6.20
+@@ -118,9 +117,8 @@ dnspython==1.16.0
+ docker-pycreds==0.4.0     # via docker
+ docker==3.7.2
+ docutils==0.15.2          # via botocore
+-ecdsa==0.13.3             # via python-jose
+ filelock==3.0.12          # via virtualenv
+-future==0.17.1            # via python-jose, textfsm
++future==0.17.1            # via textfsm
+ genshi==0.7.3
+ geomet==0.1.2             # via cassandra-driver
+ gitdb2==2.0.5             # via gitpython
+@@ -136,8 +134,6 @@ isodate==0.6.0            # via msrest
+ jaraco.functools==2.0
+ jinja2==2.10.1
+ jmespath==0.9.4
+-jsondiff==1.1.1           # via moto
+-jsonpickle==1.1           # via aws-xray-sdk
+ jsonschema==2.6.0
+ junos-eznc==2.4.0
+ jxmlease==1.0.1
+@@ -150,7 +146,6 @@ mako==1.1.0
+ markupsafe==1.1.1
+ mock==3.0.5
+ more-itertools==5.0.0
+-moto==1.3.7
+ msgpack==1.0.0
+ msrest==0.6.14            # via azure-applicationinsights, azure-eventgrid, azure-keyvault, azure-loganalytics, azure-mgmt-cdn, azure-mgmt-compute, azure-mgmt-containerinstance, azure-mgmt-containerregistry, azure-mgmt-containerservice, azure-mgmt-dns, azure-mgmt-eventhub, azure-mgmt-keyvault, azure-mgmt-media, azure-mgmt-network, azure-mgmt-rdbms, azure-mgmt-resource, azure-mgmt-servicebus, azure-mgmt-servicefabric, azure-mgmt-signalr, azure-servicefabric, msrestazure
+ msrestazure==0.6.3        # via azure-batch, azure-eventgrid, azure-graphrbac, azure-keyvault, azure-mgmt-advisor, azure-mgmt-applicationinsights, azure-mgmt-authorization, azure-mgmt-batch, azure-mgmt-batchai, azure-mgmt-billing, azure-mgmt-cdn, azure-mgmt-cognitiveservices, azure-mgmt-commerce, azure-mgmt-compute, azure-mgmt-consumption, azure-mgmt-containerinstance, azure-mgmt-containerregistry, azure-mgmt-containerservice, azure-mgmt-cosmosdb, azure-mgmt-datafactory, azure-mgmt-datalake-analytics, azure-mgmt-datalake-store, azure-mgmt-datamigration, azure-mgmt-devspaces, azure-mgmt-devtestlabs, azure-mgmt-dns, azure-mgmt-eventgrid, azure-mgmt-eventhub, azure-mgmt-hanaonazure, azure-mgmt-iotcentral, azure-mgmt-iothub, azure-mgmt-iothubprovisioningservices, azure-mgmt-keyvault, azure-mgmt-loganalytics, azure-mgmt-logic, azure-mgmt-machinelearningcompute, azure-mgmt-managementgroups, azure-mgmt-managementpartner, azure-mgmt-maps, azure-mgmt-marketplaceordering, azure-mgmt-media, azure-mgmt-monitor, azure-mgmt-msi, azure-mgmt-network, azure-mgmt-notificationhubs, azure-mgmt-policyinsights, azure-mgmt-powerbiembedded, azure-mgmt-rdbms, azure-mgmt-recoveryservices, azure-mgmt-recoveryservicesbackup, azure-mgmt-redis, azure-mgmt-relay, azure-mgmt-reservations, azure-mgmt-resource, azure-mgmt-scheduler, azure-mgmt-search, azure-mgmt-servicebus, azure-mgmt-servicefabric, azure-mgmt-signalr, azure-mgmt-sql, azure-mgmt-storage, azure-mgmt-subscription, azure-mgmt-trafficmanager, azure-mgmt-web
+@@ -160,7 +155,7 @@ ntc-templates==1.4.0      # via junos-eznc
+ oauthlib==3.1.0           # via requests-oauthlib
+ oscrypto==1.2.0           # via certvalidator
+ packaging==19.2           # via pytest
+-paramiko==2.7.1
++paramiko==2.7.1           # via junos-eznc, ncclient, scp
+ passlib==1.7.2
+ pathlib2==2.3.3           # via pytest
+ pathtools==0.1.2          # via watchdog
+@@ -168,11 +163,9 @@ pluggy==0.13.0            # via pytest
+ portend==2.4
+ psutil==5.6.7
+ py==1.9.0                 # via pytest
+-pyaml==19.4.1             # via moto
+ pyasn1-modules==0.2.4     # via google-auth
+ pyasn1==0.4.5             # via pyasn1-modules, rsa
+ pycparser==2.17
+-pycryptodome==3.8.1       # via python-jose
+ pycryptodomex==3.9.8
+ pycurl==7.43.0.6
+ pygit2==0.28.2 ; python_version < "3.8"
+@@ -191,14 +184,12 @@ pytest==6.1.1
+ python-dateutil==2.8.1
+ python-etcd==0.4.5
+ python-gnupg==0.4.4
+-python-jose==2.0.2        # via moto
+ pytz==2020.1
+ pyvmomi==6.7.1.2018.12
+ pyyaml==5.3.1
+ pyzmq==18.0.1 ; python_version < "3.9"
+ requests-oauthlib==1.3.0  # via msrest
+ requests==2.21.0
+-responses==0.10.6         # via moto
+ rfc3987==1.3.8
+ rsa==4.0                  # via google-auth
+ s3transfer==0.3.3         # via boto3
+@@ -220,9 +211,6 @@ vcert==0.7.3
+ virtualenv==20.0.20
+ watchdog==0.9.0
+ websocket-client==0.40.0  # via docker, kubernetes
+-werkzeug==0.15.6          # via moto
+-wrapt==1.11.1             # via aws-xray-sdk
+-xmltodict==0.12.0         # via moto
+ yamlordereddictloader==0.4.0  # via junos-eznc
+ zc.lockfile==1.4
+ zipp==0.6.0               # via importlib-metadata, importlib-resources
+diff --git a/requirements/static/ci/py3.5/windows.txt b/requirements/static/ci/py3.5/windows.txt
+index 3de8e54de0..203490f8a6 100644
+--- a/requirements/static/ci/py3.5/windows.txt
++++ b/requirements/static/ci/py3.5/windows.txt
+@@ -9,14 +9,14 @@ atomicwrites==1.3.0       # via pytest
+ attrs==19.1.0             # via pytest
+ aws-xray-sdk==0.95        # via moto
+ backports.ssl-match-hostname==3.7.0.1 ; python_version < "3.7"
+-boto3==1.13.5
++boto3==1.18.64
+ boto==2.49.0
+-botocore==1.16.26         # via boto3, moto, s3transfer
++botocore==1.21.64         # via boto3, moto, s3transfer
+ cachetools==3.1.0         # via google-auth
+ cassandra-driver==3.23.0
+ certifi==2020.6.20
+ cffi==1.12.2
+-chardet==3.0.4
++charset-normalizer==2.0.7
+ cheetah3==3.1.0
+ cheroot==8.3.0
+ cherrypy==17.4.1
+@@ -30,7 +30,6 @@ dmidecode==0.9.0
+ dnspython==1.16.0
+ docker-pycreds==0.4.0     # via docker
+ docker==2.7.0
+-docutils==0.15.2          # via botocore
+ ecdsa==0.13.3             # via python-jose
+ filelock==3.0.12          # via virtualenv
+ future==0.17.1            # via python-jose
+@@ -93,14 +92,14 @@ python-jose==2.0.2        # via moto
+ pythonnet==2.4.0
+ pytz==2020.1
+ pyvmomi==6.7.1.2018.12
+-pywin32==227
++pywin32==301
+ pyyaml==5.3.1
+ pyzmq==18.0.1 ; python_version < "3.8"
+-requests==2.21.0
++requests==2.26.0
+ responses==0.10.6         # via moto
+ rfc3987==1.3.8
+ rsa==4.0                  # via google-auth
+-s3transfer==0.3.3         # via boto3
++s3transfer==0.5.0         # via boto3
+ sed==0.3.1
+ setproctitle==1.1.10
+ six==1.15.0
+@@ -109,7 +108,7 @@ strict-rfc3339==0.7
+ tempora==1.14.1
+ timelib==0.2.5
+ toml==0.10.0
+-urllib3==1.24.3
++urllib3==1.26.7
+ virtualenv==20.0.20
+ watchdog==0.10.3
+ websocket-client==0.40.0  # via docker, kubernetes
+diff --git a/requirements/static/ci/py3.6/linux.txt b/requirements/static/ci/py3.6/linux.txt
+index 8733ac1602..3e4286307e 100644
+--- a/requirements/static/ci/py3.6/linux.txt
++++ b/requirements/static/ci/py3.6/linux.txt
+@@ -92,7 +92,7 @@ azure-storage-blob==1.5.0  # via azure
+ azure-storage-common==1.4.0  # via azure-cosmosdb-table, azure-storage-blob, azure-storage-file, azure-storage-queue
+ azure-storage-file==1.4.0  # via azure
+ azure-storage-queue==1.4.0  # via azure
+-azure==4.0.0
++azure==4.0.0 ; sys_platform != "win32"
+ backports.functools-lru-cache==1.5
+ backports.ssl-match-hostname==3.7.0.1 ; python_version < "3.7"
+ bcrypt==3.1.6             # via paramiko
+@@ -152,7 +152,7 @@ mako==1.1.0
+ markupsafe==1.1.1
+ mock==3.0.5
+ more-itertools==5.0.0
+-moto==1.3.7
++moto==1.3.7 ; python_version >= "3.6"
+ msgpack==1.0.0
+ msrest==0.6.14            # via azure-applicationinsights, azure-eventgrid, azure-keyvault, azure-loganalytics, azure-mgmt-cdn, azure-mgmt-compute, azure-mgmt-containerinstance, azure-mgmt-containerregistry, azure-mgmt-containerservice, azure-mgmt-dns, azure-mgmt-eventhub, azure-mgmt-keyvault, azure-mgmt-media, azure-mgmt-network, azure-mgmt-rdbms, azure-mgmt-resource, azure-mgmt-servicebus, azure-mgmt-servicefabric, azure-mgmt-signalr, azure-servicefabric, msrestazure
+ msrestazure==0.6.3        # via azure-batch, azure-eventgrid, azure-graphrbac, azure-keyvault, azure-mgmt-advisor, azure-mgmt-applicationinsights, azure-mgmt-authorization, azure-mgmt-batch, azure-mgmt-batchai, azure-mgmt-billing, azure-mgmt-cdn, azure-mgmt-cognitiveservices, azure-mgmt-commerce, azure-mgmt-compute, azure-mgmt-consumption, azure-mgmt-containerinstance, azure-mgmt-containerregistry, azure-mgmt-containerservice, azure-mgmt-cosmosdb, azure-mgmt-datafactory, azure-mgmt-datalake-analytics, azure-mgmt-datalake-store, azure-mgmt-datamigration, azure-mgmt-devspaces, azure-mgmt-devtestlabs, azure-mgmt-dns, azure-mgmt-eventgrid, azure-mgmt-eventhub, azure-mgmt-hanaonazure, azure-mgmt-iotcentral, azure-mgmt-iothub, azure-mgmt-iothubprovisioningservices, azure-mgmt-keyvault, azure-mgmt-loganalytics, azure-mgmt-logic, azure-mgmt-machinelearningcompute, azure-mgmt-managementgroups, azure-mgmt-managementpartner, azure-mgmt-maps, azure-mgmt-marketplaceordering, azure-mgmt-media, azure-mgmt-monitor, azure-mgmt-msi, azure-mgmt-network, azure-mgmt-notificationhubs, azure-mgmt-policyinsights, azure-mgmt-powerbiembedded, azure-mgmt-rdbms, azure-mgmt-recoveryservices, azure-mgmt-recoveryservicesbackup, azure-mgmt-redis, azure-mgmt-relay, azure-mgmt-reservations, azure-mgmt-resource, azure-mgmt-scheduler, azure-mgmt-search, azure-mgmt-servicebus, azure-mgmt-servicefabric, azure-mgmt-signalr, azure-mgmt-sql, azure-mgmt-storage, azure-mgmt-subscription, azure-mgmt-trafficmanager, azure-mgmt-web
+@@ -164,7 +164,7 @@ ntc-templates==1.4.0      # via junos-eznc
+ oauthlib==3.1.0           # via requests-oauthlib
+ oscrypto==1.2.0           # via certvalidator
+ packaging==19.2           # via pytest
+-paramiko==2.7.1
++paramiko==2.7.1 ; python_version >= "3.6"
+ passlib==1.7.2
+ pathtools==0.1.2          # via watchdog
+ pluggy==0.13.0            # via pytest
+diff --git a/requirements/static/ci/py3.6/windows.txt b/requirements/static/ci/py3.6/windows.txt
+index 325e6ec969..54a651d4a0 100644
+--- a/requirements/static/ci/py3.6/windows.txt
++++ b/requirements/static/ci/py3.6/windows.txt
+@@ -9,14 +9,14 @@ atomicwrites==1.3.0       # via pytest
+ attrs==19.1.0             # via pytest
+ aws-xray-sdk==0.95        # via moto
+ backports.ssl-match-hostname==3.7.0.1 ; python_version < "3.7"
+-boto3==1.13.5
++boto3==1.18.64
+ boto==2.49.0
+-botocore==1.16.26         # via boto3, moto, s3transfer
++botocore==1.21.64         # via boto3, moto, s3transfer
+ cachetools==3.1.0         # via google-auth
+ cassandra-driver==3.23.0
+ certifi==2020.6.20
+ cffi==1.12.2
+-chardet==3.0.4
++charset-normalizer==2.0.7
+ cheetah3==3.1.0
+ cheroot==8.3.0
+ cherrypy==17.4.1
+@@ -30,7 +30,6 @@ dmidecode==0.9.0
+ dnspython==1.16.0
+ docker-pycreds==0.4.0     # via docker
+ docker==2.7.0
+-docutils==0.15.2          # via botocore
+ ecdsa==0.13.3             # via python-jose
+ filelock==3.0.12          # via virtualenv
+ future==0.17.1            # via python-jose
+@@ -92,14 +91,14 @@ python-jose==2.0.2        # via moto
+ pythonnet==2.4.0
+ pytz==2020.1
+ pyvmomi==6.7.1.2018.12
+-pywin32==227
++pywin32==302
+ pyyaml==5.3.1
+ pyzmq==18.0.1 ; python_version < "3.8"
+-requests==2.21.0
++requests==2.26.0
+ responses==0.10.6         # via moto
+ rfc3987==1.3.8
+ rsa==4.0                  # via google-auth
+-s3transfer==0.3.3         # via boto3
++s3transfer==0.5.0         # via boto3
+ sed==0.3.1
+ setproctitle==1.1.10
+ six==1.15.0
+@@ -108,7 +107,7 @@ strict-rfc3339==0.7
+ tempora==1.14.1
+ timelib==0.2.5
+ toml==0.10.0
+-urllib3==1.24.3
++urllib3==1.26.7
+ virtualenv==20.0.20
+ watchdog==0.10.3
+ websocket-client==0.40.0  # via docker, kubernetes
+diff --git a/requirements/static/ci/py3.7/linux.txt b/requirements/static/ci/py3.7/linux.txt
+index e8b0cdd804..783149b2eb 100644
+--- a/requirements/static/ci/py3.7/linux.txt
++++ b/requirements/static/ci/py3.7/linux.txt
+@@ -92,7 +92,7 @@ azure-storage-blob==1.5.0  # via azure
+ azure-storage-common==1.4.0  # via azure-cosmosdb-table, azure-storage-blob, azure-storage-file, azure-storage-queue
+ azure-storage-file==1.4.0  # via azure
+ azure-storage-queue==1.4.0  # via azure
+-azure==4.0.0
++azure==4.0.0 ; sys_platform != "win32"
+ backports.functools-lru-cache==1.5
+ bcrypt==3.1.6             # via paramiko
+ boto3==1.13.5
+@@ -150,7 +150,7 @@ mako==1.1.0
+ markupsafe==1.1.1
+ mock==3.0.5
+ more-itertools==5.0.0
+-moto==1.3.7
++moto==1.3.7 ; python_version >= "3.6"
+ msgpack==1.0.0
+ msrest==0.6.14            # via azure-applicationinsights, azure-eventgrid, azure-keyvault, azure-loganalytics, azure-mgmt-cdn, azure-mgmt-compute, azure-mgmt-containerinstance, azure-mgmt-containerregistry, azure-mgmt-containerservice, azure-mgmt-dns, azure-mgmt-eventhub, azure-mgmt-keyvault, azure-mgmt-media, azure-mgmt-network, azure-mgmt-rdbms, azure-mgmt-resource, azure-mgmt-servicebus, azure-mgmt-servicefabric, azure-mgmt-signalr, azure-servicefabric, msrestazure
+ msrestazure==0.6.3        # via azure-batch, azure-eventgrid, azure-graphrbac, azure-keyvault, azure-mgmt-advisor, azure-mgmt-applicationinsights, azure-mgmt-authorization, azure-mgmt-batch, azure-mgmt-batchai, azure-mgmt-billing, azure-mgmt-cdn, azure-mgmt-cognitiveservices, azure-mgmt-commerce, azure-mgmt-compute, azure-mgmt-consumption, azure-mgmt-containerinstance, azure-mgmt-containerregistry, azure-mgmt-containerservice, azure-mgmt-cosmosdb, azure-mgmt-datafactory, azure-mgmt-datalake-analytics, azure-mgmt-datalake-store, azure-mgmt-datamigration, azure-mgmt-devspaces, azure-mgmt-devtestlabs, azure-mgmt-dns, azure-mgmt-eventgrid, azure-mgmt-eventhub, azure-mgmt-hanaonazure, azure-mgmt-iotcentral, azure-mgmt-iothub, azure-mgmt-iothubprovisioningservices, azure-mgmt-keyvault, azure-mgmt-loganalytics, azure-mgmt-logic, azure-mgmt-machinelearningcompute, azure-mgmt-managementgroups, azure-mgmt-managementpartner, azure-mgmt-maps, azure-mgmt-marketplaceordering, azure-mgmt-media, azure-mgmt-monitor, azure-mgmt-msi, azure-mgmt-network, azure-mgmt-notificationhubs, azure-mgmt-policyinsights, azure-mgmt-powerbiembedded, azure-mgmt-rdbms, azure-mgmt-recoveryservices, azure-mgmt-recoveryservicesbackup, azure-mgmt-redis, azure-mgmt-relay, azure-mgmt-reservations, azure-mgmt-resource, azure-mgmt-scheduler, azure-mgmt-search, azure-mgmt-servicebus, azure-mgmt-servicefabric, azure-mgmt-signalr, azure-mgmt-sql, azure-mgmt-storage, azure-mgmt-subscription, azure-mgmt-trafficmanager, azure-mgmt-web
+@@ -162,7 +162,7 @@ ntc-templates==1.4.0      # via junos-eznc
+ oauthlib==3.1.0           # via requests-oauthlib
+ oscrypto==1.2.0           # via certvalidator
+ packaging==19.2           # via pytest
+-paramiko==2.7.1
++paramiko==2.7.1 ; python_version >= "3.6"
+ passlib==1.7.2
+ pathtools==0.1.2          # via watchdog
+ pluggy==0.13.0            # via pytest
+diff --git a/requirements/static/ci/py3.7/windows.txt b/requirements/static/ci/py3.7/windows.txt
+index 53b5db2734..0b3736657d 100644
+--- a/requirements/static/ci/py3.7/windows.txt
++++ b/requirements/static/ci/py3.7/windows.txt
+@@ -8,14 +8,15 @@ appdirs==1.4.4            # via virtualenv
+ atomicwrites==1.3.0       # via pytest
+ attrs==19.1.0             # via pytest
+ aws-xray-sdk==0.95        # via moto
+-boto3==1.13.5
++backports.ssl-match-hostname==3.7.0.1  # via websocket-client
++boto3==1.18.64
+ boto==2.49.0
+-botocore==1.16.26         # via boto3, moto, s3transfer
++botocore==1.21.64         # via boto3, moto, s3transfer
+ cachetools==3.1.0         # via google-auth
+ cassandra-driver==3.23.0
+ certifi==2020.6.20
+ cffi==1.12.2
+-chardet==3.0.4
++charset-normalizer==2.0.7
+ cheetah3==3.1.0
+ cheroot==8.3.0
+ cherrypy==17.4.1
+@@ -29,7 +30,6 @@ dmidecode==0.9.0
+ dnspython==1.16.0
+ docker-pycreds==0.4.0     # via docker
+ docker==2.7.0
+-docutils==0.15.2          # via botocore
+ ecdsa==0.13.3             # via python-jose
+ filelock==3.0.12          # via virtualenv
+ future==0.17.1            # via python-jose
+@@ -90,14 +90,14 @@ python-jose==2.0.2        # via moto
+ pythonnet==2.4.0
+ pytz==2020.1
+ pyvmomi==6.7.1.2018.12
+-pywin32==227
++pywin32==302
+ pyyaml==5.3.1
+ pyzmq==18.0.1 ; python_version < "3.8"
+-requests==2.21.0
++requests==2.26.0
+ responses==0.10.6         # via moto
+ rfc3987==1.3.8
+ rsa==4.0                  # via google-auth
+-s3transfer==0.3.3         # via boto3
++s3transfer==0.5.0         # via boto3
+ sed==0.3.1
+ setproctitle==1.1.10
+ six==1.15.0
+@@ -106,7 +106,7 @@ strict-rfc3339==0.7
+ tempora==1.14.1
+ timelib==0.2.5
+ toml==0.10.0
+-urllib3==1.24.3
++urllib3==1.26.7
+ virtualenv==20.0.20
+ watchdog==0.10.3
+ websocket-client==0.40.0  # via docker, kubernetes
+diff --git a/requirements/static/ci/py3.8/linux.txt b/requirements/static/ci/py3.8/linux.txt
+index 75e3d72b36..f5c9f62293 100644
+--- a/requirements/static/ci/py3.8/linux.txt
++++ b/requirements/static/ci/py3.8/linux.txt
+@@ -92,7 +92,7 @@ azure-storage-blob==1.5.0  # via azure
+ azure-storage-common==1.4.0  # via azure-cosmosdb-table, azure-storage-blob, azure-storage-file, azure-storage-queue
+ azure-storage-file==1.4.0  # via azure
+ azure-storage-queue==1.4.0  # via azure
+-azure==4.0.0
++azure==4.0.0 ; sys_platform != "win32"
+ backports.functools-lru-cache==1.5
+ bcrypt==3.1.6             # via paramiko
+ boto3==1.13.5
+@@ -150,7 +150,7 @@ mako==1.1.0
+ markupsafe==1.1.1
+ mock==3.0.5
+ more-itertools==5.0.0
+-moto==1.3.7
++moto==1.3.7 ; python_version >= "3.6"
+ msgpack==1.0.0
+ msrest==0.6.14            # via azure-applicationinsights, azure-eventgrid, azure-keyvault, azure-loganalytics, azure-mgmt-cdn, azure-mgmt-compute, azure-mgmt-containerinstance, azure-mgmt-containerregistry, azure-mgmt-containerservice, azure-mgmt-dns, azure-mgmt-eventhub, azure-mgmt-keyvault, azure-mgmt-media, azure-mgmt-network, azure-mgmt-rdbms, azure-mgmt-resource, azure-mgmt-servicebus, azure-mgmt-servicefabric, azure-mgmt-signalr, azure-servicefabric, msrestazure
+ msrestazure==0.6.3        # via azure-batch, azure-eventgrid, azure-graphrbac, azure-keyvault, azure-mgmt-advisor, azure-mgmt-applicationinsights, azure-mgmt-authorization, azure-mgmt-batch, azure-mgmt-batchai, azure-mgmt-billing, azure-mgmt-cdn, azure-mgmt-cognitiveservices, azure-mgmt-commerce, azure-mgmt-compute, azure-mgmt-consumption, azure-mgmt-containerinstance, azure-mgmt-containerregistry, azure-mgmt-containerservice, azure-mgmt-cosmosdb, azure-mgmt-datafactory, azure-mgmt-datalake-analytics, azure-mgmt-datalake-store, azure-mgmt-datamigration, azure-mgmt-devspaces, azure-mgmt-devtestlabs, azure-mgmt-dns, azure-mgmt-eventgrid, azure-mgmt-eventhub, azure-mgmt-hanaonazure, azure-mgmt-iotcentral, azure-mgmt-iothub, azure-mgmt-iothubprovisioningservices, azure-mgmt-keyvault, azure-mgmt-loganalytics, azure-mgmt-logic, azure-mgmt-machinelearningcompute, azure-mgmt-managementgroups, azure-mgmt-managementpartner, azure-mgmt-maps, azure-mgmt-marketplaceordering, azure-mgmt-media, azure-mgmt-monitor, azure-mgmt-msi, azure-mgmt-network, azure-mgmt-notificationhubs, azure-mgmt-policyinsights, azure-mgmt-powerbiembedded, azure-mgmt-rdbms, azure-mgmt-recoveryservices, azure-mgmt-recoveryservicesbackup, azure-mgmt-redis, azure-mgmt-relay, azure-mgmt-reservations, azure-mgmt-resource, azure-mgmt-scheduler, azure-mgmt-search, azure-mgmt-servicebus, azure-mgmt-servicefabric, azure-mgmt-signalr, azure-mgmt-sql, azure-mgmt-storage, azure-mgmt-subscription, azure-mgmt-trafficmanager, azure-mgmt-web
+@@ -162,7 +162,7 @@ ntc-templates==1.4.1      # via junos-eznc
+ oauthlib==3.1.0           # via requests-oauthlib
+ oscrypto==1.2.0           # via certvalidator
+ packaging==19.2           # via pytest
+-paramiko==2.7.1
++paramiko==2.7.1 ; python_version >= "3.6"
+ passlib==1.7.2
+ pathtools==0.1.2          # via watchdog
+ pluggy==0.13.0            # via pytest
+diff --git a/requirements/static/ci/py3.9/linux.txt b/requirements/static/ci/py3.9/linux.txt
+index fe95d02273..2dc81874e1 100644
+--- a/requirements/static/ci/py3.9/linux.txt
++++ b/requirements/static/ci/py3.9/linux.txt
+@@ -92,7 +92,7 @@ azure-storage-blob==1.5.0  # via azure
+ azure-storage-common==1.4.0  # via azure-cosmosdb-table, azure-storage-blob, azure-storage-file, azure-storage-queue
+ azure-storage-file==1.4.0  # via azure
+ azure-storage-queue==1.4.0  # via azure
+-azure==4.0.0
++azure==4.0.0 ; sys_platform != "win32"
+ backports.functools-lru-cache==1.5
+ bcrypt==3.1.6             # via paramiko
+ boto3==1.13.5
+@@ -150,7 +150,7 @@ mako==1.1.0
+ markupsafe==1.1.1
+ mock==3.0.5
+ more-itertools==5.0.0
+-moto==1.3.7
++moto==1.3.7 ; python_version >= "3.6"
+ msgpack==1.0.0
+ msrest==0.6.14            # via azure-applicationinsights, azure-eventgrid, azure-keyvault, azure-loganalytics, azure-mgmt-cdn, azure-mgmt-compute, azure-mgmt-containerinstance, azure-mgmt-containerregistry, azure-mgmt-containerservice, azure-mgmt-dns, azure-mgmt-eventhub, azure-mgmt-keyvault, azure-mgmt-media, azure-mgmt-network, azure-mgmt-rdbms, azure-mgmt-resource, azure-mgmt-servicebus, azure-mgmt-servicefabric, azure-mgmt-signalr, azure-servicefabric, msrestazure
+ msrestazure==0.6.3        # via azure-batch, azure-eventgrid, azure-graphrbac, azure-keyvault, azure-mgmt-advisor, azure-mgmt-applicationinsights, azure-mgmt-authorization, azure-mgmt-batch, azure-mgmt-batchai, azure-mgmt-billing, azure-mgmt-cdn, azure-mgmt-cognitiveservices, azure-mgmt-commerce, azure-mgmt-compute, azure-mgmt-consumption, azure-mgmt-containerinstance, azure-mgmt-containerregistry, azure-mgmt-containerservice, azure-mgmt-cosmosdb, azure-mgmt-datafactory, azure-mgmt-datalake-analytics, azure-mgmt-datalake-store, azure-mgmt-datamigration, azure-mgmt-devspaces, azure-mgmt-devtestlabs, azure-mgmt-dns, azure-mgmt-eventgrid, azure-mgmt-eventhub, azure-mgmt-hanaonazure, azure-mgmt-iotcentral, azure-mgmt-iothub, azure-mgmt-iothubprovisioningservices, azure-mgmt-keyvault, azure-mgmt-loganalytics, azure-mgmt-logic, azure-mgmt-machinelearningcompute, azure-mgmt-managementgroups, azure-mgmt-managementpartner, azure-mgmt-maps, azure-mgmt-marketplaceordering, azure-mgmt-media, azure-mgmt-monitor, azure-mgmt-msi, azure-mgmt-network, azure-mgmt-notificationhubs, azure-mgmt-policyinsights, azure-mgmt-powerbiembedded, azure-mgmt-rdbms, azure-mgmt-recoveryservices, azure-mgmt-recoveryservicesbackup, azure-mgmt-redis, azure-mgmt-relay, azure-mgmt-reservations, azure-mgmt-resource, azure-mgmt-scheduler, azure-mgmt-search, azure-mgmt-servicebus, azure-mgmt-servicefabric, azure-mgmt-signalr, azure-mgmt-sql, azure-mgmt-storage, azure-mgmt-subscription, azure-mgmt-trafficmanager, azure-mgmt-web
+@@ -162,7 +162,7 @@ ntc-templates==1.4.1      # via junos-eznc
+ oauthlib==3.1.0           # via requests-oauthlib
+ oscrypto==1.2.0           # via certvalidator
+ packaging==19.2           # via pytest
+-paramiko==2.7.1
++paramiko==2.7.1 ; python_version >= "3.6"
+ passlib==1.7.2
+ pathtools==0.1.2          # via watchdog
+ pluggy==0.13.0            # via pytest
+diff --git a/requirements/static/ci/windows.in b/requirements/static/ci/windows.in
+index 6a4eadd093..4c2e67e435 100644
+--- a/requirements/static/ci/windows.in
++++ b/requirements/static/ci/windows.in
+@@ -1,6 +1,6 @@
+ # This is a compilation of requirements installed on salt-jenkins git.salt state run
+ #apache-libcloud==2.0.0
+-boto3>=1.13.5
++boto3>=1.15.0
+ boto>=2.46.0
+ dmidecode
+ dnspython
+diff --git a/requirements/static/pkg/py3.5/windows.txt b/requirements/static/pkg/py3.5/windows.txt
+index 5bc3f8aa2a..2234851fae 100644
+--- a/requirements/static/pkg/py3.5/windows.txt
++++ b/requirements/static/pkg/py3.5/windows.txt
+@@ -7,7 +7,7 @@
+ backports.ssl-match-hostname==3.7.0.1 ; python_version < "3.7"
+ certifi==2020.6.20
+ cffi==1.12.2
+-chardet==3.0.4            # via requests
++charset-normalizer==2.0.7  # via requests
+ cheroot==8.3.0            # via cherrypy
+ cherrypy==17.4.1
+ contextlib2==0.6.0.post1  # via cherrypy
+@@ -39,16 +39,16 @@ python-dateutil==2.8.0
+ python-gnupg==0.4.4
+ pythonnet==2.4.0
+ pytz==2020.1              # via tempora
+-pywin32==227
++pywin32==301
+ pyyaml==5.3.1
+ pyzmq==18.0.1 ; python_version < "3.8"
+-requests==2.21.0
++requests==2.26.0
+ setproctitle==1.1.10
+ six==1.15.0               # via cheroot, cherrypy, cryptography, pyopenssl, python-dateutil, tempora
+ smmap2==2.0.5             # via gitdb2
+ tempora==1.14.1           # via portend
+ timelib==0.2.5
+-urllib3==1.24.3           # via requests
++urllib3==1.26.7
+ wheel==0.33.4
+ wmi==1.4.9
+ zc.lockfile==2.0          # via cherrypy
+diff --git a/requirements/static/pkg/py3.6/windows.txt b/requirements/static/pkg/py3.6/windows.txt
+index c72607f9c5..725b72d27e 100644
+--- a/requirements/static/pkg/py3.6/windows.txt
++++ b/requirements/static/pkg/py3.6/windows.txt
+@@ -7,7 +7,7 @@
+ backports.ssl-match-hostname==3.7.0.1 ; python_version < "3.7"
+ certifi==2020.6.20
+ cffi==1.12.2
+-chardet==3.0.4            # via requests
++charset-normalizer==2.0.7  # via requests
+ cheroot==8.3.0            # via cherrypy
+ cherrypy==17.4.1
+ contextlib2==0.6.0.post1  # via cherrypy
+@@ -39,16 +39,16 @@ python-dateutil==2.8.0
+ python-gnupg==0.4.4
+ pythonnet==2.4.0
+ pytz==2020.1              # via tempora
+-pywin32==227
++pywin32==302
+ pyyaml==5.3.1
+ pyzmq==18.0.1 ; python_version < "3.8"
+-requests==2.21.0
++requests==2.26.0
+ setproctitle==1.1.10
+ six==1.15.0               # via cheroot, cherrypy, cryptography, pyopenssl, python-dateutil, tempora
+ smmap2==2.0.5             # via gitdb2
+ tempora==1.14.1           # via portend
+ timelib==0.2.5
+-urllib3==1.24.3           # via requests
++urllib3==1.26.7
+ wheel==0.33.4
+ wmi==1.4.9
+ zc.lockfile==2.0          # via cherrypy
+diff --git a/requirements/static/pkg/py3.7/windows.txt b/requirements/static/pkg/py3.7/windows.txt
+index de6e075617..515f9734a3 100644
+--- a/requirements/static/pkg/py3.7/windows.txt
++++ b/requirements/static/pkg/py3.7/windows.txt
+@@ -6,7 +6,7 @@
+ #
+ certifi==2020.6.20
+ cffi==1.12.2
+-chardet==3.0.4            # via requests
++charset-normalizer==2.0.7  # via requests
+ cheroot==8.3.0            # via cherrypy
+ cherrypy==17.4.1
+ contextlib2==0.6.0.post1  # via cherrypy
+@@ -38,16 +38,16 @@ python-dateutil==2.8.0
+ python-gnupg==0.4.4
+ pythonnet==2.4.0
+ pytz==2020.1              # via tempora
+-pywin32==227
++pywin32==302
+ pyyaml==5.3.1
+ pyzmq==18.0.1 ; python_version < "3.8"
+-requests==2.21.0
++requests==2.26.0
+ setproctitle==1.1.10
+ six==1.15.0               # via cheroot, cherrypy, cryptography, pyopenssl, python-dateutil, tempora
+ smmap2==2.0.5             # via gitdb2
+ tempora==1.14.1           # via portend
+ timelib==0.2.5
+-urllib3==1.24.3           # via requests
++urllib3==1.26.7
+ wheel==0.33.4
+ wmi==1.4.9
+ zc.lockfile==2.0          # via cherrypy
+diff --git a/requirements/windows.txt b/requirements/windows.txt
+index 1e31ad2b88..3186140677 100644
+--- a/requirements/windows.txt
++++ b/requirements/windows.txt
+@@ -2,7 +2,7 @@
+ 
+ -r zeromq.txt
+ 
+-pywin32>=227
++pywin32>=301
+ wmi>=1.4.9
+ pythonnet>=2.4.0
+ 
+@@ -30,8 +30,10 @@ python-dateutil>=2.8.0
+ python-gnupg>=0.4.4
+ pyzmq==18.0.1 ; python_version < "3.8"
+ pyzmq==19.0.0 ; python_version >= "3.8"
++requests>=2.25.1
+ setproctitle
+ timelib>=0.2.4
++urllib3>=1.26.5
+ # Watchdog pulls in a GPL-3 package, argh, which cannot be shipped on the
+ # windows distribution package.
+ #
+diff --git a/salt/crypt.py b/salt/crypt.py
+index e6e4f3181e..c666f166e1 100644
+--- a/salt/crypt.py
++++ b/salt/crypt.py
+@@ -17,6 +17,7 @@ import stat
+ import sys
+ import time
+ import traceback
++import uuid
+ import weakref
+ 
+ import salt.defaults.exitcodes
+@@ -259,7 +260,11 @@ def verify_signature(pubkey_path, message, signature):
+         md = EVP.MessageDigest("sha1")
+         md.update(salt.utils.stringutils.to_bytes(message))
+         digest = md.final()
+-        return pubkey.verify(digest, signature)
++        try:
++            return pubkey.verify(digest, signature)
++        except RSA.RSAError as exc:
++            log.debug("Signature verification failed: %s", exc.args[0])
++            return False
+     else:
+         verifier = PKCS1_v1_5.new(pubkey)
+         return verifier.verify(
+@@ -694,9 +699,17 @@ class AsyncAuth:
+                 self._authenticate_future.set_exception(error)
+             else:
+                 key = self.__key(self.opts)
+-                AsyncAuth.creds_map[key] = creds
+-                self._creds = creds
+-                self._crypticle = Crypticle(self.opts, creds["aes"])
++                if key not in AsyncAuth.creds_map:
++                    log.debug("%s Got new master aes key.", self)
++                    AsyncAuth.creds_map[key] = creds
++                    self._creds = creds
++                    self._crypticle = Crypticle(self.opts, creds["aes"])
++                elif self._creds["aes"] != creds["aes"]:
++                    log.debug("%s The master's aes key has changed.", self)
++                    AsyncAuth.creds_map[key] = creds
++                    self._creds = creds
++                    self._crypticle = Crypticle(self.opts, creds["aes"])
++
+                 self._authenticate_future.set_result(
+                     True
+                 )  # mark the sign-in as complete
+@@ -727,7 +740,6 @@ class AsyncAuth:
+         with the publication port and the shared AES key.
+ 
+         """
+-        auth = {}
+ 
+         auth_timeout = self.opts.get("auth_timeout", None)
+         if auth_timeout is not None:
+@@ -739,10 +751,6 @@ class AsyncAuth:
+         if auth_tries is not None:
+             tries = auth_tries
+ 
+-        m_pub_fn = os.path.join(self.opts["pki_dir"], self.mpub)
+-
+-        auth["master_uri"] = self.opts["master_uri"]
+-
+         close_channel = False
+         if not channel:
+             close_channel = True
+@@ -766,59 +774,85 @@ class AsyncAuth:
+         finally:
+             if close_channel:
+                 channel.close()
++        ret = self.handle_signin_response(sign_in_payload, payload)
++        raise salt.ext.tornado.gen.Return(ret)
+ 
+-        if not isinstance(payload, dict):
++    def handle_signin_response(self, sign_in_payload, payload):
++        auth = {}
++        m_pub_fn = os.path.join(self.opts["pki_dir"], self.mpub)
++        auth["master_uri"] = self.opts["master_uri"]
++        if not isinstance(payload, dict) or "load" not in payload:
+             log.error("Sign-in attempt failed: %s", payload)
+-            raise salt.ext.tornado.gen.Return(False)
+-        if "load" in payload:
+-            if "ret" in payload["load"]:
+-                if not payload["load"]["ret"]:
+-                    if self.opts["rejected_retry"]:
+-                        log.error(
+-                            "The Salt Master has rejected this minion's public "
+-                            "key.\nTo repair this issue, delete the public key "
+-                            "for this minion on the Salt Master.\nThe Salt "
+-                            "Minion will attempt to to re-authenicate."
+-                        )
+-                        raise salt.ext.tornado.gen.Return("retry")
+-                    else:
+-                        log.critical(
+-                            "The Salt Master has rejected this minion's public "
+-                            "key!\nTo repair this issue, delete the public key "
+-                            "for this minion on the Salt Master and restart this "
+-                            "minion.\nOr restart the Salt Master in open mode to "
+-                            "clean out the keys. The Salt Minion will now exit."
+-                        )
+-                        # Add a random sleep here for systems that are using a
+-                        # a service manager to immediately restart the service
+-                        # to avoid overloading the system
+-                        time.sleep(random.randint(10, 20))
+-                        sys.exit(salt.defaults.exitcodes.EX_NOPERM)
+-                # has the master returned that its maxed out with minions?
+-                elif payload["load"]["ret"] == "full":
+-                    raise salt.ext.tornado.gen.Return("full")
+-                else:
++            return False
++
++        clear_signed_data = payload["load"]
++        clear_signature = payload["sig"]
++        payload = self.serial.loads(clear_signed_data)
++
++        if "pub_key" in payload:
++            auth["aes"] = self.verify_master(
++                payload, master_pub="token" in sign_in_payload
++            )
++            if not auth["aes"]:
++                log.critical(
++                    "The Salt Master server's public key did not authenticate!\n"
++                    "The master may need to be updated if it is a version of Salt "
++                    "lower than %s, or\n"
++                    "If you are confident that you are connecting to a valid Salt "
++                    "Master, then remove the master public key and restart the "
++                    "Salt Minion.\nThe master public key can be found "
++                    "at:\n%s",
++                    salt.version.__version__,
++                    m_pub_fn,
++                )
++                raise SaltClientError("Invalid master key")
++
++        master_pubkey_path = os.path.join(self.opts["pki_dir"], self.mpub)
++        if os.path.exists(master_pubkey_path) and not verify_signature(
++            master_pubkey_path, clear_signed_data, clear_signature
++        ):
++            log.critical("The payload signature did not validate.")
++            raise SaltClientError("Invalid signature")
++
++        if payload["nonce"] != sign_in_payload["nonce"]:
++            log.critical("The payload nonce did not validate.")
++            raise SaltClientError("Invalid nonce")
++
++        if "ret" in payload:
++            if not payload["ret"]:
++                if self.opts["rejected_retry"]:
+                     log.error(
+-                        "The Salt Master has cached the public key for this "
+-                        "node, this salt minion will wait for %s seconds "
+-                        "before attempting to re-authenticate",
+-                        self.opts["acceptance_wait_time"],
++                        "The Salt Master has rejected this minion's public "
++                        "key.\nTo repair this issue, delete the public key "
++                        "for this minion on the Salt Master.\nThe Salt "
++                        "Minion will attempt to re-authenicate."
+                     )
+-                    raise salt.ext.tornado.gen.Return("retry")
+-        auth["aes"] = self.verify_master(payload, master_pub="token" in sign_in_payload)
+-        if not auth["aes"]:
+-            log.critical(
+-                "The Salt Master server's public key did not authenticate!\n"
+-                "The master may need to be updated if it is a version of Salt "
+-                "lower than %s, or\n"
+-                "If you are confident that you are connecting to a valid Salt "
+-                "Master, then remove the master public key and restart the "
+-                "Salt Minion.\nThe master public key can be found "
+-                "at:\n%s",
+-                salt.version.__version__,
+-                m_pub_fn,
+-            )
+-            raise SaltClientError("Invalid master key")
++                    return "retry"
++                else:
++                    log.critical(
++                        "The Salt Master has rejected this minion's public "
++                        "key!\nTo repair this issue, delete the public key "
++                        "for this minion on the Salt Master and restart this "
++                        "minion.\nOr restart the Salt Master in open mode to "
++                        "clean out the keys. The Salt Minion will now exit."
++                    )
++                    # Add a random sleep here for systems that are using a
++                    # a service manager to immediately restart the service
++                    # to avoid overloading the system
++                    time.sleep(random.randint(10, 20))
++                    sys.exit(salt.defaults.exitcodes.EX_NOPERM)
++            # has the master returned that its maxed out with minions?
++            elif payload["ret"] == "full":
++                return "full"
++            else:
++                log.error(
++                    "The Salt Master has cached the public key for this "
++                    "node, this salt minion will wait for %s seconds "
++                    "before attempting to re-authenticate",
++                    self.opts["acceptance_wait_time"],
++                )
++                return "retry"
++
+         if self.opts.get("syndic_master", False):  # Is syndic
+             syndic_finger = self.opts.get(
+                 "syndic_finger", self.opts.get("master_finger", False)
+@@ -840,8 +874,9 @@ class AsyncAuth:
+                     != self.opts["master_finger"]
+                 ):
+                     self._finger_fail(self.opts["master_finger"], m_pub_fn)
++
+         auth["publish_port"] = payload["publish_port"]
+-        raise salt.ext.tornado.gen.Return(auth)
++        return auth
+ 
+     def get_keys(self):
+         """
+@@ -889,6 +924,7 @@ class AsyncAuth:
+         payload = {}
+         payload["cmd"] = "_auth"
+         payload["id"] = self.opts["id"]
++        payload["nonce"] = uuid.uuid4().hex
+         if "autosign_grains" in self.opts:
+             autosign_grains = {}
+             for grain in self.opts["autosign_grains"]:
+@@ -1252,6 +1288,7 @@ class SAuth(AsyncAuth):
+         self.serial = salt.payload.Serial(self.opts)
+         self.pub_path = os.path.join(self.opts["pki_dir"], "minion.pub")
+         self.rsa_path = os.path.join(self.opts["pki_dir"], "minion.pem")
++        self._creds = None
+         if "syndic_master" in self.opts:
+             self.mpub = "syndic_master.pub"
+         elif "alert_master" in self.opts:
+@@ -1321,8 +1358,14 @@ class SAuth(AsyncAuth):
+                         )
+                     continue
+                 break
+-            self._creds = creds
+-            self._crypticle = Crypticle(self.opts, creds["aes"])
++            if self._creds is None:
++                log.error("%s Got new master aes key.", self)
++                self._creds = creds
++                self._crypticle = Crypticle(self.opts, creds["aes"])
++            elif self._creds["aes"] != creds["aes"]:
++                log.error("%s The master's aes key has changed.", self)
++                self._creds = creds
++                self._crypticle = Crypticle(self.opts, creds["aes"])
+ 
+     def sign_in(self, timeout=60, safe=True, tries=1, channel=None):
+         """
+@@ -1375,78 +1418,7 @@ class SAuth(AsyncAuth):
+             if close_channel:
+                 channel.close()
+ 
+-        if "load" in payload:
+-            if "ret" in payload["load"]:
+-                if not payload["load"]["ret"]:
+-                    if self.opts["rejected_retry"]:
+-                        log.error(
+-                            "The Salt Master has rejected this minion's public "
+-                            "key.\nTo repair this issue, delete the public key "
+-                            "for this minion on the Salt Master.\nThe Salt "
+-                            "Minion will attempt to to re-authenicate."
+-                        )
+-                        return "retry"
+-                    else:
+-                        log.critical(
+-                            "The Salt Master has rejected this minion's public "
+-                            "key!\nTo repair this issue, delete the public key "
+-                            "for this minion on the Salt Master and restart this "
+-                            "minion.\nOr restart the Salt Master in open mode to "
+-                            "clean out the keys. The Salt Minion will now exit."
+-                        )
+-                        sys.exit(salt.defaults.exitcodes.EX_NOPERM)
+-                # has the master returned that its maxed out with minions?
+-                elif payload["load"]["ret"] == "full":
+-                    return "full"
+-                else:
+-                    log.error(
+-                        "The Salt Master has cached the public key for this "
+-                        "node. If this is the first time connecting to this "
+-                        "master then this key may need to be accepted using "
+-                        "'salt-key -a %s' on the salt master. This salt "
+-                        "minion will wait for %s seconds before attempting "
+-                        "to re-authenticate.",
+-                        self.opts["id"],
+-                        self.opts["acceptance_wait_time"],
+-                    )
+-                    return "retry"
+-        auth["aes"] = self.verify_master(payload, master_pub="token" in sign_in_payload)
+-        if not auth["aes"]:
+-            log.critical(
+-                "The Salt Master server's public key did not authenticate!\n"
+-                "The master may need to be updated if it is a version of Salt "
+-                "lower than %s, or\n"
+-                "If you are confident that you are connecting to a valid Salt "
+-                "Master, then remove the master public key and restart the "
+-                "Salt Minion.\nThe master public key can be found "
+-                "at:\n%s",
+-                salt.version.__version__,
+-                m_pub_fn,
+-            )
+-            sys.exit(42)
+-        if self.opts.get("syndic_master", False):  # Is syndic
+-            syndic_finger = self.opts.get(
+-                "syndic_finger", self.opts.get("master_finger", False)
+-            )
+-            if syndic_finger:
+-                if (
+-                    salt.utils.crypt.pem_finger(
+-                        m_pub_fn, sum_type=self.opts["hash_type"]
+-                    )
+-                    != syndic_finger
+-                ):
+-                    self._finger_fail(syndic_finger, m_pub_fn)
+-        else:
+-            if self.opts.get("master_finger", False):
+-                if (
+-                    salt.utils.crypt.pem_finger(
+-                        m_pub_fn, sum_type=self.opts["hash_type"]
+-                    )
+-                    != self.opts["master_finger"]
+-                ):
+-                    self._finger_fail(self.opts["master_finger"], m_pub_fn)
+-        auth["publish_port"] = payload["publish_port"]
+-        return auth
++        return self.handle_signin_response(sign_in_payload, payload)
+ 
+ 
+ class Crypticle:
+@@ -1461,11 +1433,11 @@ class Crypticle:
+     AES_BLOCK_SIZE = 16
+     SIG_SIZE = hashlib.sha256().digest_size
+ 
+-    def __init__(self, opts, key_string, key_size=192):
++    def __init__(self, opts, key_string, key_size=192, serial=0):
+         self.key_string = key_string
+         self.keys = self.extract_keys(self.key_string, key_size)
+         self.key_size = key_size
+-        self.serial = salt.payload.Serial(opts)
++        self.serial = serial
+ 
+     @classmethod
+     def generate_key_string(cls, key_size=192):
+@@ -1535,13 +1507,19 @@ class Crypticle:
+             data = cypher.decrypt(data)
+         return data[: -data[-1]]
+ 
+-    def dumps(self, obj):
++    def dumps(self, obj, nonce=None):
+         """
+         Serialize and encrypt a python object
+         """
+-        return self.encrypt(self.PICKLE_PAD + self.serial.dumps(obj))
++        if nonce:
++            toencrypt = (
++                self.PICKLE_PAD + nonce.encode() + salt.payload.Serial({}).dumps(obj)
++            )
++        else:
++            toencrypt = self.PICKLE_PAD + salt.payload.Serial({}).dumps(obj)
++        return self.encrypt(toencrypt)
+ 
+-    def loads(self, data, raw=False):
++    def loads(self, data, raw=False, nonce=None):
+         """
+         Decrypt and un-serialize a python object
+         """
+@@ -1549,5 +1527,25 @@ class Crypticle:
+         # simple integrity check to verify that we got meaningful data
+         if not data.startswith(self.PICKLE_PAD):
+             return {}
+-        load = self.serial.loads(data[len(self.PICKLE_PAD) :], raw=raw)
+-        return load
++        data = data[len(self.PICKLE_PAD) :]
++        if nonce:
++            ret_nonce = data[:32].decode()
++            data = data[32:]
++            if ret_nonce != nonce:
++                raise SaltClientError("Nonce verification error")
++        payload = salt.payload.Serial({}).loads(data, raw=raw)
++        if isinstance(payload, dict):
++            if "serial" in payload:
++                serial = payload.pop("serial")
++                if serial <= self.serial:
++                    log.critical(
++                        "A message with an invalid serial was received.\n"
++                        "this serial: %d\n"
++                        "last serial: %d\n"
++                        "The minion will not honor this request.",
++                        serial,
++                        self.serial,
++                    )
++                    return {}
++                self.serial = serial
++        return payload
+diff --git a/salt/master.py b/salt/master.py
+index fc103ac489..9c2030c712 100644
+--- a/salt/master.py
++++ b/salt/master.py
+@@ -143,6 +143,51 @@ class SMaster:
+         """
+         return salt.daemons.masterapi.access_keys(self.opts)
+ 
++    @classmethod
++    def get_serial(cls, opts=None, event=None, lock=True):
++        if lock:
++            with cls.secrets["aes"]["secret"].get_lock():
++                if cls.secrets["aes"]["serial"].value == sys.maxsize:
++                    cls.rotate_secrets(opts, event, use_lock=False)
++                else:
++                    cls.secrets["aes"]["serial"].value += 1
++                return cls.secrets["aes"]["serial"].value
++        else:
++            if cls.secrets["aes"]["serial"].value == sys.maxsize:
++                cls.rotate_secrets(opts, event, use_lock=False)
++            else:
++                cls.secrets["aes"]["serial"].value += 1
++            return cls.secrets["aes"]["serial"].value
++
++    @classmethod
++    def rotate_secrets(cls, opts=None, event=None, use_lock=True):
++        log.info("Rotating master AES key")
++        if opts is None:
++            opts = {}
++
++        for secret_key, secret_map in cls.secrets.items():
++            # should be unnecessary-- since no one else should be modifying
++            if use_lock:
++                with secret_map["secret"].get_lock():
++                    secret_map["secret"].value = salt.utils.stringutils.to_bytes(
++                        secret_map["reload"]()
++                    )
++                    if "serial" in secret_map:
++                        secret_map["serial"].value = 0
++            else:
++                secret_map["secret"].value = salt.utils.stringutils.to_bytes(
++                    secret_map["reload"]()
++                )
++                if "serial" in secret_map:
++                    secret_map["serial"].value = 0
++            if event:
++                event.fire_event({"rotate_{}_key".format(secret_key): True}, tag="key")
++
++        if opts.get("ping_on_rotate"):
++            # Ping all minions to get them to pick up the new key
++            log.debug("Pinging all connected minions due to key rotation")
++            salt.utils.master.ping_all_connected_minions(opts)
++
+ 
+ class Maintenance(salt.utils.process.SignalHandlingProcess):
+     """
+@@ -313,21 +358,8 @@ class Maintenance(salt.utils.process.SignalHandlingProcess):
+                 to_rotate = True
+ 
+         if to_rotate:
+-            log.info("Rotating master AES key")
+-            for secret_key, secret_map in SMaster.secrets.items():
+-                # should be unnecessary-- since no one else should be modifying
+-                with secret_map["secret"].get_lock():
+-                    secret_map["secret"].value = salt.utils.stringutils.to_bytes(
+-                        secret_map["reload"]()
+-                    )
+-                self.event.fire_event(
+-                    {"rotate_{}_key".format(secret_key): True}, tag="key"
+-                )
++            SMaster.rotate_secrets(self.opts, self.event)
+             self.rotate = now
+-            if self.opts.get("ping_on_rotate"):
+-                # Ping all minions to get them to pick up the new key
+-                log.debug("Pinging all connected minions " "due to key rotation")
+-                salt.utils.master.ping_all_connected_minions(self.opts)
+ 
+     def handle_git_pillar(self):
+         """
+@@ -713,8 +745,12 @@ class Master(SMaster):
+                         salt.crypt.Crypticle.generate_key_string()
+                     ),
+                 ),
++                "serial": multiprocessing.Value(
++                    ctypes.c_longlong, lock=False  # We'll use the lock from 'secret'
++                ),
+                 "reload": salt.crypt.Crypticle.generate_key_string,
+             }
++
+             log.info("Creating master process manager")
+             # Since there are children having their own ProcessManager we should wait for kill more time.
+             self.process_manager = salt.utils.process.ProcessManager(wait_for_kill=5)
+diff --git a/salt/minion.py b/salt/minion.py
+index 6bfac076eb..41d42c5ce1 100644
+--- a/salt/minion.py
++++ b/salt/minion.py
+@@ -1664,6 +1664,7 @@ class Minion(MinionBase):
+         Override this method if you wish to handle the decoded data
+         differently.
+         """
++
+         # Ensure payload is unicode. Disregard failure to decode binary blobs.
+         if six.PY2:
+             data = salt.utils.data.decode(data, keep=True)
+diff --git a/salt/pillar/__init__.py b/salt/pillar/__init__.py
+index 57f4b4d367..826461d295 100644
+--- a/salt/pillar/__init__.py
++++ b/salt/pillar/__init__.py
+@@ -11,6 +11,7 @@ import logging
+ import os
+ import sys
+ import traceback
++import uuid
+ 
+ import salt.ext.tornado.gen
+ import salt.fileclient
+@@ -242,6 +243,9 @@ class AsyncRemotePillar(RemotePillarMixin):
+             ret_pillar = yield self.channel.crypted_transfer_decode_dictentry(
+                 load, dictkey="pillar",
+             )
++        except salt.crypt.AuthenticationError as exc:
++            log.error(exc.message)
++            raise SaltClientError("Exception getting pillar.")
+         except Exception:  # pylint: disable=broad-except
+             log.exception("Exception getting pillar:")
+             raise SaltClientError("Exception getting pillar.")
+diff --git a/salt/transport/mixins/auth.py b/salt/transport/mixins/auth.py
+index 0f0c615408..c84d8a4b94 100644
+--- a/salt/transport/mixins/auth.py
++++ b/salt/transport/mixins/auth.py
+@@ -122,7 +122,7 @@ class AESReqServerMixin(object):
+ 
+         self.master_key = salt.crypt.MasterKeys(self.opts)
+ 
+-    def _encrypt_private(self, ret, dictkey, target):
++    def _encrypt_private(self, ret, dictkey, target, nonce=None, sign_messages=True):
+         """
+         The server equivalent of ReqChannel.crypted_transfer_decode_dictentry
+         """
+@@ -137,7 +137,6 @@ class AESReqServerMixin(object):
+         except IOError:
+             log.error("AES key not found")
+             return {"error": "AES key not found"}
+-
+         pret = {}
+         if not six.PY2:
+             key = salt.utils.stringutils.to_bytes(key)
+@@ -146,9 +145,33 @@ class AESReqServerMixin(object):
+         else:
+             cipher = PKCS1_OAEP.new(pub)
+             pret["key"] = cipher.encrypt(key)
+-        pret[dictkey] = pcrypt.dumps(ret if ret is not False else {})
++        if ret is False:
++            ret = {}
++        if sign_messages:
++            if nonce is None:
++                return {"error": "Nonce not included in request"}
++            tosign = salt.payload.Serial({}).dumps(
++                {"key": pret["key"], "pillar": ret, "nonce": nonce}
++            )
++            master_pem_path = os.path.join(self.opts["pki_dir"], "master.pem")
++            signed_msg = {
++                "data": tosign,
++                "sig": salt.crypt.sign_message(master_pem_path, tosign),
++            }
++            pret[dictkey] = pcrypt.dumps(signed_msg)
++        else:
++            pret[dictkey] = pcrypt.dumps(ret)
+         return pret
+ 
++    def _clear_signed(self, load):
++        master_pem_path = os.path.join(self.opts["pki_dir"], "master.pem")
++        tosign = salt.payload.Serial({}).dumps(load)
++        return {
++            "enc": "clear",
++            "load": tosign,
++            "sig": salt.crypt.sign_message(master_pem_path, tosign),
++        }
++
+     def _update_aes(self):
+         """
+         Check to see if a fresh AES key is available and update the components
+@@ -175,7 +198,7 @@ class AESReqServerMixin(object):
+                 payload["load"] = self.crypticle.loads(payload["load"])
+         return payload
+ 
+-    def _auth(self, load):
++    def _auth(self, load, sign_messages=False):
+         """
+         Authenticate the client, use the sent public key to encrypt the AES key
+         which was generated at start up.
+@@ -193,7 +216,10 @@ class AESReqServerMixin(object):
+ 
+         if not salt.utils.verify.valid_id(self.opts, load["id"]):
+             log.info("Authentication request from invalid id %s", load["id"])
+-            return {"enc": "clear", "load": {"ret": False}}
++            if sign_messages:
++                return self._clear_signed({"ret": False, "nonce": load["nonce"]})
++            else:
++                return {"enc": "clear", "load": {"ret": False}}
+         log.info("Authentication request from %s", load["id"])
+ 
+         # 0 is default which should be 'unlimited'
+@@ -231,7 +257,12 @@ class AESReqServerMixin(object):
+                         self.event.fire_event(
+                             eload, salt.utils.event.tagify(prefix="auth")
+                         )
+-                    return {"enc": "clear", "load": {"ret": "full"}}
++                    if sign_messages:
++                        return self._clear_signed(
++                            {"ret": "full", "nonce": load["nonce"]}
++                        )
++                    else:
++                        return {"enc": "clear", "load": {"ret": "full"}}
+ 
+         # Check if key is configured to be auto-rejected/signed
+         auto_reject = self.auto_key.check_autoreject(load["id"])
+@@ -258,8 +289,10 @@ class AESReqServerMixin(object):
+             eload = {"result": False, "id": load["id"], "pub": load["pub"]}
+             if self.opts.get("auth_events") is True:
+                 self.event.fire_event(eload, salt.utils.event.tagify(prefix="auth"))
+-            return {"enc": "clear", "load": {"ret": False}}
+-
++            if sign_messages:
++                return self._clear_signed({"ret": False, "nonce": load["nonce"]})
++            else:
++                return {"enc": "clear", "load": {"ret": False}}
+         elif os.path.isfile(pubfn):
+             # The key has been accepted, check it
+             with salt.utils.files.fopen(pubfn, "r") as pubfn_handle:
+@@ -283,7 +316,12 @@ class AESReqServerMixin(object):
+                         self.event.fire_event(
+                             eload, salt.utils.event.tagify(prefix="auth")
+                         )
+-                    return {"enc": "clear", "load": {"ret": False}}
++                    if sign_messages:
++                        return self._clear_signed(
++                            {"ret": False, "nonce": load["nonce"]}
++                        )
++                    else:
++                        return {"enc": "clear", "load": {"ret": False}}
+ 
+         elif not os.path.isfile(pubfn_pend):
+             # The key has not been accepted, this is a new minion
+@@ -293,7 +331,10 @@ class AESReqServerMixin(object):
+                 eload = {"result": False, "id": load["id"], "pub": load["pub"]}
+                 if self.opts.get("auth_events") is True:
+                     self.event.fire_event(eload, salt.utils.event.tagify(prefix="auth"))
+-                return {"enc": "clear", "load": {"ret": False}}
++                if sign_messages:
++                    return self._clear_signed({"ret": False, "nonce": load["nonce"]})
++                else:
++                    return {"enc": "clear", "load": {"ret": False}}
+ 
+             if auto_reject:
+                 key_path = pubfn_rejected
+@@ -316,7 +357,6 @@ class AESReqServerMixin(object):
+                 # Write the key to the appropriate location
+                 with salt.utils.files.fopen(key_path, "w+") as fp_:
+                     fp_.write(load["pub"])
+-                ret = {"enc": "clear", "load": {"ret": key_result}}
+                 eload = {
+                     "result": key_result,
+                     "act": key_act,
+@@ -325,7 +365,12 @@ class AESReqServerMixin(object):
+                 }
+                 if self.opts.get("auth_events") is True:
+                     self.event.fire_event(eload, salt.utils.event.tagify(prefix="auth"))
+-                return ret
++                if sign_messages:
++                    return self._clear_signed(
++                        {"ret": key_result, "nonce": load["nonce"]}
++                    )
++                else:
++                    return {"enc": "clear", "load": {"ret": key_result}}
+ 
+         elif os.path.isfile(pubfn_pend):
+             # This key is in the pending dir and is awaiting acceptance
+@@ -341,7 +386,6 @@ class AESReqServerMixin(object):
+                     "Pending public key for %s rejected via " "autoreject_file",
+                     load["id"],
+                 )
+-                ret = {"enc": "clear", "load": {"ret": False}}
+                 eload = {
+                     "result": False,
+                     "act": "reject",
+@@ -350,7 +394,10 @@ class AESReqServerMixin(object):
+                 }
+                 if self.opts.get("auth_events") is True:
+                     self.event.fire_event(eload, salt.utils.event.tagify(prefix="auth"))
+-                return ret
++                if sign_messages:
++                    return self._clear_signed({"ret": False, "nonce": load["nonce"]})
++                else:
++                    return {"enc": "clear", "load": {"ret": False}}
+ 
+             elif not auto_sign:
+                 # This key is in the pending dir and is not being auto-signed.
+@@ -378,7 +425,12 @@ class AESReqServerMixin(object):
+                             self.event.fire_event(
+                                 eload, salt.utils.event.tagify(prefix="auth")
+                             )
+-                        return {"enc": "clear", "load": {"ret": False}}
++                        if sign_messages:
++                            return self._clear_signed(
++                                {"ret": False, "nonce": load["nonce"]}
++                            )
++                        else:
++                            return {"enc": "clear", "load": {"ret": False}}
+                     else:
+                         log.info(
+                             "Authentication failed from host %s, the key is in "
+@@ -397,7 +449,12 @@ class AESReqServerMixin(object):
+                             self.event.fire_event(
+                                 eload, salt.utils.event.tagify(prefix="auth")
+                             )
+-                        return {"enc": "clear", "load": {"ret": True}}
++                        if sign_messages:
++                            return self._clear_signed(
++                                {"ret": True, "nonce": load["nonce"]}
++                            )
++                        else:
++                            return {"enc": "clear", "load": {"ret": True}}
+             else:
+                 # This key is in pending and has been configured to be
+                 # auto-signed. Check to see if it is the same key, and if
+@@ -419,7 +476,12 @@ class AESReqServerMixin(object):
+                             self.event.fire_event(
+                                 eload, salt.utils.event.tagify(prefix="auth")
+                             )
+-                        return {"enc": "clear", "load": {"ret": False}}
++                        if sign_messages:
++                            return self._clear_signed(
++                                {"ret": False, "nonce": load["nonce"]}
++                            )
++                        else:
++                            return {"enc": "clear", "load": {"ret": False}}
+                     else:
+                         os.remove(pubfn_pend)
+ 
+@@ -429,7 +491,10 @@ class AESReqServerMixin(object):
+             eload = {"result": False, "id": load["id"], "pub": load["pub"]}
+             if self.opts.get("auth_events") is True:
+                 self.event.fire_event(eload, salt.utils.event.tagify(prefix="auth"))
+-            return {"enc": "clear", "load": {"ret": False}}
++            if sign_messages:
++                return self._clear_signed({"ret": False, "nonce": load["nonce"]})
++            else:
++                return {"enc": "clear", "load": {"ret": False}}
+ 
+         log.info("Authentication accepted from %s", load["id"])
+         # only write to disk if you are adding the file, and in open mode,
+@@ -447,8 +512,11 @@ class AESReqServerMixin(object):
+                 with salt.utils.files.fopen(pubfn, "w+") as fp_:
+                     fp_.write(load["pub"])
+             elif not load["pub"]:
+-                log.error("Public key is empty: {0}".format(load["id"]))
+-                return {"enc": "clear", "load": {"ret": False}}
++                log.error("Public key is empty: %s", load["id"])
++                if sign_messages:
++                    return self._clear_signed({"ret": False, "nonce": load["nonce"]})
++                else:
++                    return {"enc": "clear", "load": {"ret": False}}
+ 
+         pub = None
+ 
+@@ -462,7 +530,10 @@ class AESReqServerMixin(object):
+             pub = salt.crypt.get_rsa_pub_key(pubfn)
+         except salt.crypt.InvalidKeyError as err:
+             log.error('Corrupt public key "%s": %s', pubfn, err)
+-            return {"enc": "clear", "load": {"ret": False}}
++            if sign_messages:
++                return self._clear_signed({"ret": False, "nonce": load["nonce"]})
++            else:
++                return {"enc": "clear", "load": {"ret": False}}
+ 
+         if not HAS_M2:
+             cipher = PKCS1_OAEP.new(pub)
+@@ -543,10 +614,14 @@ class AESReqServerMixin(object):
+                 ret["aes"] = pub.public_encrypt(aes, RSA.pkcs1_oaep_padding)
+             else:
+                 ret["aes"] = cipher.encrypt(aes)
++
+         # Be aggressive about the signature
+         digest = salt.utils.stringutils.to_bytes(hashlib.sha256(aes).hexdigest())
+         ret["sig"] = salt.crypt.private_encrypt(self.master_key.key, digest)
+         eload = {"result": True, "act": "accept", "id": load["id"], "pub": load["pub"]}
+         if self.opts.get("auth_events") is True:
+             self.event.fire_event(eload, salt.utils.event.tagify(prefix="auth"))
++        if sign_messages:
++            ret["nonce"] = load["nonce"]
++            return self._clear_signed(ret)
+         return ret
+diff --git a/salt/transport/tcp.py b/salt/transport/tcp.py
+index 80e6141c33..06280aa20c 100644
+--- a/salt/transport/tcp.py
++++ b/salt/transport/tcp.py
+@@ -17,6 +17,7 @@ import sys
+ import threading
+ import time
+ import traceback
++import uuid
+ import weakref
+ 
+ # Import Salt Libs
+@@ -373,12 +374,15 @@ class AsyncTCPReqChannel(salt.transport.client.ReqChannel):
+         return {
+             "enc": self.crypt,
+             "load": load,
++            "version": 2,
+         }
+ 
+     @salt.ext.tornado.gen.coroutine
+     def crypted_transfer_decode_dictentry(
+         self, load, dictkey=None, tries=3, timeout=60
+     ):
++        nonce = uuid.uuid4().hex
++        load["nonce"] = nonce
+         if not self.auth.authenticated:
+             yield self.auth.authenticate()
+         ret = yield self.message_client.send(
+@@ -390,11 +394,29 @@ class AsyncTCPReqChannel(salt.transport.client.ReqChannel):
+         else:
+             cipher = PKCS1_OAEP.new(key)
+             aes = cipher.decrypt(ret["key"])
++
++        # Decrypt using the public key.
+         pcrypt = salt.crypt.Crypticle(self.opts, aes)
+-        data = pcrypt.loads(ret[dictkey])
+-        if six.PY3:
+-            data = salt.transport.frame.decode_embedded_strs(data)
+-        raise salt.ext.tornado.gen.Return(data)
++        signed_msg = pcrypt.loads(ret[dictkey])
++
++        # Validate the master's signature.
++        master_pubkey_path = os.path.join(self.opts["pki_dir"], "minion_master.pub")
++        if not salt.crypt.verify_signature(
++            master_pubkey_path, signed_msg["data"], signed_msg["sig"]
++        ):
++            raise salt.crypt.AuthenticationError(
++                "Pillar payload signature failed to validate."
++            )
++
++        # Make sure the signed key matches the key we used to decrypt the data.
++        data = salt.payload.Serial({}).loads(signed_msg["data"])
++        if data["key"] != ret["key"]:
++            raise salt.crypt.AuthenticationError("Key verification failed.")
++
++        # Validate the nonce.
++        if data["nonce"] != nonce:
++            raise salt.crypt.AuthenticationError("Pillar nonce verification failed.")
++        raise salt.ext.tornado.gen.Return(data["pillar"])
+ 
+     @salt.ext.tornado.gen.coroutine
+     def _crypted_transfer(self, load, tries=3, timeout=60):
+@@ -404,6 +426,9 @@ class AsyncTCPReqChannel(salt.transport.client.ReqChannel):
+         Indeed, we can fail too early in case of a master restart during a
+         minion state execution call
+         """
++        nonce = uuid.uuid4().hex
++        if load and isinstance(load, dict):
++            load["nonce"] = nonce
+ 
+         @salt.ext.tornado.gen.coroutine
+         def _do_transfer():
+@@ -415,9 +440,8 @@ class AsyncTCPReqChannel(salt.transport.client.ReqChannel):
+             # communication, we do not subscribe to return events, we just
+             # upload the results to the master
+             if data:
+-                data = self.auth.crypticle.loads(data)
+-                if six.PY3:
+-                    data = salt.transport.frame.decode_embedded_strs(data)
++                data = self.auth.crypticle.loads(data, nonce=nonce)
++                data = salt.transport.frame.decode_embedded_strs(data)
+             raise salt.ext.tornado.gen.Return(data)
+ 
+         if not self.auth.authenticated:
+@@ -493,6 +517,7 @@ class AsyncTCPPubChannel(
+         return {
+             "enc": self.crypt,
+             "load": load,
++            "version": 2,
+         }
+ 
+     @salt.ext.tornado.gen.coroutine
+@@ -790,6 +815,14 @@ class TCPReqServerChannel(
+                 )
+                 raise salt.ext.tornado.gen.Return()
+ 
++            version = 0
++            if "version" in payload:
++                version = payload["version"]
++
++            sign_messages = False
++            if version > 1:
++                sign_messages = True
++
+             # intercept the "_auth" commands, since the main daemon shouldn't know
+             # anything about our key auth
+             if (
+@@ -798,11 +831,15 @@ class TCPReqServerChannel(
+             ):
+                 yield stream.write(
+                     salt.transport.frame.frame_msg(
+-                        self._auth(payload["load"]), header=header
++                        self._auth(payload["load"], sign_messages), header=header
+                     )
+                 )
+                 raise salt.ext.tornado.gen.Return()
+ 
++            nonce = None
++            if version > 1:
++                nonce = payload["load"].pop("nonce", None)
++
+             # TODO: test
+             try:
+                 ret, req_opts = yield self.payload_handler(payload)
+@@ -821,13 +858,15 @@ class TCPReqServerChannel(
+             elif req_fun == "send":
+                 stream.write(
+                     salt.transport.frame.frame_msg(
+-                        self.crypticle.dumps(ret), header=header
++                        self.crypticle.dumps(ret, nonce), header=header
+                     )
+                 )
+             elif req_fun == "send_private":
+                 stream.write(
+                     salt.transport.frame.frame_msg(
+-                        self._encrypt_private(ret, req_opts["key"], req_opts["tgt"],),
++                        self._encrypt_private(
++                            ret, req_opts["key"], req_opts["tgt"], nonce, sign_messages,
++                        ),
+                         header=header,
+                     )
+                 )
+@@ -1418,8 +1457,8 @@ class PubServer(salt.ext.tornado.tcpserver.TCPServer, object):
+     TCP publisher
+     """
+ 
+-    def __init__(self, opts, io_loop=None):
+-        super(PubServer, self).__init__(ssl_options=opts.get("ssl"))
++    def __init__(self, opts, io_loop=None, pack_publish=lambda _: _):
++        super().__init__(ssl_options=opts.get("ssl"))
+         self.io_loop = io_loop
+         self.opts = opts
+         self._closing = False
+@@ -1442,6 +1481,10 @@ class PubServer(salt.ext.tornado.tcpserver.TCPServer, object):
+             self.event = salt.utils.event.get_event(
+                 "master", opts=self.opts, listen=False
+             )
++        self._pack_publish = pack_publish
++
++    def pack_publish(self, payload):
++        return self._pack_publish(payload)
+ 
+     def close(self):
+         if self._closing:
+@@ -1548,6 +1591,7 @@ class PubServer(salt.ext.tornado.tcpserver.TCPServer, object):
+     @salt.ext.tornado.gen.coroutine
+     def publish_payload(self, package, _):
+         log.debug("TCP PubServer sending payload: %s", package)
++        package = self.pack_publish(package)
+         payload = salt.transport.frame.frame_msg(package["payload"])
+ 
+         to_remove = []
+@@ -1624,7 +1668,9 @@ class TCPPubServerChannel(salt.transport.server.PubServerChannel):
+             self.io_loop = salt.ext.tornado.ioloop.IOLoop.current()
+ 
+         # Spin up the publisher
+-        pub_server = PubServer(self.opts, io_loop=self.io_loop)
++        pub_server = PubServer(
++            self.opts, io_loop=self.io_loop, pack_publish=self.pack_publish
++        )
+         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+         _set_tcp_keepalive(sock, self.opts)
+@@ -1663,12 +1709,12 @@ class TCPPubServerChannel(salt.transport.server.PubServerChannel):
+         """
+         process_manager.add_process(self._publish_daemon, kwargs=kwargs)
+ 
+-    def publish(self, load):
++    def pack_publish(self, load):
+         """
+         Publish "load" to minions
+         """
+         payload = {"enc": "aes"}
+-
++        load["serial"] = salt.master.SMaster.get_serial()
+         crypticle = salt.crypt.Crypticle(
+             self.opts, salt.master.SMaster.secrets["aes"]["secret"].value
+         )
+@@ -1677,17 +1723,6 @@ class TCPPubServerChannel(salt.transport.server.PubServerChannel):
+             master_pem_path = os.path.join(self.opts["pki_dir"], "master.pem")
+             log.debug("Signing data packet")
+             payload["sig"] = salt.crypt.sign_message(master_pem_path, payload["load"])
+-        # Use the Salt IPC server
+-        if self.opts.get("ipc_mode", "") == "tcp":
+-            pull_uri = int(self.opts.get("tcp_master_publish_pull", 4514))
+-        else:
+-            pull_uri = os.path.join(self.opts["sock_dir"], "publish_pull.ipc")
+-        # TODO: switch to the actual asynchronous interface
+-        # pub_sock = salt.transport.ipc.IPCMessageClient(self.opts, io_loop=self.io_loop)
+-        pub_sock = salt.utils.asynchronous.SyncWrapper(
+-            salt.transport.ipc.IPCMessageClient, (pull_uri,), loop_kwarg="io_loop",
+-        )
+-        pub_sock.connect()
+ 
+         int_payload = {"payload": self.serial.dumps(payload)}
+ 
+@@ -1705,5 +1740,22 @@ class TCPPubServerChannel(salt.transport.server.PubServerChannel):
+                 int_payload["topic_lst"] = match_ids
+             else:
+                 int_payload["topic_lst"] = load["tgt"]
++        return int_payload
++
++    def publish(self, load):
++        """
++        Publish "load" to minions
++        """
+         # Send it over IPC!
+-        pub_sock.send(int_payload)
++        # Use the Salt IPC server
++        # TODO: switch to the actual asynchronous interface
++        # pub_sock = salt.transport.ipc.IPCMessageClient(self.opts, io_loop=self.io_loop)
++        if self.opts.get("ipc_mode", "") == "tcp":
++            pull_uri = int(self.opts.get("tcp_master_publish_pull", 4514))
++        else:
++            pull_uri = os.path.join(self.opts["sock_dir"], "publish_pull.ipc")
++        pub_sock = salt.utils.asynchronous.SyncWrapper(
++            salt.transport.ipc.IPCMessageClient, (pull_uri,), loop_kwarg="io_loop",
++        )
++        pub_sock.connect()
++        pub_sock.send(load)
+diff --git a/salt/transport/zeromq.py b/salt/transport/zeromq.py
+index 22a5e754c2..7d116be31b 100644
+--- a/salt/transport/zeromq.py
++++ b/salt/transport/zeromq.py
+@@ -11,6 +11,7 @@ import os
+ import signal
+ import sys
+ import threading
++import uuid
+ import weakref
+ from random import randint
+ 
+@@ -66,6 +67,7 @@ except ImportError:
+     except ImportError:
+         from Crypto.Cipher import PKCS1_OAEP
+ 
++
+ log = logging.getLogger(__name__)
+ 
+ 
+@@ -77,12 +79,12 @@ def _get_master_uri(master_ip, master_port, source_ip=None, source_port=None):
+     rc = zmq_connect(socket, "tcp://192.168.1.17:5555;192.168.1.1:5555"); assert (rc == 0);
+     Source: http://api.zeromq.org/4-1:zmq-tcp
+     """
++
+     from salt.utils.zeromq import ip_bracket
+ 
+     master_uri = "tcp://{master_ip}:{master_port}".format(
+         master_ip=ip_bracket(master_ip), master_port=master_port
+     )
+-
+     if source_ip or source_port:
+         if LIBZMQ_VERSION_INFO >= (4, 1, 6) and ZMQ_VERSION_INFO >= (16, 0, 1):
+             # The source:port syntax for ZeroMQ has been added in libzmq 4.1.6
+@@ -340,22 +342,27 @@ class AsyncZeroMQReqChannel(salt.transport.client.ReqChannel):
+         return {
+             "enc": self.crypt,
+             "load": load,
++            "version": 2,
+         }
+ 
+     @salt.ext.tornado.gen.coroutine
+     def crypted_transfer_decode_dictentry(
+         self, load, dictkey=None, tries=3, timeout=60
+     ):
++        nonce = uuid.uuid4().hex
++        load["nonce"] = nonce
+         if not self.auth.authenticated:
+             # Return control back to the caller, continue when authentication succeeds
+             yield self.auth.authenticate()
+-        # Return control to the caller. When send() completes, resume by populating ret with the Future.result
++
++        # Return control to the caller. When send() completes, resume by
++        # populating ret with the Future.result
+         ret = yield self.message_client.send(
+             self._package_load(self.auth.crypticle.dumps(load)),
+             timeout=timeout,
+             tries=tries,
+         )
+-        key = self.auth.get_keys()
++
+         if "key" not in ret:
+             # Reauth in the case our key is deleted on the master side.
+             yield self.auth.authenticate()
+@@ -364,15 +371,36 @@ class AsyncZeroMQReqChannel(salt.transport.client.ReqChannel):
+                 timeout=timeout,
+                 tries=tries,
+             )
++
++        key = self.auth.get_keys()
+         if HAS_M2:
+             aes = key.private_decrypt(ret["key"], RSA.pkcs1_oaep_padding)
+         else:
+             cipher = PKCS1_OAEP.new(key)
+             aes = cipher.decrypt(ret["key"])
++
++        # Decrypt using the public key.
+         pcrypt = salt.crypt.Crypticle(self.opts, aes)
+-        data = pcrypt.loads(ret[dictkey])
+-        data = salt.transport.frame.decode_embedded_strs(data)
+-        raise salt.ext.tornado.gen.Return(data)
++        signed_msg = pcrypt.loads(ret[dictkey])
++
++        # Validate the master's signature.
++        master_pubkey_path = os.path.join(self.opts["pki_dir"], "minion_master.pub")
++        if not salt.crypt.verify_signature(
++            master_pubkey_path, signed_msg["data"], signed_msg["sig"]
++        ):
++            raise salt.crypt.AuthenticationError(
++                "Pillar payload signature failed to validate."
++            )
++
++        # Make sure the signed key matches the key we used to decrypt the data.
++        data = salt.payload.Serial({}).loads(signed_msg["data"])
++        if data["key"] != ret["key"]:
++            raise salt.crypt.AuthenticationError("Key verification failed.")
++
++        # Validate the nonce.
++        if data["nonce"] != nonce:
++            raise salt.crypt.AuthenticationError("Pillar nonce verification failed.")
++        raise salt.ext.tornado.gen.Return(data["pillar"])
+ 
+     @salt.ext.tornado.gen.coroutine
+     def _crypted_transfer(self, load, tries=3, timeout=60, raw=False):
+@@ -389,6 +417,9 @@ class AsyncZeroMQReqChannel(salt.transport.client.ReqChannel):
+         :param int tries: The number of times to make before failure
+         :param int timeout: The number of seconds on a response before failing
+         """
++        nonce = uuid.uuid4().hex
++        if load and isinstance(load, dict):
++            load["nonce"] = nonce
+ 
+         @salt.ext.tornado.gen.coroutine
+         def _do_transfer():
+@@ -403,7 +434,7 @@ class AsyncZeroMQReqChannel(salt.transport.client.ReqChannel):
+             # communication, we do not subscribe to return events, we just
+             # upload the results to the master
+             if data:
+-                data = self.auth.crypticle.loads(data, raw)
++                data = self.auth.crypticle.loads(data, raw, nonce)
+             if six.PY3 and not raw:
+                 data = salt.transport.frame.decode_embedded_strs(data)
+             raise salt.ext.tornado.gen.Return(data)
+@@ -859,12 +890,24 @@ class ZeroMQReqServerChannel(
+             )
+             raise salt.ext.tornado.gen.Return()
+ 
++        version = 0
++        if "version" in payload:
++            version = payload["version"]
++
++        sign_messages = False
++        if version > 1:
++            sign_messages = True
++
+         # intercept the "_auth" commands, since the main daemon shouldn't know
+         # anything about our key auth
+         if payload["enc"] == "clear" and payload.get("load", {}).get("cmd") == "_auth":
+-            stream.send(self.serial.dumps(self._auth(payload["load"])))
++            stream.send(self.serial.dumps(self._auth(payload["load"], sign_messages)))
+             raise salt.ext.tornado.gen.Return()
+ 
++        nonce = None
++        if version > 1:
++            nonce = payload["load"].pop("nonce", None)
++
+         # TODO: test
+         try:
+             # Take the payload_handler function that was registered when we created the channel
+@@ -880,11 +923,13 @@ class ZeroMQReqServerChannel(
+         if req_fun == "send_clear":
+             stream.send(self.serial.dumps(ret))
+         elif req_fun == "send":
+-            stream.send(self.serial.dumps(self.crypticle.dumps(ret)))
++            stream.send(self.serial.dumps(self.crypticle.dumps(ret, nonce)))
+         elif req_fun == "send_private":
+             stream.send(
+                 self.serial.dumps(
+-                    self._encrypt_private(ret, req_opts["key"], req_opts["tgt"],)
++                    self._encrypt_private(
++                        ret, req_opts["key"], req_opts["tgt"], nonce, sign_messages,
++                    )
+                 )
+             )
+         else:
+@@ -1016,6 +1061,8 @@ class ZeroMQPubServerChannel(salt.transport.server.PubServerChannel):
+                     log.debug("Publish daemon getting data from puller %s", pull_uri)
+                     package = pull_sock.recv()
+                     log.debug("Publish daemon received payload. size=%d", len(package))
++                    load = salt.payload.Serial({}).loads(package)
++                    package = self.pack_publish(load)
+ 
+                     unpacked_package = salt.payload.unpackage(package)
+                     unpacked_package = salt.transport.frame.decode_embedded_strs(
+@@ -1109,7 +1156,10 @@ class ZeroMQPubServerChannel(salt.transport.server.PubServerChannel):
+             self.pub_close()
+         ctx = zmq.Context.instance()
+         self._sock_data.sock = ctx.socket(zmq.PUSH)
+-        self.pub_sock.setsockopt(zmq.LINGER, -1)
++        self._sock_data.sock.setsockopt(zmq.LINGER, -1)
++        self._sock_data.sock.setsockopt(zmq.SNDHWM, self.opts.get("pub_hwm", 1000))
++        self._sock_data.sock.setsockopt(zmq.RCVHWM, self.opts.get("pub_hwm", 1000))
++        self._sock_data.sock.setsockopt(zmq.BACKLOG, self.opts.get("zmq_backlog", 1000))
+         if self.opts.get("ipc_mode", "") == "tcp":
+             pull_uri = "tcp://127.0.0.1:{}".format(
+                 self.opts.get("tcp_master_publish_pull", 4514)
+@@ -1119,7 +1169,7 @@ class ZeroMQPubServerChannel(salt.transport.server.PubServerChannel):
+                 os.path.join(self.opts["sock_dir"], "publish_pull.ipc")
+             )
+         log.debug("Connecting to pub server: %s", pull_uri)
+-        self.pub_sock.connect(pull_uri)
++        self._sock_data.sock.connect(pull_uri)
+         return self._sock_data.sock
+ 
+     def pub_close(self):
+@@ -1129,16 +1179,17 @@ class ZeroMQPubServerChannel(salt.transport.server.PubServerChannel):
+         """
+         if hasattr(self._sock_data, "sock"):
+             self._sock_data.sock.close()
+-            delattr(self._sock_data, "sock")
++            self._sock_data.sock = None
+ 
+-    def publish(self, load):
++    def pack_publish(self, load):
+         """
+-        Publish "load" to minions. This send the load to the publisher daemon
+-        process with does the actual sending to minions.
++        Package the "load" for a publish to minions. This send the load to the
++        publisher daemon process with does the actual sending to minions.
+ 
+         :param dict load: A load to be sent across the wire to minions
+         """
+         payload = {"enc": "aes"}
++        load["serial"] = salt.master.SMaster.get_serial()
+         crypticle = salt.crypt.Crypticle(
+             self.opts, salt.master.SMaster.secrets["aes"]["secret"].value
+         )
+@@ -1169,9 +1220,18 @@ class ZeroMQPubServerChannel(salt.transport.server.PubServerChannel):
+             load.get("jid", None),
+             len(payload),
+         )
++        return payload
++
++    def publish(self, load):
++        """
++        Publish "load" to minions. This send the load to the publisher daemon
++        process with does the actual sending to minions.
++
++        :param dict load: A load to be sent across the wire to minions
++        """
+         if not self.pub_sock:
+             self.pub_connect()
+-        self.pub_sock.send(payload)
++        self.pub_sock.send(self.serial.dumps(load))
+         log.debug("Sent payload to publish daemon.")
+ 
+ 
+diff --git a/salt/utils/minions.py b/salt/utils/minions.py
+index 216baf5b6b..e7486ab704 100644
+--- a/salt/utils/minions.py
++++ b/salt/utils/minions.py
+@@ -733,20 +733,27 @@ class CkMinions:
+ 
+     def validate_tgt(self, valid, expr, tgt_type, minions=None, expr_form=None):
+         """
+-        Return a Bool. This function returns if the expression sent in is
+-        within the scope of the valid expression
++        Validate the target minions against the possible valid minions.
++
++        If ``minions`` is provided, they will be compared against the valid
++        minions. Otherwise, ``expr`` and ``tgt_type`` will be used to expand
++        to a list of target minions.
++
++        Return True if all of the requested minions are valid minions,
++        otherwise return False.
+         """
+ 
+         v_minions = set(self.check_minions(valid, "compound").get("minions", []))
++        if not v_minions:
++            # There are no valid minions, so it doesn't matter what we are
++            # targeting - this is a fail.
++            return False
+         if minions is None:
+             _res = self.check_minions(expr, tgt_type)
+             minions = set(_res["minions"])
+         else:
+             minions = set(minions)
+-        d_bool = not bool(minions.difference(v_minions))
+-        if len(v_minions) == len(minions) and d_bool:
+-            return True
+-        return d_bool
++        return minions.issubset(v_minions)
+ 
+     def match_check(self, regex, fun):
+         """
+diff --git a/tests/pytests/conftest.py b/tests/pytests/conftest.py
+index 6a70545e08..94ff0a50fa 100644
+--- a/tests/pytests/conftest.py
++++ b/tests/pytests/conftest.py
+@@ -2,6 +2,8 @@
+     tests.pytests.conftest
+     ~~~~~~~~~~~~~~~~~~~~~~
+ """
++import functools
++import inspect
+ import logging
+ import os
+ import shutil
+@@ -225,3 +227,78 @@ def bridge_pytest_and_runtests():
+     """
+     We're basically overriding the same fixture defined in tests/conftest.py
+     """
++
++
++# ----- Async Test Fixtures ----------------------------------------------------------------------------------------->
++# This is based on https://github.com/eukaryote/pytest-tornasync
++# The reason why we don't use that pytest plugin instead is because it has
++# tornado as a dependency, and we need to use the tornado we ship with salt
++
++
++def get_test_timeout(pyfuncitem):
++    default_timeout = 30
++    marker = pyfuncitem.get_closest_marker("timeout")
++    if marker:
++        return marker.kwargs.get("seconds") or default_timeout
++    return default_timeout
++
++
++@pytest.mark.tryfirst
++def pytest_pycollect_makeitem(collector, name, obj):
++    if collector.funcnamefilter(name) and inspect.iscoroutinefunction(obj):
++        return list(collector._genfunctions(name, obj))
++
++
++@pytest.hookimpl(tryfirst=True)
++def pytest_runtest_setup(item):
++    if inspect.iscoroutinefunction(item.obj):
++        if "io_loop" not in item.fixturenames:
++            # Append the io_loop fixture for the async functions
++            item.fixturenames.append("io_loop")
++
++
++class CoroTestFunction:
++    def __init__(self, func, kwargs):
++        self.func = func
++        self.kwargs = kwargs
++        functools.update_wrapper(self, func)
++
++    async def __call__(self):
++        ret = await self.func(**self.kwargs)
++        return ret
++
++
++@pytest.mark.tryfirst
++def pytest_pyfunc_call(pyfuncitem):
++    if not inspect.iscoroutinefunction(pyfuncitem.obj):
++        return
++
++    funcargs = pyfuncitem.funcargs
++    testargs = {arg: funcargs[arg] for arg in pyfuncitem._fixtureinfo.argnames}
++
++    try:
++        loop = funcargs["io_loop"]
++    except KeyError:
++        loop = salt.ext.tornado.ioloop.IOLoop.current()
++
++    loop.run_sync(
++        CoroTestFunction(pyfuncitem.obj, testargs), timeout=get_test_timeout(pyfuncitem)
++    )
++    return True
++
++
++@pytest.fixture
++def io_loop():
++    """
++    Create new io loop for each test, and tear it down after.
++    """
++    loop = salt.ext.tornado.ioloop.IOLoop()
++    loop.make_current()
++    try:
++        yield loop
++    finally:
++        loop.clear_current()
++        loop.close(all_fds=True)
++
++
++# <---- Async Test Fixtures ------------------------------------------------------------------------------------------
+diff --git a/tests/pytests/unit/test_crypt.py b/tests/pytests/unit/test_crypt.py
+index aa8f439b8c..6ffd912166 100644
+--- a/tests/pytests/unit/test_crypt.py
++++ b/tests/pytests/unit/test_crypt.py
+@@ -4,10 +4,159 @@ tests.pytests.unit.test_crypt
+ 
+ Unit tests for salt's crypt module
+ """
++import uuid
++
+ import pytest
+ import salt.crypt
++import salt.master
+ import salt.utils.files
+ 
++PRIV_KEY = """
++-----BEGIN RSA PRIVATE KEY-----
++MIIEogIBAAKCAQEAoAsMPt+4kuIG6vKyw9r3+OuZrVBee/2vDdVetW+Js5dTlgrJ
++aghWWn3doGmKlEjqh7E4UTa+t2Jd6w8RSLnyHNJ/HpVhMG0M07MF6FMfILtDrrt8
++ZX7eDVt8sx5gCEpYI+XG8Y07Ga9i3Hiczt+fu6HYwu96HggmG2pqkOrn3iGfqBvV
++YVFJzSZYe7e4c1PeEs0xYcrA4k+apyGsMtpef8vRUrNicRLc7dAcvfhtgt2DXEZ2
++d72t/CR4ygtUvPXzisaTPW0G7OWAheCloqvTIIPQIjR8htFxGTz02STVXfnhnJ0Z
++k8KhqKF2v1SQvIYxsZU7jaDgl5i3zpeh58cYOwIDAQABAoIBABZUJEO7Y91+UnfC
++H6XKrZEZkcnH7j6/UIaOD9YhdyVKxhsnax1zh1S9vceNIgv5NltzIsfV6vrb6v2K
++Dx/F7Z0O0zR5o+MlO8ZncjoNKskex10gBEWG00Uqz/WPlddiQ/TSMJTv3uCBAzp+
++S2Zjdb4wYPUlgzSgb2ygxrhsRahMcSMG9PoX6klxMXFKMD1JxiY8QfAHahPzQXy9
++F7COZ0fCVo6BE+MqNuQ8tZeIxu8mOULQCCkLFwXmkz1FpfK/kNRmhIyhxwvCS+z4
++JuErW3uXfE64RLERiLp1bSxlDdpvRO2R41HAoNELTsKXJOEt4JANRHm/CeyA5wsh
++NpscufUCgYEAxhgPfcMDy2v3nL6KtkgYjdcOyRvsAF50QRbEa8ldO+87IoMDD/Oe
++osFERJ5hhyyEO78QnaLVegnykiw5DWEF02RKMhD/4XU+1UYVhY0wJjKQIBadsufB
++2dnaKjvwzUhPh5BrBqNHl/FXwNCRDiYqXa79eWCPC9OFbZcUWWq70s8CgYEAztOI
++61zRfmXJ7f70GgYbHg+GA7IrsAcsGRITsFR82Ho0lqdFFCxz7oK8QfL6bwMCGKyk
++nzk+twh6hhj5UNp18KN8wktlo02zTgzgemHwaLa2cd6xKgmAyuPiTgcgnzt5LVNG
++FOjIWkLwSlpkDTl7ZzY2QSy7t+mq5d750fpIrtUCgYBWXZUbcpPL88WgDB7z/Bjg
++dlvW6JqLSqMK4b8/cyp4AARbNp12LfQC55o5BIhm48y/M70tzRmfvIiKnEc/gwaE
++NJx4mZrGFFURrR2i/Xx5mt/lbZbRsmN89JM+iKWjCpzJ8PgIi9Wh9DIbOZOUhKVB
++9RJEAgo70LvCnPTdS0CaVwKBgDJW3BllAvw/rBFIH4OB/vGnF5gosmdqp3oGo1Ik
++jipmPAx6895AH4tquIVYrUl9svHsezjhxvjnkGK5C115foEuWXw0u60uiTiy+6Pt
++2IS0C93VNMulenpnUrppE7CN2iWFAiaura0CY9fE/lsVpYpucHAWgi32Kok+ZxGL
++WEttAoGAN9Ehsz4LeQxEj3x8wVeEMHF6OsznpwYsI2oVh6VxpS4AjgKYqeLVcnNi
++TlZFsuQcqgod8OgzA91tdB+Rp86NygmWD5WzeKXpCOg9uA+y/YL+0sgZZHsuvbK6
++PllUgXdYxqClk/hdBFB7v9AQoaj7K9Ga22v32msftYDQRJ94xOI=
++-----END RSA PRIVATE KEY-----
++"""
++
++
++PUB_KEY = """
++-----BEGIN PUBLIC KEY-----
++MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoAsMPt+4kuIG6vKyw9r3
+++OuZrVBee/2vDdVetW+Js5dTlgrJaghWWn3doGmKlEjqh7E4UTa+t2Jd6w8RSLny
++HNJ/HpVhMG0M07MF6FMfILtDrrt8ZX7eDVt8sx5gCEpYI+XG8Y07Ga9i3Hiczt+f
++u6HYwu96HggmG2pqkOrn3iGfqBvVYVFJzSZYe7e4c1PeEs0xYcrA4k+apyGsMtpe
++f8vRUrNicRLc7dAcvfhtgt2DXEZ2d72t/CR4ygtUvPXzisaTPW0G7OWAheCloqvT
++IIPQIjR8htFxGTz02STVXfnhnJ0Zk8KhqKF2v1SQvIYxsZU7jaDgl5i3zpeh58cY
++OwIDAQAB
++-----END PUBLIC KEY-----
++"""
++
++PRIV_KEY2 = """
++-----BEGIN RSA PRIVATE KEY-----
++MIIEogIBAAKCAQEAp+8cTxguO6Vg+YO92VfHgNld3Zy8aM3JbZvpJcjTnis+YFJ7
++Zlkcc647yPRRwY9nYBNywahnt5kIeuT1rTvTsMBZWvmUoEVUj1Xg8XXQkBvb9Ozy
++Gqy/G/p8KDDpzMP/U+XCnUeHiXTZrgnqgBIc2cKeCVvWFqDi0GRFGzyaXLaX3PPm
++M7DJ0MIPL1qgmcDq6+7Ze0gJ9SrDYFAeLmbuT1OqDfufXWQl/82JXeiwU2cOpqWq
++7n5fvPOWim7l1tzQ+dSiMRRm0xa6uNexCJww3oJSwvMbAmgzvOhqqhlqv+K7u0u7
++FrFFojESsL36Gq4GBrISnvu2tk7u4GGNTYYQbQIDAQABAoIBAADrqWDQnd5DVZEA
++lR+WINiWuHJAy/KaIC7K4kAMBgbxrz2ZbiY9Ok/zBk5fcnxIZDVtXd1sZicmPlro
++GuWodIxdPZAnWpZ3UtOXUayZK/vCP1YsH1agmEqXuKsCu6Fc+K8VzReOHxLUkmXn
++FYM+tixGahXcjEOi/aNNTWitEB6OemRM1UeLJFzRcfyXiqzHpHCIZwBpTUAsmzcG
++QiVDkMTKubwo/m+PVXburX2CGibUydctgbrYIc7EJvyx/cpRiPZXo1PhHQWdu4Y1
++SOaC66WLsP/wqvtHo58JQ6EN/gjSsbAgGGVkZ1xMo66nR+pLpR27coS7o03xCks6
++DY/0mukCgYEAuLIGgBnqoh7YsOBLd/Bc1UTfDMxJhNseo+hZemtkSXz2Jn51322F
++Zw/FVN4ArXgluH+XsOhvG/MFFpojwZSrb0Qq5b1MRdo9qycq8lGqNtlN1WHqosDQ
++zW29kpL0tlRrSDpww3wRESsN9rH5XIrJ1b3ZXuO7asR+KBVQMy/+NcUCgYEA6MSC
++c+fywltKPgmPl5j0DPoDe5SXE/6JQy7w/vVGrGfWGf/zEJmhzS2R+CcfTTEqaT0T
++Yw8+XbFgKAqsxwtE9MUXLTVLI3sSUyE4g7blCYscOqhZ8ItCUKDXWkSpt++rG0Um
++1+cEJP/0oCazG6MWqvBC4NpQ1nzh46QpjWqMwokCgYAKDLXJ1p8rvx3vUeUJW6zR
++dfPlEGCXuAyMwqHLxXgpf4EtSwhC5gSyPOtx2LqUtcrnpRmt6JfTH4ARYMW9TMef
++QEhNQ+WYj213mKP/l235mg1gJPnNbUxvQR9lkFV8bk+AGJ32JRQQqRUTbU+yN2MQ
++HEptnVqfTp3GtJIultfwOQKBgG+RyYmu8wBP650izg33BXu21raEeYne5oIqXN+I
++R5DZ0JjzwtkBGroTDrVoYyuH1nFNEh7YLqeQHqvyufBKKYo9cid8NQDTu+vWr5UK
++tGvHnwdKrJmM1oN5JOAiq0r7+QMAOWchVy449VNSWWV03aeftB685iR5BXkstbIQ
++EVopAoGAfcGBTAhmceK/4Q83H/FXBWy0PAa1kZGg/q8+Z0KY76AqyxOVl0/CU/rB
++3tO3sKhaMTHPME/MiQjQQGoaK1JgPY6JHYvly2KomrJ8QTugqNGyMzdVJkXAK2AM
++GAwC8ivAkHf8CHrHa1W7l8t2IqBjW1aRt7mOW92nfG88Hck0Mbo=
++-----END RSA PRIVATE KEY-----
++"""
++
++
++PUB_KEY2 = """
++-----BEGIN PUBLIC KEY-----
++MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAp+8cTxguO6Vg+YO92VfH
++gNld3Zy8aM3JbZvpJcjTnis+YFJ7Zlkcc647yPRRwY9nYBNywahnt5kIeuT1rTvT
++sMBZWvmUoEVUj1Xg8XXQkBvb9OzyGqy/G/p8KDDpzMP/U+XCnUeHiXTZrgnqgBIc
++2cKeCVvWFqDi0GRFGzyaXLaX3PPmM7DJ0MIPL1qgmcDq6+7Ze0gJ9SrDYFAeLmbu
++T1OqDfufXWQl/82JXeiwU2cOpqWq7n5fvPOWim7l1tzQ+dSiMRRm0xa6uNexCJww
++3oJSwvMbAmgzvOhqqhlqv+K7u0u7FrFFojESsL36Gq4GBrISnvu2tk7u4GGNTYYQ
++bQIDAQAB
++-----END PUBLIC KEY-----
++"""
++
++
++def test_cryptical_dumps_no_nonce():
++    master_crypt = salt.crypt.Crypticle({}, salt.crypt.Crypticle.generate_key_string())
++    data = {"foo": "bar"}
++    ret = master_crypt.dumps(data)
++
++    # Validate message structure
++    assert isinstance(ret, bytes)
++    une = master_crypt.decrypt(ret)
++    une.startswith(master_crypt.PICKLE_PAD)
++    assert salt.payload.Serial({}).loads(une[len(master_crypt.PICKLE_PAD) :]) == data
++
++    # Validate load back to orig data
++    assert master_crypt.loads(ret) == data
++
++
++def test_cryptical_dumps_valid_nonce():
++    nonce = uuid.uuid4().hex
++    master_crypt = salt.crypt.Crypticle({}, salt.crypt.Crypticle.generate_key_string())
++    data = {"foo": "bar"}
++    ret = master_crypt.dumps(data, nonce=nonce)
++
++    assert isinstance(ret, bytes)
++    une = master_crypt.decrypt(ret)
++    une.startswith(master_crypt.PICKLE_PAD)
++    nonce_and_data = une[len(master_crypt.PICKLE_PAD) :]
++    assert nonce_and_data.startswith(nonce.encode())
++    assert salt.payload.Serial({}).loads(nonce_and_data[len(nonce) :]) == data
++
++    assert master_crypt.loads(ret, nonce=nonce) == data
++
++
++def test_cryptical_dumps_invalid_nonce():
++    nonce = uuid.uuid4().hex
++    master_crypt = salt.crypt.Crypticle({}, salt.crypt.Crypticle.generate_key_string())
++    data = {"foo": "bar"}
++    ret = master_crypt.dumps(data, nonce=nonce)
++    assert isinstance(ret, bytes)
++    with pytest.raises(salt.crypt.SaltClientError, match="Nonce verification error"):
++        assert master_crypt.loads(ret, nonce="abcde")
++
++
++def test_verify_signature(tmpdir):
++    tmpdir.join("foo.pem").write(PRIV_KEY.strip())
++    tmpdir.join("foo.pub").write(PUB_KEY.strip())
++    tmpdir.join("bar.pem").write(PRIV_KEY2.strip())
++    tmpdir.join("bar.pub").write(PUB_KEY2.strip())
++    msg = b"foo bar"
++    sig = salt.crypt.sign_message(str(tmpdir.join("foo.pem")), msg)
++    assert salt.crypt.verify_signature(str(tmpdir.join("foo.pub")), msg, sig)
++
++
++def test_verify_signature_bad_sig(tmpdir):
++    tmpdir.join("foo.pem").write(PRIV_KEY.strip())
++    tmpdir.join("foo.pub").write(PUB_KEY.strip())
++    tmpdir.join("bar.pem").write(PRIV_KEY2.strip())
++    tmpdir.join("bar.pub").write(PUB_KEY2.strip())
++    msg = b"foo bar"
++    sig = salt.crypt.sign_message(str(tmpdir.join("foo.pem")), msg)
++    assert not salt.crypt.verify_signature(str(tmpdir.join("bar.pub")), msg, sig)
+ 
+ def test_get_rsa_pub_key_bad_key(tmp_path):
+     """
+diff --git a/tests/pytests/unit/transport/test_zeromq.py b/tests/pytests/unit/transport/test_zeromq.py
+new file mode 100644
+index 0000000000..16c8f1aa49
+--- /dev/null
++++ b/tests/pytests/unit/transport/test_zeromq.py
+@@ -0,0 +1,1042 @@
++"""
++    :codeauthor: Thomas Jackson <jacksontj.89@gmail.com>
++"""
++
++import ctypes
++import logging
++import multiprocessing
++import os
++import uuid
++
++import pytest
++import salt.config
++import salt.crypt
++import salt.exceptions
++import salt.ext.tornado.gen
++import salt.ext.tornado.ioloop
++import salt.log.setup
++import salt.transport.client
++import salt.transport.server
++import salt.transport.zeromq
++import salt.utils.platform
++import salt.utils.process
++import salt.utils.stringutils
++from salt.master import SMaster
++from tests.support.mock import MagicMock
++
++try:
++    from M2Crypto import RSA
++
++    HAS_M2 = True
++except ImportError:
++    HAS_M2 = False
++    try:
++        from Cryptodome.Cipher import PKCS1_OAEP
++    except ImportError:
++        from Crypto.Cipher import PKCS1_OAEP  # nosec
++
++log = logging.getLogger(__name__)
++
++MASTER_PRIV_KEY = """
++-----BEGIN RSA PRIVATE KEY-----
++MIIEogIBAAKCAQEAoAsMPt+4kuIG6vKyw9r3+OuZrVBee/2vDdVetW+Js5dTlgrJ
++aghWWn3doGmKlEjqh7E4UTa+t2Jd6w8RSLnyHNJ/HpVhMG0M07MF6FMfILtDrrt8
++ZX7eDVt8sx5gCEpYI+XG8Y07Ga9i3Hiczt+fu6HYwu96HggmG2pqkOrn3iGfqBvV
++YVFJzSZYe7e4c1PeEs0xYcrA4k+apyGsMtpef8vRUrNicRLc7dAcvfhtgt2DXEZ2
++d72t/CR4ygtUvPXzisaTPW0G7OWAheCloqvTIIPQIjR8htFxGTz02STVXfnhnJ0Z
++k8KhqKF2v1SQvIYxsZU7jaDgl5i3zpeh58cYOwIDAQABAoIBABZUJEO7Y91+UnfC
++H6XKrZEZkcnH7j6/UIaOD9YhdyVKxhsnax1zh1S9vceNIgv5NltzIsfV6vrb6v2K
++Dx/F7Z0O0zR5o+MlO8ZncjoNKskex10gBEWG00Uqz/WPlddiQ/TSMJTv3uCBAzp+
++S2Zjdb4wYPUlgzSgb2ygxrhsRahMcSMG9PoX6klxMXFKMD1JxiY8QfAHahPzQXy9
++F7COZ0fCVo6BE+MqNuQ8tZeIxu8mOULQCCkLFwXmkz1FpfK/kNRmhIyhxwvCS+z4
++JuErW3uXfE64RLERiLp1bSxlDdpvRO2R41HAoNELTsKXJOEt4JANRHm/CeyA5wsh
++NpscufUCgYEAxhgPfcMDy2v3nL6KtkgYjdcOyRvsAF50QRbEa8ldO+87IoMDD/Oe
++osFERJ5hhyyEO78QnaLVegnykiw5DWEF02RKMhD/4XU+1UYVhY0wJjKQIBadsufB
++2dnaKjvwzUhPh5BrBqNHl/FXwNCRDiYqXa79eWCPC9OFbZcUWWq70s8CgYEAztOI
++61zRfmXJ7f70GgYbHg+GA7IrsAcsGRITsFR82Ho0lqdFFCxz7oK8QfL6bwMCGKyk
++nzk+twh6hhj5UNp18KN8wktlo02zTgzgemHwaLa2cd6xKgmAyuPiTgcgnzt5LVNG
++FOjIWkLwSlpkDTl7ZzY2QSy7t+mq5d750fpIrtUCgYBWXZUbcpPL88WgDB7z/Bjg
++dlvW6JqLSqMK4b8/cyp4AARbNp12LfQC55o5BIhm48y/M70tzRmfvIiKnEc/gwaE
++NJx4mZrGFFURrR2i/Xx5mt/lbZbRsmN89JM+iKWjCpzJ8PgIi9Wh9DIbOZOUhKVB
++9RJEAgo70LvCnPTdS0CaVwKBgDJW3BllAvw/rBFIH4OB/vGnF5gosmdqp3oGo1Ik
++jipmPAx6895AH4tquIVYrUl9svHsezjhxvjnkGK5C115foEuWXw0u60uiTiy+6Pt
++2IS0C93VNMulenpnUrppE7CN2iWFAiaura0CY9fE/lsVpYpucHAWgi32Kok+ZxGL
++WEttAoGAN9Ehsz4LeQxEj3x8wVeEMHF6OsznpwYsI2oVh6VxpS4AjgKYqeLVcnNi
++TlZFsuQcqgod8OgzA91tdB+Rp86NygmWD5WzeKXpCOg9uA+y/YL+0sgZZHsuvbK6
++PllUgXdYxqClk/hdBFB7v9AQoaj7K9Ga22v32msftYDQRJ94xOI=
++-----END RSA PRIVATE KEY-----
++"""
++
++
++MASTER_PUB_KEY = """
++-----BEGIN PUBLIC KEY-----
++MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoAsMPt+4kuIG6vKyw9r3
+++OuZrVBee/2vDdVetW+Js5dTlgrJaghWWn3doGmKlEjqh7E4UTa+t2Jd6w8RSLny
++HNJ/HpVhMG0M07MF6FMfILtDrrt8ZX7eDVt8sx5gCEpYI+XG8Y07Ga9i3Hiczt+f
++u6HYwu96HggmG2pqkOrn3iGfqBvVYVFJzSZYe7e4c1PeEs0xYcrA4k+apyGsMtpe
++f8vRUrNicRLc7dAcvfhtgt2DXEZ2d72t/CR4ygtUvPXzisaTPW0G7OWAheCloqvT
++IIPQIjR8htFxGTz02STVXfnhnJ0Zk8KhqKF2v1SQvIYxsZU7jaDgl5i3zpeh58cY
++OwIDAQAB
++-----END PUBLIC KEY-----
++"""
++
++MASTER2_PRIV_KEY = """
++-----BEGIN RSA PRIVATE KEY-----
++MIIEogIBAAKCAQEAp+8cTxguO6Vg+YO92VfHgNld3Zy8aM3JbZvpJcjTnis+YFJ7
++Zlkcc647yPRRwY9nYBNywahnt5kIeuT1rTvTsMBZWvmUoEVUj1Xg8XXQkBvb9Ozy
++Gqy/G/p8KDDpzMP/U+XCnUeHiXTZrgnqgBIc2cKeCVvWFqDi0GRFGzyaXLaX3PPm
++M7DJ0MIPL1qgmcDq6+7Ze0gJ9SrDYFAeLmbuT1OqDfufXWQl/82JXeiwU2cOpqWq
++7n5fvPOWim7l1tzQ+dSiMRRm0xa6uNexCJww3oJSwvMbAmgzvOhqqhlqv+K7u0u7
++FrFFojESsL36Gq4GBrISnvu2tk7u4GGNTYYQbQIDAQABAoIBAADrqWDQnd5DVZEA
++lR+WINiWuHJAy/KaIC7K4kAMBgbxrz2ZbiY9Ok/zBk5fcnxIZDVtXd1sZicmPlro
++GuWodIxdPZAnWpZ3UtOXUayZK/vCP1YsH1agmEqXuKsCu6Fc+K8VzReOHxLUkmXn
++FYM+tixGahXcjEOi/aNNTWitEB6OemRM1UeLJFzRcfyXiqzHpHCIZwBpTUAsmzcG
++QiVDkMTKubwo/m+PVXburX2CGibUydctgbrYIc7EJvyx/cpRiPZXo1PhHQWdu4Y1
++SOaC66WLsP/wqvtHo58JQ6EN/gjSsbAgGGVkZ1xMo66nR+pLpR27coS7o03xCks6
++DY/0mukCgYEAuLIGgBnqoh7YsOBLd/Bc1UTfDMxJhNseo+hZemtkSXz2Jn51322F
++Zw/FVN4ArXgluH+XsOhvG/MFFpojwZSrb0Qq5b1MRdo9qycq8lGqNtlN1WHqosDQ
++zW29kpL0tlRrSDpww3wRESsN9rH5XIrJ1b3ZXuO7asR+KBVQMy/+NcUCgYEA6MSC
++c+fywltKPgmPl5j0DPoDe5SXE/6JQy7w/vVGrGfWGf/zEJmhzS2R+CcfTTEqaT0T
++Yw8+XbFgKAqsxwtE9MUXLTVLI3sSUyE4g7blCYscOqhZ8ItCUKDXWkSpt++rG0Um
++1+cEJP/0oCazG6MWqvBC4NpQ1nzh46QpjWqMwokCgYAKDLXJ1p8rvx3vUeUJW6zR
++dfPlEGCXuAyMwqHLxXgpf4EtSwhC5gSyPOtx2LqUtcrnpRmt6JfTH4ARYMW9TMef
++QEhNQ+WYj213mKP/l235mg1gJPnNbUxvQR9lkFV8bk+AGJ32JRQQqRUTbU+yN2MQ
++HEptnVqfTp3GtJIultfwOQKBgG+RyYmu8wBP650izg33BXu21raEeYne5oIqXN+I
++R5DZ0JjzwtkBGroTDrVoYyuH1nFNEh7YLqeQHqvyufBKKYo9cid8NQDTu+vWr5UK
++tGvHnwdKrJmM1oN5JOAiq0r7+QMAOWchVy449VNSWWV03aeftB685iR5BXkstbIQ
++EVopAoGAfcGBTAhmceK/4Q83H/FXBWy0PAa1kZGg/q8+Z0KY76AqyxOVl0/CU/rB
++3tO3sKhaMTHPME/MiQjQQGoaK1JgPY6JHYvly2KomrJ8QTugqNGyMzdVJkXAK2AM
++GAwC8ivAkHf8CHrHa1W7l8t2IqBjW1aRt7mOW92nfG88Hck0Mbo=
++-----END RSA PRIVATE KEY-----
++"""
++
++
++MASTER2_PUB_KEY = """
++-----BEGIN PUBLIC KEY-----
++MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAp+8cTxguO6Vg+YO92VfH
++gNld3Zy8aM3JbZvpJcjTnis+YFJ7Zlkcc647yPRRwY9nYBNywahnt5kIeuT1rTvT
++sMBZWvmUoEVUj1Xg8XXQkBvb9OzyGqy/G/p8KDDpzMP/U+XCnUeHiXTZrgnqgBIc
++2cKeCVvWFqDi0GRFGzyaXLaX3PPmM7DJ0MIPL1qgmcDq6+7Ze0gJ9SrDYFAeLmbu
++T1OqDfufXWQl/82JXeiwU2cOpqWq7n5fvPOWim7l1tzQ+dSiMRRm0xa6uNexCJww
++3oJSwvMbAmgzvOhqqhlqv+K7u0u7FrFFojESsL36Gq4GBrISnvu2tk7u4GGNTYYQ
++bQIDAQAB
++-----END PUBLIC KEY-----
++"""
++
++
++MASTER_SIGNING_PRIV = """
++-----BEGIN RSA PRIVATE KEY-----
++MIIEpAIBAAKCAQEAtieqrBMTM0MSIbhPKkDcozHqyXKyL/+bXYYw+iVPsns7c7bJ
++zBqenLQlWoRVyrVyBFrrwQSrKu/0Mqn3l639iOGPlUoR3I7aZKIpyEdDkqd3xGIC
++e+BtNNDqhUai67L63hEdG+iYAchi8UZw3LZGtcGpJ3FkBH4cYFX9EOam2QjbD7WY
++EO7m1+j6XEYIOTCmAP9dGAvBbU0Jblc+wYxG3qNr+2dBWsK76QXWEqib2VSOGP+z
++gjJa8tqY7PXXdOJpalQXNphmD/4o4pHKR4Euy0yL/1oMkpacmrV61LWB8Trnx9nS
++9gdVrUteQF/cL1KAGwOsdVmiLpHfvqLLRqSAAQIDAQABAoIBABjB+HEN4Kixf4fk
++wKHKEhL+SF6b/7sFX00NXZ/KLXRhSnnWSMQ8g/1hgMg2P2DfW4FbCDsCUu9xkLvI
++HTZY+CJAIh9U42uaYPWXkt09TmJi76TZ+2Nx4/XvRUjbCm7Fs1I2ekHeUbbAUS5g
+++BsPjTnL+h05zLHNoDa5yT0gVGIgFsQcX/w38arZCe8Rjp9le7PXUB5IIqASsDiw
++t8zJvdyWToeXd0WswCHTQu5coHvKo5MCjIZZ1Ink1yJcCCc3rKDc+q3jB2z9T9oW
++cUsKzJ4VuleiYj1eRxFITBmXbjKrb/GPRRUkeqCQbs68Hyj2d3UtOFDPeF4vng/3
++jGsHPq8CgYEA0AHAbwykVC6NMa37BTvEqcKoxbjTtErxR+yczlmVDfma9vkwtZvx
++FJdbS/+WGA/ucDby5x5b2T5k1J9ueMR86xukb+HnyS0WKsZ94Ie8WnJAcbp+38M6
++7LD0u74Cgk93oagDAzUHqdLq9cXxv/ppBpxVB1Uvu8DfVMHj+wt6ie8CgYEA4C7u
++u+6b8EmbGqEdtlPpScKG0WFstJEDGXRARDCRiVP2w6wm25v8UssCPvWcwf8U1Hoq
++lhMY+H6a5dnRRiNYql1MGQAsqMi7VeJNYb0B1uxi7X8MPM+SvXoAglX7wm1z0cVy
++O4CE5sEKbBg6aQabx1x9tzdrm80SKuSsLc5HRQ8CgYEAp/mCKSuQWNru8ruJBwTp
++IB4upN1JOUN77ZVKW+lD0XFMjz1U9JPl77b65ziTQQM8jioRpkqB6cHVM088qxIh
++vssn06Iex/s893YrmPKETJYPLMhqRNEn+JQ+To53ADykY0uGg0SD18SYMbmULHBP
+++CKvF6jXT0vGDnA1ZzoxzskCgYEA2nQhYrRS9EVlhP93KpJ+A8gxA5tCCHo+YPFt
++JoWFbCKLlYUNoHZR3IPCPoOsK0Zbj+kz0mXtsUf9vPkR+py669haLQqEejyQgFIz
++QYiiYEKc6/0feapzvXtDP751w7JQaBtVAzJrT0jQ1SCO2oT8C7rPLlgs3fdpOq72
++MPSPcnUCgYBWHm6bn4HvaoUSr0v2hyD9fHZS/wDTnlXVe5c1XXgyKlJemo5dvycf
++HUCmN/xIuO6AsiMdqIzv+arNJdboz+O+bNtS43LkTJfEH3xj2/DdUogdvOgG/iPM
++u9KBT1h+euws7PqC5qt4vqLwCTTCZXmUS8Riv+62RCC3kZ5AbpT3ZA==
++-----END RSA PRIVATE KEY-----
++"""
++
++MASTER_SIGNING_PUB = """
++-----BEGIN PUBLIC KEY-----
++MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtieqrBMTM0MSIbhPKkDc
++ozHqyXKyL/+bXYYw+iVPsns7c7bJzBqenLQlWoRVyrVyBFrrwQSrKu/0Mqn3l639
++iOGPlUoR3I7aZKIpyEdDkqd3xGICe+BtNNDqhUai67L63hEdG+iYAchi8UZw3LZG
++tcGpJ3FkBH4cYFX9EOam2QjbD7WYEO7m1+j6XEYIOTCmAP9dGAvBbU0Jblc+wYxG
++3qNr+2dBWsK76QXWEqib2VSOGP+zgjJa8tqY7PXXdOJpalQXNphmD/4o4pHKR4Eu
++y0yL/1oMkpacmrV61LWB8Trnx9nS9gdVrUteQF/cL1KAGwOsdVmiLpHfvqLLRqSA
++AQIDAQAB
++-----END PUBLIC KEY-----
++"""
++
++MINION_PRIV_KEY = """
++-----BEGIN RSA PRIVATE KEY-----
++MIIEowIBAAKCAQEAsT6TwnlI0L7urjXu6D5E11tFJ/NglQ45jW/WN9tAUNvphq6Q
++cjJCd/aWmdqlqe7ix8y9M/8rgwghRQsnPXblVBvPwFcUEXhMRnOGzqbq/0zyQX01
++KecT0plBhlDt2lTyCLU6E4XCqyLbPfOxgXzsVqM0/TnzRtpVvGNy+5N4eFGylrjb
++cJhPxKt2G9TDOCM/hYacDs5RVIYQQmcYb8LJq7G3++FfWpYRDaxdKoHNFDspEynd
++jzr67hgThnwzc388OKNJx/7B2atwPTunPb3YBjgwDyRO/01OKK4gUHdw5KoctFgp
++kDCDjwjemlyXV+MYODRTIdtOlAP83ZkntEuLoQIDAQABAoIBAAJOKNtvFGfF2l9H
++S4CXZSUGU0a+JaCkR+wmnjsPwPn/dXDpAe8nGpidpNicPWqRm6WABjeQHaxda+fB
++lpSrRtEdo3zoi2957xQJ5wddDtI1pmXJQrdbm0H/K39oIg/Xtv/IZT769TM6OtVg
++paUxG/aftmeGXDtGfIL8w1jkuPABRBLOakWQA9uVdeG19KTU0Ag8ilpJdEX64uFJ
++W75bpVjT+KO/6aV1inuCntQSP097aYvUWajRwuiYVJOxoBZHme3IObcE6mdnYXeQ
++wblyWBpJUHrOS4MP4HCODV2pHKZ2rr7Nwhh8lMNw/eY9OP0ifz2AcAqe3sUMQOKP
++T0qRC6ECgYEAyeU5JvUPOpxXvvChYh6gJ8pYTIh1ueDP0O5e4t3vhz6lfy9DKtRN
++ROJLUorHvw/yVXMR72nT07a0z2VswcrUSw8ov3sI53F0NkLGEafQ35lVhTGs4vTl
++CFoQCuAKPsxeUl4AIbfbpkDsLGQqzW1diFArK7YeQkpGuGaGodXl480CgYEA4L40
++x5cUXnAhTPsybo7sbcpiwFHoGblmdkvpYvHA2QxtNSi2iHHdqGo8qP1YsZjKQn58
++371NhtqidrJ6i/8EBFP1dy+y/jr9qYlZNNGcQeBi+lshrEOIf1ct56KePG79s8lm
++DmD1OY8tO2R37+Py46Nq1n6viT/ST4NjLQI3GyUCgYEAiOswSDA3ZLs0cqRD/gPg
++/zsliLmehTFmHj4aEWcLkz+0Ar3tojUaNdX12QOPFQ7efH6uMhwl8NVeZ6xUBlTk
++hgbAzqLE1hjGBCpiowSZDZqyOcMHiV8ll/VkHcv0hsQYT2m6UyOaDXTH9g70TB6Y
++KOKddGZsvO4cad/1+/jQkB0CgYAzDEEkzLY9tS57M9uCrUgasAu6L2CO50PUvu1m
++Ig9xvZbYqkS7vVFhva/FmrYYsOHQNLbcgz0m0mZwm52mSuh4qzFoPxdjE7cmWSJA
++ExRxCiyxPR3q6PQKKJ0urgtPIs7RlX9u6KsKxfC6OtnbTWWQO0A7NE9e13ZHxUoz
++oPsvWQKBgCa0+Fb2lzUeiQz9bV1CBkWneDZUXuZHmabAZomokX+h/bq+GcJFzZjW
++3kAHwYkIy9IAy3SyO/6CP0V3vAye1p+XbotiwsQ/XZnr0pflSQL3J1l1CyN3aopg
++Niv7k/zBn15B72aK73R/CpUSk9W/eJGqk1NcNwf8hJHsboRYx6BR
++-----END RSA PRIVATE KEY-----
++"""
++
++
++MINION_PUB_KEY = """
++-----BEGIN PUBLIC KEY-----
++MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsT6TwnlI0L7urjXu6D5E
++11tFJ/NglQ45jW/WN9tAUNvphq6QcjJCd/aWmdqlqe7ix8y9M/8rgwghRQsnPXbl
++VBvPwFcUEXhMRnOGzqbq/0zyQX01KecT0plBhlDt2lTyCLU6E4XCqyLbPfOxgXzs
++VqM0/TnzRtpVvGNy+5N4eFGylrjbcJhPxKt2G9TDOCM/hYacDs5RVIYQQmcYb8LJ
++q7G3++FfWpYRDaxdKoHNFDspEyndjzr67hgThnwzc388OKNJx/7B2atwPTunPb3Y
++BjgwDyRO/01OKK4gUHdw5KoctFgpkDCDjwjemlyXV+MYODRTIdtOlAP83ZkntEuL
++oQIDAQAB
++-----END PUBLIC KEY-----
++"""
++
++AES_KEY = "8wxWlOaMMQ4d3yT74LL4+hGrGTf65w8VgrcNjLJeLRQ2Q6zMa8ItY2EQUgMKKDb7JY+RnPUxbB0="
++
++
++@pytest.fixture
++def pki_dir(tmpdir):
++    madir = tmpdir.mkdir("master")
++    mapriv = madir.join("master.pem")
++    mapriv.write(MASTER_PRIV_KEY.strip())
++    mapub = madir.join("master.pub")
++    mapub.write(MASTER_PUB_KEY.strip())
++
++    maspriv = madir.join("master_sign.pem")
++    maspriv.write(MASTER_SIGNING_PRIV.strip())
++    maspub = madir.join("master_sign.pub")
++    maspub.write(MASTER_SIGNING_PUB.strip())
++
++    for sdir in [
++        "minions_autosign",
++        "minions_denied",
++        "minions_pre",
++        "minions_rejected",
++    ]:
++        madir.mkdir(sdir)
++
++    mipub = madir.mkdir("minions").join("minion")
++    mipub.write(MINION_PUB_KEY.strip())
++
++    midir = tmpdir.mkdir("minion")
++    mipub = midir.join("minion.pub")
++    mipub.write(MINION_PUB_KEY.strip())
++    mipriv = midir.join("minion.pem")
++    mipriv.write(MINION_PRIV_KEY.strip())
++    mimapriv = midir.join("minion_master.pub")
++    mimapriv.write(MASTER_PUB_KEY.strip())
++    mimaspriv = midir.join("master_sign.pub")
++    mimaspriv.write(MASTER_SIGNING_PUB.strip())
++    try:
++        yield tmpdir
++    finally:
++        tmpdir.remove()
++
++
++def test_req_server_chan_encrypt_v2(pki_dir):
++    loop = salt.ext.tornado.ioloop.IOLoop.current()
++    opts = {
++        "worker_threads": 1,
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "zmq_monitor": False,
++        "mworker_queue_niceness": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("master")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++    }
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(opts)
++    dictkey = "pillar"
++    nonce = "abcdefg"
++    pillar_data = {"pillar1": "meh"}
++    ret = server._encrypt_private(pillar_data, dictkey, "minion", nonce)
++    assert "key" in ret
++    assert dictkey in ret
++
++    key = salt.crypt.get_rsa_key(str(pki_dir.join("minion", "minion.pem")), None)
++    if HAS_M2:
++        aes = key.private_decrypt(ret["key"], RSA.pkcs1_oaep_padding)
++    else:
++        cipher = PKCS1_OAEP.new(key)
++        aes = cipher.decrypt(ret["key"])
++    pcrypt = salt.crypt.Crypticle(opts, aes)
++    signed_msg = pcrypt.loads(ret[dictkey])
++
++    assert "sig" in signed_msg
++    assert "data" in signed_msg
++    data = salt.payload.Serial({}).loads(signed_msg["data"])
++    assert "key" in data
++    assert data["key"] == ret["key"]
++    assert "key" in data
++    assert data["nonce"] == nonce
++    assert "pillar" in data
++    assert data["pillar"] == pillar_data
++
++
++def test_req_server_chan_encrypt_v1(pki_dir):
++    loop = salt.ext.tornado.ioloop.IOLoop.current()
++    opts = {
++        "worker_threads": 1,
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "zmq_monitor": False,
++        "mworker_queue_niceness": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("master")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++    }
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(opts)
++    dictkey = "pillar"
++    nonce = "abcdefg"
++    pillar_data = {"pillar1": "meh"}
++    ret = server._encrypt_private(pillar_data, dictkey, "minion", sign_messages=False)
++
++    assert "key" in ret
++    assert dictkey in ret
++
++    key = salt.crypt.get_rsa_key(str(pki_dir.join("minion", "minion.pem")), None)
++    if HAS_M2:
++        aes = key.private_decrypt(ret["key"], RSA.pkcs1_oaep_padding)
++    else:
++        cipher = PKCS1_OAEP.new(key)
++        aes = cipher.decrypt(ret["key"])
++    pcrypt = salt.crypt.Crypticle(opts, aes)
++    data = pcrypt.loads(ret[dictkey])
++    assert data == pillar_data
++
++
++def test_req_chan_decode_data_dict_entry_v1(pki_dir):
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    client = salt.transport.zeromq.AsyncZeroMQReqChannel(opts, io_loop=mockloop)
++    dictkey = "pillar"
++    target = "minion"
++    pillar_data = {"pillar1": "meh"}
++    ret = server._encrypt_private(pillar_data, dictkey, target, sign_messages=False)
++    key = client.auth.get_keys()
++    if HAS_M2:
++        aes = key.private_decrypt(ret["key"], RSA.pkcs1_oaep_padding)
++    else:
++        cipher = PKCS1_OAEP.new(key)
++        aes = cipher.decrypt(ret["key"])
++    pcrypt = salt.crypt.Crypticle(client.opts, aes)
++    ret_pillar_data = pcrypt.loads(ret[dictkey])
++    assert ret_pillar_data == pillar_data
++
++
++async def test_req_chan_decode_data_dict_entry_v2(pki_dir):
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    client = salt.transport.zeromq.AsyncZeroMQReqChannel(opts, io_loop=mockloop)
++
++    dictkey = "pillar"
++    target = "minion"
++    pillar_data = {"pillar1": "meh"}
++
++    # Mock auth and message client.
++    auth = client.auth
++    auth._crypticle = salt.crypt.Crypticle(opts, AES_KEY)
++    client.auth = MagicMock()
++    client.auth.authenticated = True
++    client.auth.get_keys = auth.get_keys
++    client.auth.crypticle.dumps = auth.crypticle.dumps
++    client.auth.crypticle.loads = auth.crypticle.loads
++    client.message_client = MagicMock()
++
++    @salt.ext.tornado.gen.coroutine
++    def mocksend(msg, timeout=60, tries=3):
++        client.message_client.msg = msg
++        load = client.auth.crypticle.loads(msg["load"])
++        ret = server._encrypt_private(
++            pillar_data, dictkey, target, nonce=load["nonce"], sign_messages=True
++        )
++        raise salt.ext.tornado.gen.Return(ret)
++
++    client.message_client.send = mocksend
++
++    # Note the 'ver' value in 'load' does not represent the the 'version' sent
++    # in the top level of the transport's message.
++    load = {
++        "id": target,
++        "grains": {},
++        "saltenv": "base",
++        "pillarenv": "base",
++        "pillar_override": True,
++        "extra_minion_data": {},
++        "ver": "2",
++        "cmd": "_pillar",
++    }
++    ret = await client.crypted_transfer_decode_dictentry(load, dictkey="pillar",)
++    assert "version" in client.message_client.msg
++    assert client.message_client.msg["version"] == 2
++    assert ret == {"pillar1": "meh"}
++
++
++async def test_req_chan_decode_data_dict_entry_v2_bad_nonce(pki_dir):
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    client = salt.transport.zeromq.AsyncZeroMQReqChannel(opts, io_loop=mockloop)
++
++    dictkey = "pillar"
++    badnonce = "abcdefg"
++    target = "minion"
++    pillar_data = {"pillar1": "meh"}
++
++    # Mock auth and message client.
++    auth = client.auth
++    auth._crypticle = salt.crypt.Crypticle(opts, AES_KEY)
++    client.auth = MagicMock()
++    client.auth.authenticated = True
++    client.auth.get_keys = auth.get_keys
++    client.auth.crypticle.dumps = auth.crypticle.dumps
++    client.auth.crypticle.loads = auth.crypticle.loads
++    client.message_client = MagicMock()
++    ret = server._encrypt_private(
++        pillar_data, dictkey, target, nonce=badnonce, sign_messages=True
++    )
++
++    @salt.ext.tornado.gen.coroutine
++    def mocksend(msg, timeout=60, tries=3):
++        client.message_client.msg = msg
++        raise salt.ext.tornado.gen.Return(ret)
++
++    client.message_client.send = mocksend
++
++    # Note the 'ver' value in 'load' does not represent the the 'version' sent
++    # in the top level of the transport's message.
++    load = {
++        "id": target,
++        "grains": {},
++        "saltenv": "base",
++        "pillarenv": "base",
++        "pillar_override": True,
++        "extra_minion_data": {},
++        "ver": "2",
++        "cmd": "_pillar",
++    }
++
++    with pytest.raises(salt.crypt.AuthenticationError) as excinfo:
++        ret = await client.crypted_transfer_decode_dictentry(load, dictkey="pillar",)
++    assert "Pillar nonce verification failed." == excinfo.value.message
++
++
++async def test_req_chan_decode_data_dict_entry_v2_bad_signature(pki_dir):
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    client = salt.transport.zeromq.AsyncZeroMQReqChannel(opts, io_loop=mockloop)
++
++    dictkey = "pillar"
++    badnonce = "abcdefg"
++    target = "minion"
++    pillar_data = {"pillar1": "meh"}
++
++    # Mock auth and message client.
++    auth = client.auth
++    auth._crypticle = salt.crypt.Crypticle(opts, AES_KEY)
++    client.auth = MagicMock()
++    client.auth.authenticated = True
++    client.auth.get_keys = auth.get_keys
++    client.auth.crypticle.dumps = auth.crypticle.dumps
++    client.auth.crypticle.loads = auth.crypticle.loads
++    client.message_client = MagicMock()
++
++    @salt.ext.tornado.gen.coroutine
++    def mocksend(msg, timeout=60, tries=3):
++        client.message_client.msg = msg
++        load = client.auth.crypticle.loads(msg["load"])
++        ret = server._encrypt_private(
++            pillar_data, dictkey, target, nonce=load["nonce"], sign_messages=True
++        )
++
++        key = client.auth.get_keys()
++        if HAS_M2:
++            aes = key.private_decrypt(ret["key"], RSA.pkcs1_oaep_padding)
++        else:
++            cipher = PKCS1_OAEP.new(key)
++            aes = cipher.decrypt(ret["key"])
++        pcrypt = salt.crypt.Crypticle(client.opts, aes)
++        signed_msg = pcrypt.loads(ret[dictkey])
++        # Changing the pillar data will cause the signature verification to
++        # fail.
++        data = salt.payload.Serial({}).loads(signed_msg["data"])
++        data["pillar"] = {"pillar1": "bar"}
++        signed_msg["data"] = salt.payload.Serial({}).dumps(data)
++        ret[dictkey] = pcrypt.dumps(signed_msg)
++        raise salt.ext.tornado.gen.Return(ret)
++
++    client.message_client.send = mocksend
++
++    # Note the 'ver' value in 'load' does not represent the the 'version' sent
++    # in the top level of the transport's message.
++    load = {
++        "id": target,
++        "grains": {},
++        "saltenv": "base",
++        "pillarenv": "base",
++        "pillar_override": True,
++        "extra_minion_data": {},
++        "ver": "2",
++        "cmd": "_pillar",
++    }
++
++    with pytest.raises(salt.crypt.AuthenticationError) as excinfo:
++        ret = await client.crypted_transfer_decode_dictentry(load, dictkey="pillar",)
++    assert "Pillar payload signature failed to validate." == excinfo.value.message
++
++
++async def test_req_chan_decode_data_dict_entry_v2_bad_key(pki_dir):
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    client = salt.transport.zeromq.AsyncZeroMQReqChannel(opts, io_loop=mockloop)
++
++    dictkey = "pillar"
++    badnonce = "abcdefg"
++    target = "minion"
++    pillar_data = {"pillar1": "meh"}
++
++    # Mock auth and message client.
++    auth = client.auth
++    auth._crypticle = salt.crypt.Crypticle(opts, AES_KEY)
++    client.auth = MagicMock()
++    client.auth.authenticated = True
++    client.auth.get_keys = auth.get_keys
++    client.auth.crypticle.dumps = auth.crypticle.dumps
++    client.auth.crypticle.loads = auth.crypticle.loads
++    client.message_client = MagicMock()
++
++    @salt.ext.tornado.gen.coroutine
++    def mocksend(msg, timeout=60, tries=3):
++        client.message_client.msg = msg
++        load = client.auth.crypticle.loads(msg["load"])
++        ret = server._encrypt_private(
++            pillar_data, dictkey, target, nonce=load["nonce"], sign_messages=True
++        )
++
++        key = client.auth.get_keys()
++        if HAS_M2:
++            aes = key.private_decrypt(ret["key"], RSA.pkcs1_oaep_padding)
++        else:
++            cipher = PKCS1_OAEP.new(key)
++            aes = cipher.decrypt(ret["key"])
++        pcrypt = salt.crypt.Crypticle(client.opts, aes)
++        signed_msg = pcrypt.loads(ret[dictkey])
++
++        # Now encrypt with a different key
++        key = salt.crypt.Crypticle.generate_key_string()
++        pcrypt = salt.crypt.Crypticle(opts, key)
++        pubfn = os.path.join(master_opts["pki_dir"], "minions", "minion")
++        pub = salt.crypt.get_rsa_pub_key(pubfn)
++        ret[dictkey] = pcrypt.dumps(signed_msg)
++        key = salt.utils.stringutils.to_bytes(key)
++        if HAS_M2:
++            ret["key"] = pub.public_encrypt(key, RSA.pkcs1_oaep_padding)
++        else:
++            cipher = PKCS1_OAEP.new(pub)
++            ret["key"] = cipher.encrypt(key)
++        raise salt.ext.tornado.gen.Return(ret)
++
++    client.message_client.send = mocksend
++
++    # Note the 'ver' value in 'load' does not represent the the 'version' sent
++    # in the top level of the transport's message.
++    load = {
++        "id": target,
++        "grains": {},
++        "saltenv": "base",
++        "pillarenv": "base",
++        "pillar_override": True,
++        "extra_minion_data": {},
++        "ver": "2",
++        "cmd": "_pillar",
++    }
++
++    with pytest.raises(salt.crypt.AuthenticationError) as excinfo:
++        ret = await client.crypted_transfer_decode_dictentry(load, dictkey="pillar",)
++    assert "Key verification failed." == excinfo.value.message
++
++
++async def test_req_serv_auth_v1(pki_dir):
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++        "max_minions": 0,
++        "auto_accept": False,
++        "open_mode": False,
++        "key_pass": None,
++        "master_sign_pubkey": False,
++        "publish_port": 4505,
++        "auth_mode": 1,
++    }
++    SMaster.secrets["aes"] = {
++        "secret": multiprocessing.Array(
++            ctypes.c_char,
++            salt.utils.stringutils.to_bytes(salt.crypt.Crypticle.generate_key_string()),
++        ),
++        "reload": salt.crypt.Crypticle.generate_key_string,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    server.auto_key = salt.daemons.masterapi.AutoKey(server.opts)
++    server.cache_cli = False
++    server.master_key = salt.crypt.MasterKeys(server.opts)
++
++    pub = salt.crypt.get_rsa_pub_key(str(pki_dir.join("minion", "minion.pub")))
++    token = salt.utils.stringutils.to_bytes(salt.crypt.Crypticle.generate_key_string())
++    nonce = uuid.uuid4().hex
++
++    # We need to read the public key with fopen otherwise the newlines might
++    # not match on windows.
++    with salt.utils.files.fopen(str(pki_dir.join("minion", "minion.pub")), "r") as fp:
++        pub_key = fp.read()
++
++    load = {
++        "cmd": "_auth",
++        "id": "minion",
++        "token": token,
++        "pub": pub_key,
++    }
++    ret = server._auth(load, sign_messages=False)
++    assert "load" not in ret
++
++
++async def test_req_serv_auth_v2(pki_dir):
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++        "max_minions": 0,
++        "auto_accept": False,
++        "open_mode": False,
++        "key_pass": None,
++        "master_sign_pubkey": False,
++        "publish_port": 4505,
++        "auth_mode": 1,
++    }
++    SMaster.secrets["aes"] = {
++        "secret": multiprocessing.Array(
++            ctypes.c_char,
++            salt.utils.stringutils.to_bytes(salt.crypt.Crypticle.generate_key_string()),
++        ),
++        "reload": salt.crypt.Crypticle.generate_key_string,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    server.auto_key = salt.daemons.masterapi.AutoKey(server.opts)
++    server.cache_cli = False
++    server.master_key = salt.crypt.MasterKeys(server.opts)
++
++    pub = salt.crypt.get_rsa_pub_key(str(pki_dir.join("minion", "minion.pub")))
++    token = salt.utils.stringutils.to_bytes(salt.crypt.Crypticle.generate_key_string())
++    nonce = uuid.uuid4().hex
++
++    # We need to read the public key with fopen otherwise the newlines might
++    # not match on windows.
++    with salt.utils.files.fopen(str(pki_dir.join("minion", "minion.pub")), "r") as fp:
++        pub_key = fp.read()
++
++    load = {
++        "cmd": "_auth",
++        "id": "minion",
++        "nonce": nonce,
++        "token": token,
++        "pub": pub_key,
++    }
++    ret = server._auth(load, sign_messages=True)
++    assert "sig" in ret
++    assert "load" in ret
++
++
++async def test_req_chan_auth_v2(pki_dir, io_loop):
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++        "max_minions": 0,
++        "auto_accept": False,
++        "open_mode": False,
++        "key_pass": None,
++        "publish_port": 4505,
++        "auth_mode": 1,
++    }
++    SMaster.secrets["aes"] = {
++        "secret": multiprocessing.Array(
++            ctypes.c_char,
++            salt.utils.stringutils.to_bytes(salt.crypt.Crypticle.generate_key_string()),
++        ),
++        "reload": salt.crypt.Crypticle.generate_key_string,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    master_opts["master_sign_pubkey"] = False
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    server.auto_key = salt.daemons.masterapi.AutoKey(server.opts)
++    server.cache_cli = False
++    server.master_key = salt.crypt.MasterKeys(server.opts)
++    opts["verify_master_pubkey_sign"] = False
++    opts["always_verify_signature"] = False
++    client = salt.transport.zeromq.AsyncZeroMQReqChannel(opts, io_loop=io_loop)
++    signin_payload = client.auth.minion_sign_in_payload()
++    pload = client._package_load(signin_payload)
++    assert "version" in pload
++    assert pload["version"] == 2
++
++    ret = server._auth(pload["load"], sign_messages=True)
++    assert "sig" in ret
++    ret = client.auth.handle_signin_response(signin_payload, ret)
++    assert "aes" in ret
++    assert "master_uri" in ret
++    assert "publish_port" in ret
++
++
++async def test_req_chan_auth_v2_with_master_signing(pki_dir, io_loop):
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++        "max_minions": 0,
++        "auto_accept": False,
++        "open_mode": False,
++        "key_pass": None,
++        "publish_port": 4505,
++        "auth_mode": 1,
++    }
++    SMaster.secrets["aes"] = {
++        "secret": multiprocessing.Array(
++            ctypes.c_char,
++            salt.utils.stringutils.to_bytes(salt.crypt.Crypticle.generate_key_string()),
++        ),
++        "reload": salt.crypt.Crypticle.generate_key_string,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    master_opts["master_sign_pubkey"] = True
++    master_opts["master_use_pubkey_signature"] = False
++    master_opts["signing_key_pass"] = True
++    master_opts["master_sign_key_name"] = "master_sign"
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    server.auto_key = salt.daemons.masterapi.AutoKey(server.opts)
++    server.cache_cli = False
++    server.master_key = salt.crypt.MasterKeys(server.opts)
++    opts["verify_master_pubkey_sign"] = True
++    opts["always_verify_signature"] = True
++    opts["master_sign_key_name"] = "master_sign"
++    opts["master"] = "master"
++
++    assert (
++        pki_dir.join("minion", "minion_master.pub").read()
++        == pki_dir.join("master", "master.pub").read()
++    )
++
++    client = salt.transport.zeromq.AsyncZeroMQReqChannel(opts, io_loop=io_loop)
++    signin_payload = client.auth.minion_sign_in_payload()
++    pload = client._package_load(signin_payload)
++    assert "version" in pload
++    assert pload["version"] == 2
++
++    server_reply = server._auth(pload["load"], sign_messages=True)
++    # With version 2 we always get a clear signed response
++    assert "enc" in server_reply
++    assert server_reply["enc"] == "clear"
++    assert "sig" in server_reply
++    assert "load" in server_reply
++    ret = client.auth.handle_signin_response(signin_payload, server_reply)
++    assert "aes" in ret
++    assert "master_uri" in ret
++    assert "publish_port" in ret
++
++    # Now create a new master key pair and try auth with it.
++    mapriv = pki_dir.join("master", "master.pem")
++    mapriv.remove()
++    mapriv.write(MASTER2_PRIV_KEY.strip())
++    mapub = pki_dir.join("master", "master.pub")
++    mapub.remove()
++    mapub.write(MASTER2_PUB_KEY.strip())
++
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    server.auto_key = salt.daemons.masterapi.AutoKey(server.opts)
++    server.cache_cli = False
++    server.master_key = salt.crypt.MasterKeys(server.opts)
++
++    signin_payload = client.auth.minion_sign_in_payload()
++    pload = client._package_load(signin_payload)
++    server_reply = server._auth(pload["load"], sign_messages=True)
++    ret = client.auth.handle_signin_response(signin_payload, server_reply)
++
++    assert "aes" in ret
++    assert "master_uri" in ret
++    assert "publish_port" in ret
++
++    assert (
++        pki_dir.join("minion", "minion_master.pub").read()
++        == pki_dir.join("master", "master.pub").read()
++    )
++
++
++async def test_req_chan_auth_v2_new_minion_with_master_pub(pki_dir, io_loop):
++
++    pki_dir.join("master", "minions", "minion").remove()
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++        "max_minions": 0,
++        "auto_accept": False,
++        "open_mode": False,
++        "key_pass": None,
++        "publish_port": 4505,
++        "auth_mode": 1,
++        "acceptance_wait_time": 3,
++    }
++    SMaster.secrets["aes"] = {
++        "secret": multiprocessing.Array(
++            ctypes.c_char,
++            salt.utils.stringutils.to_bytes(salt.crypt.Crypticle.generate_key_string()),
++        ),
++        "reload": salt.crypt.Crypticle.generate_key_string,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    master_opts["master_sign_pubkey"] = False
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    server.auto_key = salt.daemons.masterapi.AutoKey(server.opts)
++    server.cache_cli = False
++    server.master_key = salt.crypt.MasterKeys(server.opts)
++    opts["verify_master_pubkey_sign"] = False
++    opts["always_verify_signature"] = False
++    client = salt.transport.zeromq.AsyncZeroMQReqChannel(opts, io_loop=io_loop)
++    signin_payload = client.auth.minion_sign_in_payload()
++    pload = client._package_load(signin_payload)
++    assert "version" in pload
++    assert pload["version"] == 2
++
++    ret = server._auth(pload["load"], sign_messages=True)
++    assert "sig" in ret
++    ret = client.auth.handle_signin_response(signin_payload, ret)
++    assert ret == "retry"
++
++
++async def test_req_chan_auth_v2_new_minion_with_master_pub_bad_sig(pki_dir, io_loop):
++
++    pki_dir.join("master", "minions", "minion").remove()
++
++    # Give the master a different key than the minion has.
++    mapriv = pki_dir.join("master", "master.pem")
++    mapriv.remove()
++    mapriv.write(MASTER2_PRIV_KEY.strip())
++    mapub = pki_dir.join("master", "master.pub")
++    mapub.remove()
++    mapub.write(MASTER2_PUB_KEY.strip())
++
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++        "max_minions": 0,
++        "auto_accept": False,
++        "open_mode": False,
++        "key_pass": None,
++        "publish_port": 4505,
++        "auth_mode": 1,
++        "acceptance_wait_time": 3,
++    }
++    SMaster.secrets["aes"] = {
++        "secret": multiprocessing.Array(
++            ctypes.c_char,
++            salt.utils.stringutils.to_bytes(salt.crypt.Crypticle.generate_key_string()),
++        ),
++        "reload": salt.crypt.Crypticle.generate_key_string,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    master_opts["master_sign_pubkey"] = False
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    server.auto_key = salt.daemons.masterapi.AutoKey(server.opts)
++    server.cache_cli = False
++    server.master_key = salt.crypt.MasterKeys(server.opts)
++    opts["verify_master_pubkey_sign"] = False
++    opts["always_verify_signature"] = False
++    client = salt.transport.zeromq.AsyncZeroMQReqChannel(opts, io_loop=io_loop)
++    signin_payload = client.auth.minion_sign_in_payload()
++    pload = client._package_load(signin_payload)
++    assert "version" in pload
++    assert pload["version"] == 2
++
++    ret = server._auth(pload["load"], sign_messages=True)
++    assert "sig" in ret
++    with pytest.raises(salt.crypt.SaltClientError, match="Invalid signature"):
++        ret = client.auth.handle_signin_response(signin_payload, ret)
++
++
++async def test_req_chan_auth_v2_new_minion_without_master_pub(pki_dir, io_loop):
++
++    pki_dir.join("master", "minions", "minion").remove()
++    pki_dir.join("minion", "minion_master.pub").remove()
++    mockloop = MagicMock()
++    opts = {
++        "master_uri": "tcp://127.0.0.1:4506",
++        "interface": "127.0.0.1",
++        "ret_port": 4506,
++        "ipv6": False,
++        "sock_dir": ".",
++        "pki_dir": str(pki_dir.join("minion")),
++        "id": "minion",
++        "__role": "minion",
++        "keysize": 4096,
++        "max_minions": 0,
++        "auto_accept": False,
++        "open_mode": False,
++        "key_pass": None,
++        "publish_port": 4505,
++        "auth_mode": 1,
++        "acceptance_wait_time": 3,
++    }
++    SMaster.secrets["aes"] = {
++        "secret": multiprocessing.Array(
++            ctypes.c_char,
++            salt.utils.stringutils.to_bytes(salt.crypt.Crypticle.generate_key_string()),
++        ),
++        "reload": salt.crypt.Crypticle.generate_key_string,
++    }
++    master_opts = dict(opts, pki_dir=str(pki_dir.join("master")))
++    master_opts["master_sign_pubkey"] = False
++    server = salt.transport.zeromq.ZeroMQReqServerChannel(master_opts)
++    server.auto_key = salt.daemons.masterapi.AutoKey(server.opts)
++    server.cache_cli = False
++    server.master_key = salt.crypt.MasterKeys(server.opts)
++    opts["verify_master_pubkey_sign"] = False
++    opts["always_verify_signature"] = False
++    client = salt.transport.zeromq.AsyncZeroMQReqChannel(opts, io_loop=io_loop)
++    signin_payload = client.auth.minion_sign_in_payload()
++    pload = client._package_load(signin_payload)
++    assert "version" in pload
++    assert pload["version"] == 2
++
++    ret = server._auth(pload["load"], sign_messages=True)
++    assert "sig" in ret
++    ret = client.auth.handle_signin_response(signin_payload, ret)
++    assert ret == "retry"
+diff --git a/tests/pytests/unit/utils/test_minions.py b/tests/pytests/unit/utils/test_minions.py
+index 5b0cd77216..23ea8712da 100644
+--- a/tests/pytests/unit/utils/test_minions.py
++++ b/tests/pytests/unit/utils/test_minions.py
+@@ -1,3 +1,4 @@
++import pytest
+ import salt.utils.minions
+ import salt.utils.network
+ from tests.support.mock import patch
+@@ -21,3 +22,61 @@ def test_connected_ids():
+     with patch_net, patch_ip_addrs, patch_list, patch_fetch:
+         ret = ckminions.connected_ids()
+         assert ret == {minion}
++
++
++# These validate_tgt tests make the assumption that CkMinions.check_minions is
++# correct. In other words, these tests are only worthwhile if check_minions is
++# also correct.
++def test_validate_tgt_should_return_false_when_no_valid_minions_have_been_found():
++    ckminions = salt.utils.minions.CkMinions(opts={})
++    with patch(
++        "salt.utils.minions.CkMinions.check_minions", autospec=True, return_value={}
++    ):
++        result = ckminions.validate_tgt("fnord", "fnord", "fnord", minions=[])
++        assert result is False
++
++
++@pytest.mark.parametrize(
++    "valid_minions, target_minions",
++    [
++        (["one", "two", "three"], ["one", "two", "five"]),
++        (["one"], ["one", "two"]),
++        (["one", "two", "three", "four"], ["five"]),
++    ],
++)
++def test_validate_tgt_should_return_false_when_minions_have_minions_not_in_valid_minions(
++    valid_minions, target_minions
++):
++    ckminions = salt.utils.minions.CkMinions(opts={})
++    with patch(
++        "salt.utils.minions.CkMinions.check_minions",
++        autospec=True,
++        return_value={"minions": valid_minions},
++    ):
++        result = ckminions.validate_tgt(
++            "fnord", "fnord", "fnord", minions=target_minions
++        )
++        assert result is False
++
++
++@pytest.mark.parametrize(
++    "valid_minions, target_minions",
++    [
++        (["one", "two", "three", "five"], ["one", "two", "five"]),
++        (["one"], ["one"]),
++        (["one", "two", "three", "four", "five"], ["five"]),
++    ],
++)
++def test_validate_tgt_should_return_true_when_all_minions_are_found_in_valid_minions(
++    valid_minions, target_minions
++):
++    ckminions = salt.utils.minions.CkMinions(opts={})
++    with patch(
++        "salt.utils.minions.CkMinions.check_minions",
++        autospec=True,
++        return_value={"minions": valid_minions},
++    ):
++        result = ckminions.validate_tgt(
++            "fnord", "fnord", "fnord", minions=target_minions
++        )
++        assert result is True
+diff --git a/tests/unit/transport/mixins.py b/tests/unit/transport/mixins.py
+index 4e41dd9422..53b22efc81 100644
+--- a/tests/unit/transport/mixins.py
++++ b/tests/unit/transport/mixins.py
+@@ -1,16 +1,6 @@
+-# -*- coding: utf-8 -*-
+-
+-# Import Python libs
+-from __future__ import absolute_import, print_function, unicode_literals
+-
+ import salt.ext.tornado.gen
+-
+-# Import Salt Libs
+ import salt.transport.client
+ 
+-# Import 3rd-party libs
+-from salt.ext import six
+-
+ 
+ def run_loop_in_thread(loop, evt):
+     """
+@@ -33,7 +23,7 @@ def run_loop_in_thread(loop, evt):
+         loop.close()
+ 
+ 
+-class ReqChannelMixin(object):
++class ReqChannelMixin:
+     def test_basic(self):
+         """
+         Test a variety of messages, make sure we get the expected responses
+@@ -44,7 +34,7 @@ class ReqChannelMixin(object):
+             {"baz": "qux", "list": [1, 2, 3]},
+         ]
+         for msg in msgs:
+-            ret = self.channel.send(msg, timeout=2, tries=1)
++            ret = self.channel.send(dict(msg), timeout=2, tries=1)
+             self.assertEqual(ret["load"], msg)
+ 
+     def test_normalization(self):
+@@ -59,7 +49,7 @@ class ReqChannelMixin(object):
+         ]
+         for msg in msgs:
+             ret = self.channel.send(msg, timeout=2, tries=1)
+-            for k, v in six.iteritems(ret["load"]):
++            for k, v in ret["load"].items():
+                 self.assertEqual(types[k], type(v))
+ 
+     def test_badload(self):
+@@ -72,7 +62,7 @@ class ReqChannelMixin(object):
+             self.assertEqual(ret, "payload and load must be a dict")
+ 
+ 
+-class PubChannelMixin(object):
++class PubChannelMixin:
+     def test_basic(self):
+         self.pub = None
+ 
+diff --git a/tests/unit/transport/test_tcp.py b/tests/unit/transport/test_tcp.py
+index 5611d13d4f..94e62a06c3 100644
+--- a/tests/unit/transport/test_tcp.py
++++ b/tests/unit/transport/test_tcp.py
+@@ -1,8 +1,6 @@
+-# -*- coding: utf-8 -*-
+ """
+     :codeauthor: Thomas Jackson <jacksontj.89@gmail.com>
+ """
+-from __future__ import absolute_import, print_function, unicode_literals
+ 
+ import logging
+ import socket
+@@ -17,8 +15,6 @@ import salt.transport.client
+ import salt.transport.server
+ import salt.utils.platform
+ import salt.utils.process
+-from salt.ext import six
+-from salt.ext.six.moves import range
+ from salt.ext.tornado.testing import AsyncTestCase, gen_test
+ from salt.transport.tcp import (
+     SaltMessageClient,
+@@ -74,7 +70,7 @@ class BaseTCPReqCase(TestCase, AdaptedConfigurationTestCaseMixin):
+                 "transport": "tcp",
+                 "master_ip": "127.0.0.1",
+                 "master_port": ret_port,
+-                "master_uri": "tcp://127.0.0.1:{0}".format(ret_port),
++                "master_uri": "tcp://127.0.0.1:{}".format(ret_port),
+             }
+         )
+ 
+@@ -200,7 +196,7 @@ class BaseTCPPubCase(AsyncTestCase, AdaptedConfigurationTestCaseMixin):
+                 "master_ip": "127.0.0.1",
+                 "auth_timeout": 1,
+                 "master_port": ret_port,
+-                "master_uri": "tcp://127.0.0.1:{0}".format(ret_port),
++                "master_uri": "tcp://127.0.0.1:{}".format(ret_port),
+             }
+         )
+ 
+@@ -243,17 +239,17 @@ class BaseTCPPubCase(AsyncTestCase, AdaptedConfigurationTestCaseMixin):
+         del cls.req_server_channel
+ 
+     def setUp(self):
+-        super(BaseTCPPubCase, self).setUp()
++        super().setUp()
+         self._start_handlers = dict(self.io_loop._handlers)
+ 
+     def tearDown(self):
+-        super(BaseTCPPubCase, self).tearDown()
++        super().tearDown()
+         failures = []
+-        for k, v in six.iteritems(self.io_loop._handlers):
++        for k, v in self.io_loop._handlers.items():
+             if self._start_handlers.get(k) != v:
+                 failures.append((k, v))
+         if failures:
+-            raise Exception("FDs still attached to the IOLoop: {0}".format(failures))
++            raise Exception("FDs still attached to the IOLoop: {}".format(failures))
+         del self.channel
+         del self._start_handlers
+ 
+@@ -287,7 +283,7 @@ class AsyncPubChannelTest(BaseTCPPubCase, PubChannelMixin):
+ 
+ class SaltMessageClientPoolTest(AsyncTestCase):
+     def setUp(self):
+-        super(SaltMessageClientPoolTest, self).setUp()
++        super().setUp()
+         sock_pool_size = 5
+         with patch(
+             "salt.transport.tcp.SaltMessageClient.__init__",
+@@ -306,7 +302,7 @@ class SaltMessageClientPoolTest(AsyncTestCase):
+             "salt.transport.tcp.SaltMessageClient.close", MagicMock(return_value=None)
+         ):
+             del self.original_message_clients
+-        super(SaltMessageClientPoolTest, self).tearDown()
++        super().tearDown()
+ 
+     def test_send(self):
+         for message_client_mock in self.message_client_pool.message_clients:
+@@ -422,30 +418,29 @@ class SaltMessageClientCleanupTest(TestCase, AdaptedConfigurationTestCaseMixin):
+ class TCPPubServerChannelTest(TestCase, AdaptedConfigurationTestCaseMixin):
+     @patch("salt.master.SMaster.secrets")
+     @patch("salt.crypt.Crypticle")
+-    @patch("salt.utils.asynchronous.SyncWrapper")
+-    def test_publish_filtering(self, sync_wrapper, crypticle, secrets):
++    def test_publish_filtering(self, crypticle, secrets):
+         opts = self.get_temp_config("master")
+         opts["sign_pub_messages"] = False
+         channel = TCPPubServerChannel(opts)
+ 
+-        wrap = MagicMock()
+         crypt = MagicMock()
+         crypt.dumps.return_value = {"test": "value"}
+ 
+         secrets.return_value = {"aes": {"secret": None}}
+         crypticle.return_value = crypt
+-        sync_wrapper.return_value = wrap
+ 
+         # try simple publish with glob tgt_type
+-        channel.publish({"test": "value", "tgt_type": "glob", "tgt": "*"})
+-        payload = wrap.send.call_args[0][0]
++        payload = channel.pack_publish(
++            {"test": "value", "tgt_type": "glob", "tgt": "*"}
++        )
+ 
+         # verify we send it without any specific topic
+         assert "topic_lst" not in payload
+ 
+         # try simple publish with list tgt_type
+-        channel.publish({"test": "value", "tgt_type": "list", "tgt": ["minion01"]})
+-        payload = wrap.send.call_args[0][0]
++        payload = channel.pack_publish(
++            {"test": "value", "tgt_type": "list", "tgt": ["minion01"]}
++        )
+ 
+         # verify we send it with correct topic
+         assert "topic_lst" in payload
+@@ -453,8 +448,9 @@ class TCPPubServerChannelTest(TestCase, AdaptedConfigurationTestCaseMixin):
+ 
+         # try with syndic settings
+         opts["order_masters"] = True
+-        channel.publish({"test": "value", "tgt_type": "list", "tgt": ["minion01"]})
+-        payload = wrap.send.call_args[0][0]
++        payload = channel.pack_publish(
++            {"test": "value", "tgt_type": "list", "tgt": ["minion01"]}
++        )
+ 
+         # verify we send it without topic for syndics
+         assert "topic_lst" not in payload
+@@ -462,26 +458,22 @@ class TCPPubServerChannelTest(TestCase, AdaptedConfigurationTestCaseMixin):
+     @patch("salt.utils.minions.CkMinions.check_minions")
+     @patch("salt.master.SMaster.secrets")
+     @patch("salt.crypt.Crypticle")
+-    @patch("salt.utils.asynchronous.SyncWrapper")
+-    def test_publish_filtering_str_list(
+-        self, sync_wrapper, crypticle, secrets, check_minions
+-    ):
++    def test_publish_filtering_str_list(self, crypticle, secrets, check_minions):
+         opts = self.get_temp_config("master")
+         opts["sign_pub_messages"] = False
+         channel = TCPPubServerChannel(opts)
+ 
+-        wrap = MagicMock()
+         crypt = MagicMock()
+         crypt.dumps.return_value = {"test": "value"}
+ 
+         secrets.return_value = {"aes": {"secret": None}}
+         crypticle.return_value = crypt
+-        sync_wrapper.return_value = wrap
+         check_minions.return_value = {"minions": ["minion02"]}
+ 
+         # try simple publish with list tgt_type
+-        channel.publish({"test": "value", "tgt_type": "list", "tgt": "minion02"})
+-        payload = wrap.send.call_args[0][0]
++        payload = channel.pack_publish(
++            {"test": "value", "tgt_type": "list", "tgt": "minion02"}
++        )
+ 
+         # verify we send it with correct topic
+         assert "topic_lst" in payload
+diff --git a/tests/unit/transport/test_zeromq.py b/tests/unit/transport/test_zeromq.py
+index c78649ff9f..81652c80f0 100644
+--- a/tests/unit/transport/test_zeromq.py
++++ b/tests/unit/transport/test_zeromq.py
+@@ -437,6 +437,7 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+             "secret": multiprocessing.Array(
+                 ctypes.c_char, six.b(salt.crypt.Crypticle.generate_key_string()),
+             ),
++            "serial": multiprocessing.Value(ctypes.c_longlong, lock=False),
+         }
+         cls.minion_config = cls.get_temp_config(
+             "minion",
+@@ -492,9 +493,11 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+         crypticle = salt.crypt.Crypticle(
+             opts, salt.master.SMaster.secrets["aes"]["secret"].value
+         )
++        unpacker = salt.utils.msgpack.Unpacker()
++        stop = False
+         while time.time() - last_msg < timeout:
+             try:
+-                payload = sock.recv(zmq.NOBLOCK)
++                wire_bytes = sock.recv(zmq.NOBLOCK)
+             except zmq.ZMQError:
+                 time.sleep(0.01)
+             else:
+@@ -502,13 +505,20 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+                     if messages != 1:
+                         messages -= 1
+                         continue
+-                payload = crypticle.loads(serial.loads(payload)["load"])
+-                if "stop" in payload:
+-                    break
+-                last_msg = time.time()
+-                results.append(payload["jid"])
+ 
+-    @skipIf(salt.utils.platform.is_windows(), "Skip on Windows OS")
++                unpacker.feed(wire_bytes)
++                for w_payload in unpacker:
++                    payload = crypticle.loads(w_payload[b"load"])
++                    if not payload:
++                        continue
++                    if "stop" in payload:
++                        stop = True
++                        break
++                    last_msg = time.time()
++                    results.append(payload["jid"])
++            if stop:
++                break
++
+     @slowTest
+     def test_publish_to_pubserv_ipc(self):
+         """
+@@ -541,7 +551,6 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+         server_channel.pub_close()
+         assert len(results) == send_num, (len(results), set(expect).difference(results))
+ 
+-    @skipIf(salt.utils.platform.is_linux(), "Skip on Linux")
+     @slowTest
+     def test_zeromq_publish_port(self):
+         """
+@@ -572,7 +581,6 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+             channel.connect()
+         assert str(opts["publish_port"]) in patch_socket.mock_calls[0][1][0]
+ 
+-    @skipIf(salt.utils.platform.is_linux(), "Skip on Linux")
+     def test_zeromq_zeromq_filtering_decode_message_no_match(self):
+         """
+         test AsyncZeroMQPubChannel _decode_messages when
+@@ -610,7 +618,6 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+             res = server_channel._decode_messages(message)
+         assert res.result() is None
+ 
+-    @skipIf(salt.utils.platform.is_linux(), "Skip on Linux")
+     def test_zeromq_zeromq_filtering_decode_message(self):
+         """
+         test AsyncZeroMQPubChannel _decode_messages
+@@ -663,12 +670,7 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+             zmq_filtering=True,
+             acceptance_wait_time=5,
+         )
+-        server_channel = salt.transport.zeromq.ZeroMQPubServerChannel(opts)
+-        server_channel.pre_fork(
+-            self.process_manager,
+-            kwargs={"log_queue": salt.log.setup.get_multiprocessing_logging_queue()},
+-        )
+-        pub_uri = "tcp://{interface}:{publish_port}".format(**server_channel.opts)
++        pub_uri = "tcp://{interface}:{publish_port}".format(**opts)
+         send_num = 1
+         expect = []
+         results = []
+@@ -678,10 +680,6 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+             kwargs={"messages": 2},
+         )
+         gather.start()
+-        # Allow time for server channel to start, especially on windows
+-        time.sleep(2)
+-        expect.append(send_num)
+-        load = {"tgt_type": "glob", "tgt": "*", "jid": send_num}
+         with patch(
+             "salt.utils.minions.CkMinions.check_minions",
+             MagicMock(
+@@ -692,11 +690,37 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+                 }
+             ),
+         ):
+-            server_channel.publish(load)
+-        server_channel.publish({"tgt_type": "glob", "tgt": "*", "stop": True})
+-        gather.join()
+-        server_channel.pub_close()
+-        assert len(results) == send_num, (len(results), set(expect).difference(results))
++            # Allow time for server channel to start, especially on windows
++            time.sleep(2)
++            server_channel = salt.transport.zeromq.ZeroMQPubServerChannel(opts)
++            server_channel.pre_fork(
++                self.process_manager,
++                kwargs={
++                    "log_queue": salt.log.setup.get_multiprocessing_logging_queue()
++                },
++            )
++            time.sleep(2)
++            expect.append(send_num)
++            load = {"tgt_type": "glob", "tgt": "*", "jid": send_num}
++            with patch(
++                "salt.utils.minions.CkMinions.check_minions",
++                MagicMock(
++                    return_value={
++                        "minions": ["minion"],
++                        "missing": [],
++                        "ssh_minions": False,
++                    }
++                ),
++            ):
++                server_channel.publish(load)
++            server_channel.publish({"tgt_type": "glob", "tgt": "*", "stop": True})
++            time.sleep(0.3)
++            server_channel.pub_close()
++            gather.join()
++            assert len(results) == send_num, (
++                len(results),
++                set(expect).difference(results),
++            )
+ 
+     @slowTest
+     def test_publish_to_pubserv_tcp(self):
+@@ -733,6 +757,7 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+         for i in range(num):
+             load = {"tgt_type": "glob", "tgt": "*", "jid": "{}-{}".format(sid, i)}
+             server_channel.publish(load)
++        time.sleep(0.3)
+         server_channel.pub_close()
+ 
+     @staticmethod
+@@ -746,6 +771,7 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+                 "xdata": "0" * size,
+             }
+             server_channel.publish(load)
++        time.sleep(0.3)
+         server_channel.pub_close()
+ 
+     @skipIf(salt.utils.platform.is_freebsd(), "Skip on FreeBSD")
+@@ -757,21 +783,22 @@ class PubServerChannel(TestCase, AdaptedConfigurationTestCaseMixin):
+         https://github.com/saltstack/salt/issues/36469
+         """
+         opts = dict(self.master_config, ipc_mode="tcp", pub_hwm=0)
+-        server_channel = salt.transport.zeromq.ZeroMQPubServerChannel(opts)
+-        server_channel.pre_fork(
+-            self.process_manager,
+-            kwargs={"log_queue": salt.log.setup.get_multiprocessing_logging_queue()},
+-        )
+         send_num = 10 * 4
+         expect = []
+         results = []
+         pub_uri = "tcp://{interface}:{publish_port}".format(**opts)
+         # Allow time for server channel to start, especially on windows
+-        time.sleep(2)
+         gather = threading.Thread(
+             target=self._gather_results, args=(self.minion_config, pub_uri, results,)
+         )
+         gather.start()
++        time.sleep(2)
++        server_channel = salt.transport.zeromq.ZeroMQPubServerChannel(opts)
++        server_channel.pre_fork(
++            self.process_manager,
++            kwargs={"log_queue": salt.log.setup.get_multiprocessing_logging_queue()},
++        )
++        time.sleep(2)
+         with ThreadPoolExecutor(max_workers=4) as executor:
+             executor.submit(self._send_small, opts, 1)
+             executor.submit(self._send_small, opts, 2)
+-- 
+2.35.1
+
+
