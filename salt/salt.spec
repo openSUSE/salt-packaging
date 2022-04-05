@@ -296,6 +296,9 @@ Patch75:        fix-multiple-security-issues-bsc-1197417.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/501
 Patch76:        fix-salt-ssh-opts-poisoning-bsc-1197637-3004-501.patch
 
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61064
+Patch77:        fixes-for-python-3.10-502.patch
+
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
