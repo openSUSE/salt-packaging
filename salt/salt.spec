@@ -502,6 +502,8 @@ Patch217:       add-salt-ssh-support-with-venv-salt-minion-3002.2-47.patch
 Patch218:       clear-network-interface-cache-when-grains-are-reques.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/500
 Patch219:       fix-salt-ssh-opts-poisoning-bsc-1197637-3002.2-500.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/503
+Patch220:       prevent-affection-of-ssh.opts-with-lazyloader-bsc-11.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1139,6 +1141,7 @@ cp %{S:6} .
 %patch217 -p1
 %patch218 -p1
 %patch219 -p1
+%patch220 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
