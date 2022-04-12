@@ -302,6 +302,9 @@ Patch77:        fixes-for-python-3.10-502.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/505
 Patch78:        prevent-affection-of-ssh.opts-with-lazyloader-bsc-11.patch
 
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/506
+Patch79:        fix-regression-with-depending-client.ssh-on-psutil-b.patch
+
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
