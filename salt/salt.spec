@@ -504,6 +504,8 @@ Patch218:       clear-network-interface-cache-when-grains-are-reques.patch
 Patch219:       fix-salt-ssh-opts-poisoning-bsc-1197637-3002.2-500.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/503
 Patch220:       prevent-affection-of-ssh.opts-with-lazyloader-bsc-11.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/504
+Patch221:       fix-regression-with-depending-client.ssh-on-psutil-b.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1142,6 +1144,7 @@ cp %{S:6} .
 %patch218 -p1
 %patch219 -p1
 %patch220 -p1
+%patch221 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
