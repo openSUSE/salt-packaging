@@ -506,6 +506,8 @@ Patch219:       fix-salt-ssh-opts-poisoning-bsc-1197637-3002.2-500.patch
 Patch220:       prevent-affection-of-ssh.opts-with-lazyloader-bsc-11.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/504
 Patch221:       fix-regression-with-depending-client.ssh-on-psutil-b.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50962
+Patch222:	remove-redundand-overrides-causing-confusing-debug-l.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1145,6 +1147,7 @@ cp %{S:6} .
 %patch219 -p1
 %patch220 -p1
 %patch221 -p1
+%patch222 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
