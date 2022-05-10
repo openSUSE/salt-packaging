@@ -538,6 +538,8 @@ Patch214:       vendor-stateresult.patch
 Patch215:       fix-possible-traceback-on-ip6_interface-grain-bsc-11.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61530
 Patch216:       fix-inspector-module-export-function-bsc-1097531-479.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50962
+Patch217:       remove-redundand-overrides-causing-confusing-debug-l.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1300,6 +1302,7 @@ cp %{S:6} .
 %patch214 -p1
 %patch215 -p1
 %patch216 -p1
+%patch217 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
