@@ -304,6 +304,8 @@ Patch78:        prevent-affection-of-ssh.opts-with-lazyloader-bsc-11.patch
 
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/506
 Patch79:        fix-regression-with-depending-client.ssh-on-psutil-b.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61895
+Patch80:        make-sure-saltcacheloader-use-correct-fileclient-519.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
