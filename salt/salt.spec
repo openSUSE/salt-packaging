@@ -558,6 +558,8 @@ Patch229:       handle-old-qemu-img-not-supporting-u-parameter-bsc-1.patch
 Patch230:       clear-network-interface-cache-when-grains-are-reques.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50962
 Patch231:       remove-redundand-overrides-causing-confusing-debug-l.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/530
+Patch232:       fix-handling-of-a-sign-in-response-by-a-syndic-node-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1319,6 +1321,7 @@ cp %{S:6} .
 %patch229 -p1
 %patch230 -p1
 %patch231 -p1
+%patch232 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this

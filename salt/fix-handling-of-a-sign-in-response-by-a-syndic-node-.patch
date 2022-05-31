@@ -1,0 +1,33 @@
+From e1683582010228d4b14ef1749d3cd1a8b48da5ec Mon Sep 17 00:00:00 2001
+From: Petr Pavlu <31453820+petrpavlu@users.noreply.github.com>
+Date: Tue, 31 May 2022 16:57:42 +0200
+Subject: [PATCH] Fix handling of a sign-in response by a syndic node
+ (bsc#1199906) (#530)
+
+Remove a relic from the backport c56be5236f29 ("Fix multiple security
+issues (bsc#1197417)") which leads to an incorrect disconnection of
+a syndic node from the master.
+---
+ salt/crypt.py | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/salt/crypt.py b/salt/crypt.py
+index d025d807be..3f7dbb3a6f 100644
+--- a/salt/crypt.py
++++ b/salt/crypt.py
+@@ -811,11 +811,6 @@ class AsyncAuth(object):
+                 )
+                 return "retry"
+ 
+-        if self.opts.get("syndic_master", False):  # Is syndic
+-            syndic_finger = self.opts.get(
+-                "syndic_finger", self.opts.get("master_finger", False)
+-            )
+-            raise SaltClientError('Invalid master key')
+         if self.opts.get('syndic_master', False):  # Is syndic
+             syndic_finger = self.opts.get('syndic_finger', self.opts.get('master_finger', False))
+             if syndic_finger:
+-- 
+2.36.1
+
+
