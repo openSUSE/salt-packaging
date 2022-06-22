@@ -560,6 +560,8 @@ Patch230:       clear-network-interface-cache-when-grains-are-reques.patch
 Patch231:       remove-redundand-overrides-causing-confusing-debug-l.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/530
 Patch232:       fix-handling-of-a-sign-in-response-by-a-syndic-node-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/e068a34ccb2e17ae7224f8016a24b727f726d4c8
+Patch233:       fix-for-cve-2022-22967-bsc-1200566.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1322,6 +1324,7 @@ cp %{S:6} .
 %patch230 -p1
 %patch231 -p1
 %patch232 -p1
+%patch233 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
