@@ -314,6 +314,8 @@ Patch82:        ignore-erros-on-reading-license-files-with-dpkg_lowp.patch
 Patch83:        use-salt-bundle-in-dockermod.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61984
 Patch84:        save-log-to-logfile-with-docker.build.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62029
+Patch85:        normalize-package-names-once-with-pkg.installed-remo.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
