@@ -310,6 +310,8 @@ Patch80:        make-sure-saltcacheloader-use-correct-fileclient-519.patch
 Patch81:        fix-for-cve-2022-22967-bsc-1200566.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61827
 Patch82:        ignore-erros-on-reading-license-files-with-dpkg_lowp.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62109
+Patch83:        use-salt-bundle-in-dockermod.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
