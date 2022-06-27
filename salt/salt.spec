@@ -312,6 +312,8 @@ Patch81:        fix-for-cve-2022-22967-bsc-1200566.patch
 Patch82:        ignore-erros-on-reading-license-files-with-dpkg_lowp.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62109
 Patch83:        use-salt-bundle-in-dockermod.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61984
+Patch84:        save-log-to-logfile-with-docker.build.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
