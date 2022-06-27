@@ -318,6 +318,8 @@ Patch84:        save-log-to-logfile-with-docker.build.patch
 Patch85:        normalize-package-names-once-with-pkg.installed-remo.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62089
 Patch86:        set-default-target-for-pip-from-venv_pip_target-envi.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/534
+Patch87:        fix-ownership-of-salt-thin-directory-when-using-the-.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
