@@ -564,6 +564,8 @@ Patch232:       fix-handling-of-a-sign-in-response-by-a-syndic-node-.patch
 Patch233:       fix-for-cve-2022-22967-bsc-1200566.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62029
 Patch234:       normalize-package-names-once-with-pkg.installed-remo.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50264
+Patch235:       unify-logic-on-using-multiple-requisites-and-add-onf.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1328,6 +1330,7 @@ cp %{S:6} .
 %patch232 -p1
 %patch233 -p1
 %patch234 -p1
+%patch235 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
