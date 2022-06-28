@@ -556,16 +556,17 @@ Patch228:       fix-state.orchestrate_single-to-not-pass-pillar-none.patch
 Patch229:       handle-old-qemu-img-not-supporting-u-parameter-bsc-1.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60130
 Patch230:       clear-network-interface-cache-when-grains-are-reques.patch
-# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50962
-Patch231:       remove-redundand-overrides-causing-confusing-debug-l.patch
-# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/530
-Patch232:       fix-handling-of-a-sign-in-response-by-a-syndic-node-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/e068a34ccb2e17ae7224f8016a24b727f726d4c8
-Patch233:       fix-for-cve-2022-22967-bsc-1200566.patch
+Patch231:       fix-for-cve-2022-22967-bsc-1200566.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50962
+Patch232:       remove-redundand-overrides-causing-confusing-debug-l.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/530
+Patch233:       fix-handling-of-a-sign-in-response-by-a-syndic-node-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62029
 Patch234:       normalize-package-names-once-with-pkg.installed-remo.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50264
 Patch235:       unify-logic-on-using-multiple-requisites-and-add-onf.patch
+
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
