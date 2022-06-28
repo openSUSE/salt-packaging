@@ -542,6 +542,8 @@ Patch216:       fix-inspector-module-export-function-bsc-1097531-479.patch
 Patch217:       remove-redundand-overrides-causing-confusing-debug-l.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62029
 Patch218:       normalize-package-names-once-with-pkg.installed-remo.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/50264
+Patch219:       unify-logic-on-using-multiple-requisites-and-add-onf.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1306,6 +1308,7 @@ cp %{S:6} .
 %patch216 -p1
 %patch217 -p1
 %patch218 -p1
+%patch219 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this

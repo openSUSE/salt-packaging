@@ -1,0 +1,358 @@
+From 6a872f07319afd72742c86be593de1b7dd815f12 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <vzhestkov@suse.com>
+Date: Mon, 27 Jun 2022 17:55:04 +0300
+Subject: [PATCH] Unify logic on using multiple requisites and add
+ onfail_all (bsc#1198738)
+
+when https://github.com/saltstack/salt/issues/22370 was introduced it
+actually removed functionality, as sometimes it desirable to onfail if
+ALL of the listed requisites are failure. This adds back an 'onfail_all'
+form that allows for this behavior (it would make more sense to have
+onfail default to OR logic, but that would break backcompat, so we add
+a new form instead).
+
+Co-authored-by: Matt Phillips <mphillips81@bloomberg.net>
+---
+ doc/ref/states/requisites.rst                 | 46 +++++++++++
+ salt/state.py                                 | 18 +++-
+ .../files/file/base/requisites/onfail_all.sls | 54 ++++++++++++
+ .../requisites/onfail_multiple_required.sls   | 20 +++++
+ tests/integration/modules/test_state.py       | 82 +++++++++++++++++++
+ 5 files changed, 216 insertions(+), 4 deletions(-)
+ create mode 100644 tests/integration/files/file/base/requisites/onfail_all.sls
+
+diff --git a/doc/ref/states/requisites.rst b/doc/ref/states/requisites.rst
+index f025302ace..c9b53e3125 100644
+--- a/doc/ref/states/requisites.rst
++++ b/doc/ref/states/requisites.rst
+@@ -232,6 +232,10 @@ There are several corresponding requisite_any statements:
+ * ``onchanges_any``
+ * ``onfail_any``
+ 
++Lastly, onfail has one special ``onfail_all`` form to account for when `AND`
++logic is desired instead of the default `OR` logic of onfail/onfail_any (which
++are equivalent).
++
+ All of the requisites define specific relationships and always work with the
+ dependency logic defined above.
+ 
+@@ -521,6 +525,46 @@ The ``onfail`` requisite is applied in the same way as ``require`` as ``watch``:
+         - onfail:
+           - mount: primary_mount
+ 
++.. code-block:: yaml
++
++    build_site:
++      cmd.run:
++        - name: /srv/web/app/build_site
++
++    notify-build_failure:
++      hipchat.send_message:
++        - room_id: 123456
++        - message: "Building website fail on {{ salt.grains.get('id') }}"
++
++
++The default behavior of the ``onfail`` when multiple requisites are listed is
++the opposite of other requisites in the salt state engine, it acts by default
++like ``any()`` instead of ``all()``. This means that when you list multiple
++onfail requisites on a state, if *any* fail the requisite will be satisfied.
++If you instead need *all* logic to be applied, you can use ``onfail_all``
++form:
++
++.. code-block:: yaml
++
++    test_site_a:
++      cmd.run:
++        - name: ping -c1 10.0.0.1
++
++    test_site_b:
++      cmd.run:
++        - name: ping -c1 10.0.0.2
++
++    notify_site_down:
++      hipchat.send_message:
++        - room_id: 123456
++        - message: "Both primary and backup sites are down!"
++      - onfail_all:
++        - cmd: test_site_a
++        - cmd: test_site_b
++
++In this contrived example `notify_site_down` will run when both 10.0.0.1 and
++10.0.0.2 fail to respond to ping.
++
+ .. note::
+ 
+     Setting failhard (:ref:`globally <global-failhard>` or in
+@@ -535,6 +579,8 @@ The ``onfail`` requisite is applied in the same way as ``require`` as ``watch``:
+     Beginning in the ``2016.11.0`` release of Salt, ``onfail`` uses OR logic for
+     multiple listed ``onfail`` requisites. Prior to the ``2016.11.0`` release,
+     ``onfail`` used AND logic. See `Issue #22370`_ for more information.
++    Beginning in the ``Neon`` release of Salt, a new ``onfail_all`` requisite
++    form is available if AND logic is desired.
+ 
+ .. _Issue #22370: https://github.com/saltstack/salt/issues/22370
+ 
+diff --git a/salt/state.py b/salt/state.py
+index ddea13ad5e..af631c9573 100644
+--- a/salt/state.py
++++ b/salt/state.py
+@@ -74,6 +74,7 @@ STATE_REQUISITE_KEYWORDS = frozenset([
+     'onchanges_any',
+     'onfail',
+     'onfail_any',
++    'onfail_all',
+     'onfail_stop',
+     'prereq',
+     'prerequired',
+@@ -2496,6 +2497,8 @@ class State(object):
+             present = True
+         if 'onchanges' in low:
+             present = True
++        if 'onfail_all' in low:
++            present = True
+         if 'onchanges_any' in low:
+             present = True
+         if not present:
+@@ -2509,6 +2512,7 @@ class State(object):
+                 'prereq': [],
+                 'onfail': [],
+                 'onfail_any': [],
++                'onfail_all': [],
+                 'onchanges': [],
+                 'onchanges_any': []}
+         if pre:
+@@ -2597,7 +2601,7 @@ class State(object):
+                 else:
+                     if run_dict[tag].get('__state_ran__', True):
+                         req_stats.add('met')
+-            if r_state.endswith('_any'):
++            if r_state.endswith('_any') or r_state == 'onfail':
+                 if 'met' in req_stats or 'change' in req_stats:
+                     if 'fail' in req_stats:
+                         req_stats.remove('fail')
+@@ -2607,8 +2611,14 @@ class State(object):
+                     if 'fail' in req_stats:
+                         req_stats.remove('fail')
+                 if 'onfail' in req_stats:
+-                    if 'fail' in req_stats:
++                    # a met requisite in this case implies a success
++                    if 'met' in req_stats:
+                         req_stats.remove('onfail')
++            if r_state.endswith('_all'):
++                if 'onfail' in req_stats:
++                    # a met requisite in this case implies a failure
++                    if 'met' in req_stats:
++                        req_stats.remove('met')
+             fun_stats.update(req_stats)
+ 
+         if 'unmet' in fun_stats:
+@@ -2620,8 +2630,8 @@ class State(object):
+                 status = 'met'
+             else:
+                 status = 'pre'
+-        elif 'onfail' in fun_stats and 'met' not in fun_stats:
+-            status = 'onfail'  # all onfail states are OK
++        elif 'onfail' in fun_stats and 'onchangesmet' not in fun_stats:
++            status = 'onfail'
+         elif 'onchanges' in fun_stats and 'onchangesmet' not in fun_stats:
+             status = 'onchanges'
+         elif 'change' in fun_stats:
+diff --git a/tests/integration/files/file/base/requisites/onfail_all.sls b/tests/integration/files/file/base/requisites/onfail_all.sls
+new file mode 100644
+index 0000000000..c35838f076
+--- /dev/null
++++ b/tests/integration/files/file/base/requisites/onfail_all.sls
+@@ -0,0 +1,54 @@
++a:
++  cmd.run:
++    - name: exit 0
++
++b:
++  cmd.run:
++    - name: exit 0
++
++c:
++  cmd.run:
++    - name: exit 0
++
++d:
++  cmd.run:
++    - name: exit 1
++
++e:
++  cmd.run:
++    - name: exit 1
++
++f:
++  cmd.run:
++    - name: exit 1
++
++reqs not met:
++  cmd.run:
++    - name: echo itdidntonfail
++    - onfail_all:
++      - cmd: a
++      - cmd: e
++
++reqs also not met:
++  cmd.run:
++    - name: echo italsodidnonfail
++    - onfail_all:
++      - cmd: a
++      - cmd: b
++      - cmd: c
++
++reqs met:
++  cmd.run:
++    - name: echo itonfailed
++    - onfail_all:
++      - cmd: d
++      - cmd: e
++      - cmd: f
++
++reqs also met:
++  cmd.run:
++    - name: echo itonfailed
++    - onfail_all:
++      - cmd: d
++    - require:
++      - cmd: a
+diff --git a/tests/integration/files/file/base/requisites/onfail_multiple_required.sls b/tests/integration/files/file/base/requisites/onfail_multiple_required.sls
+index d4c49518e9..93c51cdfec 100644
+--- a/tests/integration/files/file/base/requisites/onfail_multiple_required.sls
++++ b/tests/integration/files/file/base/requisites/onfail_multiple_required.sls
+@@ -2,6 +2,10 @@ a:
+   cmd.run:
+     - name: exit 1
+ 
++pass:
++  cmd.run:
++    - name: exit 0
++
+ b:
+   cmd.run:
+     - name: echo b
+@@ -23,3 +27,19 @@ d:
+       - cmd: a
+     - require:
+       - cmd: c
++
++e:
++  cmd.run:
++    - name: echo e
++    - onfail:
++      - cmd: pass
++    - require:
++      - cmd: c
++
++f:
++  cmd.run:
++    - name: echo f
++    - onfail:
++      - cmd: pass
++    - onchanges:
++      - cmd: b
+diff --git a/tests/integration/modules/test_state.py b/tests/integration/modules/test_state.py
+index 81b3b677b9..3c17de0cb0 100644
+--- a/tests/integration/modules/test_state.py
++++ b/tests/integration/modules/test_state.py
+@@ -1033,6 +1033,81 @@ class StateModuleTest(ModuleCase, SaltReturnAssertsMixin):
+         self.assertReturnNonEmptySaltType(ret)
+         self.assertEqual(expected_result, result)
+ 
++    @skipIf(True, "SLOWTEST skip")
++    def test_requisites_onfail_all(self):
++        """
++        Call sls file containing several onfail-all
++
++        Ensure that some of them are failing and that the order is right.
++        """
++        expected_result = {
++            "cmd_|-a_|-exit 0_|-run": {
++                "__run_num__": 0,
++                "changes": True,
++                "comment": 'Command "exit 0" run',
++                "result": True,
++            },
++            "cmd_|-b_|-exit 0_|-run": {
++                "__run_num__": 1,
++                "changes": True,
++                "comment": 'Command "exit 0" run',
++                "result": True,
++            },
++            "cmd_|-c_|-exit 0_|-run": {
++                "__run_num__": 2,
++                "changes": True,
++                "comment": 'Command "exit 0" run',
++                "result": True,
++            },
++            "cmd_|-d_|-exit 1_|-run": {
++                "__run_num__": 3,
++                "changes": True,
++                "comment": 'Command "exit 1" run',
++                "result": False,
++            },
++            "cmd_|-e_|-exit 1_|-run": {
++                "__run_num__": 4,
++                "changes": True,
++                "comment": 'Command "exit 1" run',
++                "result": False,
++            },
++            "cmd_|-f_|-exit 1_|-run": {
++                "__run_num__": 5,
++                "changes": True,
++                "comment": 'Command "exit 1" run',
++                "result": False,
++            },
++            "cmd_|-reqs also met_|-echo itonfailed_|-run": {
++                "__run_num__": 9,
++                "changes": True,
++                "comment": 'Command "echo itonfailed" run',
++                "result": True,
++            },
++            "cmd_|-reqs also not met_|-echo italsodidnonfail_|-run": {
++                "__run_num__": 7,
++                "changes": False,
++                "comment": "State was not run because onfail req did not change",
++                "result": True,
++            },
++            "cmd_|-reqs met_|-echo itonfailed_|-run": {
++                "__run_num__": 8,
++                "changes": True,
++                "comment": 'Command "echo itonfailed" run',
++                "result": True,
++            },
++            "cmd_|-reqs not met_|-echo itdidntonfail_|-run": {
++                "__run_num__": 6,
++                "changes": False,
++                "comment": "State was not run because onfail req did not change",
++                "result": True,
++            },
++        }
++        ret = self.run_function("state.sls", mods="requisites.onfail_all")
++        result = self.normalize_ret(ret)
++        self.assertReturnNonEmptySaltType(ret)
++        self.assertEqual(expected_result, result)
++
++    @skipIf(True, "SLOWTEST skip")
+     def test_requisites_full_sls(self):
+         '''
+         Teste the sls special command in requisites
+@@ -1718,6 +1793,13 @@ class StateModuleTest(ModuleCase, SaltReturnAssertsMixin):
+         stdout = state_run['cmd_|-d_|-echo d_|-run']['changes']['stdout']
+         self.assertEqual(stdout, 'd')
+ 
++        comment = state_run["cmd_|-e_|-echo e_|-run"]["comment"]
++        self.assertEqual(comment, "State was not run because onfail req did not change")
++
++        stdout = state_run["cmd_|-f_|-echo f_|-run"]["changes"]["stdout"]
++        self.assertEqual(stdout, "f")
++
++    @skipIf(True, "SLOWTEST skip")
+     def test_multiple_onfail_requisite_with_required_no_run(self):
+         '''
+         test to ensure multiple states are not run
+-- 
+2.36.1
+
+
