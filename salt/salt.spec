@@ -562,6 +562,8 @@ Patch231:       remove-redundand-overrides-causing-confusing-debug-l.patch
 Patch232:       fix-handling-of-a-sign-in-response-by-a-syndic-node-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/e068a34ccb2e17ae7224f8016a24b727f726d4c8
 Patch233:       fix-for-cve-2022-22967-bsc-1200566.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62029
+Patch234:       normalize-package-names-once-with-pkg.installed-remo.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1325,6 +1327,7 @@ cp %{S:6} .
 %patch231 -p1
 %patch232 -p1
 %patch233 -p1
+%patch234 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
