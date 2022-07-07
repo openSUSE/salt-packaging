@@ -320,7 +320,8 @@ Patch85:        normalize-package-names-once-with-pkg.installed-remo.patch
 Patch86:        set-default-target-for-pip-from-venv_pip_target-envi.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/534
 Patch87:        fix-ownership-of-salt-thin-directory-when-using-the-.patch
-
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62033
+Patch88:        add-support-for-name-pkgs-and-diff_attr-parameters-t.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
