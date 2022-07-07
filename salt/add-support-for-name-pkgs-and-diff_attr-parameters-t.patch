@@ -1,0 +1,278 @@
+From c092262aba5eadd17e73c6723f6e6663ce073f10 Mon Sep 17 00:00:00 2001
+From: Nico Krapp <nico.krapp@web.de>
+Date: Thu, 7 Jul 2022 14:16:05 +0200
+Subject: [PATCH] Add support for name, pkgs and diff_attr parameters
+ to zypperpkg.upgrade()/yumpkg.upgrade() - backport 3000.3 (#544)
+
+* Add names and pkgs parameters to zypper.upgrade
+
+* Don't turn attr="all" into a list
+
+* Add diff_attr parameter to zypper/yum upgrade
+diff_attr works just like it does for pkg.install. Having the
+option to return additional attributes can remove the need for a
+follow-up list_pkgs call.
+
+Fixes: saltstack/salt#62031
+---
+ changelog/62030.fixed                |  1 +
+ changelog/62031.added                |  1 +
+ changelog/62032.fixed                |  1 +
+ salt/modules/yumpkg.py               |  7 +--
+ salt/modules/zypperpkg.py            | 71 ++++++++++++++++++++++++++--
+ tests/unit/modules/test_zypperpkg.py | 27 ++++++++++-
+ 6 files changed, 99 insertions(+), 9 deletions(-)
+ create mode 100644 changelog/62030.fixed
+ create mode 100644 changelog/62031.added
+ create mode 100644 changelog/62032.fixed
+
+diff --git a/changelog/62030.fixed b/changelog/62030.fixed
+new file mode 100644
+index 0000000000..91713e62de
+--- /dev/null
++++ b/changelog/62030.fixed
+@@ -0,0 +1 @@
++Fix inconsitency regarding name and pkgs parameters between zypperpkg.upgrade() and yumpkg.upgrade()
+\ No newline at end of file
+diff --git a/changelog/62031.added b/changelog/62031.added
+new file mode 100644
+index 0000000000..74b257edfe
+--- /dev/null
++++ b/changelog/62031.added
+@@ -0,0 +1 @@
++Add `diff_attr` parameter to pkg.upgrade() (zypper/yum).
+\ No newline at end of file
+diff --git a/changelog/62032.fixed b/changelog/62032.fixed
+new file mode 100644
+index 0000000000..dcedfc6370
+--- /dev/null
++++ b/changelog/62032.fixed
+@@ -0,0 +1 @@
++Fix attr=all handling in pkg.list_pkgs() (yum/zypper).
+\ No newline at end of file
+diff --git a/salt/modules/yumpkg.py b/salt/modules/yumpkg.py
+index 5abd3a04cd..5bf9ba5bd2 100644
+--- a/salt/modules/yumpkg.py
++++ b/salt/modules/yumpkg.py
+@@ -682,7 +682,7 @@ def list_pkgs(versions_as_list=False, **kwargs):
+         return {}
+ 
+     attr = kwargs.get('attr')
+-    if attr is not None:
++    if attr is not None and attr != "all":
+         attr = salt.utils.args.split_input(attr)
+ 
+     contextkey = 'pkg.list_pkgs'
+@@ -1756,6 +1756,7 @@ def upgrade(name=None,
+             normalize=True,
+             minimal=False,
+             obsoletes=True,
++            diff_attr=None,
+             **kwargs):
+     '''
+     Run a full system upgrade (a ``yum upgrade`` or ``dnf upgrade``), or
+@@ -1903,7 +1904,7 @@ def upgrade(name=None,
+     if salt.utils.data.is_true(refresh):
+         refresh_db(**kwargs)
+ 
+-    old = list_pkgs()
++    old = list_pkgs(attr=diff_attr)
+ 
+     targets = []
+     if name or pkgs:
+@@ -1940,7 +1941,7 @@ def upgrade(name=None,
+     cmd.extend(targets)
+     result = _call_yum(cmd)
+     __context__.pop('pkg.list_pkgs', None)
+-    new = list_pkgs()
++    new = list_pkgs(attr=diff_attr)
+     ret = salt.utils.data.compare_dicts(old, new)
+ 
+     if result['retcode'] != 0:
+diff --git a/salt/modules/zypperpkg.py b/salt/modules/zypperpkg.py
+index 7936993a6b..4cb99aacdf 100644
+--- a/salt/modules/zypperpkg.py
++++ b/salt/modules/zypperpkg.py
+@@ -869,7 +869,7 @@ def list_pkgs(versions_as_list=False, root=None, includes=None, **kwargs):
+         return {}
+ 
+     attr = kwargs.get('attr')
+-    if attr is not None:
++    if attr is not None and attr != "all":
+         attr = salt.utils.args.split_input(attr)
+ 
+     includes = includes if includes else []
+@@ -1667,7 +1667,9 @@ def install(name=None,
+     return ret
+ 
+ 
+-def upgrade(refresh=True,
++def upgrade(name=None,
++            pkgs=None,
++            refresh=True,
+             dryrun=False,
+             dist_upgrade=False,
+             fromrepo=None,
+@@ -1676,6 +1678,7 @@ def upgrade(refresh=True,
+             skip_verify=False,
+             no_recommends=False,
+             root=None,
++            diff_attr=None,
+             **kwargs):  # pylint: disable=unused-argument
+     '''
+     .. versionchanged:: 2015.8.12,2016.3.3,2016.11.0
+@@ -1694,6 +1697,27 @@ def upgrade(refresh=True,
+ 
+     Run a full system upgrade, a zypper upgrade
+ 
++    name
++        The name of the package to be installed. Note that this parameter is
++        ignored if ``pkgs`` is passed or if ``dryrun`` is set to True.
++
++        CLI Example:
++
++        .. code-block:: bash
++
++            salt '*' pkg.install name=<package name>
++
++    pkgs
++        A list of packages to install from a software repository. Must be
++        passed as a python list. Note that this parameter is ignored if
++        ``dryrun`` is set to True.
++
++        CLI Examples:
++
++        .. code-block:: bash
++
++            salt '*' pkg.install pkgs='["foo", "bar"]'
++
+     refresh
+         force a refresh if set to True (default).
+         If set to False it depends on zypper if a refresh is
+@@ -1725,6 +1749,20 @@ def upgrade(refresh=True,
+     root
+         Operate on a different root directory.
+ 
++    diff_attr:
++        If a list of package attributes is specified, returned value will
++        contain them, eg.::
++            {'<package>': {
++                'old': {
++                    'version': '<old-version>',
++                    'arch': '<old-arch>'},
++                'new': {
++                    'version': '<new-version>',
++                    'arch': '<new-arch>'}}}
++        Valid attributes are: ``epoch``, ``version``, ``release``, ``arch``,
++        ``install_date``, ``install_date_time_t``.
++        If ``all`` is specified, all valid attributes will be returned.
++
+     Returns a dictionary containing the changes:
+ 
+     .. code-block:: python
+@@ -1732,11 +1770,24 @@ def upgrade(refresh=True,
+         {'<package>':  {'old': '<old-version>',
+                         'new': '<new-version>'}}
+ 
++    If an attribute list is specified in ``diff_attr``, the dict will also contain
++    any specified attribute, eg.::
++    .. code-block:: python
++        {'<package>': {
++            'old': {
++                'version': '<old-version>',
++                'arch': '<old-arch>'},
++            'new': {
++                'version': '<new-version>',
++                'arch': '<new-arch>'}}}
++
+     CLI Example:
+ 
+     .. code-block:: bash
+ 
+         salt '*' pkg.upgrade
++        salt '*' pkg.upgrade name=mypackage
++        salt '*' pkg.upgrade pkgs='["package1", "package2"]'
+         salt '*' pkg.upgrade dist_upgrade=True fromrepo='["MyRepoName"]' novendorchange=True
+         salt '*' pkg.upgrade dist_upgrade=True dryrun=True
+     '''
+@@ -1768,10 +1819,22 @@ def upgrade(refresh=True,
+         log.info('Executing debugsolver and performing a dry-run dist-upgrade')
+         __zypper__(systemd_scope=_systemd_scope(), root=root).allow_vendor_change(allowvendorchange, novendorchange).noraise.call(*cmd_update + ['--debug-solver'])
+ 
+-    old = list_pkgs(root=root)
++    if not dist_upgrade:
++        if name or pkgs:
++            try:
++                (pkg_params, _) = __salt__["pkg_resource.parse_targets"](
++                    name=name, pkgs=pkgs, sources=None, **kwargs
++                )
++                if pkg_params:
++                    cmd_update.extend(pkg_params.keys())
++
++            except MinionError as exc:
++                raise CommandExecutionError(exc)
++
++    old = list_pkgs(root=root, attr=diff_attr)
+     __zypper__(systemd_scope=_systemd_scope(), root=root).allow_vendor_change(allowvendorchange, novendorchange).noraise.call(*cmd_update)
+     _clean_cache()
+-    new = list_pkgs(root=root)
++    new = list_pkgs(root=root, attr=diff_attr)
+     ret = salt.utils.data.compare_dicts(old, new)
+ 
+     if __zypper__.exit_code not in __zypper__.SUCCESS_EXIT_CODES:
+diff --git a/tests/unit/modules/test_zypperpkg.py b/tests/unit/modules/test_zypperpkg.py
+index e1ddd7a1b0..85e10292c1 100644
+--- a/tests/unit/modules/test_zypperpkg.py
++++ b/tests/unit/modules/test_zypperpkg.py
+@@ -65,7 +65,8 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+     '''
+ 
+     def setup_loader_modules(self):
+-        return {zypper: {'rpm': None}, pkg_resource: {}}
++        return {zypper: {'rpm': None, '__salt__': {'pkg_resource.parse_targets': {pkg_resource.parse_targets}}},
++                pkg_resource: {'__grains__': {'os': 'SUSE'}}}
+ 
+     def setUp(self):
+         self.new_repo_config = dict(
+@@ -770,6 +771,29 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+                     self.assertDictEqual(ret, {"vim": {"old": "1.1", "new": "1.2"}})
+                     zypper_mock.assert_any_call('update', '--auto-agree-with-licenses')
+ 
++                with patch(
++                    "salt.modules.zypperpkg.list_pkgs",
++                    MagicMock(side_effect=[{"vim": "1.1"}, {"vim": "1.2"}]),
++                ) as list_pkgs_mock:
++                    ret = zypper.upgrade(diff_attr="all")
++                    list_pkgs_mock.assert_any_call(root=None, attr="all")
++
++                with patch.dict(zypper.__salt__,
++                                {'pkg_resource.parse_targets': MagicMock(return_value=({'vim': "1.1"}, 'repository'))}):
++                    with patch('salt.modules.zypperpkg.list_pkgs',
++                               MagicMock(side_effect=[{"vim": "1.1"}, {"vim": "1.2"}])):
++                        ret = zypper.upgrade(name="vim")
++                        self.assertDictEqual(ret, {"vim": {"old": "1.1", "new": "1.2"}})
++                        zypper_mock.assert_any_call('update', '--auto-agree-with-licenses', 'vim')
++
++                with patch.dict(zypper.__salt__,
++                                {'pkg_resource.parse_targets': MagicMock(return_value=({'vim': "1.1"}, 'repository'))}):
++                    with patch('salt.modules.zypperpkg.list_pkgs',
++                               MagicMock(side_effect=[{"vim": "1.1"}, {"vim": "1.2"}])):
++                        ret = zypper.upgrade(pkgs=["vim"])
++                        self.assertDictEqual(ret, {"vim": {"old": "1.1", "new": "1.2"}})
++                        zypper_mock.assert_any_call('update', '--auto-agree-with-licenses', 'vim')
++
+                 with patch('salt.modules.zypperpkg.list_pkgs',
+                            MagicMock(side_effect=[{"kernel-default": "1.1"}, {"kernel-default": "1.1,1.2"}])):
+                     ret = zypper.upgrade()
+@@ -782,7 +806,6 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+                     self.assertDictEqual(ret, {"vim": {"old": "1.1", "new": "1.1,1.2"}})
+                     zypper_mock.assert_any_call('update', '--auto-agree-with-licenses')
+ 
+-
+                 with patch('salt.modules.zypperpkg.list_pkgs', MagicMock(side_effect=[{"vim": "1.1"}, {"vim": "1.1"}])):
+                     ret = zypper.upgrade(dist_upgrade=True, dryrun=True)
+                     zypper_mock.assert_any_call('dist-upgrade', '--auto-agree-with-licenses', '--dry-run')
+-- 
+2.36.1
+
+
