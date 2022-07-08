@@ -568,6 +568,8 @@ Patch234:       normalize-package-names-once-with-pkg.installed-remo.patch
 Patch235:       unify-logic-on-using-multiple-requisites-and-add-onf.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62033
 Patch236:       add-support-for-name-pkgs-and-diff_attr-parameters-t.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62067
+Patch237:       fix-salt.states.file.managed-for-follow_symlinks-tru.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1335,6 +1337,7 @@ cp %{S:6} .
 %patch234 -p1
 %patch235 -p1
 %patch236 -p1
+%patch237 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
