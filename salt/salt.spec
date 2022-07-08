@@ -326,6 +326,8 @@ Patch88:        add-support-for-name-pkgs-and-diff_attr-parameters-t.patch
 Patch89:        fix-62092-catch-zmq.error.zmqerror-to-set-hwm-for-zm.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62067
 Patch90:        fix-salt.states.file.managed-for-follow_symlinks-tru.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61856
+Patch91:        fix-jinja2-contextfuntion-base-on-version-bsc-119874.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
