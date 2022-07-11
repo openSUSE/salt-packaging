@@ -1,4 +1,4 @@
-From 63e3df48bda0753033c10134bcb19816d7e7d330 Mon Sep 17 00:00:00 2001
+From fbd5163bd0d5409a1823e9fb8e0cb623c22d6036 Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Fri, 8 Jul 2022 10:15:37 +0200
 Subject: [PATCH] add support for gpgautoimport (#539)
@@ -8,10 +8,14 @@ Subject: [PATCH] add support for gpgautoimport (#539)
 * call refresh_db function from mod_repo
 
 * call refresh_db with kwargs where possible
+
+* ignore no repos defined exit code
+
+* fix zypperpkg test after adding more success return codes
 ---
- salt/modules/zypperpkg.py            |  47 ++++++++---
- tests/unit/modules/test_zypperpkg.py | 117 +++++++++++++++++++++++----
- 2 files changed, 134 insertions(+), 30 deletions(-)
+ salt/modules/zypperpkg.py            |  47 +++++++---
+ tests/unit/modules/test_zypperpkg.py | 124 +++++++++++++++++++++++----
+ 2 files changed, 140 insertions(+), 31 deletions(-)
 
 diff --git a/salt/modules/zypperpkg.py b/salt/modules/zypperpkg.py
 index 39d26f0e93..b622105e15 100644
@@ -160,10 +164,24 @@ index 39d26f0e93..b622105e15 100644
      ret = list()
      for pkg in pkgs:
 diff --git a/tests/unit/modules/test_zypperpkg.py b/tests/unit/modules/test_zypperpkg.py
-index fea6eeb004..bc2b7df20c 100644
+index fea6eeb004..3f1560a385 100644
 --- a/tests/unit/modules/test_zypperpkg.py
 +++ b/tests/unit/modules/test_zypperpkg.py
-@@ -376,6 +376,73 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+@@ -358,7 +358,12 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+         run_out = {"stderr": "", "stdout": "\n".join(ref_out), "retcode": 0}
+ 
+         zypper_mock = MagicMock(return_value=run_out)
+-        call_kwargs = {"output_loglevel": "trace", "python_shell": False, "env": {}}
++        call_kwargs = {
++            "output_loglevel": "trace",
++            "python_shell": False,
++            "env": {},
++            "success_retcodes": [0, 6],
++        }
+         with patch.dict(zypper.__salt__, {"cmd.run_all": zypper_mock}):
+             with patch.object(salt.utils.pkg, "clear_rtag", Mock()):
+                 result = zypper.refresh_db()
+@@ -376,6 +381,73 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
                  zypper_mock.assert_called_with(
                      ["zypper", "--non-interactive", "refresh", "--force"], **call_kwargs
                  )
@@ -237,7 +255,7 @@ index fea6eeb004..bc2b7df20c 100644
  
      def test_info_installed(self):
          """
-@@ -1555,18 +1622,23 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+@@ -1555,18 +1627,23 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
  
          url = self.new_repo_config["url"]
          name = self.new_repo_config["name"]
@@ -263,7 +281,7 @@ index fea6eeb004..bc2b7df20c 100644
  
      def test_repo_noadd_nomod_ref(self):
          """
-@@ -1585,15 +1657,17 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+@@ -1585,15 +1662,17 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
              "salt.modules.zypperpkg", **self.zypper_patcher_config
          )
  
@@ -286,7 +304,7 @@ index fea6eeb004..bc2b7df20c 100644
  
      def test_repo_add_mod_ref(self):
          """
-@@ -1606,10 +1680,10 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+@@ -1606,10 +1685,10 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
          zypper_patcher = patch.multiple(
              "salt.modules.zypperpkg", **self.zypper_patcher_config
          )
@@ -299,7 +317,7 @@ index fea6eeb004..bc2b7df20c 100644
              zypper.mod_repo(
                  name, **{"url": url, "refresh": True, "gpgautoimport": True}
              )
-@@ -1617,11 +1691,17 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+@@ -1617,11 +1696,17 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
                  zypper.__zypper__(root=None).xml.call.call_args_list,
                  [
                      call("ar", url, name),
@@ -319,7 +337,7 @@ index fea6eeb004..bc2b7df20c 100644
              )
  
      def test_repo_noadd_mod_ref(self):
-@@ -1641,16 +1721,19 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+@@ -1641,16 +1726,19 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
              "salt.modules.zypperpkg", **self.zypper_patcher_config
          )
  
