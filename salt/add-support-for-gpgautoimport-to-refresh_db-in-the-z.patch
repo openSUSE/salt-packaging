@@ -1,4 +1,4 @@
-From d5b9aa3768fcc7ed89c8d35709c39a622f4a2dc9 Mon Sep 17 00:00:00 2001
+From 144bd25d44f6d99f490d2c296fa165efac52903d Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Thu, 23 Jun 2022 10:45:25 +0200
 Subject: [PATCH] add support for gpgautoimport to refresh_db in the
@@ -7,10 +7,14 @@ Subject: [PATCH] add support for gpgautoimport to refresh_db in the
 call refresh_db function from mod_repo
 
 call refresh_db with kwargs where possible
+
+ignore no repos defined exit code
+
+fix zypperpkg test after adding more success return codes
 ---
  salt/modules/zypperpkg.py            |  60 +++++++----
- tests/unit/modules/test_zypperpkg.py | 144 +++++++++++++++++++++------
- 2 files changed, 159 insertions(+), 45 deletions(-)
+ tests/unit/modules/test_zypperpkg.py | 147 +++++++++++++++++++++------
+ 2 files changed, 161 insertions(+), 46 deletions(-)
 
 diff --git a/salt/modules/zypperpkg.py b/salt/modules/zypperpkg.py
 index 4cb99aacdf..1602ae09db 100644
@@ -171,10 +175,20 @@ index 4cb99aacdf..1602ae09db 100644
      ret = list()
      for pkg in pkgs:
 diff --git a/tests/unit/modules/test_zypperpkg.py b/tests/unit/modules/test_zypperpkg.py
-index 85e10292c1..904d5cca65 100644
+index 85e10292c1..f9a3bbfca1 100644
 --- a/tests/unit/modules/test_zypperpkg.py
 +++ b/tests/unit/modules/test_zypperpkg.py
-@@ -310,6 +310,73 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+@@ -288,7 +288,8 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
+         call_kwargs = {
+             "output_loglevel": "trace",
+             "python_shell": False,
+-            "env": {}
++            "env": {},
++            "success_retcodes": [0, 6],
+         }
+         with patch.dict(zypper.__salt__, {"cmd.run_all": zypper_mock}):
+             with patch.object(salt.utils.pkg, "clear_rtag", Mock()):
+@@ -310,6 +311,73 @@ class ZypperTestCase(TestCase, LoaderModuleMockMixin):
                      ["zypper", "--non-interactive", "refresh", "--force"],
                      **call_kwargs
                  )
@@ -248,7 +262,7 @@ index 85e10292c1..904d5cca65 100644
  
      def test_info_installed(self):
          '''
-@@ -1555,18 +1622,25 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1555,18 +1623,25 @@ Repository 'DUMMY' not found by its alias, number, or URI.
          zypper_patcher = patch.multiple(
              'salt.modules.zypperpkg', **self.zypper_patcher_config)
  
@@ -282,7 +296,7 @@ index 85e10292c1..904d5cca65 100644
  
      def test_repo_noadd_nomod_ref(self):
          '''
-@@ -1584,13 +1658,17 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1584,13 +1659,17 @@ Repository 'DUMMY' not found by its alias, number, or URI.
          zypper_patcher = patch.multiple(
              'salt.modules.zypperpkg', **self.zypper_patcher_config)
  
@@ -306,7 +320,7 @@ index 85e10292c1..904d5cca65 100644
  
      def test_repo_add_mod_ref(self):
          '''
-@@ -1601,11 +1679,12 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1601,11 +1680,12 @@ Repository 'DUMMY' not found by its alias, number, or URI.
          :return:
          '''
          zypper_patcher = patch.multiple(
@@ -323,7 +337,7 @@ index 85e10292c1..904d5cca65 100644
              zypper.mod_repo(
                  name,
                  **{'url': url, 'refresh': True, 'gpgautoimport': True}
-@@ -1613,12 +1692,18 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1613,12 +1693,18 @@ Repository 'DUMMY' not found by its alias, number, or URI.
              self.assertEqual(
                  zypper.__zypper__(root=None).xml.call.call_args_list,
                  [
@@ -346,7 +360,7 @@ index 85e10292c1..904d5cca65 100644
              )
  
      def test_repo_noadd_mod_ref(self):
-@@ -1637,17 +1722,20 @@ Repository 'DUMMY' not found by its alias, number, or URI.
+@@ -1637,17 +1723,20 @@ Repository 'DUMMY' not found by its alias, number, or URI.
          zypper_patcher = patch.multiple(
              'salt.modules.zypperpkg', **self.zypper_patcher_config)
  
