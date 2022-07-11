@@ -1,4 +1,4 @@
-From 8a74427bf6d9af595d3035cd48e1afea93f9e66a Mon Sep 17 00:00:00 2001
+From dc7de0e79b616b7ea5f7d1b61b587488b13b0078 Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Thu, 23 Jun 2022 10:45:25 +0200
 Subject: [PATCH] add support for gpgautoimport to refresh_db in the
@@ -8,12 +8,12 @@ call refresh_db function from mod_repo
 
 call refresh_db with kwargs where possible
 ---
- salt/modules/zypperpkg.py            |  55 ++++++----
+ salt/modules/zypperpkg.py            |  59 +++++++----
  tests/unit/modules/test_zypperpkg.py | 144 +++++++++++++++++++++------
- 2 files changed, 154 insertions(+), 45 deletions(-)
+ 2 files changed, 158 insertions(+), 45 deletions(-)
 
 diff --git a/salt/modules/zypperpkg.py b/salt/modules/zypperpkg.py
-index 4cb99aacdf..53ca663c99 100644
+index 4cb99aacdf..e28e0a03af 100644
 --- a/salt/modules/zypperpkg.py
 +++ b/salt/modules/zypperpkg.py
 @@ -535,7 +535,7 @@ def list_upgrades(refresh=True, root=None, **kwargs):
@@ -87,7 +87,7 @@ index 4cb99aacdf..53ca663c99 100644
      CLI Example:
  
      .. code-block:: bash
-@@ -1367,12 +1380,20 @@ def refresh_db(root=None, force=None):
+@@ -1367,12 +1380,24 @@ def refresh_db(root=None, force=None):
      # Remove rtag file to keep multiple refreshes from happening in pkg states
      salt.utils.pkg.clear_rtag(__opts__)
      ret = {}
@@ -106,12 +106,16 @@ index 4cb99aacdf..53ca663c99 100644
 +    if kwargs.get("gpgautoimport", False):
 +        global_opts.append("--gpg-auto-import-keys")
 +
++    # We do the actual call to zypper refresh.
++    # We ignore retcode 6 which is returned when there are no repositories defined.
 +    final_opts = global_opts + refresh_opts
-+    out = __zypper__(root=root).refreshable.call(*final_opts)
++    out = __zypper__(root=root).refreshable.call(
++        *final_opts, success_retcodes=[0, 6]
++    )
  
      for line in out.splitlines():
          if not line:
-@@ -1556,7 +1577,7 @@ def install(name=None,
+@@ -1556,7 +1581,7 @@ def install(name=None,
                  'arch': '<new-arch>'}}}
      '''
      if refresh:
@@ -120,7 +124,7 @@ index 4cb99aacdf..53ca663c99 100644
  
      try:
          pkg_params, pkg_type = __salt__['pkg_resource.parse_targets'](name, pkgs, sources, **kwargs)
-@@ -1798,7 +1819,7 @@ def upgrade(name=None,
+@@ -1798,7 +1823,7 @@ def upgrade(name=None,
          cmd_update.insert(0, '--no-gpg-checks')
  
      if refresh:
@@ -129,7 +133,7 @@ index 4cb99aacdf..53ca663c99 100644
  
      if dryrun:
          cmd_update.append('--dry-run')
-@@ -2678,7 +2699,7 @@ def search(criteria, refresh=False, **kwargs):
+@@ -2678,7 +2703,7 @@ def search(criteria, refresh=False, **kwargs):
      root = kwargs.get('root', None)
  
      if refresh:
@@ -138,7 +142,7 @@ index 4cb99aacdf..53ca663c99 100644
  
      cmd = ['search']
      if kwargs.get('match') == 'exact':
-@@ -2824,7 +2845,7 @@ def download(*packages, **kwargs):
+@@ -2824,7 +2849,7 @@ def download(*packages, **kwargs):
  
      refresh = kwargs.get('refresh', False)
      if refresh:
@@ -147,7 +151,7 @@ index 4cb99aacdf..53ca663c99 100644
  
      pkg_ret = {}
      for dld_result in __zypper__(root=root).xml.call('download', *packages).getElementsByTagName("download-result"):
-@@ -2968,7 +2989,7 @@ def list_patches(refresh=False, root=None, **kwargs):
+@@ -2968,7 +2993,7 @@ def list_patches(refresh=False, root=None, **kwargs):
          salt '*' pkg.list_patches
      '''
      if refresh:
@@ -156,7 +160,7 @@ index 4cb99aacdf..53ca663c99 100644
  
      return _get_patches(root=root)
  
-@@ -3060,7 +3081,7 @@ def resolve_capabilities(pkgs, refresh=False, root=None, **kwargs):
+@@ -3060,7 +3085,7 @@ def resolve_capabilities(pkgs, refresh=False, root=None, **kwargs):
          salt '*' pkg.resolve_capabilities resolve_capabilities=True w3m_ssl
      '''
      if refresh:
