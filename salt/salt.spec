@@ -330,6 +330,8 @@ Patch90:        fix-salt.states.file.managed-for-follow_symlinks-tru.patch
 Patch91:        fix-jinja2-contextfuntion-base-on-version-bsc-119874.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62209
 Patch92:        add-support-for-gpgautoimport-539.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/2b486d0484c51509e9972e581d97655f4f87852e
+Patch93:        fix-test_ipc-unit-tests.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
