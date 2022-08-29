@@ -572,6 +572,8 @@ Patch236:       add-support-for-name-pkgs-and-diff_attr-parameters-t.patch
 Patch237:       fix-salt.states.file.managed-for-follow_symlinks-tru.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62209
 Patch238:       add-support-for-gpgautoimport-to-refresh_db-in-the-z.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62204
+Patch239:       retry-if-rpm-lock-is-temporarily-unavailable-547-551.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1341,6 +1343,7 @@ cp %{S:6} .
 %patch236 -p1
 %patch237 -p1
 %patch238 -p1
+%patch239 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
