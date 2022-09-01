@@ -552,6 +552,8 @@ Patch221:       fix-salt.states.file.managed-for-follow_symlinks-tru.patch
 Patch222:       add-support-for-gpgautoimport-to-refresh_db-in-the-z.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62204
 Patch223:       retry-if-rpm-lock-is-temporarily-unavailable-547-552.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61847
+Patch224:       fix-state.apply-in-test-mode-with-file-state-module-.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1322,6 +1324,7 @@ cp %{S:6} .
 %patch221 -p1
 %patch222 -p1
 %patch223 -p1
+%patch224 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
