@@ -340,6 +340,8 @@ Patch95:        change-the-delimeters-to-prevent-possible-tracebacks.patch
 Patch96:        fix-state.apply-in-test-mode-with-file-state-module-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61423
 Patch97:        fix-the-regression-in-schedule-module-releasded-in-3.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62539
+Patch98:        add-amazon-ec2-detection-for-virtual-grains-bsc-1195.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
