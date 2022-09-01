@@ -336,6 +336,8 @@ Patch93:        fix-test_ipc-unit-tests.patch
 Patch94:        retry-if-rpm-lock-is-temporarily-unavailable-547.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62519
 Patch95:        change-the-delimeters-to-prevent-possible-tracebacks.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61847
+Patch96:        fix-state.apply-in-test-mode-with-file-state-module-.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
