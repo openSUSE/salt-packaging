@@ -334,6 +334,8 @@ Patch92:        add-support-for-gpgautoimport-539.patch
 Patch93:        fix-test_ipc-unit-tests.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62204
 Patch94:        retry-if-rpm-lock-is-temporarily-unavailable-547.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62519
+Patch95:        change-the-delimeters-to-prevent-possible-tracebacks.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
