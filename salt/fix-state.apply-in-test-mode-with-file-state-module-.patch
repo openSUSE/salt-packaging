@@ -1,0 +1,219 @@
+From 07c1dd4e7c19ff63e0b74464e6ffd93e8f885597 Mon Sep 17 00:00:00 2001
+From: Victor Zhestkov <Victor.Zhestkov@suse.com>
+Date: Thu, 1 Sep 2022 14:47:08 +0300
+Subject: [PATCH] Fix state.apply in test mode with file state module
+ on user/group checking (bsc#1202167)
+
+* Do not fail on checking user/group in test mode
+
+* fixes saltstack/salt#61846 reporting of errors in test mode
+
+Co-authored-by: nicholasmhughes <nicholasmhughes@gmail.com>
+
+* Add tests for _check_user usage
+
+Co-authored-by: nicholasmhughes <nicholasmhughes@gmail.com>
+---
+ changelog/61846.fixed          |   1 +
+ salt/states/file.py            |   5 ++
+ tests/unit/states/test_file.py | 159 +++++++++++++++++++++++++++++++++
+ 3 files changed, 165 insertions(+)
+ create mode 100644 changelog/61846.fixed
+
+diff --git a/changelog/61846.fixed b/changelog/61846.fixed
+new file mode 100644
+index 0000000000..c4024efe9f
+--- /dev/null
++++ b/changelog/61846.fixed
+@@ -0,0 +1 @@
++Fix the reporting of errors for file.directory in test mode
+diff --git a/salt/states/file.py b/salt/states/file.py
+index 2e0a1c5835..bf6e9ea762 100644
+--- a/salt/states/file.py
++++ b/salt/states/file.py
+@@ -392,6 +392,11 @@ def _check_user(user, group):
+         gid = __salt__['file.group_to_gid'](group)
+         if gid == '':
+             err += 'Group {0} is not available'.format(group)
++    if err and __opts__["test"]:
++        # Write the warning with error message, but prevent failing,
++        # in case of applying the state in test mode.
++        log.warning(err)
++        return ""
+     return err
+ 
+ 
+diff --git a/tests/unit/states/test_file.py b/tests/unit/states/test_file.py
+index b636282a1b..a54489aa15 100644
+--- a/tests/unit/states/test_file.py
++++ b/tests/unit/states/test_file.py
+@@ -2212,6 +2212,165 @@ class TestFileState(TestCase, LoaderModuleMockMixin):
+         run_checks(strptime_format=fake_strptime_format)
+         run_checks(strptime_format=fake_strptime_format, test=True)
+ 
++    def test_directory_test_mode_user_group_not_present(self):
++        name = "/etc/testdir"
++        user = "salt"
++        group = "saltstack"
++        if salt.utils.platform.is_windows():
++            name = name.replace("/", "\\")
++
++        ret = {
++            "name": name,
++            "result": None,
++            "comment": "",
++            "changes": {name: {"directory": "new"}},
++        }
++
++        if salt.utils.platform.is_windows():
++            comt = 'The directory "{}" will be changed' "".format(name)
++        else:
++            comt = "The following files will be changed:\n{}:" " directory - new\n".format(
++                name
++            )
++        ret["comment"] = comt
++
++        mock_f = MagicMock(return_value=False)
++        mock_uid = MagicMock(
++            side_effect=[
++                "",
++                "U12",
++                "",
++            ]
++        )
++        mock_gid = MagicMock(
++            side_effect=[
++                "G12",
++                "",
++                "",
++            ]
++        )
++        mock_error = CommandExecutionError
++        with patch.dict(
++            filestate.__salt__,
++            {
++                "file.user_to_uid": mock_uid,
++                "file.group_to_gid": mock_gid,
++                "file.stats": mock_f,
++            },
++        ), patch("salt.utils.win_dacl.get_sid", mock_error), patch.object(
++            os.path, "isdir", mock_f
++        ), patch.dict(
++            filestate.__opts__, {"test": True}
++        ):
++            self.assertDictEqual(filestate.directory(name, user=user, group=group), ret)
++            self.assertDictEqual(filestate.directory(name, user=user, group=group), ret)
++            self.assertDictEqual(filestate.directory(name, user=user, group=group), ret)
++
++    def test_copy_test_mode_user_group_not_present(self):
++        """
++        Test file copy in test mode with no user or group existing
++        """
++        source = "/tmp/src_copy_no_user_group_test_mode"
++        filename = "/tmp/copy_no_user_group_test_mode"
++        with patch.dict(
++            filestate.__salt__,
++            {
++                "file.group_to_gid": MagicMock(side_effect=["1234", "", ""]),
++                "file.user_to_uid": MagicMock(side_effect=["", "4321", ""]),
++                "file.get_mode": MagicMock(return_value="0644"),
++            },
++        ), patch.dict(filestate.__opts__, {"test": True}), patch.object(
++            os.path, "exists", return_value=True
++        ):
++            ret = filestate.copy_(
++                source, filename, group="nonexistinggroup", user="nonexistinguser"
++            )
++            assert ret["result"] is not False
++            assert "is not available" not in ret["comment"]
++
++            ret = filestate.copy_(
++                source, filename, group="nonexistinggroup", user="nonexistinguser"
++            )
++            assert ret["result"] is not False
++            assert "is not available" not in ret["comment"]
++
++            ret = filestate.copy_(
++                source, filename, group="nonexistinggroup", user="nonexistinguser"
++            )
++            assert ret["result"] is not False
++            assert "is not available" not in ret["comment"]
++
++    def test_recurse_test_mode_user_group_not_present(self):
++        """
++        Test file recurse in test mode with no user or group existing
++        """
++        filename = "/tmp/recurse_no_user_group_test_mode"
++        source = "salt://tmp/src_recurse_no_user_group_test_mode"
++        mock_l = MagicMock(return_value=[])
++        mock_emt = MagicMock(return_value=["tmp/src_recurse_no_user_group_test_mode"])
++        with patch.dict(
++            filestate.__salt__,
++            {
++                "file.group_to_gid": MagicMock(side_effect=["1234", "", ""]),
++                "file.user_to_uid": MagicMock(side_effect=["", "4321", ""]),
++                "file.get_mode": MagicMock(return_value="0644"),
++                "file.source_list": MagicMock(return_value=[source, ""]),
++                "cp.list_master_dirs": mock_emt,
++                "cp.list_master": mock_l,
++            },
++        ), patch.dict(filestate.__opts__, {"test": True}), patch.object(
++            os.path, "exists", return_value=True
++        ), patch.object(
++            os.path, "isdir", return_value=True
++        ):
++            ret = filestate.recurse(
++                filename, source, group="nonexistinggroup", user="nonexistinguser"
++            )
++            assert ret["result"] is not False
++            assert "is not available" not in ret["comment"]
++
++            ret = filestate.recurse(
++                filename, source, group="nonexistinggroup", user="nonexistinguser"
++            )
++            assert ret["result"] is not False
++            assert "is not available" not in ret["comment"]
++
++            ret = filestate.recurse(
++                filename, source, group="nonexistinggroup", user="nonexistinguser"
++            )
++            assert ret["result"] is not False
++            assert "is not available" not in ret["comment"]
++
++    def test_managed_test_mode_user_group_not_present(self):
++        """
++        Test file managed in test mode with no user or group existing
++        """
++        filename = "/tmp/managed_no_user_group_test_mode"
++        with patch.dict(
++            filestate.__salt__,
++            {
++                "file.group_to_gid": MagicMock(side_effect=["1234", "", ""]),
++                "file.user_to_uid": MagicMock(side_effect=["", "4321", ""]),
++            },
++        ), patch.dict(filestate.__opts__, {"test": True}):
++            ret = filestate.managed(
++                filename, group="nonexistinggroup", user="nonexistinguser"
++            )
++            assert ret["result"] is not False
++            assert "is not available" not in ret["comment"]
++
++            ret = filestate.managed(
++                filename, group="nonexistinggroup", user="nonexistinguser"
++            )
++            assert ret["result"] is not False
++            assert "is not available" not in ret["comment"]
++
++            ret = filestate.managed(
++                filename, group="nonexistinggroup", user="nonexistinguser"
++            )
++            assert ret["result"] is not False
++            assert "is not available" not in ret["comment"]
++
+ 
+ class TestFindKeepFiles(TestCase):
+ 
+-- 
+2.37.2
+
+
