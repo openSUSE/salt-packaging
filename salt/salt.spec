@@ -830,8 +830,11 @@ install -Dd -m 0750 %{buildroot}/srv/spm
 install -Dd -m 0750 %{buildroot}/var/lib/salt
 install -Dd -m 0755 %{buildroot}%{_docdir}/salt
 install -Dd -m 0755 %{buildroot}%{_sbindir}
+%if 0%{?suse_version} > 1500
+install -Dd -m 0755 %{buildroot}%{_distconfdir}/logrotate.d/
+%else
 install -Dd -m 0755 %{buildroot}%{_sysconfdir}/logrotate.d/
-
+%endif
 # Install salt-support profiles
 install -Dpm 0644 salt/cli/support/profiles/* %{buildroot}%{python3_sitelib}/salt/cli/support/profiles
 
@@ -910,7 +913,11 @@ install -Dpm 0640 transactional_update.conf %{buildroot}%{_sysconfdir}/salt/mini
 #
 ## install logrotate file (for RHEL6 we use without sudo)
 %if 0%{?rhel} > 6 || 0%{?suse_version}
+%if 0%{?suse_version} > 1500
+install -Dpm 0644  pkg/suse/salt-common.logrotate %{buildroot}%{_distconfdir}/logrotate.d/salt
+%else
 install -Dpm 0644  pkg/suse/salt-common.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/salt
+%endif
 %else
 install -Dpm 0644  pkg/salt-common.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/salt
 %endif
@@ -959,12 +966,26 @@ getent passwd salt >/dev/null || %{_sbindir}/useradd -r -g salt -d $S_HOME -s /b
 if [[ -d "$S_PHOME/.ssh" ]]; then
     mv $S_PHOME/.ssh $S_HOME
 fi
+%if 0%{?suse_version} > 1500
+# Prepare for migration to /usr/etc; save any old .rpmsave
+for i in logrotate.d/salt ; do
+   test -f %{_sysconfdir}/${i}.rpmsave && mv -v %{_sysconfdir}/${i}.rpmsave %{_sysconfdir}/${i}.rpmsave.old ||:
+done
+%endif
 
 %post
 %if %{with systemd}
 systemd-tmpfiles --create /usr/lib/tmpfiles.d/salt.conf || true
 %else
 dbus-uuidgen --ensure
+%endif
+
+%if 0%{?suse_version} > 1500
+%posttrans
+# Migration to /usr/etc, restore just created .rpmsave
+for i in logrotate.d/salt ; do
+   test -f %{_sysconfdir}/${i}.rpmsave && mv -v %{_sysconfdir}/${i}.rpmsave %{_sysconfdir}/${i} ||:
+done
 %endif
 
 %preun proxy
@@ -1396,7 +1417,11 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %{_mandir}/man1/salt-unity.1.gz
 %{_mandir}/man1/salt-call.1.gz
 %{_mandir}/man1/spm.1.gz
+%if 0%{?suse_version} > 1500
+%{_distconfdir}/logrotate.d/salt
+%else
 %config(noreplace) %{_sysconfdir}/logrotate.d/salt
+%endif
 %{!?_licensedir:%global license %doc}
 %license LICENSE
 %doc AUTHORS README.rst README.SUSE
