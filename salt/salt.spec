@@ -342,6 +342,8 @@ Patch96:        fix-state.apply-in-test-mode-with-file-state-module-.patch
 Patch97:        fix-the-regression-in-schedule-module-releasded-in-3.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62539
 Patch98:        add-amazon-ec2-detection-for-virtual-grains-bsc-1195.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/643bd4b572ca97466e085ecd1d84da45b1684332
+Patch99:        backport-syndic-auth-fixes.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
