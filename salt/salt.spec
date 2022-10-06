@@ -346,6 +346,8 @@ Patch98:        add-amazon-ec2-detection-for-virtual-grains-bsc-1195.patch
 Patch99:        backport-syndic-auth-fixes.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62633
 Patch100:       ignore-non-utf8-characters-while-reading-files-with-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62817
+Patch101:       fopen-workaround-bad-buffering-for-binary-mode-563.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
