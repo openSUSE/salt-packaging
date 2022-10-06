@@ -348,6 +348,8 @@ Patch99:        backport-syndic-auth-fixes.patch
 Patch100:       ignore-non-utf8-characters-while-reading-files-with-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62817
 Patch101:       fopen-workaround-bad-buffering-for-binary-mode-563.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62120
+Patch102:       make-pass-renderer-configurable-other-fixes-532.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
