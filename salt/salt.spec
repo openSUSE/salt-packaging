@@ -350,6 +350,11 @@ Patch100:       ignore-non-utf8-characters-while-reading-files-with-.patch
 Patch101:       fopen-workaround-bad-buffering-for-binary-mode-563.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62120
 Patch102:       make-pass-renderer-configurable-other-fixes-532.patch
+### ENHANCE ZYPPERPKG ERROR MESSAGES ###
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62750
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62346
+Patch103:	include-stdout-in-error-message-for-zypperpkg-559.patch
+###############
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
