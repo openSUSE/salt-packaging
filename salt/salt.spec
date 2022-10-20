@@ -576,7 +576,11 @@ Patch238:       add-support-for-gpgautoimport-to-refresh_db-in-the-z.patch
 Patch239:       retry-if-rpm-lock-is-temporarily-unavailable-547-551.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61847
 Patch240:       fix-state.apply-in-test-mode-with-file-state-module-.patch
-
+### ENHANCE ZYPPERPKG ERROR MESSAGES ###
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62750
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62346
+Patch241:        include-stdout-in-error-message-for-zypperpkg-561.patch
+###############
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1347,6 +1351,7 @@ cp %{S:6} .
 %patch238 -p1
 %patch239 -p1
 %patch240 -p1
+%patch241 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
