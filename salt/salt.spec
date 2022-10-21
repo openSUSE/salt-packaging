@@ -357,6 +357,8 @@ Patch103:       include-stdout-in-error-message-for-zypperpkg-559.patch
 ###############
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57426
 Patch104:       clarify-pkg.installed-pkg_verify-documentation.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62862
+Patch105:       ignore-extend-declarations-from-excluded-sls-files.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
