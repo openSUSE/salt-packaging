@@ -353,8 +353,10 @@ Patch102:       make-pass-renderer-configurable-other-fixes-532.patch
 ### ENHANCE ZYPPERPKG ERROR MESSAGES ###
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62750
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62346
-Patch103:	include-stdout-in-error-message-for-zypperpkg-559.patch
+Patch103:       include-stdout-in-error-message-for-zypperpkg-559.patch
 ###############
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/57426
+Patch104:       clarify-pkg.installed-pkg_verify-documentation.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
