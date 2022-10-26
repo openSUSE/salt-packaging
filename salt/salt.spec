@@ -559,6 +559,8 @@ Patch224:       fix-state.apply-in-test-mode-with-file-state-module-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62346
 Patch225:       include-stdout-in-error-message-for-zypperpkg-565.patch
 ###############
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62862
+Patch226:       ignore-extend-declarations-from-excluded-sls-files.patch
 
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
@@ -1331,6 +1333,7 @@ cp %{S:6} .
 %patch223 -p1
 %patch224 -p1
 %patch225 -p1
+%patch226 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this

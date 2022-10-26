@@ -1,0 +1,61 @@
+From 2f98f767c6a21769bc87886ec13a1666c0c65bb5 Mon Sep 17 00:00:00 2001
+From: Alexander Graul <agraul@suse.com>
+Date: Wed, 26 Oct 2022 10:19:17 +0200
+Subject: [PATCH] Ignore extend declarations from excluded sls files
+
+sls files that are excluded should not affect other sls files by
+extending their states. Exclude statements are processed very late in
+the state processing pipeline to ensure they are not overridden. By that
+time, extend declarations are already processed.
+
+Luckily, it's not necessary to change much, during the extend
+declarations processing it is easy to check if the sls file that
+contains a given extend declaration is excluded.
+
+(cherry picked from commit 856b23c45dd3be78d8879a0b0c4aa6356afea3cf)
+---
+ changelog/62082.fixed |  1 +
+ salt/state.py         | 19 +++++++++++++++++++
+ 2 files changed, 20 insertions(+)
+ create mode 100644 changelog/62082.fixed
+
+diff --git a/changelog/62082.fixed b/changelog/62082.fixed
+new file mode 100644
+index 0000000000..02e5f5ff40
+--- /dev/null
++++ b/changelog/62082.fixed
+@@ -0,0 +1 @@
++Ignore extend declarations in sls files that are excluded.
+diff --git a/salt/state.py b/salt/state.py
+index af631c9573..f344f05c44 100644
+--- a/salt/state.py
++++ b/salt/state.py
+@@ -1573,6 +1573,25 @@ class State(object):
+                     else:
+                         name = ids[0][0]
+ 
++                sls_excludes = []
++                # excluded sls are plain list items or dicts with an "sls" key
++                for exclude in high.get("__exclude__", []):
++                    if isinstance(exclude, str):
++                        sls_excludes.append(exclude)
++                    elif exclude.get("sls"):
++                        sls_excludes.append(exclude["sls"])
++
++                if body.get("__sls__") in sls_excludes:
++                    log.debug(
++                        "Cannot extend ID '%s' in '%s:%s' because '%s:%s' is excluded.",
++                        name,
++                        body.get("__env__", "base"),
++                        body.get("__sls__", "base"),
++                        body.get("__env__", "base"),
++                        body.get("__sls__", "base"),
++                    )
++                    continue
++
+                 for state, run in six.iteritems(body):
+                     if state.startswith('__'):
+                         continue
+-- 
+2.38.0
+
