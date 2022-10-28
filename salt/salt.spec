@@ -366,6 +366,8 @@ Patch105:       ignore-extend-declarations-from-excluded-sls-files.patch
 Patch106:       detect-module.run-syntax.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62539
 Patch107:       align-amazon-ec2-nitro-grains-with-upstream-pr-bsc-1.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62898
+Patch108:       pass-the-context-to-pillar-ext-modules.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
