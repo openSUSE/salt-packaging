@@ -50,6 +50,9 @@ Source4:        update-documentation.sh
 Source5:        travis.yml
 Source6:        transactional_update.conf
 
+### SALT PATCHES LIST BEGIN
+### IMPORTANT: The line above is used as a snippet marker. Do not touch it.
+
 # PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/commit/88f40fff3b81edaa55f37949f56c67112ca2dcad
 Patch1:         run-salt-master-as-dedicated-salt-user.patch
 # PATCH-FIX_OPENSUSE https://github.com/openSUSE/salt/commit/cdecbbdf5db3f1cb6b603916fecd80738f5fae9a
@@ -359,6 +362,9 @@ Patch103:       include-stdout-in-error-message-for-zypperpkg-559.patch
 Patch104:       clarify-pkg.installed-pkg_verify-documentation.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62862
 Patch105:       ignore-extend-declarations-from-excluded-sls-files.patch
+
+### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
+### SALT PATCHES LIST END
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
