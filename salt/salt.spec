@@ -364,6 +364,8 @@ Patch104:       clarify-pkg.installed-pkg_verify-documentation.patch
 Patch105:       ignore-extend-declarations-from-excluded-sls-files.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61772
 Patch106:       detect-module.run-syntax.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62539
+Patch107:       align-amazon-ec2-nitro-grains-with-upstream-pr-bsc-1.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
