@@ -362,6 +362,8 @@ Patch103:       include-stdout-in-error-message-for-zypperpkg-559.patch
 Patch104:       clarify-pkg.installed-pkg_verify-documentation.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62862
 Patch105:       ignore-extend-declarations-from-excluded-sls-files.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61772
+Patch106:       detect-module.run-syntax.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
