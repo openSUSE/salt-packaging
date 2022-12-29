@@ -1,4 +1,4 @@
-From 95fcfa463c091d64f68fbd95e815d237937038a3 Mon Sep 17 00:00:00 2001
+From d1e9af256fa67cd792ce11e6e9c1e24a1fe2054f Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <Victor.Zhestkov@suse.com>
 Date: Fri, 28 Oct 2022 13:19:46 +0300
 Subject: [PATCH] Align Amazon EC2 (Nitro) grains with upstream PR
@@ -17,10 +17,10 @@ possible in some specific environments
  2 files changed, 33 insertions(+), 2 deletions(-)
 
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index b543144da2..48436e36c2 100644
+index 76f3767ddf..f359c07432 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
-@@ -864,6 +864,10 @@ def _virtual(osdata):
+@@ -860,6 +860,10 @@ def _virtual(osdata):
                  grains["virtual"] = "container"
                  grains["virtual_subtype"] = "LXC"
                  break
@@ -31,7 +31,7 @@ index b543144da2..48436e36c2 100644
          elif command == "virt-what":
              for line in output.splitlines():
                  if line in ("kvm", "qemu", "uml", "xen"):
-@@ -1176,7 +1180,7 @@ def _virtual(osdata):
+@@ -1174,7 +1178,7 @@ def _virtual(osdata):
          grains["virtual"] = "virtual"
  
      # Try to detect if the instance is running on Amazon EC2
@@ -40,7 +40,7 @@ index b543144da2..48436e36c2 100644
          dmidecode = salt.utils.path.which("dmidecode")
          if dmidecode:
              ret = __salt__["cmd.run_all"](
-@@ -1184,6 +1188,8 @@ def _virtual(osdata):
+@@ -1182,6 +1186,8 @@ def _virtual(osdata):
              )
              output = ret["stdout"]
              if "Manufacturer: Amazon EC2" in output:
@@ -50,10 +50,10 @@ index b543144da2..48436e36c2 100644
                  product = re.match(
                      r".*Product Name: ([^\r\n]*).*", output, flags=re.DOTALL
 diff --git a/tests/pytests/unit/grains/test_core.py b/tests/pytests/unit/grains/test_core.py
-index e640a07f76..46a0591e27 100644
+index c06cdb2db0..6f3bef69f2 100644
 --- a/tests/pytests/unit/grains/test_core.py
 +++ b/tests/pytests/unit/grains/test_core.py
-@@ -2785,6 +2785,11 @@ def test_virtual_set_virtual_ec2():
+@@ -2888,6 +2888,11 @@ def test_virtual_set_virtual_ec2():
              "/usr/bin/systemd-detect-virt",
              None,
              None,
@@ -65,7 +65,7 @@ index e640a07f76..46a0591e27 100644
          ]
      )
      cmd_run_all_mock = MagicMock(
-@@ -2843,9 +2848,22 @@ def test_virtual_set_virtual_ec2():
+@@ -2946,9 +2951,22 @@ def test_virtual_set_virtual_ec2():
              },
              # Check with systemd-detect-virt when no dmidecode available
              {"retcode": 0, "stderr": "", "stdout": "kvm"},
@@ -88,7 +88,7 @@ index e640a07f76..46a0591e27 100644
      with patch("salt.utils.path.which", which_mock), patch.dict(
          core.__salt__,
          {
-@@ -2854,6 +2872,8 @@ def test_virtual_set_virtual_ec2():
+@@ -2957,6 +2975,8 @@ def test_virtual_set_virtual_ec2():
              "cmd.retcode": salt.modules.cmdmod.retcode,
              "smbios.get": salt.modules.smbios.get,
          },
@@ -97,7 +97,7 @@ index e640a07f76..46a0591e27 100644
      ):
  
          virtual_grains = core._virtual(osdata.copy())
-@@ -2863,7 +2883,7 @@ def test_virtual_set_virtual_ec2():
+@@ -2966,7 +2986,7 @@ def test_virtual_set_virtual_ec2():
  
          virtual_grains = core._virtual(osdata.copy())
  
@@ -106,7 +106,7 @@ index e640a07f76..46a0591e27 100644
          assert virtual_grains["virtual_subtype"] == "Amazon EC2 (m5.large)"
  
          virtual_grains = core._virtual(osdata.copy())
-@@ -2871,6 +2891,11 @@ def test_virtual_set_virtual_ec2():
+@@ -2974,6 +2994,11 @@ def test_virtual_set_virtual_ec2():
          assert virtual_grains["virtual"] == "kvm"
          assert "virtual_subtype" not in virtual_grains
  
@@ -119,6 +119,6 @@ index e640a07f76..46a0591e27 100644
  @pytest.mark.skip_on_windows
  def test_linux_proc_files_with_non_utf8_chars():
 -- 
-2.38.0
+2.37.3
 
 

@@ -1,4 +1,4 @@
-From 882e7775490790b11e9ae5deb1dbbc60c8ba693c Mon Sep 17 00:00:00 2001
+From e4aff9ca68ce142c87ec875846d8916b9df8e6c5 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Fri, 21 Oct 2022 14:39:52 +0200
 Subject: [PATCH] Ignore extend declarations from excluded sls files
@@ -38,10 +38,10 @@ index 0000000000..02e5f5ff40
 @@ -0,0 +1 @@
 +Ignore extend declarations in sls files that are excluded.
 diff --git a/salt/state.py b/salt/state.py
-index 2c785233c5..a94fd2de71 100644
+index 316dcdec63..f5579fbb69 100644
 --- a/salt/state.py
 +++ b/salt/state.py
-@@ -1666,6 +1666,25 @@ class State:
+@@ -1680,6 +1680,25 @@ class State:
                      else:
                          name = ids[0][0]
  
@@ -68,7 +68,7 @@ index 2c785233c5..a94fd2de71 100644
                      if state.startswith("__"):
                          continue
 diff --git a/tests/pytests/unit/state/test_state_highstate.py b/tests/pytests/unit/state/test_state_highstate.py
-index 14dacea256..3ecfa5b0a5 100644
+index 059f83fd9f..7c72cc8e09 100644
 --- a/tests/pytests/unit/state/test_state_highstate.py
 +++ b/tests/pytests/unit/state/test_state_highstate.py
 @@ -3,9 +3,11 @@
@@ -83,7 +83,7 @@ index 14dacea256..3ecfa5b0a5 100644
  
  log = logging.getLogger(__name__)
  
-@@ -157,7 +159,7 @@ def test_find_sls_ids_with_exclude(highstate, state_tree_dir):
+@@ -180,7 +182,7 @@ def test_find_sls_ids_with_exclude(highstate, state_tree_dir):
          with pytest.helpers.temp_file(
              "slsfile1.sls", slsfile1, sls_dir
          ), pytest.helpers.temp_file(
@@ -92,7 +92,7 @@ index 14dacea256..3ecfa5b0a5 100644
          ), pytest.helpers.temp_file(
              "stateB.sls", stateB, sls_dir
          ), pytest.helpers.temp_file(
-@@ -173,3 +175,151 @@ def test_find_sls_ids_with_exclude(highstate, state_tree_dir):
+@@ -196,3 +198,151 @@ def test_find_sls_ids_with_exclude(highstate, state_tree_dir):
              high, _ = highstate.render_highstate(matches)
              ret = salt.state.find_sls_ids("issue-47182.stateA.newer", high)
              assert ret == [("somestuff", "cmd")]
@@ -245,5 +245,6 @@ index 14dacea256..3ecfa5b0a5 100644
 +            ]
 +        )
 -- 
-2.38.0
+2.37.3
+
 
