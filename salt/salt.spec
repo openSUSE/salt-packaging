@@ -643,6 +643,13 @@ Requires(pre):  %fillup_prereq
 Salt ssh is a master running without zmq.
 it enables the management of minions over a ssh connection.
 
+%package tests
+Summary:        Unit and integration tests for Salt
+Requires:       %{name} = %{version}-%{release}
+
+%description tests
+Collections of unit and integration tests for Salt
+
 %if %{with bash_completion}
 %package bash-completion
 Summary:        Bash Completion for %{name}
@@ -789,6 +796,11 @@ install -Dd -m 0755 %{buildroot}%{_sysconfdir}/logrotate.d/
 # Install salt-support profiles
 install -Dpm 0644 salt/cli/support/profiles/* %{buildroot}%{python3_sitelib}/salt/cli/support/profiles
 
+# Install Salt tests
+install -Dd -m 0750 %{buildroot}%{_datadir}/salt
+install -Dd -m 0750 %{buildroot}%{_datadir}/salt/tests
+cp -a tests/* %{buildroot}%{_datadir}/salt/tests/
+sed -i '1s=^#!/usr/bin/\(python\|env python\)[0-9.]*=#!/usr/bin/python3=' %{buildroot}%{_datadir}/salt/tests/runtests.py
 
 ## Install Zypper plugins only on SUSE machines
 %if 0%{?suse_version}
@@ -1373,6 +1385,11 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %defattr(-,root,root)
 %doc doc/_build/html
 %endif
+
+%files tests
+%dir %{_datadir}/salt/
+%dir %{_datadir}/salt/tests/
+%{_datadir}/salt/tests/*
 
 %if %{with bash_completion}
 %files bash-completion
