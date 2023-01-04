@@ -293,6 +293,8 @@ Patch73:       detect-module.run-syntax.patch
 Patch74:       align-amazon-ec2-nitro-grains-with-upstream-pr-bsc-1.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62898
 Patch75:       pass-the-context-to-pillar-ext-modules.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/c6be36eeea49ee0d0641da272087305f79c32c99
+Patch76:       use-rlock-to-avoid-deadlocks-in-salt-ssh.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
