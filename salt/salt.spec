@@ -296,6 +296,9 @@ Patch75:       pass-the-context-to-pillar-ext-modules.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/c6be36eeea49ee0d0641da272087305f79c32c99 (not yet upstream)
 # Fix problem caused by: https://github.com/openSUSE/salt/pull/493 (Patch47) affecting only 3005.1.
 Patch76:       use-rlock-to-avoid-deadlocks-in-salt-ssh.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61064
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/5e3ff4d662321c237ddd5b2c5c83f35a84af594c (not PR to master yet)
+Patch77:       fixes-for-python-3.10-502.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
