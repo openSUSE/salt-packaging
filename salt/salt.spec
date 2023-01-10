@@ -368,6 +368,8 @@ Patch106:       detect-module.run-syntax.patch
 Patch107:       align-amazon-ec2-nitro-grains-with-upstream-pr-bsc-1.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62898
 Patch108:       pass-the-context-to-pillar-ext-modules.patch
+# PATCH-FIX-OPENSUSE: https://github.com/openSUSE/salt/pull/571
+Patch109:       control-the-collection-of-lvm-grains-via-config.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
