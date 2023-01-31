@@ -372,6 +372,8 @@ Patch108:       pass-the-context-to-pillar-ext-modules.patch
 Patch109:       control-the-collection-of-lvm-grains-via-config.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/63460
 Patch110:       3004-implement-zypper-removeptf-574.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62249
+Patch111:       fixes-pkg.version_cmp-on-openeuler-systems-and-a-few.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
