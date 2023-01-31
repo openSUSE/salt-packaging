@@ -305,6 +305,8 @@ Patch78:       allow-entrypoint-compatibility-for-importlib-metadat.patch
 Patch79:       control-the-collection-of-lvm-grains-via-config.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/63460
 Patch80:       3005.1-implement-zypper-removeptf-573.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62249
+Patch81:       fixes-pkg.version_cmp-on-openeuler-systems-and-a-few.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
