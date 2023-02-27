@@ -374,6 +374,9 @@ Patch109:       control-the-collection-of-lvm-grains-via-config.patch
 Patch110:       3004-implement-zypper-removeptf-574.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62249
 Patch111:       fixes-pkg.version_cmp-on-openeuler-systems-and-a-few.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/63460
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/578
+Patch112:       skip-package-names-without-colon-bsc-1208691-578.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
