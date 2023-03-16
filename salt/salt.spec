@@ -456,7 +456,7 @@ Requires:       dnf
 %if 0%{?rhel} == 6
 Requires:       yum-plugin-security
 %endif
-%else
+%else # SUSE
 Requires:       python3-Jinja2
 Requires:       python3-MarkupSafe
 Requires:       python3-msgpack-python > 0.3
@@ -466,7 +466,8 @@ Requires:       python3-M2Crypto
 Requires:       python3-pycrypto >= 2.6.1
 %endif
 Requires:       python3-pyzmq >= 2.2.0
-%endif
+%endif # end of RHEL / SUSE specific section
+Requires:       python3-jmespath
 Requires:       python3-PyYAML
 Requires:       python3-psutil
 Requires:       python3-requests >= 1.0.0
