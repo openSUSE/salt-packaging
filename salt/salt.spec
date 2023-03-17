@@ -707,7 +707,6 @@ cp %{S:6} .
 export PATH=/usr/bin:$PATH
 %endif
 python3 setup.py --with-salt-version=%{version} --salt-transport=both build
-cp ./build/lib/salt/_version.py ./salt
 mv build _build.python3
 
 %if %{with docs} && %{without builddocs}
