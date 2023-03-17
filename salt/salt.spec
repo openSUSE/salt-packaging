@@ -811,9 +811,9 @@ install -Dpm 0644 pkg/old/suse/salt-minion.service %{buildroot}%{_unitdir}/salt-
 %else
 install -Dpm 0644 pkg/old/suse/salt-minion.service.rhel7 %{buildroot}%{_unitdir}/salt-minion.service
 %endif
-install -Dpm 0644 pkg/salt-syndic.service %{buildroot}%{_unitdir}/salt-syndic.service
+install -Dpm 0644 pkg/common/salt-syndic.service %{buildroot}%{_unitdir}/salt-syndic.service
 install -Dpm 0644 pkg/old/suse/salt-api.service    %{buildroot}%{_unitdir}/salt-api.service
-install -Dpm 0644 pkg/salt-proxy@.service %{buildroot}%{_unitdir}/salt-proxy@.service
+install -Dpm 0644 pkg/common/salt-proxy@.service %{buildroot}%{_unitdir}/salt-proxy@.service
 ln -s service %{buildroot}%{_sbindir}/rcsalt-master
 ln -s service %{buildroot}%{_sbindir}/rcsalt-syndic
 ln -s service %{buildroot}%{_sbindir}/rcsalt-minion
@@ -852,7 +852,7 @@ install -Dpm 0640 transactional_update.conf %{buildroot}%{_sysconfdir}/salt/mini
 %if 0%{?rhel} > 6 || 0%{?suse_version}
 install -Dpm 0644  pkg/old/suse/salt-common.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/salt
 %else
-install -Dpm 0644  pkg/salt-common.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/salt
+install -Dpm 0644  pkg/common/salt-common.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/salt
 %endif
 #
 %if 0%{?suse_version} <= 1500
@@ -862,15 +862,15 @@ install -Dpm 0644  pkg/old/suse/salt.SuSEfirewall2 %{buildroot}%{_sysconfdir}/sy
 #
 ## install completion scripts
 %if %{with bash_completion}
-install -Dpm 0644 pkg/salt.bash %{buildroot}%{_sysconfdir}/bash_completion.d/salt
+install -Dpm 0644 pkg/common/salt.bash %{buildroot}%{_sysconfdir}/bash_completion.d/salt
 %endif
 %if %{with zsh_completion}
-install -Dpm 0644 pkg/salt.zsh %{buildroot}%{_sysconfdir}/zsh_completion.d/salt
+install -Dpm 0644 pkg/common/salt.zsh %{buildroot}%{_sysconfdir}/zsh_completion.d/salt
 %endif
 
 %if %{with fish_completion}
 mkdir -p %{buildroot}%{fish_completions_dir}
-install -Dpm 0644 pkg/fish-completions/* %{buildroot}%{fish_completions_dir}
+install -Dpm 0644 pkg/common/fish-completions/* %{buildroot}%{fish_completions_dir}
 %endif
 
 # Standalone Salt formulas configuration
