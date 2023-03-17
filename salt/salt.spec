@@ -804,14 +804,14 @@ install -Dd %{buildroot}%{_sysconfdir}/yum/pluginconf.d
 
 ## install init and systemd scripts
 %if %{with systemd}
-install -Dpm 0644 pkg/suse/salt-master.service %{buildroot}%{_unitdir}/salt-master.service
+install -Dpm 0644 pkg/old/suse/salt-master.service %{buildroot}%{_unitdir}/salt-master.service
 %if 0%{?suse_version}
-install -Dpm 0644 pkg/suse/salt-minion.service %{buildroot}%{_unitdir}/salt-minion.service
+install -Dpm 0644 pkg/old/suse/salt-minion.service %{buildroot}%{_unitdir}/salt-minion.service
 %else
-install -Dpm 0644 pkg/suse/salt-minion.service.rhel7 %{buildroot}%{_unitdir}/salt-minion.service
+install -Dpm 0644 pkg/old/suse/salt-minion.service.rhel7 %{buildroot}%{_unitdir}/salt-minion.service
 %endif
 install -Dpm 0644 pkg/salt-syndic.service %{buildroot}%{_unitdir}/salt-syndic.service
-install -Dpm 0644 pkg/suse/salt-api.service    %{buildroot}%{_unitdir}/salt-api.service
+install -Dpm 0644 pkg/old/suse/salt-api.service    %{buildroot}%{_unitdir}/salt-api.service
 install -Dpm 0644 pkg/salt-proxy@.service %{buildroot}%{_unitdir}/salt-proxy@.service
 ln -s service %{buildroot}%{_sbindir}/rcsalt-master
 ln -s service %{buildroot}%{_sbindir}/rcsalt-syndic
@@ -821,10 +821,10 @@ install -Dpm 644 %{S:2}                   %{buildroot}/usr/lib/tmpfiles.d/salt.c
 %else
 mkdir -p %{buildroot}%{_initddir}
 ## install init scripts
-install -Dpm 0755 pkg/suse/salt-master %{buildroot}%{_initddir}/salt-master
-install -Dpm 0755 pkg/suse/salt-syndic %{buildroot}%{_initddir}/salt-syndic
-install -Dpm 0755 pkg/suse/salt-minion %{buildroot}%{_initddir}/salt-minion
-install -Dpm 0755 pkg/suse/salt-api %{buildroot}%{_initddir}/salt-api
+install -Dpm 0755 pkg/old/suse/salt-master %{buildroot}%{_initddir}/salt-master
+install -Dpm 0755 pkg/old/suse/salt-syndic %{buildroot}%{_initddir}/salt-syndic
+install -Dpm 0755 pkg/old/suse/salt-minion %{buildroot}%{_initddir}/salt-minion
+install -Dpm 0755 pkg/old/suse/salt-api %{buildroot}%{_initddir}/salt-api
 ln -sf %{_initddir}/salt-master %{buildroot}%{_sbindir}/rcsalt-master
 ln -sf %{_initddir}/salt-syndic %{buildroot}%{_sbindir}/rcsalt-syndic
 ln -sf %{_initddir}/salt-minion %{buildroot}%{_sbindir}/rcsalt-minion
@@ -849,14 +849,14 @@ install -Dpm 0640 transactional_update.conf %{buildroot}%{_sysconfdir}/salt/mini
 #
 ## install logrotate file (for RHEL6 we use without sudo)
 %if 0%{?rhel} > 6 || 0%{?suse_version}
-install -Dpm 0644  pkg/suse/salt-common.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/salt
+install -Dpm 0644  pkg/old/suse/salt-common.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/salt
 %else
 install -Dpm 0644  pkg/salt-common.logrotate %{buildroot}%{_sysconfdir}/logrotate.d/salt
 %endif
 #
 %if 0%{?suse_version} <= 1500
 ## install SuSEfirewall2 rules
-install -Dpm 0644  pkg/suse/salt.SuSEfirewall2 %{buildroot}%{_sysconfdir}/sysconfig/SuSEfirewall2.d/services/salt
+install -Dpm 0644  pkg/old/suse/salt.SuSEfirewall2 %{buildroot}%{_sysconfdir}/sysconfig/SuSEfirewall2.d/services/salt
 %endif
 #
 ## install completion scripts
