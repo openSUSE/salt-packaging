@@ -1,4 +1,4 @@
-From daf6d310de43f81759dbf6797445346656739416 Mon Sep 17 00:00:00 2001
+From bc1f7c00bc2aff8c30df1c6bae896808f7ba837e Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <vzhestkov@suse.com>
 Date: Tue, 12 Apr 2022 10:06:43 +0300
 Subject: [PATCH] Prevent affection of SSH.opts with LazyLoader
@@ -9,11 +9,14 @@ Subject: [PATCH] Prevent affection of SSH.opts with LazyLoader
 * Restore parsed targets
 
 * Fix test_ssh unit tests
+
+Adjust unit tests
 ---
  salt/client/ssh/__init__.py                   | 19 +++++++++-------
+ .../pytests/unit/client/ssh/test_password.py  |  4 +++-
  .../unit/client/ssh/test_return_events.py     |  2 +-
  tests/pytests/unit/client/ssh/test_ssh.py     | 22 +++++++++----------
- 3 files changed, 23 insertions(+), 20 deletions(-)
+ 4 files changed, 26 insertions(+), 21 deletions(-)
 
 diff --git a/salt/client/ssh/__init__.py b/salt/client/ssh/__init__.py
 index ee2005d365..7ed3b8342e 100644
@@ -93,6 +96,28 @@ index ee2005d365..7ed3b8342e 100644
                  self.targets
              ) >= len(running):
                  time.sleep(0.1)
+diff --git a/tests/pytests/unit/client/ssh/test_password.py b/tests/pytests/unit/client/ssh/test_password.py
+index 8a7794d2f4..0ca28d022e 100644
+--- a/tests/pytests/unit/client/ssh/test_password.py
++++ b/tests/pytests/unit/client/ssh/test_password.py
+@@ -27,6 +27,8 @@ def test_password_failure(temp_salt_master, tmp_path):
+     opts["argv"] = ["test.ping"]
+     opts["selected_target_option"] = "glob"
+     opts["tgt"] = "localhost"
++    opts["ssh_cli_tgt"] = "localhost"
++    opts["_ssh_version"] = "foobar"
+     opts["arg"] = []
+     roster = str(tmp_path / "roster")
+     handle_ssh_ret = [
+@@ -44,7 +46,7 @@ def test_password_failure(temp_salt_master, tmp_path):
+         "salt.client.ssh.SSH.handle_ssh", MagicMock(return_value=handle_ssh_ret)
+     ), patch("salt.client.ssh.SSH.key_deploy", MagicMock(return_value=expected)), patch(
+         "salt.output.display_output", display_output
+-    ):
++    ), patch("salt.client.ssh.ssh_version", MagicMock(return_value="foobar")):
+         client = ssh.SSH(opts)
+         ret = next(client.run_iter())
+         with pytest.raises(SystemExit):
 diff --git a/tests/pytests/unit/client/ssh/test_return_events.py b/tests/pytests/unit/client/ssh/test_return_events.py
 index 1f0b0dbf33..18714741b9 100644
 --- a/tests/pytests/unit/client/ssh/test_return_events.py
