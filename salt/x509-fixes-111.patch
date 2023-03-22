@@ -1,4 +1,4 @@
-From cbc23f9d6009ffe040e6a5b62d1ab6fbe1b655db Mon Sep 17 00:00:00 2001
+From 1b3abcf0398cc879a666e7cf77a7d0190d7186b6 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 16:38:17 +0100
 Subject: [PATCH] X509 fixes (#111)

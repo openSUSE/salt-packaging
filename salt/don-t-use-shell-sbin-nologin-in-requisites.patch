@@ -1,4 +1,4 @@
-From 3e885f9e9d6a3ffaf04ecead47f3692bb7411d37 Mon Sep 17 00:00:00 2001
+From 4ea274e4ba45533acd4124db232e754ba94d8437 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 17 Aug 2021 11:52:00 +0200
 Subject: [PATCH] Don't use shell="/sbin/nologin" in requisites

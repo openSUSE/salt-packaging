@@ -1,4 +1,4 @@
-From 97d62cd33dad2e91677df1295a6d6289c3b9ffa8 Mon Sep 17 00:00:00 2001
+From 9b08c06b9f6ea383fe49c72d6539db99bf88f95e Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
 Date: Fri, 9 Apr 2021 16:01:32 +0300
 Subject: [PATCH] Update target fix for salt-ssh to process targets list

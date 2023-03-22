@@ -1,4 +1,4 @@
-From 8f5edfe93b974fb0c8862c05b989516e42209527 Mon Sep 17 00:00:00 2001
+From d0713523d4352fcf8c898c94b096eb1ac4ffb28b Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 25 Jan 2022 17:12:47 +0100
 Subject: [PATCH] info_installed works without status attr now

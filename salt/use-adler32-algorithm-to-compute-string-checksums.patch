@@ -1,4 +1,4 @@
-From 5dd5c083703b3b533ca25238e317f74ca06ae07a Mon Sep 17 00:00:00 2001
+From 1cd64eb38c03e33d484c7ff448bf5393a541b183 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 16:36:57 +0100
 Subject: [PATCH] Use Adler32 algorithm to compute string checksums

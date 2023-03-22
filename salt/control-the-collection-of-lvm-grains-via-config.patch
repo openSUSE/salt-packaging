@@ -1,4 +1,4 @@
-From f13d1de1291e460495e1211d34d8928a24b80de1 Mon Sep 17 00:00:00 2001
+From e3324905c011ee827e7e2b8d180a76168f12c507 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 10 Jan 2023 15:04:01 +0100
 Subject: [PATCH] Control the collection of lvm grains via config

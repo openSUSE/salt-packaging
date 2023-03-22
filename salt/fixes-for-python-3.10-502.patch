@@ -1,4 +1,4 @@
-From 97fd04af6233e99970d1e689c3faa04244624dc7 Mon Sep 17 00:00:00 2001
+From 37d05f897ef17e419fc937f1e4159bacf9e0f519 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <vzhestkov@suse.com>
 Date: Tue, 5 Apr 2022 12:04:46 +0300
 Subject: [PATCH] Fixes for Python 3.10 (#502)

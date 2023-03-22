@@ -1,4 +1,4 @@
-From aeb65d57f34802b5ecb9f1ccc32c0091eaca2cf6 Mon Sep 17 00:00:00 2001
+From 86d03c773e3fe027c2e93529d1e8677fdb13b57e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Ond=C5=99ej=20Hole=C4=8Dek?= <oholecek@aaannz.eu>
 Date: Mon, 10 May 2021 16:23:19 +0200
 Subject: [PATCH] Fix missing minion returns in batch mode (#360)

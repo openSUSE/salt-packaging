@@ -1,4 +1,4 @@
-From 879d21f62ae609931c72d59a5efb360d09db4019 Mon Sep 17 00:00:00 2001
+From 62b4fee0a783b10517fc3d17a5a4fc4dd6ef02b8 Mon Sep 17 00:00:00 2001
 From: Alberto Planas <aplanas@suse.com>
 Date: Mon, 5 Oct 2020 16:24:16 +0200
 Subject: [PATCH] zypperpkg: ignore retcode 104 for search()

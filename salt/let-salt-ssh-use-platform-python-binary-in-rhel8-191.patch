@@ -1,4 +1,4 @@
-From 7f1f97e13b6a0d6ce8453269395974646506a420 Mon Sep 17 00:00:00 2001
+From a4066dc57ece851efa2140be5cc10263e0fc7847 Mon Sep 17 00:00:00 2001
 From: Can Bulut Bayburt <1103552+cbbayburt@users.noreply.github.com>
 Date: Wed, 4 Dec 2019 15:59:46 +0100
 Subject: [PATCH] Let salt-ssh use 'platform-python' binary in RHEL8

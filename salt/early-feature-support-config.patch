@@ -1,4 +1,4 @@
-From 98bf60aceb7d3d0c8c8620cf1c41e3a7fa3a13fe Mon Sep 17 00:00:00 2001
+From 61f694c1b62f296d4e94783075535a9b858e3086 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 16:40:45 +0100
 Subject: [PATCH] early feature: support-config

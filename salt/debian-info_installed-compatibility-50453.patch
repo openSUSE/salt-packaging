@@ -1,4 +1,4 @@
-From b333fe633dbc92ab1cc681309b097f94f221caf5 Mon Sep 17 00:00:00 2001
+From 98fd57e27da653395793d5c2d9f89df00fca74dd Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 25 Jan 2022 17:08:57 +0100
 Subject: [PATCH] Debian info_installed compatibility (#50453)
@@ -114,7 +114,7 @@ index 8793b8f76e..191ca137dc 100644
      return ret
  
 diff --git a/salt/modules/dpkg_lowpkg.py b/salt/modules/dpkg_lowpkg.py
-index 2bd12a7e61..4a4f5a5252 100644
+index eefd852c51..4d716c8772 100644
 --- a/salt/modules/dpkg_lowpkg.py
 +++ b/salt/modules/dpkg_lowpkg.py
 @@ -234,6 +234,44 @@ def file_dict(*packages, **kwargs):

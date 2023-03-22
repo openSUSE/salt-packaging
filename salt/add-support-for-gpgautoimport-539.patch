@@ -1,4 +1,4 @@
-From ea0557c0d3e895f0c7d296c6c1a2c8a96954c0e6 Mon Sep 17 00:00:00 2001
+From e0a7ca981bc71f50eef705193f8b3d99856efa64 Mon Sep 17 00:00:00 2001
 From: Michael Calmer <mc@suse.de>
 Date: Fri, 8 Jul 2022 10:15:37 +0200
 Subject: [PATCH] add support for gpgautoimport (#539)

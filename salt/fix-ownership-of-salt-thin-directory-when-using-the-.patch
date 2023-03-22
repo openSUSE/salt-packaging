@@ -1,4 +1,4 @@
-From 92e00d3ff7cf09be40c8cb370fb363e652ffeb4e Mon Sep 17 00:00:00 2001
+From bd9294242e7ca80c4dead912ff73f09b39998617 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <vzhestkov@suse.com>
 Date: Mon, 27 Jun 2022 18:03:49 +0300
 Subject: [PATCH] Fix ownership of salt thin directory when using the

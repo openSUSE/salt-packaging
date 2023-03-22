@@ -1,4 +1,4 @@
-From cce64f57f3747c3ceb057a934276756fad755360 Mon Sep 17 00:00:00 2001
+From fb2768750620e1c0971d8fd7a9e0601d22c1426d Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
 Date: Thu, 18 Feb 2021 14:49:38 +0300
 Subject: [PATCH] Add sleep on exception handling on minion connection

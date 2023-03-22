@@ -1,4 +1,4 @@
-From 051a8cd8048e45888ff0eeaea41bd6442ecd0864 Mon Sep 17 00:00:00 2001
+From 339f5f88529d4ef46d26292ea46425fbe062c25b Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Fri, 16 Nov 2018 10:54:12 +0100
 Subject: [PATCH] Make aptpkg.list_repos compatible on enabled/disabled

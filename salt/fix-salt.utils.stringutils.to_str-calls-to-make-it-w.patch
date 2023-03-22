@@ -1,4 +1,4 @@
-From 46189480a8334031fe5d785242e7279faa68fd17 Mon Sep 17 00:00:00 2001
+From b029be1248b007775c615613448c7245a650d5a1 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <vzhestkov@suse.com>
 Date: Wed, 25 Nov 2020 15:09:41 +0300
 Subject: [PATCH] Fix salt.utils.stringutils.to_str calls to make it

@@ -1,4 +1,4 @@
-From 0860aa873f3a881014375dffcf820038e678a1b0 Mon Sep 17 00:00:00 2001
+From 72c3accbb7484e21678cf54ebef80da789914030 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 18:40:40 +0100
 Subject: [PATCH] Add "migrated" state and GPG key management functions
@@ -60,10 +60,10 @@ index 72002bdebb..c8133e3403 100644
      # If the keyid is provided or determined, check it against the existing
      # repo key ids to determine whether it needs to be imported.
 diff --git a/salt/modules/rpm_lowpkg.py b/salt/modules/rpm_lowpkg.py
-index 6f75850e4f..7c9265d274 100644
+index 4cd137c258..b360ec8df3 100644
 --- a/salt/modules/rpm_lowpkg.py
 +++ b/salt/modules/rpm_lowpkg.py
-@@ -859,3 +859,154 @@ def checksum(*paths, **kwargs):
+@@ -865,3 +865,154 @@ def checksum(*paths, **kwargs):
          )
  
      return ret

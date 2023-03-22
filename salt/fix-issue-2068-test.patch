@@ -1,4 +1,4 @@
-From 6f3196437fc6cd192baac122c00e7ea11b4f5254 Mon Sep 17 00:00:00 2001
+From 5f781b506340c71bc541cb249b39ca3fd9bc489c Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Wed, 9 Jan 2019 16:08:19 +0100
 Subject: [PATCH] Fix issue #2068 test

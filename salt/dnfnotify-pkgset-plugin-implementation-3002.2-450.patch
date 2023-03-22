@@ -1,4 +1,4 @@
-From d321e6970140eac1c41348f754658b2992dacb9b Mon Sep 17 00:00:00 2001
+From 4e69993eb2cabb51851028426022381f57d60473 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
 Date: Mon, 8 Nov 2021 18:09:53 +0300
 Subject: [PATCH] dnfnotify pkgset plugin implementation - 3002.2 (#450)

@@ -1,4 +1,4 @@
-From b3c295ec3d023d53c25d2a204821aab717418e2f Mon Sep 17 00:00:00 2001
+From 5f1cdb25fccf0e8d68a012d3f48d5c7639f88908 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <vzhestkov@suse.com>
 Date: Mon, 27 Jun 2022 17:59:24 +0300
 Subject: [PATCH] Use Salt Bundle in dockermod

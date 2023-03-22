@@ -1,4 +1,4 @@
-From f526afe91edf80c3eaaceaa204a6699ddc2f38d6 Mon Sep 17 00:00:00 2001
+From 02147376c2e29d2439a6f4e9996f29b9e2ea9bea Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <vzhestkov@suse.com>
 Date: Thu, 24 Feb 2022 16:52:24 +0300
 Subject: [PATCH] Add salt-ssh support with venv-salt-minion - 3004
