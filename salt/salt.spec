@@ -378,6 +378,7 @@ BuildRequires:  python3-psutil
 BuildRequires:  python3-requests >= 1.0.0
 BuildRequires:  python3-distro
 BuildRequires:  python3-looseversion
+BuildRequires:  python3-packaging
 
 # requirements/zeromq.txt
 %if %{with test}
@@ -429,6 +430,7 @@ Requires:       python3-psutil
 Requires:       python3-requests >= 1.0.0
 Requires:       python3-distro
 Requires:       python3-looseversion
+Requires:       python3-packaging
 Requires:       python3-contextvars
 %if 0%{?suse_version}
 # required for zypper.py
