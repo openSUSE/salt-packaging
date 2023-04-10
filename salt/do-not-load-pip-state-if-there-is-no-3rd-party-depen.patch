@@ -1,4 +1,4 @@
-From f52c06c9293ee28f2e663c44c7b9befb27617b84 Mon Sep 17 00:00:00 2001
+From 3ea30a05aece5709a9e6ea9fcaf669649444b6d5 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Fri, 21 Sep 2018 17:31:39 +0200
 Subject: [PATCH] Do not load pip state if there is no 3rd party

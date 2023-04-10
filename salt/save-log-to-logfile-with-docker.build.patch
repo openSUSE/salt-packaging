@@ -1,4 +1,4 @@
-From acfae7c5d7c893c2f343bee0055871fd2a371368 Mon Sep 17 00:00:00 2001
+From 76603b9874e42c9cf43c6531467fd96f401e09c6 Mon Sep 17 00:00:00 2001
 From: Vladimir Nadvornik <nadvornik@suse.cz>
 Date: Mon, 27 Jun 2022 17:00:58 +0200
 Subject: [PATCH] Save log to logfile with docker.build

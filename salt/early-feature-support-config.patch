@@ -1,4 +1,4 @@
-From 61f694c1b62f296d4e94783075535a9b858e3086 Mon Sep 17 00:00:00 2001
+From 312edce5255163a69ae8aefd8e4a0184f75765f2 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 16:40:45 +0100
 Subject: [PATCH] early feature: support-config
@@ -2191,10 +2191,10 @@ index 219bdfbca3..bccdd70e9e 100644
 +    _install_signal_handlers(client)
 +    client.run()
 diff --git a/salt/state.py b/salt/state.py
-index ff40d20231..d138e892c7 100644
+index 2f6252161d..2f559a56ab 100644
 --- a/salt/state.py
 +++ b/salt/state.py
-@@ -1661,7 +1661,9 @@ class State:
+@@ -1662,7 +1662,9 @@ class State:
                  names = []
                  if state.startswith("__"):
                      continue
@@ -2205,7 +2205,7 @@ index ff40d20231..d138e892c7 100644
                  if orchestration_jid is not None:
                      chunk["__orchestration_jid__"] = orchestration_jid
                  if "__sls__" in body:
-@@ -2370,9 +2372,16 @@ class State:
+@@ -2371,9 +2373,16 @@ class State:
                      else:
                          self.format_slots(cdata)
                          with salt.utils.files.set_umask(low.get("__umask__")):
@@ -2223,9 +2223,9 @@ index ff40d20231..d138e892c7 100644
 +                                    *cdata["args"], **cdata["kwargs"]
 +                                )
                  self.states.inject_globals = {}
-             if (
-                 "check_cmd" in low
-@@ -3473,10 +3482,31 @@ class State:
+             if "check_cmd" in low:
+                 state_check_cmd = "{0[state]}.mod_run_check_cmd".format(low)
+@@ -3478,10 +3487,31 @@ class State:
          running.update(errors)
          return running
  

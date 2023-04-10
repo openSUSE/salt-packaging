@@ -1,4 +1,4 @@
-From 79d5cbb5384116a191bc2590bf7e7df38de415f5 Mon Sep 17 00:00:00 2001
+From d854275c8b37f84b1d61b5c8d2dcc5e681e3c4b2 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 17:10:37 +0100
 Subject: [PATCH] Include aliases in the fqdns grains

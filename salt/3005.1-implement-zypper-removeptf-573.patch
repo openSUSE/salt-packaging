@@ -1,4 +1,4 @@
-From 33d57f7c05c220ca9b4e232fd809899052c0fb50 Mon Sep 17 00:00:00 2001
+From ddd91b1fca98aecd7fee3e52f072355ffdf543f3 Mon Sep 17 00:00:00 2001
 From: Michael Calmer <Michael.Calmer@suse.de>
 Date: Mon, 23 Jan 2023 14:33:26 +0100
 Subject: [PATCH] 3005.1 implement zypper removeptf (#573)

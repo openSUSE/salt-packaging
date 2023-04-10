@@ -1,4 +1,4 @@
-From e733692ef15cb5ea590af3ad06fa27066c09add8 Mon Sep 17 00:00:00 2001
+From 6db7b40379cccd72c461a7b387365b37d0a3a600 Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Thu, 13 Dec 2018 12:17:35 +0100
 Subject: [PATCH] Return the expected powerpc os arch (bsc#1117995)

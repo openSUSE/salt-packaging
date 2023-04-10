@@ -1,4 +1,4 @@
-From d6389d4091048b43669e1631cda4442aeba7c64d Mon Sep 17 00:00:00 2001
+From 2a1b68fb1f595e298d98ae03879326e6fc8d245d Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Fri, 16 Nov 2018 17:05:29 +0100
 Subject: [PATCH] Async batch implementation

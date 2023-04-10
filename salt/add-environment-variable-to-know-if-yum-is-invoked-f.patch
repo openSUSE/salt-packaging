@@ -1,4 +1,4 @@
-From ee1386de1e49b910bb6f3ea9d1408f06f771aa9d Mon Sep 17 00:00:00 2001
+From 9c6a3b684758dc919c8171e4f315f92f9153b0f3 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 12:57:21 +0100
 Subject: [PATCH] Add environment variable to know if yum is invoked from

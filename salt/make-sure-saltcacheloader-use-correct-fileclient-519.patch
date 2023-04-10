@@ -1,4 +1,4 @@
-From 7e7e022946f08eff9ecce508ddc4438a799528ad Mon Sep 17 00:00:00 2001
+From 57e4e81786e17f24c7370fc02d5188b096287cb0 Mon Sep 17 00:00:00 2001
 From: Witek Bedyk <wbedyk@suse.com>
 Date: Thu, 19 May 2022 12:52:12 +0200
 Subject: [PATCH] Make sure SaltCacheLoader use correct fileclient (#519)
@@ -11,10 +11,10 @@ Signed-off-by: Witek Bedyk <witold.bedyk@suse.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/salt/state.py b/salt/state.py
-index 048b2007ce..96a95ce38a 100644
+index cfddb0f170..7e29a5adbb 100644
 --- a/salt/state.py
 +++ b/salt/state.py
-@@ -4286,6 +4286,9 @@ class BaseHighState:
+@@ -4291,6 +4291,9 @@ class BaseHighState:
              )
          else:
              try:

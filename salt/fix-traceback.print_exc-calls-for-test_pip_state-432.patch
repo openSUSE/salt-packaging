@@ -1,4 +1,4 @@
-From e6076125b6a60f0d66aae6e5d5e7a97ed2cb0456 Mon Sep 17 00:00:00 2001
+From 9b7e690463e044a341e58129899028e9de159e15 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
 Date: Mon, 8 Nov 2021 17:43:02 +0300
 Subject: [PATCH] Fix traceback.print_exc calls for test_pip_state (#432)

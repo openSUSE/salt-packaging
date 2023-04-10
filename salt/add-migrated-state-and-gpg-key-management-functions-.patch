@@ -1,4 +1,4 @@
-From 72c3accbb7484e21678cf54ebef80da789914030 Mon Sep 17 00:00:00 2001
+From ab198b05e2e901c5445fc35fd47cfc483dd335fc Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 18:40:40 +0100
 Subject: [PATCH] Add "migrated" state and GPG key management functions
@@ -31,7 +31,7 @@ Convert test to pytests
  8 files changed, 1070 insertions(+), 5 deletions(-)
 
 diff --git a/salt/modules/aptpkg.py b/salt/modules/aptpkg.py
-index 72002bdebb..c8133e3403 100644
+index 3289f6604d..9885e9fb60 100644
 --- a/salt/modules/aptpkg.py
 +++ b/salt/modules/aptpkg.py
 @@ -2197,7 +2197,7 @@ def _parse_repo_keys_output(cmd_ret):

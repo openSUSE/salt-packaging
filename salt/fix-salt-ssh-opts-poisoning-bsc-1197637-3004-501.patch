@@ -1,4 +1,4 @@
-From 5c1ec945ae15eb52b96031977f3e56c690d1cc94 Mon Sep 17 00:00:00 2001
+From 989f0bdf63793b03ad97f99f108cc2570400d646 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <vzhestkov@suse.com>
 Date: Thu, 31 Mar 2022 13:39:57 +0300
 Subject: [PATCH] Fix salt-ssh opts poisoning (bsc#1197637) - 3004 (#501)

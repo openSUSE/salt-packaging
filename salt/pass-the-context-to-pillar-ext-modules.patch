@@ -1,4 +1,4 @@
-From b7708607d9f0c34306a2bf16a8dfb49ce799efe2 Mon Sep 17 00:00:00 2001
+From c8f7e4007a0d80ef7a150097da2829982e3e3c85 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <Victor.Zhestkov@suse.com>
 Date: Fri, 28 Oct 2022 13:20:13 +0300
 Subject: [PATCH] Pass the context to pillar ext modules

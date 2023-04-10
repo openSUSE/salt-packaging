@@ -1,4 +1,4 @@
-From 1cd64eb38c03e33d484c7ff448bf5393a541b183 Mon Sep 17 00:00:00 2001
+From 038c19cd12a2352185f98b43b11c9d3e89ead3ac Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 16:36:57 +0100
 Subject: [PATCH] Use Adler32 algorithm to compute string checksums
@@ -46,7 +46,7 @@ index 58a3ff8584..8b631aee06 100644
  )
  
 diff --git a/salt/grains/core.py b/salt/grains/core.py
-index 8122e6a44a..0213860e91 100644
+index 1199ad274f..5c12556346 100644
 --- a/salt/grains/core.py
 +++ b/salt/grains/core.py
 @@ -21,6 +21,7 @@ import subprocess
@@ -56,8 +56,8 @@ index 8122e6a44a..0213860e91 100644
 +import zlib
  from errno import EACCES, EPERM
  
- import distro
-@@ -3392,6 +3393,36 @@ def _hw_data(osdata):
+ import salt.exceptions
+@@ -3382,6 +3383,36 @@ def _hw_data(osdata):
      return grains
  
  
@@ -94,7 +94,7 @@ index 8122e6a44a..0213860e91 100644
  def get_server_id():
      """
      Provides an integer based on the FQDN of a machine.
-@@ -3402,10 +3433,19 @@ def get_server_id():
+@@ -3392,10 +3423,19 @@ def get_server_id():
      #   server_id
  
      if salt.utils.platform.is_proxy():

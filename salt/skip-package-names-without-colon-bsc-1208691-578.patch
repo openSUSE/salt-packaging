@@ -1,4 +1,4 @@
-From 75769103f52c48082e58057eec5f23d555da8510 Mon Sep 17 00:00:00 2001
+From acbfa1d4475da9497a0b73be9543069a559a5779 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Mon, 27 Feb 2023 11:35:41 +0100
 Subject: [PATCH] Skip package names without colon (bsc#1208691) (#578)

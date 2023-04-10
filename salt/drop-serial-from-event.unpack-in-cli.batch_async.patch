@@ -1,4 +1,4 @@
-From bd27e2f6eb4d2a4c24894659c8992fea6ddff6c5 Mon Sep 17 00:00:00 2001
+From cad6b5acc510f5223b68ca026d372aa04ae7f3aa Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Mon, 31 Jan 2022 10:24:26 +0100
 Subject: [PATCH] Drop serial from event.unpack in cli.batch_async

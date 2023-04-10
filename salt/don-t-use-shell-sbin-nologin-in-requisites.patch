@@ -1,4 +1,4 @@
-From 4ea274e4ba45533acd4124db232e754ba94d8437 Mon Sep 17 00:00:00 2001
+From 9c53f017aa0e8571d22d62a6bd9394fa29346640 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 17 Aug 2021 11:52:00 +0200
 Subject: [PATCH] Don't use shell="/sbin/nologin" in requisites
@@ -13,10 +13,10 @@ Fixes: bsc#1188259
  1 file changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/salt/state.py b/salt/state.py
-index b9b6b39548..048b2007ce 100644
+index 150d294162..cfddb0f170 100644
 --- a/salt/state.py
 +++ b/salt/state.py
-@@ -976,9 +976,14 @@ class State:
+@@ -977,9 +977,14 @@ class State:
              cmd_opts[run_cmd_arg] = low_data.get(run_cmd_arg)
  
          if "shell" in low_data:

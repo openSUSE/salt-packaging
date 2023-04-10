@@ -1,4 +1,4 @@
-From 478a96802edd0775208e08d3f5118665b797ed44 Mon Sep 17 00:00:00 2001
+From 859f29a5b5107d1c11d666cf037a1b59b1572879 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <Victor.Zhestkov@suse.com>
 Date: Thu, 1 Sep 2022 14:42:24 +0300
 Subject: [PATCH] Change the delimeters to prevent possible tracebacks on

@@ -1,4 +1,4 @@
-From 98fd57e27da653395793d5c2d9f89df00fca74dd Mon Sep 17 00:00:00 2001
+From 0945ca57ed336e9babb70033ae8e0e1e1cd65998 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 25 Jan 2022 17:08:57 +0100
 Subject: [PATCH] Debian info_installed compatibility (#50453)
@@ -61,7 +61,7 @@ https://github.com/openSUSE/salt/commit/d0ef24d113bdaaa29f180031b5da384cffe08c64
  3 files changed, 167 insertions(+), 19 deletions(-)
 
 diff --git a/salt/modules/aptpkg.py b/salt/modules/aptpkg.py
-index 8793b8f76e..191ca137dc 100644
+index 8e89744b5e..938e37cc9e 100644
 --- a/salt/modules/aptpkg.py
 +++ b/salt/modules/aptpkg.py
 @@ -3440,6 +3440,15 @@ def info_installed(*names, **kwargs):
@@ -283,7 +283,7 @@ index eefd852c51..4d716c8772 100644
  
      return ret
 diff --git a/tests/pytests/unit/modules/test_aptpkg.py b/tests/pytests/unit/modules/test_aptpkg.py
-index ff3023678a..b064865a6b 100644
+index b69402578a..4226957eeb 100644
 --- a/tests/pytests/unit/modules/test_aptpkg.py
 +++ b/tests/pytests/unit/modules/test_aptpkg.py
 @@ -360,6 +360,58 @@ def test_info_installed(lowpkg_info_var):

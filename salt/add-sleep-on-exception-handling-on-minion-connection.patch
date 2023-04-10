@@ -1,4 +1,4 @@
-From fb2768750620e1c0971d8fd7a9e0601d22c1426d Mon Sep 17 00:00:00 2001
+From b0494ead17a8bd0d48d59912a750809fb1b29b6d Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
 Date: Thu, 18 Feb 2021 14:49:38 +0300
 Subject: [PATCH] Add sleep on exception handling on minion connection
@@ -12,7 +12,7 @@ Subject: [PATCH] Add sleep on exception handling on minion connection
  1 file changed, 6 insertions(+)
 
 diff --git a/salt/minion.py b/salt/minion.py
-index 29b0d3f6d9..2d1fd5a85b 100644
+index 2f905e4a4f..c3b65f16c3 100644
 --- a/salt/minion.py
 +++ b/salt/minion.py
 @@ -1123,6 +1123,9 @@ class MinionManager(MinionBase):

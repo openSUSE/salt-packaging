@@ -1,4 +1,4 @@
-From ba9b056ba633db019b88531472f8a8b5a31cf1d1 Mon Sep 17 00:00:00 2001
+From 14fe0cd92c97a19ef4332e09fb30a89aa770941f Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <vzhestkov@suse.com>
 Date: Tue, 12 Apr 2022 10:06:43 +0300
 Subject: [PATCH] Prevent affection of SSH.opts with LazyLoader
