@@ -265,6 +265,8 @@ Patch60:       3005.1-implement-zypper-removeptf-573.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/63460
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/578
 Patch61:       skip-package-names-without-colon-bsc-1208691-578.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/c0fae09e5a4f6997a60007d970c7c6a5614d9102
+Patch62:       fix-version-detection-and-avoid-building-and-testing.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
