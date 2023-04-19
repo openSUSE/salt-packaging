@@ -1,4 +1,4 @@
-From ab198b05e2e901c5445fc35fd47cfc483dd335fc Mon Sep 17 00:00:00 2001
+From c5236dadcffc24c00181c10ac4cf56020371c538 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 18:40:40 +0100
 Subject: [PATCH] Add "migrated" state and GPG key management functions

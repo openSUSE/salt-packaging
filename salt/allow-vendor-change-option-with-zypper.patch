@@ -1,4 +1,4 @@
-From 99f0003eb2be52dff7de9790d07ea62f42493c50 Mon Sep 17 00:00:00 2001
+From a36d6524e530eca32966f46597c88dbfd4b90e78 Mon Sep 17 00:00:00 2001
 From: Martin Seidl <mseidl@suse.de>
 Date: Tue, 27 Oct 2020 16:12:29 +0100
 Subject: [PATCH] Allow vendor change option with zypper

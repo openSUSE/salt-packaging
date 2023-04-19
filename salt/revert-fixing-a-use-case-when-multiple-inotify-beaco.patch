@@ -1,4 +1,4 @@
-From b92377ae2286a27c2e784454f1e10574cd3a3cd4 Mon Sep 17 00:00:00 2001
+From 76f2b98a3a9b9a49903a4d3b47dca0f2311bd7af Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 19:07:34 +0100
 Subject: [PATCH] Revert "Fixing a use case when multiple inotify beacons

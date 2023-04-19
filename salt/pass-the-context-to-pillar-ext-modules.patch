@@ -1,4 +1,4 @@
-From c8f7e4007a0d80ef7a150097da2829982e3e3c85 Mon Sep 17 00:00:00 2001
+From bd671b53de8933732e2108624d7dfb6f9b183f38 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <Victor.Zhestkov@suse.com>
 Date: Fri, 28 Oct 2022 13:20:13 +0300
 Subject: [PATCH] Pass the context to pillar ext modules
@@ -15,10 +15,10 @@ Subject: [PATCH] Pass the context to pillar ext modules
  3 files changed, 108 insertions(+), 6 deletions(-)
 
 diff --git a/salt/master.py b/salt/master.py
-index 1cd789e1a7..5b6c3e267e 100644
+index a0552fa232..da1eb8cef5 100644
 --- a/salt/master.py
 +++ b/salt/master.py
-@@ -951,6 +951,7 @@ class MWorker(salt.utils.process.SignalHandlingProcess):
+@@ -964,6 +964,7 @@ class MWorker(salt.utils.process.SignalHandlingProcess):
          self.k_mtime = 0
          self.stats = collections.defaultdict(lambda: {"mean": 0, "runs": 0})
          self.stat_clock = time.time()
@@ -26,7 +26,7 @@ index 1cd789e1a7..5b6c3e267e 100644
  
      # We need __setstate__ and __getstate__ to also pickle 'SMaster.secrets'.
      # Otherwise, 'SMaster.secrets' won't be copied over to the spawned process
-@@ -1138,7 +1139,7 @@ class MWorker(salt.utils.process.SignalHandlingProcess):
+@@ -1151,7 +1152,7 @@ class MWorker(salt.utils.process.SignalHandlingProcess):
              self.key,
          )
          self.clear_funcs.connect()
@@ -35,7 +35,7 @@ index 1cd789e1a7..5b6c3e267e 100644
          salt.utils.crypt.reinit_crypto()
          self.__bind()
  
-@@ -1201,7 +1202,7 @@ class AESFuncs(TransportMethods):
+@@ -1214,7 +1215,7 @@ class AESFuncs(TransportMethods):
          "_file_envs",
      )
  
@@ -44,7 +44,7 @@ index 1cd789e1a7..5b6c3e267e 100644
          """
          Create a new AESFuncs
  
-@@ -1211,6 +1212,7 @@ class AESFuncs(TransportMethods):
+@@ -1224,6 +1225,7 @@ class AESFuncs(TransportMethods):
          :returns: Instance for handling AES operations
          """
          self.opts = opts
@@ -52,7 +52,7 @@ index 1cd789e1a7..5b6c3e267e 100644
          self.event = salt.utils.event.get_master_event(
              self.opts, self.opts["sock_dir"], listen=False
          )
-@@ -1598,6 +1600,7 @@ class AESFuncs(TransportMethods):
+@@ -1611,6 +1613,7 @@ class AESFuncs(TransportMethods):
              pillarenv=load.get("pillarenv"),
              extra_minion_data=load.get("extra_minion_data"),
              clean_cache=load.get("clean_cache"),
@@ -165,7 +165,7 @@ index 5a3f5388b4..0dfab4cc57 100644
          self._closing = True
  
 diff --git a/tests/pytests/unit/test_master.py b/tests/pytests/unit/test_master.py
-index 14e137f498..7b4498a2c3 100644
+index cd11d217c7..98c796912a 100644
 --- a/tests/pytests/unit/test_master.py
 +++ b/tests/pytests/unit/test_master.py
 @@ -4,7 +4,7 @@ import pytest
@@ -177,7 +177,7 @@ index 14e137f498..7b4498a2c3 100644
  
  
  @pytest.fixture
-@@ -128,3 +128,92 @@ def test_when_syndic_return_processes_load_then_correct_values_should_be_returne
+@@ -160,3 +160,92 @@ def test_when_syndic_return_processes_load_then_correct_values_should_be_returne
      with patch.object(encrypted_requests, "_return", autospec=True) as fake_return:
          encrypted_requests._syndic_return(payload)
          fake_return.assert_called_with(expected_return)

@@ -1,4 +1,4 @@
-From 9ab78fabe4bcc5f643c10f76c73a186bdf81b3d6 Mon Sep 17 00:00:00 2001
+From 57626d8eb77d2c559365d1df974100e474671fef Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 17:12:04 +0100
 Subject: [PATCH] Switch firewalld state to use change_interface

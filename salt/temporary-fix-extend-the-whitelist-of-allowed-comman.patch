@@ -1,4 +1,4 @@
-From d2b68e53ff5026758e15ce0fde5c92d77347a9cd Mon Sep 17 00:00:00 2001
+From 2575e64ee21f774a1efb6960972e9d476a8d5927 Mon Sep 17 00:00:00 2001
 From: Bo Maryniuk <bo@suse.de>
 Date: Thu, 24 Jan 2019 18:12:35 +0100
 Subject: [PATCH] temporary fix: extend the whitelist of allowed commands

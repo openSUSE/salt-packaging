@@ -1,4 +1,4 @@
-From 038c19cd12a2352185f98b43b11c9d3e89ead3ac Mon Sep 17 00:00:00 2001
+From ef6da7d43fcf51a7d705422624c1e7a94b1297f2 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 16:36:57 +0100
 Subject: [PATCH] Use Adler32 algorithm to compute string checksums
@@ -24,20 +24,20 @@ Remove deprecated warning that breaks miniion execution when "server_id_use_crc"
  2 files changed, 48 insertions(+), 4 deletions(-)
 
 diff --git a/salt/config/__init__.py b/salt/config/__init__.py
-index 58a3ff8584..8b631aee06 100644
+index 1632663474..43182f3f92 100644
 --- a/salt/config/__init__.py
 +++ b/salt/config/__init__.py
-@@ -987,6 +987,9 @@ VALID_OPTS = immutabletypes.freeze(
-         "pass_gnupghome": str,
-         # pass renderer: Set PASSWORD_STORE_DIR env for Pass
-         "pass_dir": str,
+@@ -991,6 +991,9 @@ VALID_OPTS = immutabletypes.freeze(
+         "maintenance_interval": int,
+         # Fileserver process restart interval
+         "fileserver_interval": int,
 +        # Use Adler32 hashing algorithm for server_id (default False until Sodium, "adler32" after)
 +        # Possible values are: False, adler32, crc32
 +        "server_id_use_crc": (bool, str),
      }
  )
  
-@@ -1292,6 +1295,7 @@ DEFAULT_MINION_OPTS = immutabletypes.freeze(
+@@ -1296,6 +1299,7 @@ DEFAULT_MINION_OPTS = immutabletypes.freeze(
          "global_state_conditions": None,
          "reactor_niceness": None,
          "fips_mode": False,

@@ -1,4 +1,4 @@
-From d8db8ceccb473f9f381f1eb2a644a0a952312a75 Mon Sep 17 00:00:00 2001
+From a1a8b5a886705e5f005cb7ab067e42095066ef80 Mon Sep 17 00:00:00 2001
 From: Jochen Breuer <jbreuer@suse.de>
 Date: Fri, 30 Aug 2019 14:20:06 +0200
 Subject: [PATCH] Restore default behaviour of pkg list return

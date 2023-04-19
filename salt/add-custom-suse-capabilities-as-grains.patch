@@ -1,4 +1,4 @@
-From f128af3c0a57c3c182e81ea41275182dd895aee5 Mon Sep 17 00:00:00 2001
+From 311d4e320527158b6ff88604b45e15f0dc2bfa62 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 12:59:43 +0100
 Subject: [PATCH] Add custom SUSE capabilities as Grains

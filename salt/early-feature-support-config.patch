@@ -1,4 +1,4 @@
-From 312edce5255163a69ae8aefd8e4a0184f75765f2 Mon Sep 17 00:00:00 2001
+From 7b47e6f19b38d773a6ec744209753f3d29b094ea Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 18 Jan 2022 16:40:45 +0100
 Subject: [PATCH] early feature: support-config
@@ -2168,12 +2168,12 @@ index 0000000000..e800e3bf1f
 +
 +    return __virtualname__
 diff --git a/salt/scripts.py b/salt/scripts.py
-index 219bdfbca3..bccdd70e9e 100644
+index 07393373c9..16b032af2e 100644
 --- a/salt/scripts.py
 +++ b/salt/scripts.py
-@@ -599,3 +599,18 @@ def salt_pip():
-     ] + sys.argv[1:]
-     ret = subprocess.run(command, shell=False, check=False)
+@@ -622,3 +622,18 @@ def salt_pip():
+     ] + _pip_args(sys.argv[1:], extras)
+     ret = subprocess.run(command, shell=False, check=False, env=env)
      sys.exit(ret.returncode)
 +
 +
@@ -2191,10 +2191,10 @@ index 219bdfbca3..bccdd70e9e 100644
 +    _install_signal_handlers(client)
 +    client.run()
 diff --git a/salt/state.py b/salt/state.py
-index 2f6252161d..2f559a56ab 100644
+index 868be2749e..8352a8defc 100644
 --- a/salt/state.py
 +++ b/salt/state.py
-@@ -1662,7 +1662,9 @@ class State:
+@@ -1671,7 +1671,9 @@ class State:
                  names = []
                  if state.startswith("__"):
                      continue
@@ -2205,7 +2205,7 @@ index 2f6252161d..2f559a56ab 100644
                  if orchestration_jid is not None:
                      chunk["__orchestration_jid__"] = orchestration_jid
                  if "__sls__" in body:
-@@ -2371,9 +2373,16 @@ class State:
+@@ -2382,9 +2384,16 @@ class State:
                      else:
                          self.format_slots(cdata)
                          with salt.utils.files.set_umask(low.get("__umask__")):
@@ -2225,7 +2225,7 @@ index 2f6252161d..2f559a56ab 100644
                  self.states.inject_globals = {}
              if "check_cmd" in low:
                  state_check_cmd = "{0[state]}.mod_run_check_cmd".format(low)
-@@ -3478,10 +3487,31 @@ class State:
+@@ -3489,10 +3498,31 @@ class State:
          running.update(errors)
          return running
  
@@ -2698,10 +2698,10 @@ index 0000000000..4e0e79f3ea
 +if __name__ == "__main__":
 +    salt_support()
 diff --git a/setup.py b/setup.py
-index 3bfc5534af..842e95f6ce 100755
+index 931ed40a51..e60f1b7085 100755
 --- a/setup.py
 +++ b/setup.py
-@@ -1162,6 +1162,7 @@ class SaltDistribution(distutils.dist.Distribution):
+@@ -1061,6 +1061,7 @@ class SaltDistribution(distutils.dist.Distribution):
                  "scripts/salt-minion",
                  "scripts/salt-proxy",
                  "scripts/salt-run",
@@ -2709,7 +2709,7 @@ index 3bfc5534af..842e95f6ce 100755
                  "scripts/salt-ssh",
                  "scripts/salt-syndic",
                  "scripts/spm",
-@@ -1210,6 +1211,7 @@ class SaltDistribution(distutils.dist.Distribution):
+@@ -1109,6 +1110,7 @@ class SaltDistribution(distutils.dist.Distribution):
                  "salt-master = salt.scripts:salt_master",
                  "salt-minion = salt.scripts:salt_minion",
                  "salt-run = salt.scripts:salt_run",

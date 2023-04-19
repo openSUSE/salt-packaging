@@ -1,4 +1,4 @@
-From 908fec0d29fb0a38b60d943bbc020bfd97e08e05 Mon Sep 17 00:00:00 2001
+From 2ca37fe7d2a03ad86ed738f2636fe240b9f4467e Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
 Date: Tue, 6 Oct 2020 12:36:41 +0300
 Subject: [PATCH] bsc#1176024: Fix file/directory user and group

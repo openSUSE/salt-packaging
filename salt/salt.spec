@@ -36,12 +36,12 @@
 %bcond_with    builddocs
 
 Name:           salt
-Version:        3006.0rc3
+Version:        3006.0
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
 Group:          System/Management
-Url:            http://saltstack.org/
+Url:            https://saltproject.io/
 Source:         v%{version}.tar.gz
 Source1:        README.SUSE
 Source2:        salt-tmpfiles.d

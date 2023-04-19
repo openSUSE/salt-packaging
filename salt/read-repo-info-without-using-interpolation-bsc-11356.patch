@@ -1,4 +1,4 @@
-From f4e1f79765bea919a2be4bce50fcf312ba7f343a Mon Sep 17 00:00:00 2001
+From ce0fedf25dea7eb63ccff8f9b90a9a35571a5f9d Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Thu, 7 Nov 2019 15:11:49 +0100
 Subject: [PATCH] Read repo info without using interpolation

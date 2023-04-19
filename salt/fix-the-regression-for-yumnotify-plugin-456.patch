@@ -1,4 +1,4 @@
-From bf44d77f2e2e3ee0dbd943fc4233c66edb79331b Mon Sep 17 00:00:00 2001
+From b80c0d515e8715c160f94124dff8b5b90e773cd0 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
 Date: Tue, 9 Nov 2021 16:19:56 +0300
 Subject: [PATCH] Fix the regression for yumnotify plugin (#456)

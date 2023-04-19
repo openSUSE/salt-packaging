@@ -1,4 +1,4 @@
-From b02f02e0360341e8c341f3cbb1edd746e227a808 Mon Sep 17 00:00:00 2001
+From 4240f0d5ffbc46c557885c5a28d1f2fd0b4c5e48 Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <35733135+vzhestkov@users.noreply.github.com>
 Date: Mon, 8 Nov 2021 17:42:36 +0300
 Subject: [PATCH] Prevent pkg plugins errors on missing cookie path

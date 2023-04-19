@@ -1,4 +1,4 @@
-From 0945ca57ed336e9babb70033ae8e0e1e1cd65998 Mon Sep 17 00:00:00 2001
+From 2fbc5b580661b094cf79cc5da0860745b72088e4 Mon Sep 17 00:00:00 2001
 From: Alexander Graul <agraul@suse.com>
 Date: Tue, 25 Jan 2022 17:08:57 +0100
 Subject: [PATCH] Debian info_installed compatibility (#50453)

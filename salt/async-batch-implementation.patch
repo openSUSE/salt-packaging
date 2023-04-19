@@ -1,4 +1,4 @@
-From 2a1b68fb1f595e298d98ae03879326e6fc8d245d Mon Sep 17 00:00:00 2001
+From 76e69d9ef729365db1b0f1798f5f8a038d2065fc Mon Sep 17 00:00:00 2001
 From: Mihai Dinca <mdinca@suse.de>
 Date: Fri, 16 Nov 2018 17:05:29 +0100
 Subject: [PATCH] Async batch implementation
@@ -645,7 +645,7 @@ index 7ce8963b8f..bcda56c9b4 100644
          }
  
 diff --git a/salt/master.py b/salt/master.py
-index e6eab0103d..56385cbbff 100644
+index 9d2239bffb..2a526b4f21 100644
 --- a/salt/master.py
 +++ b/salt/master.py
 @@ -19,6 +19,7 @@ import time
@@ -656,7 +656,7 @@ index e6eab0103d..56385cbbff 100644
  import salt.client
  import salt.client.ssh.client
  import salt.crypt
-@@ -2140,6 +2141,22 @@ class ClearFuncs(TransportMethods):
+@@ -2153,6 +2154,22 @@ class ClearFuncs(TransportMethods):
              return False
          return self.loadauth.get_tok(clear_load["token"])
  
@@ -679,7 +679,7 @@ index e6eab0103d..56385cbbff 100644
      def publish(self, clear_load):
          """
          This method sends out publications to the minions, it can only be used
-@@ -2284,6 +2301,9 @@ class ClearFuncs(TransportMethods):
+@@ -2297,6 +2314,9 @@ class ClearFuncs(TransportMethods):
                          ),
                      },
                  }
@@ -725,7 +725,7 @@ index ca13a498e3..3a3f0c7a5f 100644
      def close(self):
          """
 diff --git a/salt/utils/event.py b/salt/utils/event.py
-index be3caaa0da..f5d6e706f3 100644
+index a07ad513b1..869e12a140 100644
 --- a/salt/utils/event.py
 +++ b/salt/utils/event.py
 @@ -946,6 +946,10 @@ class SaltEvent:

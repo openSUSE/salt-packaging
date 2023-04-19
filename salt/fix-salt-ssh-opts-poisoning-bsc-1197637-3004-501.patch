@@ -1,4 +1,4 @@
-From 989f0bdf63793b03ad97f99f108cc2570400d646 Mon Sep 17 00:00:00 2001
+From 4dbd5534a39fbfaebad32a00d0e6c512d840b0fd Mon Sep 17 00:00:00 2001
 From: Victor Zhestkov <vzhestkov@suse.com>
 Date: Thu, 31 Mar 2022 13:39:57 +0300
 Subject: [PATCH] Fix salt-ssh opts poisoning (bsc#1197637) - 3004 (#501)
@@ -14,7 +14,7 @@ Subject: [PATCH] Fix salt-ssh opts poisoning (bsc#1197637) - 3004 (#501)
  2 files changed, 16 insertions(+), 8 deletions(-)
 
 diff --git a/salt/client/ssh/__init__.py b/salt/client/ssh/__init__.py
-index 976a8133b8..ee2005d365 100644
+index e6837df4e5..a527c03de6 100644
 --- a/salt/client/ssh/__init__.py
 +++ b/salt/client/ssh/__init__.py
 @@ -338,7 +338,7 @@ class SSH(MultiprocessingStateMixin):
