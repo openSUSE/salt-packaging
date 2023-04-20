@@ -238,35 +238,33 @@ Patch48:        prevent-affection-of-ssh.opts-with-lazyloader-bsc-11.patch
 
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/506
 Patch49:        fix-regression-with-depending-client.ssh-on-psutil-b.patch
-# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61895
-Patch50:        make-sure-saltcacheloader-use-correct-fileclient-519.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62109
-Patch51:        use-salt-bundle-in-dockermod.patch
+Patch50:        use-salt-bundle-in-dockermod.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61984
-Patch52:        save-log-to-logfile-with-docker.build.patch
+Patch51:        save-log-to-logfile-with-docker.build.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/534
-Patch53:        fix-ownership-of-salt-thin-directory-when-using-the-.patch
+Patch52:        fix-ownership-of-salt-thin-directory-when-using-the-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62209
-Patch54:        add-support-for-gpgautoimport-539.patch
+Patch53:        add-support-for-gpgautoimport-539.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62519
-Patch55:        change-the-delimeters-to-prevent-possible-tracebacks.patch
+Patch54:        change-the-delimeters-to-prevent-possible-tracebacks.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62898
-Patch56:       pass-the-context-to-pillar-ext-modules.patch
+Patch55:       pass-the-context-to-pillar-ext-modules.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/c6be36eeea49ee0d0641da272087305f79c32c99 (not yet upstream)
 # Fix problem caused by: https://github.com/openSUSE/salt/pull/493 (Patch47) affecting only 3005.1.
-Patch57:       use-rlock-to-avoid-deadlocks-in-salt-ssh.patch
+Patch56:       use-rlock-to-avoid-deadlocks-in-salt-ssh.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/61064
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/5e3ff4d662321c237ddd5b2c5c83f35a84af594c (not PR to master yet)
-Patch58:       fixes-for-python-3.10-502.patch
+Patch57:       fixes-for-python-3.10-502.patch
 # PATCH-FIX-OPENSUSE: https://github.com/openSUSE/salt/pull/571
-Patch59:       control-the-collection-of-lvm-grains-via-config.patch
+Patch58:       control-the-collection-of-lvm-grains-via-config.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/63460
-Patch60:       3005.1-implement-zypper-removeptf-573.patch
+Patch59:       3005.1-implement-zypper-removeptf-573.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/63460
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/578
-Patch61:       skip-package-names-without-colon-bsc-1208691-578.patch
+Patch60:       skip-package-names-without-colon-bsc-1208691-578.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/commit/c0fae09e5a4f6997a60007d970c7c6a5614d9102
-Patch62:       fix-version-detection-and-avoid-building-and-testing.patch
+Patch61:       fix-version-detection-and-avoid-building-and-testing.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
