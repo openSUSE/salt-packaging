@@ -1,9 +1,9 @@
-From e4c050bbc35445db8b9c02bbfc9b1d13b0168cc6 Mon Sep 17 00:00:00 2001
+From 8e9f2587aea52c1d0a5c07d5f9bb77a23ae4d4a6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Pablo=20Su=C3=A1rez=20Hern=C3=A1ndez?=
  <psuarezhernandez@suse.com>
-Date: Mon, 22 May 2023 16:27:10 +0100
+Date: Tue, 23 May 2023 10:40:02 +0100
 Subject: [PATCH] Avoid conflicts with dependencies versions
- (bsc#1211612)
+ (bsc#1211612) (#581)
 
 This commit fixes the Salt requirements file that are used to
 generate the "requires.txt" file that is included in Salt egginfo
@@ -14,9 +14,8 @@ This prevents issues when resolving and validating Salt dependencies
 with "pkg_resources" Python module.
 ---
  requirements/base.txt   | 2 +-
- requirements/crypto.txt | 2 +-
  requirements/zeromq.txt | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/requirements/base.txt b/requirements/base.txt
 index c19d8804a2..437aa01d31 100644
@@ -31,13 +30,6 @@ index c19d8804a2..437aa01d31 100644
  looseversion
  # We need contextvars for salt-ssh
  contextvars
-diff --git a/requirements/crypto.txt b/requirements/crypto.txt
-index 243cd87c2b..311e758eb5 100644
---- a/requirements/crypto.txt
-+++ b/requirements/crypto.txt
-@@ -1 +1 @@
--pycryptodomex>=3.9.8
-+pycryptodome>=3.9.0
 diff --git a/requirements/zeromq.txt b/requirements/zeromq.txt
 index 1e9a815c1b..23d1ef25dc 100644
 --- a/requirements/zeromq.txt
