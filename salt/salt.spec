@@ -267,6 +267,8 @@ Patch60:       skip-package-names-without-colon-bsc-1208691-578.patch
 Patch61:       fix-version-detection-and-avoid-building-and-testing.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64113
 Patch62:       make-sure-the-file-client-is-destroyed-upon-used.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/581
+Patch63:       avoid-conflicts-with-dependencies-versions-bsc-12116.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
