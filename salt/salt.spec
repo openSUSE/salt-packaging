@@ -271,6 +271,8 @@ Patch62:       make-sure-the-file-client-is-destroyed-upon-used.patch
 Patch63:       avoid-conflicts-with-dependencies-versions-bsc-12116.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64369
 Patch64:       define-__virtualname__-for-transactional_update-modu.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/587
+Patch65:       make-master_tops-compatible-with-salt-3000-and-older.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
