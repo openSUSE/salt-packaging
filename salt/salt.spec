@@ -273,6 +273,8 @@ Patch63:       avoid-conflicts-with-dependencies-versions-bsc-12116.patch
 Patch64:       define-__virtualname__-for-transactional_update-modu.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/587
 Patch65:       make-master_tops-compatible-with-salt-3000-and-older.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/583
+Patch66:       tornado-fix-an-open-redirect-in-staticfilehandler-cv.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
