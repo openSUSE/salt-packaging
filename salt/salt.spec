@@ -583,6 +583,8 @@ Patch241:       include-stdout-in-error-message-for-zypperpkg-561.patch
 ###############
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/62862
 Patch242:       ignore-extend-declarations-from-excluded-sls-files.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/584
+PAtch243:       tornado-fix-an-open-redirect-in-staticfilehandler-cv.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  logrotate
@@ -1355,6 +1357,7 @@ cp %{S:6} .
 %patch240 -p1
 %patch241 -p1
 %patch242 -p1
+%patch243 -p1
 
 %build
 # Putting /usr/bin at the front of $PATH is needed for RHEL/RES 7. Without this
