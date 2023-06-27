@@ -277,6 +277,8 @@ Patch65:       make-master_tops-compatible-with-salt-3000-and-older.patch
 Patch66:       tornado-fix-an-open-redirect-in-staticfilehandler-cv.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/580
 Patch67:       fix-some-issues-detected-in-salt-support-cli-module-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64510
+Patch68:       3006.0-prevent-_pygit2.giterror-error-loading-known_.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
