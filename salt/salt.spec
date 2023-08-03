@@ -283,6 +283,8 @@ Patch68:       3006.0-prevent-_pygit2.giterror-error-loading-known_.patch
 Patch69:       fix-utf8-handling-in-pass-renderer-and-make-it-more-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/63403
 Patch70:       zypper-pkgrepo-alreadyconfigured-585.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64530
+Patch71:       fix-the-regression-of-user.present-state-when-group-.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
