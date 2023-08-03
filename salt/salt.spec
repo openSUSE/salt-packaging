@@ -287,6 +287,8 @@ Patch70:       zypper-pkgrepo-alreadyconfigured-585.patch
 Patch71:       fix-the-regression-of-user.present-state-when-group-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64179
 Patch72:       fix-regression-multiple-values-for-keyword-argument-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64554
+Patch73:       mark-salt-3006-as-released-586.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
