@@ -866,7 +866,7 @@ install -Dpm 0755 scripts/suse/watchdog/salt-daemon-watcher %{buildroot}%{_bindi
 #
 ## install config files
 install -Dpm 0640 conf/minion %{buildroot}%{_sysconfdir}/salt/minion
-install -Dpm 0640 /dev/null   %{buildroot}%{_sysconfdir}/salt/minion_id
+touch  -m 0640 -r conf/minion %{buildroot}%{_sysconfdir}/salt/minion_id # ghost file
 install -Dpm 0640 conf/master %{buildroot}%{_sysconfdir}/salt/master
 install -Dpm 0640 conf/roster %{buildroot}%{_sysconfdir}/salt/roster
 install -Dpm 0640 conf/cloud %{buildroot}%{_sysconfdir}/salt/cloud
