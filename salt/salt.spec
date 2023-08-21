@@ -289,6 +289,8 @@ Patch71:       fix-the-regression-of-user.present-state-when-group-.patch
 Patch72:       fix-regression-multiple-values-for-keyword-argument-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64554
 Patch73:       mark-salt-3006-as-released-586.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64599
+Patch74:       prevent-possible-exceptions-on-salt.utils.user.get_g.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
