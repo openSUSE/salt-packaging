@@ -296,6 +296,8 @@ Patch75:       fix-tests-to-make-them-running-with-salt-testsuite.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/f82860b8ad3ee786762fa02fa1a6eaf6e24dc8d4
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/65020
 Patch76:       do-not-fail-on-bad-message-pack-message-bsc-1213441-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64510
+Patch77:       make-sure-configured-user-is-properly-set-by-salt-bs.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
