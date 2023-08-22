@@ -293,6 +293,9 @@ Patch73:       mark-salt-3006-as-released-586.patch
 Patch74:       prevent-possible-exceptions-on-salt.utils.user.get_g.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/592
 Patch75:       fix-tests-to-make-them-running-with-salt-testsuite.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/f82860b8ad3ee786762fa02fa1a6eaf6e24dc8d4
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/65020
+Patch76:       do-not-fail-on-bad-message-pack-message-bsc-1213441-.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
