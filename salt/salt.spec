@@ -298,6 +298,8 @@ Patch75:       fix-tests-to-make-them-running-with-salt-testsuite.patch
 Patch76:       do-not-fail-on-bad-message-pack-message-bsc-1213441-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64510
 Patch77:       make-sure-configured-user-is-properly-set-by-salt-bs.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64959
+PAtch78:       fixed-gitfs-cachedir_basename-to-avoid-hash-collisio.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
