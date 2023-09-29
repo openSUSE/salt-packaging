@@ -659,12 +659,28 @@ Requires(pre):  %fillup_prereq
 Salt ssh is a master running without zmq.
 it enables the management of minions over a ssh connection.
 
-%package tests
+%package -n python3-salt-testsuite
 Summary:        Unit and integration tests for Salt
 Requires:       %{name} = %{version}-%{release}
+Requires:       python3-CherryPy
+Requires:       python3-Genshi
+Requires:       python3-Mako
+Requires:       python3-boto
+Requires:       python3-boto3
+Requires:       python3-docker
+Requires:       python3-mock
+Requires:       python3-pygit2
+Requires:       python3-pytest >= 7.0.1
+Requires:       python3-pytest-httpserver
+Requires:       python3-pytest-salt-factories >= 1.0.0~rc21
+Requires:       python3-pytest-subtests
+Requires:       python3-testinfra
+Requires:       python3-yamllint
 
-%description tests
-Collections of unit and integration tests for Salt
+Obsoletes:      %{name}-tests
+
+%description -n python3-salt-testsuite
+Collection of unit, functional, and integration tests for %{name}.
 
 %if %{with bash_completion}
 %package bash-completion
@@ -812,10 +828,12 @@ install -Dd -m 0755 %{buildroot}%{_sysconfdir}/logrotate.d/
 install -Dpm 0644 salt/cli/support/profiles/* %{buildroot}%{python3_sitelib}/salt/cli/support/profiles
 
 # Install Salt tests
-install -Dd -m 0750 %{buildroot}%{_datadir}/salt
-install -Dd -m 0750 %{buildroot}%{_datadir}/salt/tests
-cp -a tests/* %{buildroot}%{_datadir}/salt/tests/
-sed -i '1s=^#!/usr/bin/\(python\|env python\)[0-9.]*=#!/usr/bin/python3=' %{buildroot}%{_datadir}/salt/tests/runtests.py
+install -Dd %{buildroot}%{python3_sitelib}/salt-testsuite
+cp -a tests %{buildroot}%{python3_sitelib}/salt-testsuite/
+# Remove runtests.py which is not used as deprecated method of running the tests
+rm %{buildroot}%{python3_sitelib}/salt-testsuite/tests/runtests.py
+# Copy conf files to the testsuite as they are used by the tests
+cp -a conf %{buildroot}%{python3_sitelib}/salt-testsuite/
 
 ## Install Zypper plugins only on SUSE machines
 %if 0%{?suse_version}
@@ -1392,7 +1410,10 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 
 %files -n python3-salt
 %defattr(-,root,root,-)
-%{python3_sitelib}/*
+%dir %{python3_sitelib}/salt
+%dir %{python3_sitelib}/salt-*.egg-info
+%{python3_sitelib}/salt/*
+%{python3_sitelib}/salt-*.egg-info/*
 %exclude %{python3_sitelib}/salt/cloud/deploy/*.sh
 
 %if %{with docs}
@@ -1401,10 +1422,8 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %doc doc/_build/html
 %endif
 
-%files tests
-%dir %{_datadir}/salt/
-%dir %{_datadir}/salt/tests/
-%{_datadir}/salt/tests/*
+%files -n python3-salt-testsuite
+%{python3_sitelib}/salt-testsuite
 
 %if %{with bash_completion}
 %files bash-completion
