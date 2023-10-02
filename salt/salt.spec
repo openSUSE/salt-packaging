@@ -310,6 +310,8 @@ Patch81:        fix-calculation-of-sls-context-vars-when-trailing-do.patch
 Patch82:        implement-the-calling-for-batch-async-from-the-salt-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/tornadoweb/tornado/pull/2277
 Patch83:        only-call-native_str-on-curl_debug-message-in-tornad.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/65204
+Patch84:        use-salt-call-from-salt-bundle-with-transactional_up.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
