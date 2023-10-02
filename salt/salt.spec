@@ -314,6 +314,8 @@ Patch83:        only-call-native_str-on-curl_debug-message-in-tornad.patch
 Patch84:        use-salt-call-from-salt-bundle-with-transactional_up.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/65181
 Patch85:        improve-salt.utils.json.find_json-bsc-1213293.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/65266
+Patch86:        fix-optimization_order-opt-to-prevent-test-fails.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
