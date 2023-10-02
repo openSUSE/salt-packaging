@@ -312,6 +312,8 @@ Patch82:        implement-the-calling-for-batch-async-from-the-salt-.patch
 Patch83:        only-call-native_str-on-curl_debug-message-in-tornad.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/65204
 Patch84:        use-salt-call-from-salt-bundle-with-transactional_up.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/65181
+Patch85:        improve-salt.utils.json.find_json-bsc-1213293.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
