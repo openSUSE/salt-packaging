@@ -306,6 +306,8 @@ Patch79:        revert-usage-of-long-running-req-channel-bsc-1213960.patch
 Patch80:        write-salt-version-before-building-when-using-with-s.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/65036
 Patch81:        fix-calculation-of-sls-context-vars-when-trailing-do.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/594
+Patch82:        implement-the-calling-for-batch-async-from-the-salt-.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
