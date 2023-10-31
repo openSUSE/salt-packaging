@@ -318,6 +318,8 @@ Patch85:        improve-salt.utils.json.find_json-bsc-1213293.patch
 Patch86:        fix-optimization_order-opt-to-prevent-test-fails.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65232
 Patch87:        allow-all-primitive-grain-types-for-autosign_grains-.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65482
+Patch88:        fix-cve-2023-34049-bsc-1215157.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
