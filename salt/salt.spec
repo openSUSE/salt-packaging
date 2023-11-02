@@ -681,7 +681,9 @@ Requires:       %{name} = %{version}-%{release}
 Requires:       python3-CherryPy
 Requires:       python3-Genshi
 Requires:       python3-Mako
+%if !0%{?suse_version} > 1600 || 0%{?centos}
 Requires:       python3-boto
+%endif
 Requires:       python3-boto3
 Requires:       python3-docker
 Requires:       python3-mock
