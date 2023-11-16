@@ -296,7 +296,7 @@ Patch75:        fix-tests-to-make-them-running-with-salt-testsuite.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/f82860b8ad3ee786762fa02fa1a6eaf6e24dc8d4
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/65020
 Patch76:        do-not-fail-on-bad-message-pack-message-bsc-1213441-.patch
-# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64510
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64510 (dropped at patch 91)
 Patch77:        make-sure-configured-user-is-properly-set-by-salt-bs.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/64959
 Patch78:        fixed-gitfs-cachedir_basename-to-avoid-hash-collisio.patch
@@ -325,6 +325,8 @@ Patch88:        fix-cve-2023-34049-bsc-1215157.patch
 Patch89:        fix-gitfs-__env__-and-improve-cache-cleaning-bsc-119.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65435
 Patch90:        dereference-symlinks-to-set-proper-__cli-opt-bsc-121.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/614 (revert patch 77)
+Patch91:        revert-make-sure-configured-user-is-properly-set-by-.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
