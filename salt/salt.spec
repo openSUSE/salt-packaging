@@ -327,6 +327,8 @@ Patch89:        fix-gitfs-__env__-and-improve-cache-cleaning-bsc-119.patch
 Patch90:        dereference-symlinks-to-set-proper-__cli-opt-bsc-121.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/614 (revert patch 77)
 Patch91:        revert-make-sure-configured-user-is-properly-set-by-.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65488
+Patch92:        enable-keepalive-probes-for-salt-ssh-executions-bsc-.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
