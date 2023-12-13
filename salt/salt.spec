@@ -329,6 +329,8 @@ Patch90:        dereference-symlinks-to-set-proper-__cli-opt-bsc-121.patch
 Patch91:        revert-make-sure-configured-user-is-properly-set-by-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65488
 Patch92:        enable-keepalive-probes-for-salt-ssh-executions-bsc-.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65644
+Patch93:        prefer-unittest.mock-for-python-versions-that-are-su.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
