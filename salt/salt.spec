@@ -1,7 +1,7 @@
 #
 # spec file for package salt
 #
-# Copyright (c) 2021 SUSE LLC
+# Copyright (c) 2023 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -12,8 +12,10 @@
 # license that conforms to the Open Source Definition (Version 1.9)
 # published by the Open Source Initiative.
 
-# Please submit bugfixes or comments via http://bugs.opensuse.org/
+# Please submit bugfixes or comments via https://bugs.opensuse.org/
 #
+
+
 %global debug_package %{nil}
 
 %if 0%{?suse_version} > 1210 || 0%{?rhel} >= 7 || 0%{?fedora} >=28
@@ -35,13 +37,17 @@
 %bcond_without docs
 %bcond_with    builddocs
 
+%if %{without systemd}
+%define service_del_preun echo %{*}
+%endif
+
 Name:           salt
 Version:        3006.0
 Release:        0
 Summary:        A parallel remote execution system
 License:        Apache-2.0
 Group:          System/Management
-Url:            https://saltproject.io/
+URL:            https://saltproject.io/
 Source:         v%{version}.tar.gz
 Source1:        README.SUSE
 Source2:        salt-tmpfiles.d
@@ -348,7 +354,6 @@ Requires(pre):  %{_sbindir}/groupadd
 Requires(pre):  %{_sbindir}/useradd
 
 %if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
 Requires(pre):  shadow
 %endif
 
@@ -374,10 +379,6 @@ Requires:       iproute
 %if %{with systemd}
 BuildRequires:  pkgconfig(systemd)
 %{?systemd_ordering}
-%else
-%if 0%{?suse_version}
-Requires(pre): %insserv_prereq
-%endif
 %endif
 
 %if %{with fish_completion}
@@ -424,10 +425,10 @@ BuildRequires:  python3-setuptools
 # requirements/base.txt
 %if 0%{?rhel} || 0%{?fedora}
 BuildRequires:  python3-jinja2
+BuildRequires:  python3-m2crypto
 BuildRequires:  python3-markupsafe
 BuildRequires:  python3-msgpack > 0.3
 BuildRequires:  python3-zmq >= 2.2.0
-BuildRequires:  python3-m2crypto
 %else
 BuildRequires:  python3-Jinja2
 BuildRequires:  python3-MarkupSafe
@@ -440,11 +441,12 @@ BuildRequires:  python3-pycrypto >= 2.6.1
 %endif
 %endif
 BuildRequires:  python3-PyYAML
-BuildRequires:  python3-psutil
-BuildRequires:  python3-requests >= 1.0.0
+BuildRequires:  python3-distro
 BuildRequires:  python3-distro
 BuildRequires:  python3-looseversion
 BuildRequires:  python3-packaging
+BuildRequires:  python3-psutil
+BuildRequires:  python3-requests >= 1.0.0
 
 # requirements/zeromq.txt
 %if %{with test}
@@ -467,11 +469,11 @@ Requires:       python3
 # requirements/base.txt
 %if 0%{?rhel} || 0%{?fedora}
 Requires:       python3-jinja2
-Requires:       yum
+Requires:       python3-m2crypto
 Requires:       python3-markupsafe
 Requires:       python3-msgpack > 0.3
-Requires:       python3-m2crypto
 Requires:       python3-zmq >= 2.2.0
+Requires:       yum
 
 %if 0%{?rhel} == 8 || 0%{?fedora} >= 30
 Requires:       dnf
@@ -490,14 +492,16 @@ Requires:       python3-pycrypto >= 2.6.1
 %endif
 Requires:       python3-pyzmq >= 2.2.0
 %endif # end of RHEL / SUSE specific section
-Requires:       python3-jmespath
 Requires:       python3-PyYAML
-Requires:       python3-psutil
-Requires:       python3-requests >= 1.0.0
+Requires:       python3-contextvars
+Requires:       python3-contextvars
 Requires:       python3-distro
+Requires:       python3-distro
+Requires:       python3-jmespath
 Requires:       python3-looseversion
 Requires:       python3-packaging
-Requires:       python3-contextvars
+Requires:       python3-psutil
+Requires:       python3-requests >= 1.0.0
 %if 0%{?suse_version}
 # required for zypper.py
 Requires:       python3-rpm
@@ -581,14 +585,7 @@ Requires:       pmtools
 %endif
 %if %{with systemd}
 %{?systemd_requires}
-BuildRequires:	systemd
-%else
-%if 0%{?suse_version}
-Requires(pre):  %insserv_prereq
-%endif
-%endif
-%if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
+BuildRequires:  systemd
 %endif
 
 %description master
@@ -606,13 +603,6 @@ Requires:       (%{name}-transactional-update = %{version}-%{release} if read-on
 
 %if %{with systemd}
 %{?systemd_requires}
-%else
-%if 0%{?suse_version}
-Requires(pre):  %insserv_prereq
-%endif
-%endif
-%if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
 %endif
 
 %description minion
@@ -625,13 +615,6 @@ Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 %if %{with systemd}
 %{?systemd_requires}
-%else
-%if 0%{?suse_version}
-Requires(pre):  %insserv_prereq
-%endif
-%endif
-%if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
 %endif
 
 %description proxy
@@ -641,7 +624,6 @@ Examples include network gear that has an API but runs a proprietary OS,
 devices with limited CPU or memory, or devices that could run a minion, but for
 security reasons, will not.
 
-
 %package syndic
 Summary:        The syndic component for saltstack
 Group:          System/Management
@@ -649,13 +631,6 @@ Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
 %if %{with systemd}
 %{?systemd_requires}
-%else
-%if 0%{?suse_version}
-Requires(pre):  %insserv_prereq
-%endif
-%endif
-%if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
 %endif
 
 %description syndic
@@ -673,13 +648,6 @@ Recommends:     sshpass
 %endif
 %if %{with systemd}
 %{?systemd_requires}
-%else
-%if 0%{?suse_version}
-Requires(pre):  %insserv_prereq
-%endif
-%endif
-%if 0%{?suse_version}
-Requires(pre):  %fillup_prereq
 %endif
 
 %description ssh
@@ -776,7 +744,6 @@ Requires:       tar
 For transactional systems, like MicroOS, Salt can operate
 transparently if the executor "transactional-update" is registered in
 list of active executors.  This package add the configuration file.
-
 
 %prep
 %setup -q -n salt-%{version}-suse
@@ -907,23 +874,7 @@ ln -s service %{buildroot}%{_sbindir}/rcsalt-syndic
 ln -s service %{buildroot}%{_sbindir}/rcsalt-minion
 ln -s service %{buildroot}%{_sbindir}/rcsalt-api
 install -Dpm 644 %{S:2}                   %{buildroot}/usr/lib/tmpfiles.d/salt.conf
-%else
-mkdir -p %{buildroot}%{_initddir}
-## install init scripts
-install -Dpm 0755 pkg/old/suse/salt-master %{buildroot}%{_initddir}/salt-master
-install -Dpm 0755 pkg/old/suse/salt-syndic %{buildroot}%{_initddir}/salt-syndic
-install -Dpm 0755 pkg/old/suse/salt-minion %{buildroot}%{_initddir}/salt-minion
-install -Dpm 0755 pkg/old/suse/salt-api %{buildroot}%{_initddir}/salt-api
-ln -sf %{_initddir}/salt-master %{buildroot}%{_sbindir}/rcsalt-master
-ln -sf %{_initddir}/salt-syndic %{buildroot}%{_sbindir}/rcsalt-syndic
-ln -sf %{_initddir}/salt-minion %{buildroot}%{_sbindir}/rcsalt-minion
-ln -sf %{_initddir}/salt-api %{buildroot}%{_sbindir}/rcsalt-api
 %endif
-
-## Install sysV salt-minion watchdog for SLES11 and RHEL6
-%if 0%{?rhel} == 6 || 0%{?suse_version} == 1110
-install -Dpm 0755 scripts/suse/watchdog/salt-daemon-watcher %{buildroot}%{_bindir}/salt-daemon-watcher
-%endif 
 
 #
 ## install config files
@@ -1019,13 +970,8 @@ dbus-uuidgen --ensure
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_post salt-proxy@.service
-%fillup_only
 %else
 %systemd_post salt-proxy@.service
-%endif
-%else
-%if 0%{?suse_version}
-%fillup_and_insserv
 %endif
 %endif
 
@@ -1036,11 +982,6 @@ dbus-uuidgen --ensure
 %else
 %systemd_postun_with_restart salt-proxy@.service
 %endif
-%else
-%if 0%{?suse_version}
-%insserv_cleanup
-%restart_on_update salt-proxy
-%endif
 %endif
 
 %preun syndic
@@ -1049,15 +990,6 @@ dbus-uuidgen --ensure
 %service_del_preun salt-syndic.service
 %else
 %systemd_preun salt-syndic.service
-%endif
-%else
-%if 0%{?suse_version}
-%stop_on_removal salt-syndic
-%else
-  if [ $1 -eq 0 ] ; then
-      /sbin/service salt-syndic stop >/dev/null 2>&1
-      /sbin/chkconfig --del salt-syndic
-  fi
 %endif
 %endif
 
@@ -1072,13 +1004,8 @@ dbus-uuidgen --ensure
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_post salt-syndic.service
-%fillup_only
 %else
 %systemd_post salt-syndic.service
-%endif
-%else
-%if 0%{?suse_version}
-%fillup_and_insserv
 %endif
 %endif
 
@@ -1089,11 +1016,6 @@ dbus-uuidgen --ensure
 %else
 %systemd_postun_with_restart salt-syndic.service
 %endif
-%else
-%if 0%{?suse_version}
-%insserv_cleanup
-%restart_on_update salt-syndic
-%endif
 %endif
 
 %preun master
@@ -1102,15 +1024,6 @@ dbus-uuidgen --ensure
 %service_del_preun salt-master.service
 %else
 %systemd_preun salt-master.service
-%endif
-%else
-%if 0%{?suse_version}
-%stop_on_removal salt-master
-%else
-  if [ $1 -eq 0 ] ; then
-      /sbin/service salt-master stop >/dev/null 2>&1
-      /sbin/chkconfig --del salt-master
-  fi
 %endif
 %endif
 
@@ -1147,15 +1060,8 @@ if [ "${systemd_ver%%.*}" -lt 228 ]; then
 fi
 %if 0%{?suse_version}
 %service_add_post salt-master.service
-%fillup_only
 %else
 %systemd_post salt-master.service
-%endif
-%else
-%if 0%{?suse_version}
-%fillup_and_insserv
-%else
-  /sbin/chkconfig --add salt-master
 %endif
 %endif
 
@@ -1166,15 +1072,6 @@ fi
 %else
 %systemd_postun_with_restart salt-master.service
 %endif
-%else
-%if 0%{?suse_version}
-%restart_on_update salt-master
-%insserv_cleanup
-%else
-  if [ "$1" -ge "1" ] ; then
-      /sbin/service salt-master condrestart >/dev/null 2>&1 || :
-  fi
-%endif
 %endif
 
 %preun minion
@@ -1183,15 +1080,6 @@ fi
 %service_del_preun salt-minion.service
 %else
 %systemd_preun salt-minion.service
-%endif
-%else
-%if 0%{?suse_version}
-%stop_on_removal salt-minion
-%else
-  if [ $1 -eq 0 ] ; then
-      /sbin/service salt-minion stop >/dev/null 2>&1
-      /sbin/chkconfig --del salt-minion
-  fi
 %endif
 %endif
 
@@ -1206,15 +1094,8 @@ fi
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_post salt-minion.service
-%fillup_only
 %else
 %systemd_post salt-minion.service
-%endif
-%else
-%if 0%{?suse_version}
-%fillup_and_insserv
-%else
-  /sbin/chkconfig --add salt-minion
 %endif
 %endif
 
@@ -1224,15 +1105,6 @@ fi
 %service_del_postun salt-minion.service
 %else
 %systemd_postun_with_restart salt-minion.service
-%endif
-%else
-%if 0%{?suse_version}
-%insserv_cleanup
-%restart_on_update salt-minion
-%else
-  if [ "$1" -ge "1" ] ; then
-      /sbin/service salt-minion condrestart >/dev/null 2>&1 || :
-  fi
 %endif
 %endif
 
@@ -1261,10 +1133,6 @@ fi
 %else
 %systemd_post salt-api.service
 %endif
-%else
-%if 0%{?suse_version}
-%fillup_and_insserv
-%endif
 %endif
 
 %postun api
@@ -1273,11 +1141,6 @@ fi
 %service_del_postun salt-api.service
 %else
 %systemd_postun_with_restart salt-api.service
-%endif
-%else
-%if 0%{?suse_version}
-%insserv_cleanup
-%restart_on_update
 %endif
 %endif
 
@@ -1289,11 +1152,9 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %files api
 %defattr(-,root,root)
 %{_bindir}/salt-api
-%{_sbindir}/rcsalt-api
 %if %{with systemd}
+%{_sbindir}/rcsalt-api
 %{_unitdir}/salt-api.service
-%else
-%{_initddir}/salt-api
 %endif
 %{_mandir}/man1/salt-api.1.*
 
@@ -1319,11 +1180,9 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %defattr(-,root,root)
 %{_bindir}/salt-syndic
 %{_mandir}/man1/salt-syndic.1.gz
-%{_sbindir}/rcsalt-syndic
 %if %{with systemd}
+%{_sbindir}/rcsalt-syndic
 %{_unitdir}/salt-syndic.service
-%else
-%{_initddir}/salt-syndic
 %endif
 
 %files minion
@@ -1335,7 +1194,9 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %dir               %attr(0750, root, root) %{_sysconfdir}/salt/minion.d/
 %dir               %attr(0750, root, root) %{_sysconfdir}/salt/pki/minion/
 %dir               %attr(0750, root, root) %{_localstatedir}/cache/salt/minion/
+%if %{with systemd}
 %{_sbindir}/rcsalt-minion
+%endif
 
 # Install plugin only on SUSE machines
 %if 0%{?suse_version}
@@ -1356,13 +1217,6 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 
 %if %{with systemd}
 %{_unitdir}/salt-minion.service
-%else
-%config(noreplace) %{_initddir}/salt-minion
-%endif
-
-## Install sysV salt-minion watchdog for SLES11 and RHEL6
-%if 0%{?rhel} == 6 || 0%{?suse_version} == 1110
-%{_bindir}/salt-daemon-watcher
 %endif
 
 %files proxy
@@ -1388,11 +1242,9 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %if 0%{?suse_version} <= 1500
 %config(noreplace) %{_sysconfdir}/sysconfig/SuSEfirewall2.d/services/salt
 %endif
-%{_sbindir}/rcsalt-master
 %if %{with systemd}
+%{_sbindir}/rcsalt-master
 %{_unitdir}/salt-master.service
-%else
-%config(noreplace) %{_initddir}/salt-master
 %endif
 #
 %config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/master
@@ -1490,7 +1342,4 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %defattr(-,root,root)
 %config(noreplace) %attr(0640, root, root) %{_sysconfdir}/salt/minion.d/transactional_update.conf
 
-
 %changelog
-
-
