@@ -331,6 +331,9 @@ Patch91:        revert-make-sure-configured-user-is-properly-set-by-.patch
 Patch92:        enable-keepalive-probes-for-salt-ssh-executions-bsc-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65644
 Patch93:        prefer-unittest.mock-for-python-versions-that-are-su.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/620
+Patch94:        fix-the-aptpkg.py-unit-test-failure.patch
+
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
