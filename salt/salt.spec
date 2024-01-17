@@ -462,7 +462,7 @@ BuildRequires:  python3-packaging
 # requirements/zeromq.txt
 %if %{with test}
 BuildRequires:  python3-boto >= 2.32.1
-BuildRequires:  python3-mock
+BuildRequires:  %{python3-mock if %python-base < 3.8}
 BuildRequires:  python3-moto >= 0.3.6
 BuildRequires:  python3-pip
 BuildRequires:  python3-salt-testing >= 2015.2.16
@@ -710,7 +710,9 @@ Requires:       python3-boto
 %endif
 Requires:       python3-boto3
 Requires:       python3-docker
+%if 0%{?suse_version} < 1600
 Requires:       python3-mock
+%endif
 Requires:       python3-pygit2
 Requires:       python3-pytest >= 7.0.1
 Requires:       python3-pytest-httpserver
