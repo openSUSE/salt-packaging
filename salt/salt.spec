@@ -358,6 +358,11 @@ Obsoletes:      python2-%{name}
 Requires(pre):  %{_sbindir}/groupadd
 Requires(pre):  %{_sbindir}/useradd
 
+%if 0%{?suse_version} > 1600
+Provides:       group(salt)
+Provides:       user(salt)
+%endif
+
 %if 0%{?suse_version}
 Requires(pre):  %fillup_prereq
 Requires(pre):  shadow
