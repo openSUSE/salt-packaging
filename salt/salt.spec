@@ -335,6 +335,8 @@ Patch93:        prefer-unittest.mock-for-python-versions-that-are-su.patch
 Patch94:        fix-the-aptpkg.py-unit-test-failure.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65092
 Patch95:        update-__pillar__-during-pillar_refresh.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65009
+Patch96:        fixed-keyerror-in-logs-when-running-a-state-that-fai.patch
 
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
