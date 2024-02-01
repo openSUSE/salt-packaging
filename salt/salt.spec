@@ -341,6 +341,8 @@ Patch96:        fixed-keyerror-in-logs-when-running-a-state-that-fai.patch
 Patch97:        improve-pip-target-override-condition-with-venv_pip_.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65819
 Patch98:        allow-kwargs-for-fileserver-roots-update-bsc-1218482.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65969
+Patch99:        fix-cve-2024-22231-and-cve-2024-22232-bsc-1219430-bs.patch
 
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
