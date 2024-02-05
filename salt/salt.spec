@@ -15,6 +15,7 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 %global debug_package %{nil}
+%global flavor @BUILD_FLAVOR@%{nil}
 
 %if 0%{?suse_version} > 1210 || 0%{?rhel} >= 7 || 0%{?fedora} >=28
 %bcond_without systemd
@@ -462,7 +463,7 @@ BuildRequires:  python3-packaging
 # requirements/zeromq.txt
 %if %{with test}
 BuildRequires:  python3-boto >= 2.32.1
-BuildRequires:  python3-mock
+BuildRequires:  %{python3-mock if %python-base < 3.8}
 BuildRequires:  python3-moto >= 0.3.6
 BuildRequires:  python3-pip
 BuildRequires:  python3-salt-testing >= 2015.2.16
@@ -699,6 +700,7 @@ Requires(pre):  %fillup_prereq
 Salt ssh is a master running without zmq.
 it enables the management of minions over a ssh connection.
 
+%if "%{flavor}" == "testsuite_included"
 %package -n python3-salt-testsuite
 Summary:        Unit and integration tests for Salt
 Requires:       %{name} = %{version}-%{release}
@@ -710,7 +712,9 @@ Requires:       python3-boto
 %endif
 Requires:       python3-boto3
 Requires:       python3-docker
+%if 0%{?suse_version} < 1600
 Requires:       python3-mock
+%endif
 Requires:       python3-pygit2
 Requires:       python3-pytest >= 7.0.1
 Requires:       python3-pytest-httpserver
@@ -723,6 +727,7 @@ Obsoletes:      %{name}-tests
 
 %description -n python3-salt-testsuite
 Collection of unit, functional, and integration tests for %{name}.
+%endif
 
 %if %{with bash_completion}
 %package bash-completion
@@ -869,6 +874,7 @@ install -Dd -m 0755 %{buildroot}%{_sysconfdir}/logrotate.d/
 # Install salt-support profiles
 install -Dpm 0644 salt/cli/support/profiles/* %{buildroot}%{python3_sitelib}/salt/cli/support/profiles
 
+%if "%{flavor}" == "testsuite_included"
 # Install Salt tests
 install -Dd %{buildroot}%{python3_sitelib}/salt-testsuite
 cp -a tests %{buildroot}%{python3_sitelib}/salt-testsuite/
@@ -876,6 +882,7 @@ cp -a tests %{buildroot}%{python3_sitelib}/salt-testsuite/
 rm %{buildroot}%{python3_sitelib}/salt-testsuite/tests/runtests.py
 # Copy conf files to the testsuite as they are used by the tests
 cp -a conf %{buildroot}%{python3_sitelib}/salt-testsuite/
+%endif
 
 ## Install Zypper plugins only on SUSE machines
 %if 0%{?suse_version}
@@ -1464,8 +1471,10 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %doc doc/_build/html
 %endif
 
+%if "%{flavor}" == "testsuite_included"
 %files -n python3-salt-testsuite
 %{python3_sitelib}/salt-testsuite
+%endif
 
 %if %{with bash_completion}
 %files bash-completion
