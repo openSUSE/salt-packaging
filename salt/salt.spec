@@ -700,7 +700,7 @@ Requires(pre):  %fillup_prereq
 Salt ssh is a master running without zmq.
 it enables the management of minions over a ssh connection.
 
-%if "%{flavor}" == "test"
+%if "%{flavor}" == "testsuite_included"
 %package -n python3-salt-testsuite
 Summary:        Unit and integration tests for Salt
 Requires:       %{name} = %{version}-%{release}
@@ -874,7 +874,7 @@ install -Dd -m 0755 %{buildroot}%{_sysconfdir}/logrotate.d/
 # Install salt-support profiles
 install -Dpm 0644 salt/cli/support/profiles/* %{buildroot}%{python3_sitelib}/salt/cli/support/profiles
 
-%if "%{flavor}" == "test"
+%if "%{flavor}" == "testsuite_included"
 # Install Salt tests
 install -Dd %{buildroot}%{python3_sitelib}/salt-testsuite
 cp -a tests %{buildroot}%{python3_sitelib}/salt-testsuite/
@@ -1471,7 +1471,7 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %doc doc/_build/html
 %endif
 
-%if "%{flavor}" == "test"
+%if "%{flavor}" == "testsuite_included"
 %files -n python3-salt-testsuite
 %{python3_sitelib}/salt-testsuite
 %endif
