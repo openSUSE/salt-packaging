@@ -540,6 +540,12 @@ Recommends:     python3-netaddr
 Recommends:     python3-pyinotify
 %endif
 
+# Required by Salt modules
+Requires:       iputils
+Requires:       sudo
+Requires:       file
+Requires:       man
+
 Provides:       bundled(python3-tornado) = 4.5.3
 
 %description -n python3-salt
@@ -808,8 +814,13 @@ Requires:       python3-pytest-salt-factories >= 1.0.0~rc21
 Requires:       python3-pytest-subtests
 Requires:       python3-testinfra
 Requires:       python3-yamllint
+Requires:       python3-pip
+Requires:       docker
+Requires:       openssh
+Requires:       git
 
 Obsoletes:      %{name}-tests
+
 %description -n python3-salt-testsuite
 Collection of unit, functional, and integration tests for %{name}.
 
