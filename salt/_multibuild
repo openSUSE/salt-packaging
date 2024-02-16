@@ -1,3 +1,3 @@
 <multibuild>
-  <flavor>testsuite_included</flavor>
+  <flavor>testsuite</flavor>
 </multibuild>
