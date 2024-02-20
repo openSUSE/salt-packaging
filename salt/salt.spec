@@ -796,7 +796,7 @@ BuildRequires:  python3
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 
-Requires:       %{name} = %{version}-%{release}
+Requires:       salt = %{version}-%{release}
 Requires:       python3-CherryPy
 Requires:       python3-Genshi
 Requires:       python3-Mako
