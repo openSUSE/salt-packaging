@@ -366,6 +366,8 @@ Obsoletes:      python2-%{name}
 
 Requires(pre):  %{_sbindir}/groupadd
 Requires(pre):  %{_sbindir}/useradd
+Provides:       user(salt)
+Provides:       group(salt)
 
 %if 0%{?suse_version}
 Requires(pre):  %fillup_prereq
