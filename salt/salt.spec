@@ -15,7 +15,6 @@
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 %global debug_package %{nil}
-%global flavor @BUILD_FLAVOR@%{nil}
 
 %global flavor @BUILD_FLAVOR@%{nil}
 %if "%{flavor}" == "testsuite"
