@@ -349,6 +349,8 @@ Patch97:        fixed-keyerror-in-logs-when-running-a-state-that-fai.patch
 Patch98:        improve-pip-target-override-condition-with-venv_pip_.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65819
 Patch99:        allow-kwargs-for-fileserver-roots-update-bsc-1218482.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66048
+Patch100:       discover-both-.yml-and-.yaml-playbooks-bsc-1211888.patch
 
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
