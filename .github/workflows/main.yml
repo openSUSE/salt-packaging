@@ -1,0 +1,33 @@
+name: 'Commit Message Length Check'
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - 'MU/*'
+      - 'release/*'
+
+jobs:
+  check-commit-message:
+    name: Check Commit Message
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Line Length
+        uses: gsactions/commit-message-checker@v2
+        with:
+          pattern: '^[^#].{1,65}'
+          error: 'The maximum line length of 65 characters is exceeded.'
+          excludeDescription: 'true' # exclude the description body of a pull request
+          excludeTitle: 'true' # exclude the title of a pull request
+          checkAllCommitMessages: 'true' # check all commits associated with a pull request
+          accessToken: ${{ secrets.GITHUB_TOKEN }}
