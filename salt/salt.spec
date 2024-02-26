@@ -351,6 +351,8 @@ Patch98:        improve-pip-target-override-condition-with-venv_pip_.patch
 Patch99:        allow-kwargs-for-fileserver-roots-update-bsc-1218482.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66048
 Patch100:       discover-both-.yml-and-.yaml-playbooks-bsc-1211888.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66130
+Patch101:       fix-problematic-tests-and-allow-smooth-tests-executi.patch
 
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
