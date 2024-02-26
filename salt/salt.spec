@@ -800,7 +800,7 @@ BuildRequires:  python3
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 
-Requires:       salt = %{version}-%{release}
+Requires:       salt = %{version}
 Requires:       python3-CherryPy
 Requires:       python3-Genshi
 Requires:       python3-Mako
