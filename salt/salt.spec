@@ -920,6 +920,8 @@ install -Dpm 0644 salt/cli/support/profiles/* %{buildroot}%{python3_sitelib}/sal
 %if "%{flavor}" == "testsuite"
 # Install Salt tests
 install -Dd %{buildroot}%{python3_sitelib}/salt-testsuite
+# SLE 12 is missing the `--no-backup-if-mismatch` patch option
+find tests -name "*.orig" -exec rm {} \;
 cp -a tests %{buildroot}%{python3_sitelib}/salt-testsuite/
 # Remove runtests.py which is not used as deprecated method of running the tests
 rm %{buildroot}%{python3_sitelib}/salt-testsuite/tests/runtests.py
