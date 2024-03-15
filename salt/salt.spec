@@ -357,6 +357,8 @@ Patch101:       fix-problematic-tests-and-allow-smooth-tests-executi.patch
 Patch102:       make-importing-seco.range-thread-safe-bsc-1211649.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66130
 PAtch103:       fix-tests-failures-and-errors-when-detected-on-vm-ex.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66234
+Patch104:       decode-oscap-byte-stream-to-string-bsc-1219001.patch	
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
