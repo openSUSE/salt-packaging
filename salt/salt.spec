@@ -565,7 +565,7 @@ Recommends:     python3-pyinotify
 Requires:       iputils
 Requires:       sudo
 Requires:       file
-Requires:       man
+Recommends:     man
 
 Provides:       bundled(python3-tornado) = 4.5.3
 
