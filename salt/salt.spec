@@ -817,7 +817,7 @@ BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 
 Requires:       salt = %{version}
-Requires:       python3-CherryPy
+Recommends:     python3-CherryPy
 Requires:       python3-Genshi
 Requires:       python3-Mako
 %if !0%{?suse_version} > 1600 || 0%{?centos}
