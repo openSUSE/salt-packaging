@@ -370,6 +370,8 @@ Patch104:       decode-oscap-byte-stream-to-string-bsc-1219001.patch
 Patch105:       fix-salt-warnings-and-testuite-for-python-3.11-635.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/639
 Patch106:       switch-oscap-encoding-to-utf-8-639.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65982
+Patch107:       remove-unused-import-causing-delays-on-starting-salt.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
