@@ -388,6 +388,8 @@ Patch113:       remove-redundant-_file_find-call-to-the-master.patch
 Patch114:       skip-tests-for-unsupported-algorithm-on-old-openssl-.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/652
 Patch115:       add-missing-contextvars-dependency-in-salt.version.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/640
+Patch116:       prevent-oom-with-high-amount-of-batch-async-calls-bs.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
