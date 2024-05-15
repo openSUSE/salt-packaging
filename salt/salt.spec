@@ -386,6 +386,8 @@ Patch112:       prevent-possible-exception-in-tornado.concurrent.fut.patch
 Patch113:       remove-redundant-_file_find-call-to-the-master.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/646
 Patch114:       skip-tests-for-unsupported-algorithm-on-old-openssl-.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/652
+Patch115:       add-missing-contextvars-dependency-in-salt.version.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
