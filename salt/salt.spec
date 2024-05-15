@@ -382,6 +382,8 @@ Patch110:       make-salt-master-self-recoverable-on-killing-eventpu.patch
 Patch111:       make-reactor-engine-less-blocking-the-eventpublisher.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/638
 Patch112:       prevent-possible-exception-in-tornado.concurrent.fut.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66455
+Patch113:       remove-redundant-_file_find-call-to-the-master.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
