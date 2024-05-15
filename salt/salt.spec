@@ -372,6 +372,8 @@ Patch105:       fix-salt-warnings-and-testuite-for-python-3.11-635.patch
 Patch106:       switch-oscap-encoding-to-utf-8-639.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65982
 Patch107:       remove-unused-import-causing-delays-on-starting-salt.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66024
+Patch108:       make-logging-calls-lighter.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
