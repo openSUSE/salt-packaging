@@ -376,6 +376,8 @@ Patch107:       remove-unused-import-causing-delays-on-starting-salt.patch
 Patch108:       make-logging-calls-lighter.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66034
 Patch109:       improve-broken-events-catching-and-reporting.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/633
+Patch110:       make-salt-master-self-recoverable-on-killing-eventpu.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
