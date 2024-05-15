@@ -378,6 +378,8 @@ Patch108:       make-logging-calls-lighter.patch
 Patch109:       improve-broken-events-catching-and-reporting.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/633
 Patch110:       make-salt-master-self-recoverable-on-killing-eventpu.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66158
+Patch111:       make-reactor-engine-less-blocking-the-eventpublisher.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
