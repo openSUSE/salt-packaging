@@ -390,6 +390,8 @@ Patch114:       skip-tests-for-unsupported-algorithm-on-old-openssl-.patch
 Patch115:       add-missing-contextvars-dependency-in-salt.version.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/640
 Patch116:       prevent-oom-with-high-amount-of-batch-async-calls-bs.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65983
+Patch117:       do-not-call-the-async-wrapper-calls-with-the-separat.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
