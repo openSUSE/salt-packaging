@@ -380,6 +380,8 @@ Patch109:       improve-broken-events-catching-and-reporting.patch
 Patch110:       make-salt-master-self-recoverable-on-killing-eventpu.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66158
 Patch111:       make-reactor-engine-less-blocking-the-eventpublisher.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/638
+Patch112:       prevent-possible-exception-in-tornado.concurrent.fut.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
