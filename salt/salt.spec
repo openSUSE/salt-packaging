@@ -374,6 +374,8 @@ Patch106:       switch-oscap-encoding-to-utf-8-639.patch
 Patch107:       remove-unused-import-causing-delays-on-starting-salt.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66024
 Patch108:       make-logging-calls-lighter.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66034
+Patch109:       improve-broken-events-catching-and-reporting.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
