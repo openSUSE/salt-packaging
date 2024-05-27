@@ -394,6 +394,8 @@ Patch116:       prevent-oom-with-high-amount-of-batch-async-calls-bs.patch
 Patch117:       do-not-call-the-async-wrapper-calls-with-the-separat.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66494
 Patch118:       speed-up-salt.matcher.confirm_top-by-using-__context.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66593
+Patch119:       several-fixes-for-tests-to-avoid-errors-and-failures.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
