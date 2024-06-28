@@ -402,6 +402,9 @@ Patch120:       provide-systemd-timer-unit.patch
 Patch121:       skip-certain-tests-if-necessary-and-mark-some-flaky-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66647
 Patch122:       fix-status.diskusage-and-exclude-some-tests-to-run-w.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65077
+Patch123:       fixes-saltstack-salt-64953-user.list_groups-omits-re.patch
+Patch124:       fixes-saltstack-salt-65029-support-for-pysss-can-be-.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
