@@ -1,0 +1,32 @@
+From 8626074cd2847a29bb52bcb5e7d19b79f6f9f96b Mon Sep 17 00:00:00 2001
+From: nicholasmhughes <nicholasmhughes@gmail.com>
+Date: Fri, 15 Sep 2023 10:32:12 -0400
+Subject: [PATCH] remove permission check as its probably an
+ unreachable edge case
+
+---
+ tests/pytests/functional/utils/user/test__getgrall.py | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/tests/pytests/functional/utils/user/test__getgrall.py b/tests/pytests/functional/utils/user/test__getgrall.py
+index 824cf9b229..db994019e6 100644
+--- a/tests/pytests/functional/utils/user/test__getgrall.py
++++ b/tests/pytests/functional/utils/user/test__getgrall.py
+@@ -36,14 +36,6 @@ def test__getgrall(etc_group):
+     assert grall == expected_grall
+ 
+ 
+-@pytest.mark.skip_if_root()
+-def test__getgrall_permission_denied(etc_group):
+-    etc_group.chmod(0o000)
+-
+-    with pytest.raises(PermissionError):
+-        salt.utils.user._getgrall(root=str(etc_group.parent.parent))
+-
+-
+ def test__getgrall_bad_format(etc_group):
+     with etc_group.open("a") as _fp:
+         _fp.write("\n# some comment here\n")
+-- 
+2.35.3
+

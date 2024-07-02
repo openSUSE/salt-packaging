@@ -405,6 +405,11 @@ Patch122:       fix-status.diskusage-and-exclude-some-tests-to-run-w.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65077
 Patch123:       fixes-saltstack-salt-64953-user.list_groups-omits-re.patch
 Patch124:       fixes-saltstack-salt-65029-support-for-pysss-can-be-.patch
+Patch125:       add-changlog-entries.patch
+Patch126:       add-negative-tests-for-_getgrall.patch
+Patch127:       add-tests-for-_getgrall-and-local-vs-remote-group-ha.patch
+Patch128:       remove-permission-check-as-its-probably-an-unreachab.patch
+Patch129:       root-can-still-read-the-file-and-tests-run-as-root.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END

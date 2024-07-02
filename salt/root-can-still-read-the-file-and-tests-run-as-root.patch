@@ -1,0 +1,24 @@
+From 8c1767f781df5169bfeef3317baa135b938379bd Mon Sep 17 00:00:00 2001
+From: nicholasmhughes <nicholasmhughes@gmail.com>
+Date: Fri, 1 Sep 2023 17:13:03 -0400
+Subject: [PATCH] root can still read the file and tests run as root
+
+---
+ tests/pytests/functional/utils/user/test__getgrall.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tests/pytests/functional/utils/user/test__getgrall.py b/tests/pytests/functional/utils/user/test__getgrall.py
+index bed8420cd8..824cf9b229 100644
+--- a/tests/pytests/functional/utils/user/test__getgrall.py
++++ b/tests/pytests/functional/utils/user/test__getgrall.py
+@@ -36,6 +36,7 @@ def test__getgrall(etc_group):
+     assert grall == expected_grall
+ 
+ 
++@pytest.mark.skip_if_root()
+ def test__getgrall_permission_denied(etc_group):
+     etc_group.chmod(0o000)
+ 
+-- 
+2.35.3
+
