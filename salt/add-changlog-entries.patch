@@ -1,0 +1,29 @@
+From bdee0b4e5fb1eda397cfd6fb4bae72c5de6ac894 Mon Sep 17 00:00:00 2001
+From: nicholasmhughes <nicholasmhughes@gmail.com>
+Date: Mon, 28 Aug 2023 14:37:30 -0400
+Subject: [PATCH] add changlog entries
+
+---
+ changelog/64953.fixed.md   | 1 +
+ changelog/65029.removed.md | 1 +
+ 2 files changed, 2 insertions(+)
+ create mode 100644 changelog/64953.fixed.md
+ create mode 100644 changelog/65029.removed.md
+
+diff --git a/changelog/64953.fixed.md b/changelog/64953.fixed.md
+new file mode 100644
+index 0000000000..f0b1ed46f1
+--- /dev/null
++++ b/changelog/64953.fixed.md
+@@ -0,0 +1 @@
++Fix user.list_groups omits remote groups via sssd, etc.
+diff --git a/changelog/65029.removed.md b/changelog/65029.removed.md
+new file mode 100644
+index 0000000000..d09f10b4ba
+--- /dev/null
++++ b/changelog/65029.removed.md
+@@ -0,0 +1 @@
++Tech Debt - support for pysss removed due to functionality addition in Python 3.3
+-- 
+2.35.3
+

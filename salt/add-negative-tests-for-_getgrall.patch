@@ -1,0 +1,53 @@
+From 73658060ab01e70c5cbdfdae4e551239aaf8e6e3 Mon Sep 17 00:00:00 2001
+From: nicholasmhughes <nicholasmhughes@gmail.com>
+Date: Wed, 30 Aug 2023 19:44:50 -0400
+Subject: [PATCH] add negative tests for _getgrall
+
+---
+ changelog/64888.fixed.md                        |  1 +
+ .../functional/utils/user/test__getgrall.py     | 17 ++++++++++++++++-
+ 2 files changed, 17 insertions(+), 1 deletion(-)
+ create mode 100644 changelog/64888.fixed.md
+
+diff --git a/changelog/64888.fixed.md b/changelog/64888.fixed.md
+new file mode 100644
+index 0000000000..08b2efd042
+--- /dev/null
++++ b/changelog/64888.fixed.md
+@@ -0,0 +1 @@
++Fixed grp.getgrall() in utils/user.py causing performance issues
+diff --git a/tests/pytests/functional/utils/user/test__getgrall.py b/tests/pytests/functional/utils/user/test__getgrall.py
+index d13bd2075b..bed8420cd8 100644
+--- a/tests/pytests/functional/utils/user/test__getgrall.py
++++ b/tests/pytests/functional/utils/user/test__getgrall.py
+@@ -9,7 +9,7 @@ import grp
+ import salt.utils.user
+ 
+ 
+-@pytest.fixture()
++@pytest.fixture(scope="function")
+ def etc_group(tmp_path):
+     etcgrp = tmp_path / "etc" / "group"
+     etcgrp.parent.mkdir()
+@@ -34,3 +34,18 @@ def test__getgrall(etc_group):
+     grall = salt.utils.user._getgrall(root=str(etc_group.parent.parent))
+ 
+     assert grall == expected_grall
++
++
++def test__getgrall_permission_denied(etc_group):
++    etc_group.chmod(0o000)
++
++    with pytest.raises(PermissionError):
++        salt.utils.user._getgrall(root=str(etc_group.parent.parent))
++
++
++def test__getgrall_bad_format(etc_group):
++    with etc_group.open("a") as _fp:
++        _fp.write("\n# some comment here\n")
++
++    with pytest.raises(IndexError):
++        salt.utils.user._getgrall(root=str(etc_group.parent.parent))
+-- 
+2.35.3
+

@@ -402,6 +402,14 @@ Patch120:       provide-systemd-timer-unit.patch
 Patch121:       skip-certain-tests-if-necessary-and-mark-some-flaky-.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66647
 Patch122:       fix-status.diskusage-and-exclude-some-tests-to-run-w.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65077
+Patch123:       fixes-saltstack-salt-64953-user.list_groups-omits-re.patch
+Patch124:       fixes-saltstack-salt-65029-support-for-pysss-can-be-.patch
+Patch125:       add-changlog-entries.patch
+Patch126:       add-tests-for-_getgrall-and-local-vs-remote-group-ha.patch
+Patch127:       add-negative-tests-for-_getgrall.patch
+Patch128:       root-can-still-read-the-file-and-tests-run-as-root.patch
+Patch129:       remove-permission-check-as-its-probably-an-unreachab.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
