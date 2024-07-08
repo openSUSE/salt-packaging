@@ -404,6 +404,8 @@ Patch121:       skip-certain-tests-if-necessary-and-mark-some-flaky-.patch
 Patch122:       fix-status.diskusage-and-exclude-some-tests-to-run-w.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/65077
 Patch123:       fix-user.list_groups-omits-remote-groups.patch
+# PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66695
+Patch124:       some-more-small-tests-fixes-enhancements-661.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
