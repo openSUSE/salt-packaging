@@ -406,6 +406,8 @@ Patch122:       fix-status.diskusage-and-exclude-some-tests-to-run-w.patch
 Patch123:       fix-user.list_groups-omits-remote-groups.patch
 # PATCH-FIX_UPSTREAM https://github.com/saltstack/salt/pull/66695
 Patch124:       some-more-small-tests-fixes-enhancements-661.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/666
+Patch125:       test_vultrpy-adjust-test-expectation-to-prevent-fail.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
