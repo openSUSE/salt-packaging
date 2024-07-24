@@ -508,14 +508,14 @@ BuildRequires:  python3-setuptools
 %if 0%{?rhel} || 0%{?fedora}
 BuildRequires:  python3-jinja2
 BuildRequires:  python3-markupsafe
-BuildRequires:  python3-msgpack > 0.3
-BuildRequires:  python3-zmq >= 2.2.0
+BuildRequires:  python3-msgpack >= 0.4.6
+BuildRequires:  python3-zmq >= 17.0.0
 BuildRequires:  python3-m2crypto
 %else
 BuildRequires:  python3-Jinja2
 BuildRequires:  python3-MarkupSafe
-BuildRequires:  python3-msgpack-python > 0.3
-BuildRequires:  python3-pyzmq >= 2.2.0
+BuildRequires:  python3-msgpack-python >= 0.4.6
+BuildRequires:  python3-pyzmq >= 17.0.0
 %if 0%{?suse_version} >= 1500
 BuildRequires:  python3-M2Crypto
 %else
@@ -523,11 +523,11 @@ BuildRequires:  python3-pycrypto >= 2.6.1
 %endif
 %endif
 BuildRequires:  python3-PyYAML
-BuildRequires:  python3-psutil
+BuildRequires:  python3-psutil >= 5.0.0
 BuildRequires:  python3-requests >= 1.0.0
-BuildRequires:  python3-distro
+BuildRequires:  python3-distro >= 1.0.1
 BuildRequires:  python3-looseversion
-BuildRequires:  python3-packaging
+BuildRequires:  python3-packaging >= 16.8
 
 # requirements/zeromq.txt
 %if %{with test}
@@ -552,9 +552,9 @@ Requires:       python3
 Requires:       python3-jinja2
 Requires:       yum
 Requires:       python3-markupsafe
-Requires:       python3-msgpack > 0.3
+Requires:       python3-msgpack >= 0.4.6
 Requires:       python3-m2crypto
-Requires:       python3-zmq >= 2.2.0
+Requires:       python3-zmq >= 17.0.0
 
 %if 0%{?rhel} == 8 || 0%{?fedora} >= 30
 Requires:       dnf
@@ -565,21 +565,21 @@ Requires:       yum-plugin-security
 %else # SUSE
 Requires:       python3-Jinja2
 Requires:       python3-MarkupSafe
-Requires:       python3-msgpack-python > 0.3
+Requires:       python3-msgpack-python >= 0.4.6
 %if 0%{?suse_version} >= 1500
 Requires:       python3-M2Crypto
 %else
 Requires:       python3-pycrypto >= 2.6.1
 %endif
-Requires:       python3-pyzmq >= 2.2.0
+Requires:       python3-pyzmq >= 17.0.0
 %endif # end of RHEL / SUSE specific section
 Requires:       python3-jmespath
 Requires:       python3-PyYAML
-Requires:       python3-psutil
+Requires:       python3-psutil >= 5.0.0
 Requires:       python3-requests >= 1.0.0
-Requires:       python3-distro
+Requires:       python3-distro >= 1.0.1
 Requires:       python3-looseversion
-Requires:       python3-packaging
+Requires:       python3-packaging >= 16.8
 Requires:       python3-contextvars
 %if 0%{?suse_version}
 # required for zypper.py
