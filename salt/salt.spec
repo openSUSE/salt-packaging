@@ -423,6 +423,8 @@ Patch130:       join-masters-if-it-is-a-list-671.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66509
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/0c3ebc0795f9c2adec90118281343cae3070e0f6
 Patch131:       remove-redundant-run_func-from-salt.master.mworker._.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66818
+Patch132:       improve-error-handling-with-different-openssl-versio.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
