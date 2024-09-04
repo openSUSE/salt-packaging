@@ -427,6 +427,9 @@ Patch131:       remove-redundant-run_func-from-salt.master.mworker._.patch
 Patch132:       improve-error-handling-with-different-openssl-versio.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66856
 Patch133:       avoid-crash-on-wrong-output-of-systemctl-version-bsc.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66861
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/675
+Patch134:       fix-test_system-flaky-setup_teardown-fn.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
