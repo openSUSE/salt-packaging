@@ -430,6 +430,8 @@ Patch133:       avoid-crash-on-wrong-output-of-systemctl-version-bsc.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66861
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/675
 Patch134:       fix-test_system-flaky-setup_teardown-fn.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/676
+Patch135:       fix-test_debian-to-work-in-our-infrastructure-676.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
