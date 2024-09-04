@@ -552,6 +552,7 @@ BuildRequires:  python3-requests >= 1.0.0
 BuildRequires:  python3-distro
 BuildRequires:  python3-looseversion
 BuildRequires:  python3-packaging
+BuildRequires:  python3-contextvars
 
 # requirements/zeromq.txt
 %if %{with test}
