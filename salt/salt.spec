@@ -436,6 +436,8 @@ Patch135:       fix-test_debian-to-work-in-our-infrastructure-676.patch
 Patch136:       fix-deprecated-code-677.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66780
 Patch137:       fix-the-selinux-context-for-salt-minion-service-bsc-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66510
+Patch138:       prevent-using-syncwrapper-with-no-reason.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
