@@ -440,6 +440,8 @@ Patch137:       fix-the-selinux-context-for-salt-minion-service-bsc-.patch
 Patch138:       prevent-using-syncwrapper-with-no-reason.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66742
 Patch139:       use-cachedir-for-extension_modules-in-salt-call-bsc-.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/680
+Patch140:       revert-the-change-making-reactor-less-blocking-bsc-1.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
