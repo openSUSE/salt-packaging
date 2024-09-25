@@ -444,6 +444,8 @@ Patch139:       use-cachedir-for-extension_modules-in-salt-call-bsc-.patch
 Patch140:       revert-the-change-making-reactor-less-blocking-bsc-1.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66649
 Patch141:       allow-namedloadercontexts-to-be-returned-from-loader.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/d54407ba6dc664e5e5f3f613e27ae24f828c9648
+Patch142:       avoid-explicit-reading-of-etc-salt-minion-bsc-122035.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
