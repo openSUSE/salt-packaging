@@ -438,6 +438,8 @@ Patch136:       fix-deprecated-code-677.patch
 Patch137:       fix-the-selinux-context-for-salt-minion-service-bsc-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66510
 Patch138:       prevent-using-syncwrapper-with-no-reason.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66742
+Patch139:       use-cachedir-for-extension_modules-in-salt-call-bsc-.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
