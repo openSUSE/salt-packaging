@@ -450,6 +450,8 @@ Patch142:       avoid-explicit-reading-of-etc-salt-minion-bsc-122035.patch
 Patch143:       fix-x509-test-fails-on-old-openssl-systems-682.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/684
 Patch144:       fix-x509-private-key-tests-and-test_suse-on-sle12-68.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/685
+Patch145:       enhance-cleanup-mechanism-after-salt-bundle-upgrade-.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
