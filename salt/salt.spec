@@ -1032,7 +1032,6 @@ cp -a conf %{buildroot}%{python3_sitelib}/salt-testsuite/
 %if 0%{?suse_version}
 install -Dd -m 0750 %{buildroot}%{_prefix}/lib/zypp/plugins/commit
 %{__install} scripts/suse/zypper/plugins/commit/zyppnotify %{buildroot}%{_prefix}/lib/zypp/plugins/commit/zyppnotify
-sed -i '1s=^#!/usr/bin/\(python\|env python\)[0-9.]*=#!/usr/bin/python3=' %{buildroot}%{_prefix}/lib/zypp/plugins/commit/zyppnotify
 %endif
 
 # Install Yum plugins only on RH machines
@@ -1137,6 +1136,18 @@ install -Dpm 0640 conf/suse/standalone-formulas-configuration.conf %{buildroot}%
 %fdupes %{buildroot}%{python3_sitelib}
 %endif
 
+%python3_fix_shebang
+%if %{suse_version} >= 1600
+%python3_fix_shebang_path salt/ext/tornado/*
+%python3_fix_shebang_path salt/ext/tornado/platform/*
+%python3_fix_shebang_path salt/ext/tornado/test/*
+%python3_fix_shebang_path salt/ext/vsan/*
+%python3_fix_shebang_path salt/ext/modules/*
+%python3_fix_shebang_path salt/netapi/rest_cherrypy/*
+%python3_fix_shebang_path salt/pillar/*
+%python3_fix_shebang_path %{buildroot}%{_prefix}/lib/zypp/plugins/commit/zyppnotify
+%endif
+%python3_compile
 %endif
 
 %if "%{flavor}" != "testsuite"
