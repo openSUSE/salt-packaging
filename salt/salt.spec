@@ -649,6 +649,7 @@ Requires:       iputils
 Requires:       sudo
 Requires:       file
 Recommends:     man
+Recommends:     python3-passlib
 
 Provides:       bundled(python3-tornado) = 4.5.3
 
