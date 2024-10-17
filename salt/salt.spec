@@ -626,6 +626,7 @@ Requires:       python3-distro
 Requires:       python3-looseversion
 Requires:       python3-packaging
 Requires:       python3-contextvars
+Requires:       python3-cryptography
 %if 0%{?suse_version}
 # required for zypper.py
 Requires:       python3-rpm
