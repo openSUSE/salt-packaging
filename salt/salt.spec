@@ -16,6 +16,15 @@
 #
 %global debug_package %{nil}
 
+%if 0%{?suse_version} > 1500
+%bcond_without libalternatives
+%else
+%bcond_with libalternatives
+%endif
+%if 0%{?sle_version} >= 150400
+%define _alternatives 1
+%endif
+
 %global flavor @BUILD_FLAVOR@%{nil}
 %if "%{flavor}" == "testsuite"
 %define psuffix -test
@@ -42,6 +51,28 @@
 
 %{?sle15allpythons}
 %define skip_python2 1
+%if 0%{?rhel} == 8 || (0%{?suse_version} == 1500 && 0%{?sle_version} < 150400)
+%define __python3_bin_suffix 3.6
+%if 0%{?rhel} == 8
+%define __python3 /usr/libexec/platform-python
+%else
+%define __python3 /usr/bin/python3
+%endif
+%define python_module() python3-%**
+%define python_files() -n python3-%1
+%define python_subpackages %{nil}
+%define python_sitelib %python3_sitelib
+%define python_expand(+abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-=) %{lua: \
+local args = rpm.expand("%**")\
+local python_bin = rpm.expand("%__python3")\
+local python_bin_suffix = rpm.expand("%__python3_bin_suffix")\
+args = args:gsub("$python_bin_suffix", python_bin_suffix)\
+args = args:gsub("$python_sitelib", "python3_sitelib")\
+args = args:gsub("$python", python_bin)\
+print(rpm.expand(args .. "\\n"))\
+}
+%define _nosinglespec 1
+%endif
 Name:           salt%{psuffix}
 Version:        3006.0
 Release:        0
@@ -469,7 +500,11 @@ BuildRequires:  logrotate
 BuildRequires:  fdupes
 %endif
 
-Requires:       python-%{name} = %{version}-%{release}
+%if 0%{?_alternatives}
+Requires:       %{name}-call = %{version}-%{release}
+%else
+Requires:       python3-%{name} = %{version}-%{release}
+%endif
 Obsoletes:      python2-%{name}
 
 Requires(pre):  %{_sbindir}/groupadd
@@ -544,7 +579,11 @@ servers, handle them quickly and through a simple and manageable interface.
 
 %if "%{flavor}" != "testsuite"
 
+%if 0%{?_nosinglespec}
+%package -n python3-salt
+%else
 %package -n python-salt
+%endif
 Summary:        python3 library for salt
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
@@ -554,7 +593,6 @@ BuildRequires:  platform-python
 %else
 BuildRequires:  %{python_module base}
 %endif
-BuildRequires:  %{python_module devel}
 BuildRequires:  %{python_module setuptools}
 # requirements/base.txt
 %if 0%{?rhel} || 0%{?fedora}
@@ -598,8 +636,23 @@ BuildRequires:  %{python_module sphinx}
 %if 0%{?rhel} == 8
 Requires:       platform-python
 %else
+%if 0%{?_nosinglespec}
+Requires:       %{python_module base}
+%else
 Requires:       python-base
 %endif
+%endif
+
+%if 0%{?_alternatives}
+%if %{with libalternatives}
+Requires:       alts
+BuildRequires:  alts
+%else
+Requires(post): update-alternatives
+Requires(postun):update-alternatives
+%endif
+%endif
+
 # requirements/base.txt
 %if 0%{?rhel} || 0%{?fedora}
 Requires:       python3-jinja2
@@ -616,6 +669,17 @@ Requires:       dnf
 Requires:       yum-plugin-security
 %endif
 %else # SUSE
+%if 0%{?_nosinglespec}
+Requires:       %{python_module Jinja2}
+Requires:       %{python_module MarkupSafe}
+Requires:       %{python_module msgpack-python > 0.3}
+%if 0%{?suse_version} >= 1500
+Requires:       %{python_module M2Crypto}
+%else
+Requires:       %{python_module pycrypto >= 2.6.1}
+%endif
+Requires:       %{python_module pyzmq >= 2.2.0}
+%else
 Requires:       python-Jinja2
 Requires:       python-MarkupSafe
 Requires:       python-msgpack-python > 0.3
@@ -625,8 +689,27 @@ Requires:       python-M2Crypto
 Requires:       python-pycrypto >= 2.6.1
 %endif
 Requires:       python-pyzmq >= 2.2.0
+%endif
 %endif # end of RHEL / SUSE specific section
-Requires:       python-jmespath
+%if 0%{?_nosinglespec}
+Recommends:     %{python_module jmespath}
+Requires:       %{python_module PyYAML}
+Requires:       %{python_module psutil}
+Requires:       %{python_module requests >= 1.0.0}
+Requires:       %{python_module distro}
+Requires:       %{python_module looseversion}
+Requires:       %{python_module packaging}
+Requires:       %{python_module contextvars}
+%if 0%{?suse_version}
+# required for zypper.py
+Requires:       %{python_module rpm}
+# requirements/opt.txt (not all)
+# Suggests:     python-MySQL-python  ## Disabled for now, originally Recommended
+Suggests:       %{python_module timelib}
+Suggests:       %{python_module gnupg}
+%endif
+%else
+Recommends:     python-jmespath
 Requires:       python-PyYAML
 Requires:       python-psutil
 Requires:       python-requests >= 1.0.0
@@ -637,21 +720,27 @@ Requires:       python-contextvars
 %if 0%{?suse_version}
 # required for zypper.py
 Requires:       python-rpm
-Requires(pre):  libzypp(plugin:system) >= 0
-Requires:       python-zypp-plugin
 # requirements/opt.txt (not all)
 # Suggests:     python-MySQL-python  ## Disabled for now, originally Recommended
 Suggests:       python-timelib
 Suggests:       python-gnupg
 # requirements/zeromq.txt
 %endif
+%endif
 #
 %if 0%{?suse_version}
 # python-xml is part of python-base in all rhel versions
+%if 0%{?_nosinglespec}
+Requires:       %{python_module xml}
+Suggests:       %{python_module Mako}
+Recommends:     %{python_module netaddr}
+Recommends:     %{python_module pyinotify}
+%else
 Requires:       python-xml
 Suggests:       python-Mako
 Recommends:     python-netaddr
 Recommends:     python-pyinotify
+%endif
 %endif
 
 # Required by Salt modules
@@ -661,9 +750,19 @@ Requires:       file
 Recommends:     man
 Recommends:     python3-passlib
 
+%if 0%{?_nosinglespec}
+Provides:       bundled(%{python_module tornado}) = 4.5.3
+%else
 Provides:       bundled(python-tornado) = 4.5.3
+%endif
 
+Provides:       %{name}-call = %{version}-%{release}
+
+%if 0%{?_nosinglespec}
+%description -n python3-salt
+%else
 %description -n python-salt
+%endif
 Python3 specific files for salt
 
 %package api
@@ -672,9 +771,9 @@ Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
 %if 0%{?suse_version}
-Requires:       python-CherryPy >= 3.2.2
+Requires:       python3-CherryPy >= 3.2.2
 %else
-Requires:       python-cherrypy >= 3.2.2
+Requires:       python3-cherrypy >= 3.2.2
 %endif
 
 %description api
@@ -685,10 +784,10 @@ Summary:        Generic cloud provisioning tool for Saltstack
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
-Requires:       python-apache-libcloud
+Requires:       python3-apache-libcloud
 %if 0%{?suse_version}
-Recommends:     python-botocore
-Recommends:     python-netaddr
+Recommends:     python3-botocore
+Recommends:     python3-netaddr
 %endif
 
 %description cloud
@@ -711,7 +810,7 @@ Summary:        The management component of Saltstack with zmq protocol supporte
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 %if 0%{?suse_version}
-Recommends:     python-pygit2 >= 0.20.3
+Recommends:     python3-pygit2 >= 0.20.3
 %endif
 %ifarch %{ix86} x86_64
 %if 0%{?suse_version}
@@ -745,6 +844,10 @@ Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 %if 0%{?suse_version} > 1500 || 0%{?sle_version} > 150000
 Requires:       (%{name}-transactional-update = %{version}-%{release} if read-only-root-fs)
+%endif
+%if 0%{?suse_version}
+Requires:       python3-zypp-plugin
+Requires(pre):  libzypp(plugin:system) >= 0
 %endif
 
 %if %{with systemd}
@@ -899,7 +1002,11 @@ list of active executors.  This package add the configuration file.
 
 %if "%{flavor}" == "testsuite"
 
+%if 0%{?_nosinglespec}
+%package -n %{python_module salt-testsuite}
+%else
 %package -n python-salt-testsuite
+%endif
 Summary:        Unit and integration tests for Salt
 
 %if 0%{?rhel} == 8
@@ -907,10 +1014,30 @@ BuildRequires:  platform-python
 %else
 BuildRequires:  %{python_module base}
 %endif
-BuildRequires:  %{python_module devel}
 BuildRequires:  %{python_module setuptools}
 
 Requires:       salt = %{version}
+%if 0%{?_nosinglespec}
+Recommends:     %{python_module CherryPy}
+Requires:       %{python_module Genshi}
+Requires:       %{python_module Mako}
+%if !0%{?suse_version} > 1600 || 0%{?centos}
+Requires:       %{python_module boto}
+%endif
+Requires:       %{python_module boto3}
+Requires:       %{python_module docker}
+%if 0%{?suse_version} < 1600
+Requires:       %{python_module mock}
+%endif
+Requires:       %{python_module pygit2}
+Requires:       %{python_module pytest >= 7.0.1}
+Requires:       %{python_module pytest-httpserver}
+Requires:       %{python_module pytest-salt-factories >= 1.0.0~rc21}
+Requires:       %{python_module pytest-subtests}
+Requires:       %{python_module testinfra}
+Requires:       %{python_module yamllint}
+Requires:       %{python_module pip}
+%else
 Recommends:     python-CherryPy
 Requires:       python-Genshi
 Requires:       python-Mako
@@ -930,13 +1057,18 @@ Requires:       python-pytest-subtests
 Requires:       python-testinfra
 Requires:       python-yamllint
 Requires:       python-pip
+%endif
 Requires:       docker
 Requires:       openssh
 Requires:       git
 
 Obsoletes:      %{name}-tests
 
+%if 0%{?_nosinglespec}
+%description -n python3-salt-testsuite
+%else
 %description -n python-salt-testsuite
+%endif
 Collection of unit, functional, and integration tests for %{name}.
 
 %endif
@@ -1106,7 +1238,7 @@ ln -sf %{_initddir}/salt-api %{buildroot}%{_sbindir}/rcsalt-api
 ## Install sysV salt-minion watchdog for SLES11 and RHEL6
 %if 0%{?rhel} == 6 || 0%{?suse_version} == 1110
 install -Dpm 0755 scripts/suse/watchdog/salt-daemon-watcher %{buildroot}%{_bindir}/salt-daemon-watcher
-%endif 
+%endif
 
 #
 ## install config files
@@ -1156,6 +1288,10 @@ install -Dpm 0640 conf/suse/standalone-formulas-configuration.conf %{buildroot}%
 %python_expand %fdupes %{buildroot}%{$python_sitelib}
 %endif
 
+%if 0%{?_alternatives}
+%python_clone -a %{buildroot}%{_bindir}/salt-call
+%endif
+
 %endif
 
 %check
@@ -1176,6 +1312,10 @@ getent passwd salt >/dev/null || %{_sbindir}/useradd -r -g salt -d $S_HOME -s /b
 if [[ -d "$S_PHOME/.ssh" ]]; then
     mv $S_PHOME/.ssh $S_HOME
 fi
+%if 0%{?_alternatives}
+[ -h %{_bindir}/salt-call ] || rm -f %{_bindir}/salt-call
+%python_libalternatives_reset_alternative salt-call
+%endif
 
 %post
 %if %{with systemd}
@@ -1470,7 +1610,23 @@ fi
 %endif
 %endif
 
+%if 0%{?_alternatives}
+%pre -n python-salt
+[ -h %{_bindir}/salt-call ] || rm -f %{_bindir}/salt-call
+%python_libalternatives_reset_alternative salt-call
+
+%post -n python-salt
+%python_install_alternative salt-call
+
+%postun -n python-salt
+%python_uninstall_alternative salt-call
+%endif
+
+%if 0%{?_nosinglespec}
+%posttrans -n %{python_module salt}
+%else
 %posttrans -n python-salt
+%endif
 # force re-generate a new thin.tgz
 rm -f %{_localstatedir}/cache/salt/master/thin/version
 rm -f %{_localstatedir}/cache/salt/minion/thin/version
@@ -1607,7 +1763,9 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %files
 %defattr(-,root,root,-)
 %{_bindir}/spm
+%if ! 0%{?_alternatives}
 %{_bindir}/salt-call
+%endif
 %{_bindir}/salt-support
 %{_mandir}/man1/salt-call.1.gz
 %{_mandir}/man1/spm.1.gz
@@ -1628,6 +1786,9 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 
 %files %{python_files salt}
 %defattr(-,root,root,-)
+%if 0%{?_alternatives}
+%python_alternative %{_bindir}/salt-call
+%endif
 %dir %{python_sitelib}/salt
 %dir %{python_sitelib}/salt-*.egg-info
 %{python_sitelib}/salt/*
@@ -1684,5 +1845,3 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %endif
 
 %changelog
-
-
