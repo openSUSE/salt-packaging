@@ -23,9 +23,6 @@
 %else
 %bcond_with libalternatives
 %endif
-%if 0%{?sle_version} >= 150400 || 0%{?suse_version} >= 1600
-%define _alternatives 1
-%endif
 
 %global flavor @BUILD_FLAVOR@%{nil}
 %if "%{flavor}" == "testsuite"
@@ -57,7 +54,12 @@
 
 %{?sle15allpythons}
 %define skip_python2 1
-%if 0%{?rhel} == 8 || (0%{?suse_version} == 1500 && 0%{?sle_version} < 150400)
+
+# We use single-spec macros where possible (currently SLE 15 SP4+, SLE 16, Tumbleweed),
+# for other distros we define these compatiblity macros.
+# single-spec macro usage implies update-alternatives/libalternatives
+%if (0%{?suse_version} == 1500 && 0%{?sle_version} < 150400) || 0%{?rhel}
+%define singlespec_compat 1
 %define __python3_bin_suffix 3.6
 %if 0%{?rhel} == 8
 %define __python3 /usr/libexec/platform-python
@@ -77,7 +79,6 @@ args = args:gsub("$python_sitelib", "python3_sitelib")\
 args = args:gsub("$python", python_bin)\
 print(rpm.expand(args .. "\\n"))\
 }
-%define _nosinglespec 1
 %endif
 Name:           salt%{psuffix}
 Version:        3006.0
@@ -508,10 +509,10 @@ BuildRequires:  logrotate
 BuildRequires:  fdupes
 %endif
 
-%if 0%{?_alternatives}
-Requires:       %{name}-call = %{version}-%{release}
+%if 0%{?singlespec_compat}
+Requires:       %{python_module %{name} = %{version}-%{release}}
 %else
-Requires:       python3-%{name} = %{version}-%{release}
+Requires:       %{name}-call = %{version}-%{release}
 %endif
 Obsoletes:      python2-%{name}
 
@@ -582,7 +583,17 @@ servers, handle them quickly and through a simple and manageable interface.
 
 %if "%{flavor}" != "testsuite"
 
-%if 0%{?_nosinglespec}
+%if %{with docs}
+%package doc
+Summary:        Documentation for salt, a parallel remote execution system
+Group:          Documentation/HTML
+Requires:       %{name} = %{version}
+
+%description doc
+This contains the documentation of salt, it is an offline version of http://docs.saltstack.com.
+%endif
+
+%if 0%{?singlespec_compat}
 %package -n python3-salt
 %else
 %package -n python-salt
@@ -598,30 +609,26 @@ BuildRequires:  %{python_module base}
 %endif
 BuildRequires:  %{python_module setuptools}
 # requirements/base.txt
-%if 0%{?rhel} || 0%{?fedora}
-BuildRequires:  python3-jinja2
-BuildRequires:  python3-m2crypto
-BuildRequires:  python3-markupsafe
-BuildRequires:  python3-msgpack > 0.3
-BuildRequires:  python3-zmq >= 2.2.0
-%else
+%if 0%{?suse_version}
 BuildRequires:  %{python_module Jinja2}
+BuildRequires:  %{python_module M2Crypto}
 BuildRequires:  %{python_module MarkupSafe}
 BuildRequires:  %{python_module msgpack-python > 0.3}
 BuildRequires:  %{python_module pyzmq > 2.2.0}
-%if 0%{?suse_version} >= 1500
-BuildRequires:  %{python_module M2Crypto}
 %else
-BuildRequires:  %{python_module pycrypto >= 2.6.1}
-%endif
+BuildRequires:  %{python_module jinja2}
+BuildRequires:  %{python_module m2crypto}
+BuildRequires:  %{python_module markupsafe}
+BuildRequires:  %{python_module msgpack > 0.3}
+BuildRequires:  %{python_module zmq >= 2.2.0}
 %endif
 BuildRequires:  %{python_module PyYAML}
-BuildRequires:  %{python_module psutil}
-BuildRequires:  %{python_module requests >= 1.0.0}
+BuildRequires:  %{python_module contextvars}
 BuildRequires:  %{python_module distro}
 BuildRequires:  %{python_module looseversion}
 BuildRequires:  %{python_module packaging}
-BuildRequires:  %{python_module contextvars}
+BuildRequires:  %{python_module psutil}
+BuildRequires:  %{python_module requests >= 1.0.0}
 
 # requirements/zeromq.txt
 %if %{with test}
@@ -639,14 +646,14 @@ BuildRequires:  %{python_module sphinx}
 %if 0%{?rhel} == 8
 Requires:       platform-python
 %else
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 Requires:       %{python_module base}
 %else
 Requires:       python-base
 %endif
 %endif
 
-%if 0%{?_alternatives}
+%if !0%{?singlespec_compat}
 %if %{with libalternatives}
 Requires:       alts
 BuildRequires:  alts
@@ -657,93 +664,64 @@ Requires(postun):update-alternatives
 %endif
 
 # requirements/base.txt
-%if 0%{?rhel} || 0%{?fedora}
-Requires:       python3-jinja2
-Requires:       python3-m2crypto
-Requires:       python3-markupsafe
-Requires:       python3-msgpack > 0.3
-Requires:       python3-zmq >= 2.2.0
-Requires:       yum
-
-%if 0%{?rhel} == 8 || 0%{?fedora} >= 30
-Requires:       dnf
-%endif
-%if 0%{?rhel} == 6
-Requires:       yum-plugin-security
-%endif
-%else # SUSE
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
+%if 0%{?suse_version}
 Requires:       %{python_module Jinja2}
 Requires:       %{python_module MarkupSafe}
 Requires:       %{python_module msgpack-python > 0.3}
-%if 0%{?suse_version} >= 1500
 Requires:       %{python_module M2Crypto}
-%else
-Requires:       %{python_module pycrypto >= 2.6.1}
-%endif
 Requires:       %{python_module pyzmq >= 2.2.0}
-%else
-Requires:       python-Jinja2
-Requires:       python-MarkupSafe
-Requires:       python-msgpack-python > 0.3
-%if 0%{?suse_version} >= 1500
-Requires:       python-M2Crypto
-%else
-Requires:       python-pycrypto >= 2.6.1
-%endif
-Requires:       python-pyzmq >= 2.2.0
-%endif
-%endif # end of RHEL / SUSE specific section
-%if 0%{?_nosinglespec}
-Recommends:     %{python_module jmespath}
-Requires:       %{python_module PyYAML}
-Requires:       %{python_module psutil}
-Requires:       %{python_module requests >= 1.0.0}
-Requires:       %{python_module distro}
-Requires:       %{python_module looseversion}
-Requires:       %{python_module packaging}
-Requires:       %{python_module contextvars}
-%if 0%{?suse_version}
-# required for zypper.py
 Requires:       %{python_module rpm}
-# requirements/opt.txt (not all)
-# Suggests:     python-MySQL-python  ## Disabled for now, originally Recommended
-Suggests:       %{python_module timelib}
-Suggests:       %{python_module gnupg}
-%endif
-%else
-Recommends:     python-jmespath
-Requires:       python-PyYAML
-Requires:       python-psutil
-Requires:       python-requests >= 1.0.0
-Requires:       python-distro
-Requires:       python-looseversion
-Requires:       python-packaging
-Requires:       python-contextvars
-%if 0%{?suse_version}
-# required for zypper.py
-Requires:       python-rpm
-# requirements/opt.txt (not all)
-# Suggests:     python-MySQL-python  ## Disabled for now, originally Recommended
-Suggests:       python-timelib
-Suggests:       python-gnupg
-# requirements/zeromq.txt
-%endif
-%endif
-#
-%if 0%{?suse_version}
-# python-xml is part of python-base in all rhel versions
-%if 0%{?_nosinglespec}
-Requires:       %{python_module xml}
-Suggests:       %{python_module Mako}
+# A few optional dependencies
+# TODO: check if these can be moved to common section below
+Recommends:     %{python_module Mako}
 Recommends:     %{python_module netaddr}
 Recommends:     %{python_module pyinotify}
 %else
-Requires:       python-xml
-Suggests:       python-Mako
-Recommends:     python-netaddr
-Recommends:     python-pyinotify
+# RHEL/Fedora
+Requires:       %{python_module jinja2}
+Requires:       %{python_module m2crypto}
+Requires:       %{python_module markupsafe}
+Requires:       %{python_module msgpack > 0.3}
+Requires:       %{python_module zmq >= 2.2.0}
+Requires:       yum
+Requires:       dnf
 %endif
+# Common to SUSE and RHEL/Fedora
+Requires:       %{python_module PyYAML}
+Requires:       %{python_module contextvars}
+Requires:       %{python_module distro}
+Requires:       %{python_module looseversion}
+Requires:       %{python_module packaging}
+Requires:       %{python_module psutil}
+Requires:       %{python_module requests >= 1.0.0}
+# A few optional dependencies
+Recommends:     %{python_module gnupg}
+Recommends:     %{python_module jmespath}
+Recommends:     %{python_module passlib}
+Recommends:     %{python_module timelib}
+%else
+Requires:       python-Jinja2
+Requires:       python-M2Crypto
+Requires:       python-MarkupSafe
+Requires:       python-PyYAML
+Requires:       python-contextvars
+Requires:       python-distro
+Requires:       python-looseversion
+Requires:       python-msgpack-python > 0.3
+Requires:       python-packaging
+Requires:       python-psutil
+Requires:       python-pyzmq >= 2.2.0
+Requires:       python-requests >= 1.0.0
+Requires:       python-rpm
+# A few optional dependencies
+Recommends:     python-Mako
+Recommends:     python-gnupg
+Recommends:     python-jmespath
+Recommends:     python-netaddr
+Recommends:     python-passlib
+Recommends:     python-pyinotify
+Recommends:     python-timelib
 %endif
 
 # Required by Salt modules
@@ -751,143 +729,257 @@ Requires:       iputils
 Requires:       sudo
 Requires:       file
 Recommends:     man
-Recommends:     python3-passlib
+%if 0%{?singlespec_compat}
+Recommends:     %{python_module passlib}
+%else
+Recommends:     python-passlib
+%endif
 
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 Provides:       bundled(%{python_module tornado}) = 4.5.3
 %else
 Provides:       bundled(python-tornado) = 4.5.3
 %endif
-
 Provides:       %{name}-call = %{version}-%{release}
 
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 %description -n python3-salt
 %else
 %description -n python-salt
 %endif
 Python3 specific files for salt
 
-%package api
+%if 0%{?singlespec_compat}
+%package -n python3-salt-api
+%else
+%package -n python-salt-api
+%endif
 Summary:        The api for Salt a parallel remote execution system
 Group:          System/Management
+%if 0%{?singlespec_compat}
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
-%if 0%{?suse_version}
-Requires:       python3-CherryPy >= 3.2.2
 %else
-Requires:       python3-cherrypy >= 3.2.2
+Requires:       python-%{name} = %{version}-%{release}
+Requires:       python-%{name}-master = %{version}-%{release}
+%endif
+Provides:       %{name}-api = %{version}-%{release}
+Conflicts:      %{name}-api = %{version}-%{release}
+Obsoletes:      %{name}-api < %{version}-%{release}
+%if 0%{?singlespec_compat}
+%if 0%{?suse_version}
+Requires:       %{python_module CherryPy >= 3.2.2}
+%else
+Requires:       %{python_module cherrypy >= 3.2.2}
+%endif
+%else
+Requires:       python-CherryPy >= 3.2.1
 %endif
 
-%description api
+%if 0%{?singlespec_compat}
+%description -n python3-salt-api
+%else
+%description -n python-salt-api
+%endif
 salt-api is a modular interface on top of Salt that can provide a variety of entry points into a running Salt system.
 
-%package cloud
+%if 0%{?singlespec_compat}
+%package -n python3-salt-cloud
+%else
+%package -n python-salt-cloud
+%endif
 Summary:        Generic cloud provisioning tool for Saltstack
 Group:          System/Management
+%if 0%{?singlespec_compat}
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
-Requires:       python3-apache-libcloud
+%else
+Requires:       python-%{name} = %{version}-%{release}
+Requires:       python-%{name}-master = %{version}-%{release}
+%endif
+Provides:       %{name}-cloud = %{version}-%{version}
+Conflicts:      %{name}-cloud = %{version}-%{release}
+Obsoletes:      %{name}-cloud < %{version}-%{release}
+%if 0%{?singlespec_compat}
+Requires:       %{python_module apache-libcloud}
 %if 0%{?suse_version}
-Recommends:     python3-botocore
-Recommends:     python3-netaddr
+Recommends:     %{python_module botocore}
+Recommends:     %{python_module netaddr}
+%endif
+%else
+Requires:       python-apache-libcloud
+Recommends:     python-botocore
+Recommends:     python-netaddr
 %endif
 
-%description cloud
+%if 0%{?singlespec_compat}
+%description -n python3-salt-cloud
+%else
+%description -n python-salt-cloud
+%endif
 public cloud VM management system
 provision virtual machines on various public clouds via a cleanly
 controlled profile and mapping system.
 
-%if %{with docs}
-%package doc
-Summary:        Documentation for salt, a parallel remote execution system
-Group:          Documentation/HTML
-Requires:       %{name} = %{version}
 
-%description doc
-This contains the documentation of salt, it is an offline version of http://docs.saltstack.com.
+%if 0%{?singlespec_compat}
+%package -n python3-salt-master
+%else
+%package -n python-salt-master
 %endif
-
-%package master
 Summary:        The management component of Saltstack with zmq protocol supported
 Group:          System/Management
+%if 0%{?singlespec_compat}
 Requires:       %{name} = %{version}-%{release}
+%else
+Requires:       python-%{name} = %{version}-%{release}
+%endif
+Provides:       %{name}-master = %{version}-%{release}
+Conflicts:      %{name}-master = %{version}-%{release}
+Obsoletes:      %{name}-master < %{version}-%{release}
 %if 0%{?suse_version}
-Recommends:     python3-pygit2 >= 0.20.3
+%if 0%{?singlespec_compat}
+Recommends:     %{python_module pygit2 >= 0.20.3}
+%else
+Recommends:     python-pygit2 >= 0.20.3
+%endif
 %endif
 %ifarch %{ix86} x86_64
-%if 0%{?suse_version}
 %if 0%{?suse_version} > 1110
 Requires:       dmidecode
 %else
 Requires:       pmtools
 %endif
 %endif
-%endif
+
+
 %if %{with systemd}
 %{?systemd_requires}
 BuildRequires:  systemd
 %endif
-
-%description master
+%if 0%{?singlespec_compat}
+%description -n python3-salt-master
+%else
+%description -n python-salt-master
+%endif
 The Salt master is the central server to which all minions connect.
 Enabled commands to remote systems to be called in parallel rather
 than serially.
 
-%package minion
+%if 0%{?singlespec_compat}
+%package -n python3-salt-minion
+%else
+%package -n python-salt-minion
+%endif
 Summary:        The client component for Saltstack
 Group:          System/Management
+%if 0%{?singlespec_compat}
 Requires:       %{name} = %{version}-%{release}
+%else
+Requires:       python-%{name} = %{version}-%{release}
+%endif
+Provides:       %{name}-minion = %{version}-%{release}
+Conflicts:      %{name}-minion = %{version}-%{release}
+Obsoletes:      %{name}-minion < %{version}-%{release}
 %if 0%{?suse_version} > 1500 || 0%{?sle_version} > 150000
 Requires:       (%{name}-transactional-update = %{version}-%{release} if read-only-root-fs)
 %endif
 %if 0%{?suse_version}
-Requires:       python3-zypp-plugin
+%if 0%{?singlespec_compat}
+Requires:       %{python_module zypp-plugin}
+%else
+Requires:       python-zypp-plugin
+%endif
 Requires(pre):  libzypp(plugin:system) >= 0
 %endif
-
 %if %{with systemd}
 %{?systemd_requires}
 %endif
 
-%description minion
+%if 0%{?singlespec_compat}
+%description -n python3-salt-minion
+%else
+%description -n python-salt-minion
+%endif
 Salt minion is queried and controlled from the master.
 Listens to the salt master and execute the commands.
 
-%package proxy
+%if 0%{?singlespec_compat}
+%package -n python3-salt-proxy
+%else
+%package -n python-salt-proxy
+%endif
 Summary:        Component for salt that enables controlling arbitrary devices
 Group:          System/Management
+%if 0%{?singlespec_compat}
 Requires:       %{name} = %{version}-%{release}
+%else
+Requires:       python-%{name} = %{version}-%{release}
+%endif
+Provides:       %{name}-proxy = %{version}-%{release}
+Conflicts:      %{name}-proxy = %{version}-%{release}
+Obsoletes:      %{name}-proxy < %{version}-%{release}
 %if %{with systemd}
 %{?systemd_requires}
 %endif
 
-%description proxy
+%if 0%{?singlespec_compat}
+%description -n python3-salt-proxy
+%else
+%description -n python-salt-proxy
+%endif
 Proxy minions are a developing Salt feature that enables controlling devices that,
 for whatever reason, cannot run a standard salt-minion.
 Examples include network gear that has an API but runs a proprietary OS,
 devices with limited CPU or memory, or devices that could run a minion, but for
 security reasons, will not.
 
-%package syndic
+%if 0%{?singlespec_compat}
+%package -n python3-salt-syndic
+%else
+%package -n python-salt-syndic
+%endif
 Summary:        The syndic component for saltstack
 Group:          System/Management
+%if 0%{?singlespec_compat}
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
+%else
+Requires:       python-%{name} = %{version}-%{release}
+%endif
+Provides:       %{name}-syndic = %{version}-%{release}
+Conflicts:      %{name}-syndic = %{version}-%{release}
+Obsoletes:      %{name}-syndic < %{version}-%{release}
 %if %{with systemd}
 %{?systemd_requires}
 %endif
 
-%description syndic
+%if 0%{?singlespec_compat}
+%description -n python3-salt-syndic
+%else
+%description -n python-salt-syndic
+%endif
 Salt syndic is the master-of-masters for salt
 The master of masters for salt-- it enables
 the management of multiple masters at a time..
 
-%package ssh
+%if 0%{?singlespec_compat}
+%package -n python3-salt-ssh
+%else
+%package -n python-salt-ssh
+%endif
 Summary:        Management component for Saltstack with ssh protocol
 Group:          System/Management
+%if 0%{?singlespec_compat}
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
+%else
+Requires:       python-%{name} = %{version}-%{release}
+Requires:       python-%{name}-master = %{version}-%{release}
+%endif
+Provides:       %{name}-ssh = %{version}-%{release}
+Conflicts:      %{name}-ssh = %{version}-%{release}
+Obsoletes:      %{name}-ssh < %{version}-%{release}
 %if 0%{?suse_version}
 Recommends:     sshpass
 %endif
@@ -895,7 +987,11 @@ Recommends:     sshpass
 %{?systemd_requires}
 %endif
 
-%description ssh
+%if 0%{?singlespec_compat}
+%description -n python3-salt-ssh
+%else
+%description -n python-salt-ssh
+%endif
 Salt ssh is a master running without zmq.
 it enables the management of minions over a ssh connection.
 
@@ -911,7 +1007,6 @@ BuildArch:      noarch
 
 %description bash-completion
 Bash command line completion support for %{name}.
-
 %endif
 
 %if %{with fish_completion}
@@ -940,7 +1035,6 @@ BuildArch:      noarch
 
 %description zsh-completion
 Zsh command line completion support for %{name}.
-
 %endif
 
 %package standalone-formulas-configuration
@@ -969,7 +1063,7 @@ list of active executors.  This package add the configuration file.
 
 %if "%{flavor}" == "testsuite"
 
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 %package -n %{python_module salt-testsuite}
 %else
 %package -n python-salt-testsuite
@@ -984,8 +1078,24 @@ BuildRequires:  %{python_module base}
 BuildRequires:  %{python_module setuptools}
 
 Requires:       salt = %{version}
-%if 0%{?_nosinglespec}
-Recommends:     %{python_module CherryPy}
+%if 0%{?real_singlespec}
+Requires:       python-Genshi
+Requires:       python-Mako
+Requires:       python-boto3
+Requires:       python-docker
+%if 0%{?suse_version} < 1600
+Requires:       python-mock
+%endif
+Requires:       python-pip
+Requires:       python-pygit2
+Requires:       python-pytest >= 7.0.1
+Requires:       python-pytest-httpserver
+Requires:       python-pytest-salt-factories >= 1.0.0~rc21
+Requires:       python-pytest-subtests
+Requires:       python-testinfra
+Requires:       python-yamllint
+Recommends:     python-CherryPy
+%else
 Requires:       %{python_module Genshi}
 Requires:       %{python_module Mako}
 %if !0%{?suse_version} > 1600 || 0%{?centos}
@@ -996,6 +1106,7 @@ Requires:       %{python_module docker}
 %if 0%{?suse_version} < 1600
 Requires:       %{python_module mock}
 %endif
+Requires:       %{python_module pip}
 Requires:       %{python_module pygit2}
 Requires:       %{python_module pytest >= 7.0.1}
 Requires:       %{python_module pytest-httpserver}
@@ -1003,38 +1114,18 @@ Requires:       %{python_module pytest-salt-factories >= 1.0.0~rc21}
 Requires:       %{python_module pytest-subtests}
 Requires:       %{python_module testinfra}
 Requires:       %{python_module yamllint}
-Requires:       %{python_module pip}
-%else
-Recommends:     python-CherryPy
-Requires:       python-Genshi
-Requires:       python-Mako
-%if !0%{?suse_version} > 1600 || 0%{?centos}
-Requires:       python-boto
-%endif
-Requires:       python-boto3
-Requires:       python-docker
-%if 0%{?suse_version} < 1600
-Requires:       python-mock
-%endif
-Requires:       python-pygit2
-Requires:       python-pytest >= 7.0.1
-Requires:       python-pytest-httpserver
-Requires:       python-pytest-salt-factories >= 1.0.0~rc21
-Requires:       python-pytest-subtests
-Requires:       python-testinfra
-Requires:       python-yamllint
-Requires:       python-pip
+Recommends:     %{python_module CherryPy}
 %endif
 Requires:       docker
-Requires:       openssh
 Requires:       git
+Requires:       openssh
 
 Obsoletes:      %{name}-tests
 
-%if 0%{?_nosinglespec}
-%description -n python3-salt-testsuite
-%else
+%if 0%{?real_singlespec}
 %description -n python-salt-testsuite
+%else
+%description -n python3-salt-testsuite
 %endif
 Collection of unit, functional, and integration tests for %{name}.
 
@@ -1239,8 +1330,11 @@ install -Dpm 0640 conf/suse/standalone-formulas-configuration.conf %{buildroot}%
 %python_expand %fdupes %{buildroot}%{$python_sitelib}
 %endif
 
-%if 0%{?_alternatives}
-%python_clone -a %{buildroot}%{_bindir}/salt-call
+%if !0%{?singlespec_compat}
+for executable in salt salt-api salt-call salt-cloud salt-cp salt-key salt-master\
+  salt-minion salt-proxy salt-run salt-ssh salt-support salt-syndic spm; do
+    %python_clone -a %{buildroot}%{_bindir}/$executable
+done
 %endif
 
 %endif
@@ -1263,9 +1357,11 @@ getent passwd salt >/dev/null || %{_sbindir}/useradd -r -g salt -d $S_HOME -s /b
 if [[ -d "$S_PHOME/.ssh" ]]; then
     mv $S_PHOME/.ssh $S_HOME
 fi
-%if 0%{?_alternatives}
-[ -h %{_bindir}/salt-call ] || rm -f %{_bindir}/salt-call
-%python_libalternatives_reset_alternative salt-call
+%if !0%{?singlespec_compat}
+for executable in salt-call salt-support spm; do
+  [ -L %{_bindir}/$executable ] || rm -f %{_bindir}/$executable
+  %python_libalternatives_reset_alternative $executable
+done
 %endif
 
 %post
@@ -1275,7 +1371,11 @@ systemd-tmpfiles --create /usr/lib/tmpfiles.d/salt.conf || true
 dbus-uuidgen --ensure
 %endif
 
-%preun proxy
+%if 0%{?singlespec_compat}
+%preun -n python3-salt-proxy
+%else
+%preun -n python-salt-proxy
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_del_preun salt-proxy@.service
@@ -1288,14 +1388,22 @@ dbus-uuidgen --ensure
 %endif
 %endif
 
-%pre proxy
+%if 0%{?singlespec_compat}
+%pre -n python3-salt-proxy
+%else
+%pre -n python-salt-proxy
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_pre salt-proxy@.service
 %endif
 %endif
 
-%post proxy
+%if 0%{?singlespec_compat}
+%post -n python3-salt-proxy
+%else
+%post -n python-salt-proxy
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_post salt-proxy@.service
@@ -1303,8 +1411,15 @@ dbus-uuidgen --ensure
 %systemd_post salt-proxy@.service
 %endif
 %endif
+%if !0%{?singlespec_compat}
+%python_install_alternative salt-proxy
+%endif
 
-%postun proxy
+%if 0%{?singlespec_compat}
+%postun -n python3-salt-proxy
+%else
+%postun -n python-salt-proxy
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_del_postun salt-proxy@.service
@@ -1312,8 +1427,15 @@ dbus-uuidgen --ensure
 %systemd_postun_with_restart salt-proxy@.service
 %endif
 %endif
+%if !0%{?singlespec_compat}
+%python_uninstall_alternative salt-proxy
+%endif
 
-%preun syndic
+%if 0%{?singlespec_compat}
+%preun -n python3-salt-syndic
+%else
+%preun -n python-salt-syndic
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_del_preun salt-syndic.service
@@ -1322,14 +1444,22 @@ dbus-uuidgen --ensure
 %endif
 %endif
 
-%pre syndic
+%if 0%{?singlespec_compat}
+%pre -n python3-salt-syndic
+%else
+%pre -n python-salt-syndic
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_pre salt-syndic.service
 %endif
 %endif
 
-%post syndic
+%if 0%{?singlespec_compat}
+%post -n python3-salt-syndic
+%else
+%post -n python-salt-syndic
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_post salt-syndic.service
@@ -1337,8 +1467,15 @@ dbus-uuidgen --ensure
 %systemd_post salt-syndic.service
 %endif
 %endif
+%if !0%{?singlespec_compat}
+%python_install_alternative salt-syndic
+%endif
 
-%postun syndic
+%if 0%{?singlespec_compat}
+%postun -n python3-salt-syndic
+%else
+%postun -n python-salt-syndic
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_del_postun salt-syndic.service
@@ -1346,8 +1483,15 @@ dbus-uuidgen --ensure
 %systemd_postun_with_restart salt-syndic.service
 %endif
 %endif
+%if !0%{?singlespec_compat}
+%python_uninstall_alternative salt-syndic
+%endif
 
-%preun master
+%if 0%{?singlespec_compat}
+%preun -n python3-salt-master
+%else
+%preun -n python-salt-master
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_del_preun salt-master.service
@@ -1356,14 +1500,22 @@ dbus-uuidgen --ensure
 %endif
 %endif
 
-%pre master
+%if 0%{?singlespec_compat}
+%pre -n python3-salt-master
+%else
+%pre -n python-salt-master
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_pre salt-master.service
 %endif
 %endif
 
-%post master
+%if 0%{?singlespec_compat}
+%post -n python3-salt-master
+%else
+%post -n python-salt-master
+%endif
 if [ $1 -eq 2 ] ; then
   # Upgrading from an earlier version.  If this is from 2014, where daemons
   # ran as root, we need to chown some stuff to salt in order for the new
@@ -1393,8 +1545,19 @@ fi
 %systemd_post salt-master.service
 %endif
 %endif
+%if !0%{?singlespec_compat}
+%python_install_alternative salt
+%python_install_alternative salt-cp
+%python_install_alternative salt-key
+%python_install_alternative salt-master
+%python_install_alternative salt-run
+%endif
 
-%postun master
+%if 0%{?singlespec_compat}
+%postun -n python3-salt-master
+%else
+%postun -n python-salt-master
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_del_postun salt-master.service
@@ -1402,8 +1565,19 @@ fi
 %systemd_postun_with_restart salt-master.service
 %endif
 %endif
+%if !0%{?singlespec_compat}
+%python_uninstall_alternative salt
+%python_uninstall_alternative salt-cp
+%python_uninstall_alternative salt-key
+%python_uninstall_alternative salt-master
+%python_uninstall_alternative salt-run
+%endif
 
-%preun minion
+%if 0%{?singlespec_compat}
+%preun -n python3-salt-minion
+%else
+%preun -n python-salt-minion
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_del_preun salt-minion.service
@@ -1412,14 +1586,22 @@ fi
 %endif
 %endif
 
-%pre minion
+%if 0%{?singlespec_compat}
+%pre -n python3-salt-minion
+%else
+%pre -n python-salt-minion
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_pre salt-minion.service
 %endif
 %endif
 
-%post minion
+%if 0%{?singlespec_compat}
+%post -n python3-salt-minion
+%else
+%post -n python-salt-minion
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_post salt-minion.service
@@ -1427,8 +1609,15 @@ fi
 %systemd_post salt-minion.service
 %endif
 %endif
+%if !0%{?singlespec_compat}
+%python_install_alternative salt-minion
+%endif
 
-%postun minion
+%if 0%{?singlespec_compat}
+%postun -n python3-salt-minion
+%else
+%postun -n python-salt-minion
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_del_postun salt-minion.service
@@ -1436,8 +1625,15 @@ fi
 %systemd_postun_with_restart salt-minion.service
 %endif
 %endif
+%if !0%{?singlespec_compat}
+%python_uninstall_alternative salt-minion
+%endif
 
-%preun api
+%if 0%{?singlespec_compat}
+%preun -n python3-salt-api
+%else
+%preun -n python-salt-api
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_del_preun salt-api.service
@@ -1445,26 +1641,41 @@ fi
 %systemd_preun salt-api.service
 %endif
 %else
-%stop_on_removal
+%stop_on_removal salt-api
 %endif
 
-%pre api
+%if 0%{?singlespec_compat}
+%pre -n python3-salt-api
+%else
+%pre -n python-salt-api
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_pre salt-api.service
 %endif
 %endif
 
-%post api
+%if 0%{?singlespec_compat}
+%post -n python3-salt-api
+%else
+%post -n python-salt-api
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_add_post salt-api.service
 %else
 %systemd_post salt-api.service
 %endif
+%if !0%{?singlespec_compat}
+%python_install_alternative salt-api
+%endif
 %endif
 
-%postun api
+%if 0%{?singlespec_compat}
+%postun -n python3-salt-api
+%else
+%postun -n python-salt-api
+%endif
 %if %{with systemd}
 %if 0%{?suse_version}
 %service_del_postun salt-api.service
@@ -1472,20 +1683,30 @@ fi
 %systemd_postun_with_restart salt-api.service
 %endif
 %endif
-
-%if 0%{?_alternatives}
-%pre -n python-salt
-[ -h %{_bindir}/salt-call ] || rm -f %{_bindir}/salt-call
-%python_libalternatives_reset_alternative salt-call
-
-%post -n python-salt
-%python_install_alternative salt-call
-
-%postun -n python-salt
-%python_uninstall_alternative salt-call
+%if !0%{?singlespec_compat}
+%python_uninstall_alternative salt-api
 %endif
 
-%if 0%{?_nosinglespec}
+
+%if !0%{?singlespec_compat}
+%pre -n python-salt
+for executable in salt-call salt-support spm; do
+  [ -L %{_bindir}/$executable ] || rm -f %{_bindir}/$executable
+  %python_libalternatives_reset_alternative $executable
+done
+
+%post -n python-salt
+for executable in salt-call salt-support spm; do
+  %python_install_alternative $executable
+done
+
+%postun -n python-salt
+for executable in salt-call salt-support spm; do
+  %python_uninstall_alternative $executable
+done
+%endif
+
+%if 0%{?singlespec_compat}
 %posttrans -n %{python_module salt}
 %else
 %posttrans -n python-salt
@@ -1494,18 +1715,27 @@ fi
 rm -f %{_localstatedir}/cache/salt/master/thin/version
 rm -f %{_localstatedir}/cache/salt/minion/thin/version
 
-%files api
+
+%files %{python_files salt-api}
 %defattr(-,root,root)
+%if 0%{?singlespec_compat}
 %{_bindir}/salt-api
+%else
+%python_alternative %{_bindir}/salt-api
+%endif
 %if %{with systemd}
 %{_sbindir}/rcsalt-api
 %{_unitdir}/salt-api.service
 %endif
 %{_mandir}/man1/salt-api.1.*
 
-%files cloud
+%files %{python_files salt-cloud}
 %defattr(-,root,root)
+%if 0%{?singlespec_compat}
 %{_bindir}/salt-cloud
+%else
+%python_alternative %{_bindir}/salt-cloud
+%endif
 %dir               %attr(0750, root, salt) %{_sysconfdir}/salt/cloud.maps.d
 %dir               %attr(0750, root, salt) %{_sysconfdir}/salt/cloud.profiles.d
 %dir               %attr(0750, root, salt) %{_sysconfdir}/salt/cloud.providers.d
@@ -1516,23 +1746,35 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %attr(755,root,root)%{python3_sitelib}/salt/cloud/deploy/bootstrap-salt.sh
 %{_mandir}/man1/salt-cloud.1.*
 
-%files ssh
+%files %{python_files salt-ssh}
 %defattr(-,root,root)
+%if 0%{?singlespec_compat}
 %{_bindir}/salt-ssh
+%else
+%python_alternative %{_bindir}/salt-ssh
+%endif
 %{_mandir}/man1/salt-ssh.1.gz
 
-%files syndic
+%files %{python_files salt-syndic}
 %defattr(-,root,root)
+%if 0%{?singlespec_compat}
 %{_bindir}/salt-syndic
+%else
+%python_alternative %{_bindir}/salt-syndic
+%endif
 %{_mandir}/man1/salt-syndic.1.gz
 %if %{with systemd}
 %{_sbindir}/rcsalt-syndic
 %{_unitdir}/salt-syndic.service
 %endif
 
-%files minion
+%files %{python_files salt-minion}
 %defattr(-,root,root)
+%if 0%{?singlespec_compat}
 %{_bindir}/salt-minion
+%else
+%python_alternative %{_bindir}/salt-minion
+%endif
 %{_mandir}/man1/salt-minion.1.gz
 %config(noreplace) %attr(0640, root, root) %{_sysconfdir}/salt/minion
 %config(noreplace) %attr(0640, root, root) %ghost %{_sysconfdir}/salt/minion_id
@@ -1564,26 +1806,38 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %{_unitdir}/salt-minion.service
 %endif
 
-%files proxy
+%files %{python_files salt-proxy}
 %defattr(-,root,root)
+%if 0%{?singlespec_compat}
 %{_bindir}/salt-proxy
+%else
+%python_alternative %{_bindir}/salt-proxy
+%endif
 %{_mandir}/man1/salt-proxy.1.gz
 %if %{with systemd}
 %{_unitdir}/salt-proxy@.service
 %endif
 
-%files master
+%files %{python_files salt-master}
 %defattr(-,root,root)
+%if 0%{?singlespec_compat}
 %{_bindir}/salt
-%{_bindir}/salt-master
 %{_bindir}/salt-cp
 %{_bindir}/salt-key
+%{_bindir}/salt-master
 %{_bindir}/salt-run
-%{_mandir}/man1/salt-master.1.gz
+%else
+%python_alternative %{_bindir}/salt
+%python_alternative %{_bindir}/salt-cp
+%python_alternative %{_bindir}/salt-key
+%python_alternative %{_bindir}/salt-master
+%python_alternative %{_bindir}/salt-run
+%endif
+%{_mandir}/man7/salt.7.gz
 %{_mandir}/man1/salt-cp.1.gz
 %{_mandir}/man1/salt-key.1.gz
+%{_mandir}/man1/salt-master.1.gz
 %{_mandir}/man1/salt-run.1.gz
-%{_mandir}/man7/salt.7.gz
 %if 0%{?suse_version} <= 1500
 %config(noreplace) %{_sysconfdir}/sysconfig/SuSEfirewall2.d/services/salt
 %endif
@@ -1615,10 +1869,10 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %files
 %defattr(-,root,root,-)
 %{_bindir}/spm
-%if ! 0%{?_alternatives}
+%if 0%{?singlespec_compat}
 %{_bindir}/salt-call
-%endif
 %{_bindir}/salt-support
+%endif
 %{_mandir}/man1/salt-call.1.gz
 %{_mandir}/man1/spm.1.gz
 %config(noreplace) %{_sysconfdir}/logrotate.d/salt
@@ -1638,8 +1892,10 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 
 %files %{python_files salt}
 %defattr(-,root,root,-)
-%if 0%{?_alternatives}
+%if !0%{?singlespec_compat}
 %python_alternative %{_bindir}/salt-call
+%python_alternative %{_bindir}/salt-support
+%python_alternative %{_bindir}/spm
 %endif
 %dir %{python_sitelib}/salt
 %dir %{python_sitelib}/salt-*.egg-info
