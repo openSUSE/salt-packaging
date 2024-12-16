@@ -496,6 +496,8 @@ Patch146:       handle-logger-flushing-already-closed-file-686.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66757
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66760
 Patch147:       make-minion-reconnecting-on-changing-master-ip-bsc-1.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/690
+Patch148:       revert-setting-selinux-context-for-minion-service-bs.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
