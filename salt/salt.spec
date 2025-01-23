@@ -58,6 +58,7 @@
 %{?sle15allpythons}
 %define skip_python2 1
 %if 0%{?rhel} == 8 || (0%{?suse_version} == 1500 && 0%{?sle_version} < 150400)
+%define singlespec_compat 1
 %define __python3_bin_suffix 3.6
 %if 0%{?rhel} == 8
 %define __python3 /usr/libexec/platform-python
@@ -77,7 +78,6 @@ args = args:gsub("$python_sitelib", "python3_sitelib")\
 args = args:gsub("$python", python_bin)\
 print(rpm.expand(args .. "\\n"))\
 }
-%define _nosinglespec 1
 %endif
 Name:           salt%{psuffix}
 Version:        3006.0
@@ -591,7 +591,7 @@ servers, handle them quickly and through a simple and manageable interface.
 
 %if "%{flavor}" != "testsuite"
 
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 %package -n python3-salt
 %else
 %package -n python-salt
@@ -648,7 +648,7 @@ BuildRequires:  %{python_module sphinx}
 %if 0%{?rhel} == 8
 Requires:       platform-python
 %else
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 Requires:       %{python_module base}
 %else
 Requires:       python-base
@@ -681,7 +681,7 @@ Requires:       dnf
 Requires:       yum-plugin-security
 %endif
 %else # SUSE
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 Requires:       %{python_module Jinja2}
 Requires:       %{python_module MarkupSafe}
 Requires:       %{python_module msgpack-python > 0.3}
@@ -703,7 +703,7 @@ Requires:       python-pycrypto >= 2.6.1
 Requires:       python-pyzmq >= 2.2.0
 %endif
 %endif # end of RHEL / SUSE specific section
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 Recommends:     %{python_module jmespath}
 Requires:       %{python_module PyYAML}
 Requires:       %{python_module psutil}
@@ -742,7 +742,7 @@ Suggests:       python-gnupg
 #
 %if 0%{?suse_version}
 # python-xml is part of python-base in all rhel versions
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 Requires:       %{python_module xml}
 Suggests:       %{python_module Mako}
 Recommends:     %{python_module netaddr}
@@ -762,7 +762,7 @@ Requires:       file
 Recommends:     man
 Recommends:     python3-passlib
 
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 Provides:       bundled(%{python_module tornado}) = 4.5.3
 %else
 Provides:       bundled(python-tornado) = 4.5.3
@@ -770,7 +770,7 @@ Provides:       bundled(python-tornado) = 4.5.3
 
 Provides:       %{name}-call = %{version}-%{release}
 
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 %description -n python3-salt
 %else
 %description -n python-salt
@@ -978,8 +978,8 @@ list of active executors.  This package add the configuration file.
 
 %if "%{flavor}" == "testsuite"
 
-%if 0%{?_nosinglespec}
-%package -n %{python_module salt-testsuite}
+%if 0%{?singlespec_compat}
+%package -n python3-salt-testsuite
 %else
 %package -n python-salt-testsuite
 %endif
@@ -993,7 +993,7 @@ BuildRequires:  %{python_module base}
 BuildRequires:  %{python_module setuptools}
 
 Requires:       salt = %{version}
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 Recommends:     %{python_module CherryPy}
 Requires:       %{python_module Genshi}
 Requires:       %{python_module Mako}
@@ -1040,7 +1040,7 @@ Requires:       git
 
 Obsoletes:      %{name}-tests
 
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 %description -n python3-salt-testsuite
 %else
 %description -n python-salt-testsuite
@@ -1250,6 +1250,14 @@ install -Dpm 0640 conf/suse/standalone-formulas-configuration.conf %{buildroot}%
 
 %if 0%{?_alternatives}
 %python_clone -a %{buildroot}%{_bindir}/salt-call
+%python_clone -a %{buildroot}%{_bindir}/salt-support
+%python_clone -a %{buildroot}%{_bindir}/spm
+install -Dd -m 0750 %{buildroot}%{_exec_prefix}/libexec/salt
+for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic; do
+    mv "%{buildroot}%{_bindir}/${SALT_SCRIPT}" "%{buildroot}%{_exec_prefix}/libexec/salt/"
+%python_clone -a %{buildroot}%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}
+    ln -s "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}" "%{buildroot}%{_bindir}/${SALT_SCRIPT}"
+done
 %endif
 
 %endif
@@ -1272,10 +1280,6 @@ getent passwd salt >/dev/null || %{_sbindir}/useradd -r -g salt -d $S_HOME -s /b
 if [[ -d "$S_PHOME/.ssh" ]]; then
     mv $S_PHOME/.ssh $S_HOME
 fi
-%if 0%{?_alternatives}
-[ -h %{_bindir}/salt-call ] || rm -f %{_bindir}/salt-call
-%python_libalternatives_reset_alternative salt-call
-%endif
 
 %post
 %if %{with systemd}
@@ -1484,17 +1488,43 @@ fi
 
 %if 0%{?_alternatives}
 %pre -n python-salt
-[ -h %{_bindir}/salt-call ] || rm -f %{_bindir}/salt-call
-%python_libalternatives_reset_alternative salt-call
+for SALT_SCRIPT in salt-call salt-support spm; do
+    [ -h "%{_bindir}/${SALT_SCRIPT}" ] || rm -f "%{_bindir}/${SALT_SCRIPT}"
+    if [ "$1" -gt 0 ] && [ -f /usr/sbin/update-alternatives ]; then
+        update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}"
+    fi
+done
+for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic; do
+    [ -h "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}" ] || rm -f "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}"
+    if [ "$1" -gt 0 ] && [ -f /usr/sbin/update-alternatives ]; then
+        update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}"
+    fi
+done
 
 %post -n python-salt
-%python_install_alternative salt-call
+for SALT_SCRIPT in salt-call salt-support spm; do
+    update-alternatives --quiet --install "%{_bindir}/${SALT_SCRIPT}" "${SALT_SCRIPT}" \
+        "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}" %{python_version_nodots}
+done
+for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic; do
+    update-alternatives --quiet --install "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}" "${SALT_SCRIPT}" \
+        "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}" %{python_version_nodots}
+done
 
 %postun -n python-salt
-%python_uninstall_alternative salt-call
+for SALT_SCRIPT in salt-call salt-support spm; do
+    if [ ! -e "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}" ]; then
+        update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}"
+    fi
+done
+for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic; do
+    if [ ! -e "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}" ]; then
+        update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}"
+    fi
+done
 %endif
 
-%if 0%{?_nosinglespec}
+%if 0%{?singlespec_compat}
 %posttrans -n %{python_module salt}
 %else
 %posttrans -n python-salt
@@ -1649,6 +1679,21 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %defattr(-,root,root,-)
 %if 0%{?_alternatives}
 %python_alternative %{_bindir}/salt-call
+%python_alternative %{_bindir}/salt-support
+%python_alternative %{_bindir}/spm
+%dir %{_exec_prefix}/libexec
+%dir %attr(0755, root, root) %{_exec_prefix}/libexec/salt
+%python_alternative %{_exec_prefix}/libexec/salt/salt
+%python_alternative %{_exec_prefix}/libexec/salt/salt-api
+%python_alternative %{_exec_prefix}/libexec/salt/salt-cloud
+%python_alternative %{_exec_prefix}/libexec/salt/salt-cp
+%python_alternative %{_exec_prefix}/libexec/salt/salt-key
+%python_alternative %{_exec_prefix}/libexec/salt/salt-master
+%python_alternative %{_exec_prefix}/libexec/salt/salt-minion
+%python_alternative %{_exec_prefix}/libexec/salt/salt-proxy
+%python_alternative %{_exec_prefix}/libexec/salt/salt-run
+%python_alternative %{_exec_prefix}/libexec/salt/salt-ssh
+%python_alternative %{_exec_prefix}/libexec/salt/salt-syndic
 %endif
 %dir %{python_sitelib}/salt
 %dir %{python_sitelib}/salt-*.egg-info
