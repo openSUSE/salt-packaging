@@ -783,7 +783,11 @@ Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
 %if 0%{?suse_version}
+%if 0%{?sle_version} >= 150400
+Requires:       %{python_module CherryPy >= 3.2.2 if %python-salt}
+%else
 Requires:       python3-CherryPy >= 3.2.2
+%endif
 %else
 Requires:       python3-cherrypy >= 3.2.2
 %endif
@@ -796,10 +800,18 @@ Summary:        Generic cloud provisioning tool for Saltstack
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-master = %{version}-%{release}
-Requires:       python3-apache-libcloud
 %if 0%{?suse_version}
+%if 0%{?sle_version} >= 150400
+Requires:       %{python_module apache-libcloud if %python-salt}
+Recommends:     %{python_module botocore if %python-salt}
+Recommends:     %{python_module netaddr if %python-salt}
+%else
+Requires:       python3-apache-libcloud
 Recommends:     python3-botocore
 Recommends:     python3-netaddr
+%endif
+%else
+Requires:       python3-apache-libcloud
 %endif
 
 %description cloud
@@ -822,7 +834,11 @@ Summary:        The management component of Saltstack with zmq protocol supporte
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 %if 0%{?suse_version}
+%if 0%{?sle_version} >= 150400
+Recommends:     %{python_module pygit2 >= 0.20.3 if %python-salt}
+%else
 Recommends:     python3-pygit2 >= 0.20.3
+%endif
 %endif
 %ifarch %{ix86} x86_64
 %if 0%{?suse_version}
