@@ -507,6 +507,8 @@ Patch150:       fix-virtual-grains-for-vms-running-on-nutanix-ahv-bs.patch
 Patch151:       enhance-find_json-garbage-filtering-bsc-1231605-688.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/67105
 Patch152:       update-for-deprecation-of-hex-in-pygit2-1.15.0-and-a.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/67186
+Patch153:       fix-failed-to-stat-root-.gitconfig-issue-on-gitfs-bs.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
