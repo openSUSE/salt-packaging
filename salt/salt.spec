@@ -34,7 +34,7 @@
 %define psuffix %{nil}
 %endif
 
-%if 0%{?suse_version} > 1210 || 0%{?rhel} >= 7 || 0%{?fedora} >=28
+%if 0%{?suse_version} > 1210 || 0%{?rhel} >= 7 || 0%{?fedora} >= 28
 %bcond_without systemd
 %else
 %bcond_with    systemd
@@ -574,10 +574,6 @@ BuildRequires:  bash
 BuildRequires:  zsh
 %endif
 
-%if 0%{?rhel} || 0%{?fedora}
-BuildRequires:  yum
-%endif
-
 %define python_subpackage_only 1
 %python_subpackages
 
@@ -672,13 +668,10 @@ Requires:       python3-m2crypto
 Requires:       python3-markupsafe
 Requires:       python3-msgpack > 0.3
 Requires:       python3-zmq >= 2.2.0
-Requires:       yum
 
-%if 0%{?rhel} == 8 || 0%{?fedora} >= 30
+%if 0%{?rhel} >= 8 || 0%{?fedora} >= 30
 Requires:       dnf
-%endif
-%if 0%{?rhel} == 6
-Requires:       yum-plugin-security
+Requires:       python3-dnf-plugins-core
 %endif
 %else # SUSE
 %if 0%{?singlespec_compat}
@@ -744,15 +737,18 @@ Suggests:       python-gnupg
 # python-xml is part of python-base in all rhel versions
 %if 0%{?singlespec_compat}
 Requires:       %{python_module xml}
+Requires:       %{python_module zypp-plugin}
 Suggests:       %{python_module Mako}
 Recommends:     %{python_module netaddr}
 Recommends:     %{python_module pyinotify}
 %else
 Requires:       python-xml
+Requires:       python-zypp-plugin
 Suggests:       python-Mako
 Recommends:     python-netaddr
 Recommends:     python-pyinotify
 %endif
+Requires(pre):  libzypp(plugin:system) >= 0
 %endif
 
 # Required by Salt modules
@@ -865,10 +861,6 @@ Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
 %if 0%{?suse_version} > 1500 || 0%{?sle_version} > 150000
 Requires:       (%{name}-transactional-update = %{version}-%{release} if read-only-root-fs)
-%endif
-%if 0%{?suse_version}
-Requires:       python3-zypp-plugin
-Requires(pre):  libzypp(plugin:system) >= 0
 %endif
 
 %if %{with systemd}
@@ -1175,11 +1167,9 @@ cp -a conf %{buildroot}%{$python_sitelib}/salt-testsuite/
 %if 0%{?suse_version}
 install -Dd -m 0750 %{buildroot}%{_prefix}/lib/zypp/plugins/commit
 %{__install} scripts/suse/zypper/plugins/commit/zyppnotify %{buildroot}%{_prefix}/lib/zypp/plugins/commit/zyppnotify
-sed -i '1s=^#!/usr/bin/\(python\|env python\)[0-9.]*=#!/usr/bin/python3=' %{buildroot}%{_prefix}/lib/zypp/plugins/commit/zyppnotify
 %endif
 
-# Install Yum plugins only on RH machines
-%if 0%{?fedora} || 0%{?rhel}
+# Install DNF plugin only on RH machines
 %if 0%{?fedora} >= 22 || 0%{?rhel} >= 8
 install -Dd %{buildroot}%{python3_sitelib}/dnf-plugins
 install -Dd %{buildroot}%{python3_sitelib}/dnf-plugins/__pycache__
@@ -1188,14 +1178,6 @@ install -Dd %{buildroot}%{_sysconfdir}/dnf/plugins
 %{__install} scripts/suse/dnf/plugins/dnfnotify.conf %{buildroot}%{_sysconfdir}/dnf/plugins
 %{__python3} -m compileall -d %{python3_sitelib}/dnf-plugins %{buildroot}%{python3_sitelib}/dnf-plugins/dnfnotify.py
 %{__python3} -O -m compileall -d %{python3_sitelib}/dnf-plugins %{buildroot}%{python3_sitelib}/dnf-plugins/dnfnotify.py
-%else
-install -Dd %{buildroot}%{_prefix}/share/yum-plugins
-install -Dd %{buildroot}%{_sysconfdir}/yum/pluginconf.d
-%{__install} scripts/suse/yum/plugins/yumnotify.py %{buildroot}%{_prefix}/share/yum-plugins
-%{__install} scripts/suse/yum/plugins/yumnotify.conf %{buildroot}%{_sysconfdir}/yum/pluginconf.d
-%{__python} -m compileall -d %{_prefix}/share/yum-plugins %{buildroot}%{_prefix}/share/yum-plugins/yumnotify.py
-%{__python} -O -m compileall -d %{_prefix}/share/yum-plugins %{buildroot}%{_prefix}/share/yum-plugins/yumnotify.py
-%endif
 %endif
 
 ## install init and systemd scripts
@@ -1274,6 +1256,9 @@ for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-mi
 %python_clone -a %{buildroot}%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}
     ln -s "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}" "%{buildroot}%{_bindir}/${SALT_SCRIPT}"
 done
+mv "%{buildroot}%{_prefix}/lib/zypp/plugins/commit/zyppnotify" "%{buildroot}%{_exec_prefix}/libexec/salt/"
+%python_clone -a %{buildroot}%{_exec_prefix}/libexec/salt/zyppnotify
+ln -s "%{_exec_prefix}/libexec/salt/zyppnotify" "%{buildroot}%{_prefix}/lib/zypp/plugins/commit/zyppnotify"
 %endif
 
 %endif
@@ -1510,7 +1495,7 @@ for SALT_SCRIPT in salt-call salt-support spm; do
         update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}"
     fi
 done
-for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic; do
+for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic zyppnotify; do
     [ -h "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}" ] || rm -f "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}"
     if [ "$1" -gt 0 ] && [ -f /usr/sbin/update-alternatives ]; then
         update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}"
@@ -1522,7 +1507,7 @@ for SALT_SCRIPT in salt-call salt-support spm; do
     update-alternatives --quiet --install "%{_bindir}/${SALT_SCRIPT}" "${SALT_SCRIPT}" \
         "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}" %{python_version_nodots}
 done
-for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic; do
+for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic zyppnotify; do
     update-alternatives --quiet --install "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}" "${SALT_SCRIPT}" \
         "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}" %{python_version_nodots}
 done
@@ -1533,7 +1518,7 @@ for SALT_SCRIPT in salt-call salt-support spm; do
         update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}"
     fi
 done
-for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic; do
+for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic zyppnotify; do
     if [ ! -e "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}" ]; then
         update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}"
     fi
@@ -1603,16 +1588,11 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %{_prefix}/lib/zypp/plugins/commit/zyppnotify
 %endif
 
-# Install Yum plugins only on RH machines
-%if 0%{?fedora} || 0%{?rhel}
+# Install DNF plugin only on RH machines
 %if 0%{?fedora} >= 22 || 0%{?rhel} >= 8
 %{python3_sitelib}/dnf-plugins/dnfnotify.py
 %{python3_sitelib}/dnf-plugins/__pycache__/dnfnotify.*
 %{_sysconfdir}/dnf/plugins/dnfnotify.conf
-%else
-%{_prefix}/share/yum-plugins/yumnotify.*
-%{_sysconfdir}/yum/pluginconf.d/yumnotify.conf
-%endif
 %endif
 
 %if %{with systemd}
@@ -1710,7 +1690,9 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %python_alternative %{_exec_prefix}/libexec/salt/salt-run
 %python_alternative %{_exec_prefix}/libexec/salt/salt-ssh
 %python_alternative %{_exec_prefix}/libexec/salt/salt-syndic
+%python_alternative %{_exec_prefix}/libexec/salt/zyppnotify
 %endif
+
 %dir %{python_sitelib}/salt
 %dir %{python_sitelib}/salt-*.egg-info
 %{python_sitelib}/salt/*
