@@ -509,6 +509,9 @@ Patch151:       enhance-find_json-garbage-filtering-bsc-1231605-688.patch
 Patch152:       update-for-deprecation-of-hex-in-pygit2-1.15.0-and-a.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/67186
 Patch153:       fix-failed-to-stat-root-.gitconfig-issue-on-gitfs-bs.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/58f448405b7f46505b2047ecda72abb42b6df9d1
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/79d4ff772a162b5b8e602e3437c13b90a25bc190
+Patch154:       fix-tests-failures-after-repo.saltproject.io-depreca.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
