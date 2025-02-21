@@ -514,6 +514,8 @@ Patch153:       fix-failed-to-stat-root-.gitconfig-issue-on-gitfs-bs.patch
 Patch154:       fix-tests-failures-after-repo.saltproject.io-depreca.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60269
 Patch155:       backport-batch-async-fixes-and-improvements-701.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/560ab52ccf94c7974d5a418dfbba7409e0493066
+Patch156:       fixed-file-client-private-attribute-reference-on-sal.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
