@@ -512,6 +512,8 @@ Patch153:       fix-failed-to-stat-root-.gitconfig-issue-on-gitfs-bs.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/58f448405b7f46505b2047ecda72abb42b6df9d1
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/79d4ff772a162b5b8e602e3437c13b90a25bc190
 Patch154:       fix-tests-failures-after-repo.saltproject.io-depreca.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/60269
+Patch155:       backport-batch-async-fixes-and-improvements-701.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
