@@ -1519,27 +1519,33 @@ for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-mi
     fi
 done
 
+%if ! %{with libalternatives}
 %post -n python-salt
-for SALT_SCRIPT in salt-call salt-support spm; do
-    update-alternatives --quiet --install "%{_bindir}/${SALT_SCRIPT}" "${SALT_SCRIPT}" \
-        "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}" %{python_version_nodots}
-done
-for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic zyppnotify; do
-    update-alternatives --quiet --install "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}" "${SALT_SCRIPT}" \
-        "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}" %{python_version_nodots}
-done
+if [ -f /usr/sbin/update-alternatives ]; then
+    for SALT_SCRIPT in salt-call salt-support spm; do
+        update-alternatives --quiet --install "%{_bindir}/${SALT_SCRIPT}" "${SALT_SCRIPT}" \
+            "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}" %{python_version_nodots}
+    done
+    for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic zyppnotify; do
+        update-alternatives --quiet --install "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}" "${SALT_SCRIPT}" \
+            "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}" %{python_version_nodots}
+    done
+fi
 
 %postun -n python-salt
-for SALT_SCRIPT in salt-call salt-support spm; do
-    if [ ! -e "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}" ]; then
-        update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}"
-    fi
-done
-for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic zyppnotify; do
-    if [ ! -e "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}" ]; then
-        update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}"
-    fi
-done
+if [ -f /usr/sbin/update-alternatives ]; then
+    for SALT_SCRIPT in salt-call salt-support spm; do
+        if [ ! -e "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}" ]; then
+            update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_bindir}/${SALT_SCRIPT}-%{python_bin_suffix}"
+        fi
+    done
+    for SALT_SCRIPT in salt salt-api salt-cloud salt-cp salt-key salt-master salt-minion salt-proxy salt-run salt-ssh salt-syndic zyppnotify; do
+        if [ ! -e "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}" ]; then
+            update-alternatives --quiet --remove "${SALT_SCRIPT}" "%{_exec_prefix}/libexec/salt/${SALT_SCRIPT}-%{python_bin_suffix}"
+        fi
+    done
+fi
+%endif
 %endif
 
 %if 0%{?singlespec_compat}
