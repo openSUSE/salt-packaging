@@ -528,6 +528,8 @@ Patch160:       repair-virt_query-outputter-655.patch
 Patch161:       remove-password-from-shell-after-functional-text-mat.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/692
 Patch162:       add-deb822-apt-source-format-support-692.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/678
+Patch163:       remove-deprecated-code-from-x509.certificate_managed.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
