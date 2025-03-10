@@ -526,6 +526,8 @@ Patch159:       make-_auth-calls-visible-with-master-stats-696.patch
 Patch160:       repair-virt_query-outputter-655.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/67754
 Patch161:       remove-password-from-shell-after-functional-text-mat.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/692
+Patch162:       add-deb822-apt-source-format-support-692.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
