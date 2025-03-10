@@ -530,6 +530,8 @@ Patch161:       remove-password-from-shell-after-functional-text-mat.patch
 Patch162:       add-deb822-apt-source-format-support-692.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/678
 Patch163:       remove-deprecated-code-from-x509.certificate_managed.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/67782
+Patch164:       make-x509-module-compatible-with-m2crypto-0.44.0.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
