@@ -1317,6 +1317,7 @@ dbus-uuidgen --ensure
 %posttrans
 # Migration to /usr/etc, restore just created .rpmsave
 test -f %{_sysconfdir}/logrotate.d/salt.rpmsave && mv -v %{_sysconfdir}/logrotate.d/salt.rpmsave %{_sysconfdir}/logrotate.d/salt ||:
+test -f %{_sysconfdir}/logrotate.d/salt.rpmsave.old && mv -v %{_sysconfdir}/logrotate.d/salt.rpmsave.old %{_sysconfdir}/logrotate.d/salt.rpmsave ||:
 %endif
 
 %preun proxy
