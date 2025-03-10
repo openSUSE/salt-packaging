@@ -534,6 +534,8 @@ Patch163:       remove-deprecated-code-from-x509.certificate_managed.patch
 Patch164:       make-x509-module-compatible-with-m2crypto-0.44.0.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/67776
 Patch165:       implement-multiple-inventory-for-ansible.targets.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/67797
+Patch166:       ensure-the-correct-crypt-module-is-loaded.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
