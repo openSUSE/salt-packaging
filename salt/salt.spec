@@ -54,8 +54,11 @@
 %if %{without systemd}
 %define service_del_preun echo %{*}
 %endif
-
+%if 0%{?suse_version} == 1500 && 0%{?sle_version} >= 150700
+%{?sle15_python_module_pythons}
+%else
 %{?sle15allpythons}
+%endif
 %define skip_python2 1
 %if 0%{?rhel} == 8 || (0%{?suse_version} == 1500 && 0%{?sle_version} < 150400)
 %define singlespec_compat 1
