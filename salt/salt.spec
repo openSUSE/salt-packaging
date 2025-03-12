@@ -789,7 +789,16 @@ Requires:       iputils
 Requires:       sudo
 Requires:       file
 Recommends:     man
+%if 0%{?rhel} || 0%{?fedora}
 Recommends:     python3-passlib
+%endif
+%if 0%{?suse_version}
+%if 0%{?singlespec_compat}
+Recommends:     %{python_module passlib}
+%else
+Recommends:     python-passlib
+%endif
+%endif
 
 %if 0%{?singlespec_compat}
 Provides:       bundled(%{python_module tornado}) = 4.5.3
@@ -1606,7 +1615,6 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/cloud.profiles
 %config(noreplace) %attr(0640, root, salt) %{_sysconfdir}/salt/cloud.providers
 %dir               %attr(0750, root, salt) %{_localstatedir}/cache/salt/cloud
-%attr(755,root,root)%{python3_sitelib}/salt/cloud/deploy/bootstrap-salt.sh
 %{_mandir}/man1/salt-cloud.1.*
 
 %files ssh
@@ -1754,7 +1762,6 @@ rm -f %{_localstatedir}/cache/salt/minion/thin/version
 %dir %{python_sitelib}/salt-*.egg-info
 %{python_sitelib}/salt/*
 %{python_sitelib}/salt-*.egg-info/*
-%exclude %{python_sitelib}/salt/cloud/deploy/*.sh
 
 %if %{with docs}
 %files doc
