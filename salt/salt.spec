@@ -685,6 +685,12 @@ Requires:       python-base
 %endif
 %endif
 
+# In case of SLE15SP7+ no more python3-salt anymore
+%if 0%{?suse_version} == 1500 && 0%{?sle_version} >= 150700
+Obsoletes:      python3-salt < %{version}-%{release}
+Provides:       python3-salt = %{version}-%{release}
+%endif
+
 %if 0%{?_alternatives}
 %if %{with libalternatives}
 Requires:       alts
