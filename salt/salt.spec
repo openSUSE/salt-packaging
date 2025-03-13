@@ -54,7 +54,7 @@
 %if %{without systemd}
 %define service_del_preun echo %{*}
 %endif
-%if 0%{?suse_version} == 1500 && 0%{?sle_version} >= 150700
+%if 0%{?sle_version} >= 150700
 %{?sle15_python_module_pythons}
 %else
 %{?sle15allpythons}
@@ -686,7 +686,7 @@ Requires:       python-base
 %endif
 
 # In case of SLE15SP7+ no more python3-salt anymore
-%if 0%{?suse_version} == 1500 && 0%{?sle_version} >= 150700
+%if 0%{?sle_version} >= 150700
 Obsoletes:      python3-salt < %{version}-%{release}
 Provides:       python3-salt = %{version}-%{release}
 %endif
