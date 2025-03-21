@@ -558,6 +558,11 @@ Requires:       python3-%{name} = %{version}-%{release}
 %endif
 Obsoletes:      python2-%{name}
 
+# The "salt" package obsoletes "python3-salt" in SLE15SP7+
+%if 0%{?sle_version} >= 150700
+Obsoletes:      python3-%{name}
+%endif
+
 Requires(pre):  %{_sbindir}/groupadd
 Requires(pre):  %{_sbindir}/useradd
 Provides:       user(salt)
@@ -683,12 +688,6 @@ Requires:       %{python_module base}
 %else
 Requires:       python-base
 %endif
-%endif
-
-# In case of SLE15SP7+ no more python3-salt anymore
-%if 0%{?sle_version} >= 150700
-Obsoletes:      python3-salt < %{version}-%{release}
-Provides:       python3-salt = %{version}-%{release}
 %endif
 
 %if 0%{?_alternatives}
