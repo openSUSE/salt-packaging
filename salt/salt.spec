@@ -54,8 +54,11 @@
 %if %{without systemd}
 %define service_del_preun echo %{*}
 %endif
-
+%if 0%{?sle_version} >= 150700
+%{?sle15_python_module_pythons}
+%else
 %{?sle15allpythons}
+%endif
 %define skip_python2 1
 %if 0%{?rhel} == 8 || (0%{?suse_version} == 1500 && 0%{?sle_version} < 150400)
 %define singlespec_compat 1
@@ -556,6 +559,11 @@ Requires:       %{name}-call = %{version}-%{release}
 Requires:       python3-%{name} = %{version}-%{release}
 %endif
 Obsoletes:      python2-%{name}
+
+# The "salt" package obsoletes "python3-salt" in SLE15SP7+
+%if 0%{?sle_version} >= 150700
+Obsoletes:      python3-%{name}
+%endif
 
 Requires(pre):  %{_sbindir}/groupadd
 Requires(pre):  %{_sbindir}/useradd
