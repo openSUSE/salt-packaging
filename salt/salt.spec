@@ -557,6 +557,7 @@ BuildRequires:  fdupes
 
 %if 0%{?_alternatives}
 Requires:       %{name}-call = %{version}-%{release}
+Suggests:       %{primary_python}-%{name}
 %else
 Requires:       python3-%{name} = %{version}-%{release}
 %endif
