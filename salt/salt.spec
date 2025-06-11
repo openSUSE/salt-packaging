@@ -551,6 +551,9 @@ Patch170:       fix-debian-tests-715.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/790304df995ad2415bf550cc8489230360da1bd7
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/716
 Patch171:       fix-ubuntu-24.04-specific-failures-716.patch
+# PATCH-FIX_UPSTREAM: https://github.com/tornadoweb/tornado/commit/b39b892bf78fe8fea01dd45199aa88307e7162f3
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/718
+Patch172:       fix-of-cve-2025-47287-bsc-1243268-718.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
