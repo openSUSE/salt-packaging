@@ -679,7 +679,7 @@ BuildRequires:  %{python_module MarkupSafe}
 BuildRequires:  %{python_module msgpack-python > 0.3}
 BuildRequires:  %{python_module pyzmq > 2.2.0}
 %if 0%{?suse_version} >= 1500
-BuildRequires:  %{python_module M2Crypto}
+BuildRequires:  %{python_module M2Crypto >= 0.44.0}
 %else
 BuildRequires:  %{python_module pycrypto >= 2.6.1}
 %endif
