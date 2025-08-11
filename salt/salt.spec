@@ -572,6 +572,8 @@ Patch176:       add-minion_legacy_req_warnings-option-to-avoid-noisy.patch
 Patch177:       fix-the-tests-failing-on-almalinux-10-and-other-clon.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66630
 Patch178:       fix-functional.states.test_user-for-sles-16-and-micr.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68247
+Patch179:       improve-sl-micro-6.2-detection-with-grains.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
