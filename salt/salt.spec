@@ -570,6 +570,8 @@ Patch175:       fix-tests-issues-in-salt-shaker-environments-721.patch
 Patch176:       add-minion_legacy_req_warnings-option-to-avoid-noisy.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68246
 Patch177:       fix-the-tests-failing-on-almalinux-10-and-other-clon.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66630
+Patch178:       fix-functional.states.test_user-for-sles-16-and-micr.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
