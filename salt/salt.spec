@@ -576,6 +576,9 @@ Patch178:       fix-functional.states.test_user-for-sles-16-and-micr.patch
 Patch179:       improve-sl-micro-6.2-detection-with-grains.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/728
 Patch180:       modify-readme-for-opensuse-728.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68331
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/729
+Patch181:       even-more-reliable-pillar-timeout-test.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
