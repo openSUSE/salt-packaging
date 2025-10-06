@@ -583,6 +583,8 @@ Patch181:       even-more-reliable-pillar-timeout-test.patch
 Patch182:       add-python3.11-as-preferable-for-salt-ssh-to-avoid-t.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68366
 Patch183:       allow-libgit2-to-guess-sysdir-homedir-successfully-b.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/732
+Patch184:       use-versioned-python-interpreter-for-salt-ssh.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
