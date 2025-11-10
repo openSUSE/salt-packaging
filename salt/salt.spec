@@ -853,6 +853,7 @@ Recommends:     python-passlib
 
 %if 0%{?suse_version} >= 1600
 Requires:       %{python_module tornado}
+Requires:       %{python_module legacy-cgi}
 %else
 %if 0%{?singlespec_compat}
 Provides:       bundled(%{python_module tornado}) = 4.5.3
