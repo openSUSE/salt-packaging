@@ -589,6 +589,8 @@ Patch184:       use-versioned-python-interpreter-for-salt-ssh.patch
 Patch185:       do-not-break-signature-verification-on-latest-m2cryp.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/736
 Patch186:       fix-salt-for-python-3.11.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/737
+Patch187:       fix-tls-and-x509-modules-for-older-cryptography-modu.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
