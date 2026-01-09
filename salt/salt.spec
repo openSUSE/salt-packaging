@@ -600,6 +600,8 @@ Patch187:       fix-tls-and-x509-modules-for-older-cryptography-modu.patch
 Patch188:       backport-3006.17-security-fixes-739.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/742
 Patch189:       extend-fails-to-warnings-until-2027-742.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68253
+Patch190: simplify-utils.json.find_json-function.patch
 
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
