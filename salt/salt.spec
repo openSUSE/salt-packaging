@@ -613,6 +613,8 @@ Patch192:       speedup-wheel-key.finger-call-bsc-1240532-713.patch
 Patch193:       use-internal-salt.utils.pkg.deb-classes-instead-of-a.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/66964
 Patch194:       backport-add-maintain-m-privilege-to-postgres-module.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/745
+Patch195:       fix-tornado-s-httputil_test-syntax-for-python-3.6.patch
 
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
