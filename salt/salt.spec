@@ -1144,7 +1144,7 @@ Requires:       %{python_module pygit2}
 Requires:       %{python_module pytest >= 7.0.1}
 Requires:       %{python_module pytest-httpserver}
 Requires:       %{python_module pytest-salt-factories >= 1.0.0~rc21}
-Requires:       %{python_module pytest-subtests}
+Requires:       %{python_module pytest-subtests if %python-pytest < 9}
 Requires:       %{python_module testinfra}
 Requires:       %{python_module yamllint}
 Requires:       %{python_module pip}
@@ -1160,11 +1160,13 @@ Requires:       python-docker
 %if 0%{?suse_version} < 1600
 Requires:       python-mock
 %endif
+%if 0%{?suse_version} <= 1600
+Requires:       python-pytest-subtests
+%endif
 Requires:       python-pygit2
 Requires:       python-pytest >= 7.0.1
 Requires:       python-pytest-httpserver
 Requires:       python-pytest-salt-factories >= 1.0.0~rc21
-Requires:       python-pytest-subtests
 Requires:       python-testinfra
 Requires:       python-yamllint
 Requires:       python-pip
