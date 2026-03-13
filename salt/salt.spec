@@ -617,6 +617,8 @@ Patch194:       backport-add-maintain-m-privilege-to-postgres-module.patch
 Patch195:       fix-tornado-s-httputil_test-syntax-for-python-3.6.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68494
 Patch196:       fix-virtualenv-call-in-test-helper-to-use-proper-pyt.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68787
+Patch197:       fix-ansible.playbooks-extra-vars-quoting-bsc-1257831.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
