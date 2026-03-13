@@ -621,6 +621,8 @@ Patch196:       fix-virtualenv-call-in-test-helper-to-use-proper-pyt.patch
 Patch197:       fix-ansible.playbooks-extra-vars-quoting-bsc-1257831.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68790
 Patch198:       make-users-with-backslash-working-for-salt-ssh-bsc-1.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68789
+Patch199:       add-x86_64_v2-as-a-possible-rpm-package-architecture.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
