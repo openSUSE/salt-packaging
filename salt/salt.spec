@@ -623,6 +623,9 @@ Patch197:       fix-ansible.playbooks-extra-vars-quoting-bsc-1257831.patch
 Patch198:       make-users-with-backslash-working-for-salt-ssh-bsc-1.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68789
 Patch199:       add-x86_64_v2-as-a-possible-rpm-package-architecture.patch
+# PATCH-FIX_UPSTREAM: https://github.com/tornadoweb/tornado/pull/3584
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/750
+Patch200:       backport-of-the-cve-2026-31958-fix-bsc-1259554.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
