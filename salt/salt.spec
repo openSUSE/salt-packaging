@@ -712,6 +712,7 @@ BuildRequires:  bash
 BuildRequires:  zsh
 %endif
 
+BuildRequires:  python-rpm-macros
 %define python_subpackage_only 1
 %python_subpackages
 
@@ -733,7 +734,6 @@ servers, handle them quickly and through a simple and manageable interface.
 Summary:        python3 library for salt
 Group:          System/Management
 Requires:       %{name} = %{version}-%{release}
-BuildRequires:  python-rpm-macros
 %if 0%{?rhel} == 8
 BuildRequires:  platform-python
 %else
