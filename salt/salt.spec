@@ -642,7 +642,8 @@ Patch203:       bdsa-2025-60810-harden-against-invalid-http-reason-p.patch
 Patch204:       use-non-vendored-tornado-with-python-3.11.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/69141
 Patch205:       add-show_changes-to-file.append-and-file.prepend-sta.patch
-
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/759
+Patch206:       calculate-uuid-grain-for-xen-pv-guests-759.patch
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
 
