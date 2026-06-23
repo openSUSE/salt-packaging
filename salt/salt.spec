@@ -660,6 +660,8 @@ Patch210:       decode-binary-pillars-for-salt-ssh-to-avoid-exceptio.patch
 # There is no upstream PR behind as upstream relies on non-vendored tornado
 # with higher version which doesn't have this issue
 Patch211:       fix-file-fetching-with-non-vendored-tornado.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/0b92bfdf80ab40787072d546b6962c77dd24e0b7
+Patch212:       use-asynchttpclient-in-salt.utils.http-bsc-1268325.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
