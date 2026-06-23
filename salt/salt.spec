@@ -656,6 +656,10 @@ Patch208:       fix-broken-pkg.info_installed-after-moving-to-salt.u.patch
 Patch209:       fix-importerror-during-reentrant-sigterm-shutdown.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/69405
 Patch210:       decode-binary-pillars-for-salt-ssh-to-avoid-exceptio.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/766
+# There is no upstream PR behind as upstream relies on non-vendored tornado
+# with higher version which doesn't have this issue
+Patch211:       fix-file-fetching-with-non-vendored-tornado.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
