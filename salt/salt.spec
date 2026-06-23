@@ -662,6 +662,8 @@ Patch210:       decode-binary-pillars-for-salt-ssh-to-avoid-exceptio.patch
 Patch211:       fix-file-fetching-with-non-vendored-tornado.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/0b92bfdf80ab40787072d546b6962c77dd24e0b7
 Patch212:       use-asynchttpclient-in-salt.utils.http-bsc-1268325.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/758
+Patch213:       fix-the-default-group-in-tests-for-new-users-in-sle-.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
