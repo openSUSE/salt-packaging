@@ -654,6 +654,9 @@ Patch208:       fix-broken-pkg.info_installed-after-moving-to-salt.u.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/69363
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/765
 Patch209:       fix-importerror-during-reentrant-sigterm-shutdown.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/69405
+Patch210:       decode-binary-pillars-for-salt-ssh-to-avoid-exceptio.patch
+
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
 
