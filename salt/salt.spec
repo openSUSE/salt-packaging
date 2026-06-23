@@ -664,6 +664,10 @@ Patch211:       fix-file-fetching-with-non-vendored-tornado.patch
 Patch212:       use-asynchttpclient-in-salt.utils.http-bsc-1268325.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/758
 Patch213:       fix-the-default-group-in-tests-for-new-users-in-sle-.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/e37d3e405a0c7d417a45804272933afa7ccae40b
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/dfe321bc1564fbaa7b6a19ff0f78a05cae45d3d0
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/e8c016419b73aaefab32880fe91ad694f0c6668e
+Patch214:       fix-the-tests-failing-after-switching-to-non-vendore.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
