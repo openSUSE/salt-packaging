@@ -668,6 +668,8 @@ Patch213:       fix-the-default-group-in-tests-for-new-users-in-sle-.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/dfe321bc1564fbaa7b6a19ff0f78a05cae45d3d0
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/e8c016419b73aaefab32880fe91ad694f0c6668e
 Patch214:       fix-the-tests-failing-after-switching-to-non-vendore.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68650
+Patch215:       support-attrlist-in-ldap.managed-746.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
