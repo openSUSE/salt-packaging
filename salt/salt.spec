@@ -672,6 +672,8 @@ Patch214:       fix-the-tests-failing-after-switching-to-non-vendore.patch
 Patch215:       support-attrlist-in-ldap.managed-746.patch
 # PATCH-FIX_UPSTREAM: https://github.com/salt-extensions/saltext-apache/pull/14
 Patch216:       switch-apache2ctl-to-apachectl-for-suse-oses-bsc-125.patch
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/4c4d017ddb45e4e689d978ae1deb975ad7a4c220
+Patch217:       stabilize-testsuite-tests-and-fix-alleventshandler-7.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
