@@ -693,6 +693,10 @@ Patch222:       fix-test_tcp-for-pytest-8-779.patch
 Patch223:       fix-mount.swap-activation-when-using-uuid-and-introd.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68505
 Patch224:       remove-usages-of-pkg_resources-bsc-1262135.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/782
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/68342
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/70231
+Patch225:       remove-rpm-vercmp-dependency-and-fix-pkg.version_cmp.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
