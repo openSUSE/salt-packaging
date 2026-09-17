@@ -702,6 +702,10 @@ Patch225:       remove-rpm-vercmp-dependency-and-fix-pkg.version_cmp.patch
 Patch226:       add-__pillar__-global-in-templates-and-matchers-776.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/70269
 Patch227:       patch-tornado-for-ghsa-8423-8fgw-73vq-783.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/784
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/70282
+Patch228:       stabilize-testsuite-784.patch
+
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
