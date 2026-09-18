@@ -705,7 +705,9 @@ Patch227:       patch-tornado-for-ghsa-8423-8fgw-73vq-783.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/784
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/70282
 Patch228:       stabilize-testsuite-784.patch
-
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/786
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/70231
+Patch229:       ignore-release-if-not-specified-in-the-pkg-state-bsc.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
