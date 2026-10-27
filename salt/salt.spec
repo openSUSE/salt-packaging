@@ -711,6 +711,9 @@ Patch229:       ignore-release-if-not-specified-in-the-pkg-state-bsc.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/789
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/70579
 Patch230:       prevent-schedule-loss-when-minion-loses-master-conne.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/790
+# PATCH-FIX_UPSTREAM: https://github.com/salt-extensions/saltext-openscap/pull/5
+Patch231:       fix-surogateescape-typo-in-openscap-module-790.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
