@@ -708,6 +708,9 @@ Patch228:       stabilize-testsuite-784.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/786
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/70231
 Patch229:       ignore-release-if-not-specified-in-the-pkg-state-bsc.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/789
+# PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/70579
+Patch230:       prevent-schedule-loss-when-minion-loses-master-conne.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
