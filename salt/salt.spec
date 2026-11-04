@@ -724,6 +724,9 @@ Patch233:       fix-docker-tests-785.patch
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/pull/70655
 # PATCH-FIX_UPSTREAM: https://github.com/saltstack/salt/commit/6ef6346378c834063e6806e18c58abd70397c8e4
 Patch234:       stabilize-testsuite-791.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/780
+# PATCH-FIX_UPSTREAM: https://github.com/salt-extensions/saltext-openscap/pull/9
+Patch235:       support-the-oscap-options-that-select-rules-and-cont.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
