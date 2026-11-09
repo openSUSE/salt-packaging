@@ -727,6 +727,8 @@ Patch234:       stabilize-testsuite-791.patch
 # PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/780
 # PATCH-FIX_UPSTREAM: https://github.com/salt-extensions/saltext-openscap/pull/9
 Patch235:       support-the-oscap-options-that-select-rules-and-cont.patch
+# PATCH-FIX_OPENSUSE: https://github.com/openSUSE/salt/pull/792
+Patch236:       fix-asyncio_loop-attributeerror-in-syncwrapper-on-py.patch
 
 ### IMPORTANT: The line below is used as a snippet marker. Do not touch it.
 ### SALT PATCHES LIST END
